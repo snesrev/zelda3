@@ -1,0 +1,15 @@
+.DS_Store
+*.dSYM
+elzsnes
+lakesnes
+dump.bin
+.git_old
+/Debug
+/Release
+/x64
+/tables/overworld/*.yaml
+/tables/dungeon/*.yaml
+/tables/img/
+/tables/old/
+/saves/
+__pycache__
