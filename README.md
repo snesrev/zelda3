@@ -11,6 +11,8 @@ You need a copy of the ROM to extract game resources (levels, images). Then once
 
 It uses the PPU and DSP implementation from LakeSnes. Additionally, it can be configured to also run the original machine code side by side. Then the RAM state is compared after each frame, to verify that the C++ implementation is correct.
 
+I got much assistance from the other Zelda 3 disassemblies that documented function names and variables.
+
 ## Compiling
 
 Put the ROM in tables/zelda3.sfc
