@@ -19,7 +19,7 @@ Put the ROM in tables/zelda3.sfc
 
 `cd tables`
 
-Install python dependencies: `pip install pillow`
+Install python dependencies: `pip install pillow` and `pip install pyyaml`
 
 Run `python extract_resources.py` to extract resources from the ROM into a more human readable format.
 
