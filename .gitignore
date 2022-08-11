@@ -1,9 +1,5 @@
 .DS_Store
 *.dSYM
-elzsnes
-lakesnes
-dump.bin
-.git_old
 /Debug
 /Release
 /x64
@@ -11,5 +7,5 @@ dump.bin
 /tables/dungeon/*.yaml
 /tables/img/
 /tables/old/
-/saves/
+/saves/*.sav
 __pycache__
