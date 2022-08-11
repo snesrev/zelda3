@@ -1,0 +1,44 @@
+#pragma once
+
+
+bool Intro_CheckCksum(const uint8 *s);
+uint16 *SelectFile_Func1();
+void SelectFile_Func5_DrawOams(int k);
+void SelectFile_Func6_DrawOams2(int k);
+void SelectFile_Func17(int k);
+void SelectFile_Func16();
+void Module_NamePlayer_1();
+void Module_NamePlayer_2();
+void Intro_FixCksum(uint8 *s);
+void LoadFileSelectGraphics();
+void Intro_ValidateSram();
+void Module01_FileSelect();
+void Module_SelectFile_0();
+void FileSelect_ReInitSaveFlagsAndEraseTriforce();
+void FileSelect_EraseTriforce();
+void Module_EraseFile_1();
+void FileSelect_TriggerStripesAndAdvance();
+void FileSelect_TriggerNameStripesAndAdvance();
+void FileSelect_Main();
+void Module02_CopyFile();
+void Module_CopyFile_2();
+void CopyFile_ChooseSelection();
+void CopyFile_ChooseTarget();
+void CopyFile_ConfirmSelection();
+void FilePicker_DeleteHeaderStripe();
+void CopyFile_SelectionAndBlinker();
+void ReturnToFileSelect();
+void CopyFile_TargetSelectionAndBlink();
+void CopyFile_HandleConfirmation();
+void Module03_KILLFile();
+void KILLFile_SetUp();
+void KILLFile_HandleSelection();
+void KILLFile_HandleConfirmation();
+void KILLFile_ChooseTarget();
+void FileSelect_DrawFairy(uint8 x, uint8 y);
+void Module04_NameFile();
+void NameFile_EraseSave();
+void NameFile_DoTheNaming();
+void NameFile_CheckForScrollInputX();
+void NameFile_CheckForScrollInputY();
+void NameFile_DrawSelectedCharacter(int k, uint16 chr);

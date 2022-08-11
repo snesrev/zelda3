@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30717.126
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zelda3", "zelda3.vcxproj", "{CB07E01D-A194-481A-BEA1-DC13756AD150}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Debug|x64.ActiveCfg = Debug|x64
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Debug|x64.Build.0 = Debug|x64
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Debug|x86.ActiveCfg = Debug|Win32
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Debug|x86.Build.0 = Debug|Win32
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Release|x64.ActiveCfg = Release|x64
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Release|x64.Build.0 = Release|x64
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Release|x86.ActiveCfg = Release|Win32
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Release|x86.Build.0 = Release|Win32
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {E47623E3-1B23-4ED7-8FC1-3E1F0AD82DD0}
+	EndGlobalSection
+EndGlobal
