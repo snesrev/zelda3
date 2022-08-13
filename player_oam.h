@@ -1,5 +1,5 @@
 #pragma once
 
-void CalculateSwordHitBox();
-void LinkOam_Main();
+void Player_CalcSwordOamOffs();
+void PlayerOam_Main();
 

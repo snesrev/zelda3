@@ -11,34 +11,34 @@
 
 void Attract_CopyToVram_A();
 
-void Dungeon_LoadAndDrawEntranceRoom(uint8 a) {
+void Attract_LoadDungeonRoom(uint8 a) {
   attract_room_index = a;
   Dungeon_LoadEntrance();
   dung_num_lit_torches = 0;
   hdr_dungeon_dark_with_lantern = 0;
-  Dungeon_LoadAndDrawRoom();
+  Dungeon_LoadAndUploadRoom();
   Dungeon_ResetTorchBackgroundAndPlayer();
 }
 
-void Dungeon_SaveAndLoadLoadAllPalettes(uint8 a, uint8 k) {
+void Attract_LoadDungeonGfxAndTiles(uint8 a, uint8 k) {
   sprite_graphics_index = k;
   main_tile_theme_index = a;
   aux_tile_theme_index = a;
-  InitializeTilesets();
+  InitTilesets();
   overworld_palette_aux_or_main = 0x200;
   flag_update_cgram_in_nmi++;
   Palette_BgAndFixedColor_Black();
-  Palette_Load_SpritePal0Left();
-  Palette_Load_SpriteMain();
-  Palette_Load_SpriteAux1();
-  Palette_Load_SpriteAux2();
-  Palette_Load_SpriteEnvironment_Dungeon();
-  Palette_Load_HUD();
-  Palette_Load_DungeonSet();
+  Palette_SpriteAux3();
+  Palette_MainSpr();
+  Palette_SpriteAux1();
+  Palette_SpriteAux2();
+  Palette_MiscSprite_Indoors();
+  Palette_Hud();
+  Palette_DungBgMain();
 }
 
 void Attract_Fade() {
-  Intro_HandleAllTriforceAnimations();
+  Intro_TopAnimateObjs();
   intro_did_run_step = 0;
   is_nmi_thread_active = 0;
   Intro_PeriodicSwordAndIntroFlash();
@@ -56,16 +56,16 @@ void Attract_Fade() {
 
 void Attract_InitGraphics() {
   memset(&attract_var12, 0, 0x51);
-  EraseTileMaps_normal();
-  Attract_LoadBG3GFX();
+  Vram_EraseTilemaps_normal();
+  Attract_InitGraphics_Helper1();
   overworld_palette_mode = 4;
   hud_palette = 1;
   overworld_palette_aux_or_main = 0;
-  Palette_Load_HUD();
+  Palette_Hud();
   overworld_palette_aux_or_main = 0x200;
-  Palette_Load_OWBGMain();
-  Palette_Load_HUD();
-  Palette_Load_LinkArmorAndGloves();
+  Palette_OverworldBgMain();
+  Palette_Hud();
+  Palette_ArmorAndGloves();
   main_palette_buffer[0x1d] = 0x3800;
   flag_update_cgram_in_nmi++;
   BYTE(BG3VOFS_copy2) = 20;
@@ -95,7 +95,7 @@ void Attract_InitGraphics() {
   attract_legend_flag++;
 }
 
-void Attract_FadeOutSequence() {
+void Attract_SlowFadeToBlank() {
   if (INIDISP_copy != 0) {
     if (sign8(--link_speed_setting)) {
       INIDISP_copy--;
@@ -103,12 +103,12 @@ void Attract_FadeOutSequence() {
     }
   } else {
     EnableForceBlank();
-    EraseTileMaps_normal();
+    Vram_EraseTilemaps_normal();
     attract_state++;
   }
 }
 
-void Attract_FadeInSequence() {
+void Attract_SlowBrighten() {
   if (INIDISP_copy != 15) {
     if (sign8(--link_speed_setting)) {
       INIDISP_copy++;
@@ -119,7 +119,7 @@ void Attract_FadeInSequence() {
   }
 }
 
-void Attract_FadeInStep() {
+void Attract_SlowBrigthenSetFlag() {
   if (INIDISP_copy != 15) {
     if (sign8(--link_speed_setting)) {
       INIDISP_copy++;
@@ -130,7 +130,7 @@ void Attract_FadeInStep() {
   }
 }
 
-void AttractScene_PolkaDots() {
+void Attract_PrepLegend() {
   attract_next_legend_gfx = 0;
   attract_state++;
   INIDISP_copy = 0;
@@ -170,12 +170,12 @@ const uint16 kMapMode_Zooms2[224] = {
   97,  97,  97,  97,  97,  97,  97,  96,  96,  96,  96,  96,  96,  96,  96,  96, 
 };
 
-void Attract_ControlMapZoom() {
+void Attract_AdjustMapZoom() {
   for (int i = 223; i >= 0; i--)
     mode7_hdma_table[i] = kMapMode_Zooms1[i] * timer_for_mode7_zoom >> 8;
 }
 
-void AttractScene_WorldMap() {
+void Attract_PrepMapZoom() {
   zelda_ppu_write(BG1SC, 0x13);
   zelda_ppu_write(BG2SC, 0x3);
   CGWSEL_copy = 0x80;
@@ -183,32 +183,32 @@ void AttractScene_WorldMap() {
   zelda_ppu_write(BGMODE, 7);
   BGMODE_copy = 7;
   zelda_ppu_write(M7SEL, 0x80);
-  WorldMap_LoadLightWorldMap();
+  OverworldMap_InitGfx();
   M7Y_copy = 0xed;
   M7X_copy = 0x100;
   BG1HOFS_copy = 0x80;
   BG1VOFS_copy = 0xc0;
   timer_for_mode7_zoom = 255;
-  Attract_ControlMapZoom();
+  Attract_AdjustMapZoom();
   attract_var10 = 1;
   attract_state++;
   INIDISP_copy = 0;
 }
 
-void AttractDramatize_WorldMap() {
+void Attract_MapZoom() {
   if (timer_for_mode7_zoom != 0) {
     if (timer_for_mode7_zoom < 15)
       INIDISP_copy--;
     if (!--attract_var10) {
       attract_var10 = 1;
       timer_for_mode7_zoom -= 1;
-      Attract_ControlMapZoom();
+      Attract_AdjustMapZoom();
     }
   } else {
     EnableForceBlank();
     zelda_ppu_write(BGMODE, 9);
     BGMODE_copy = 9;
-    EraseTileMaps_normal();
+    Vram_EraseTilemaps_normal();
     attract_sequence++;
     attract_state -= 2;
   }
@@ -224,23 +224,23 @@ void Attract_PrepFinish() {
   BG2VOFS_copy2 &= 0x1ff;
 }
 
-void AttractScene_ThroneRoom() {
+void Attract_PrepThroneRoom() {
   zelda_snes_dummy_write(HDMAEN, 0);
   HDMAEN_copy = 0;
   CGWSEL_copy = 2;
   CGADSUB_copy = 0x20;
   misc_sprites_graphics_index = 10;
-  LoadCommonSprites_2();
+  Graphics_LoadCommonSpr();
   uint16 bak0 = attract_var12;
   uint16 bak1 = WORD(attract_state);
-  Dungeon_LoadAndDrawEntranceRoom(0x74);
+  Attract_LoadDungeonRoom(0x74);
   WORD(attract_state) = bak1;
   attract_var12 = bak0;
   dung_hdr_palette_1 = 0;
   overworld_palette_sp0 = 0;
   sprite_aux1_palette = 14;
   sprite_aux2_palette = 3;
-  Dungeon_SaveAndLoadLoadAllPalettes(0, 0x7e);
+  Attract_LoadDungeonGfxAndTiles(0, 0x7e);
 
   main_palette_buffer[0x1d] = 0x3800;
   messaging_module = 0;
@@ -258,7 +258,7 @@ void Attract_PrepZeldaPrison() {
 
   uint16 bak0 = attract_var12;
   uint16 bak1 = WORD(attract_state);
-  Dungeon_LoadAndDrawEntranceRoom(0x73);
+  Attract_LoadDungeonRoom(0x73);
   WORD(attract_state) = bak1;
   attract_var12 = bak0;
 
@@ -266,7 +266,7 @@ void Attract_PrepZeldaPrison() {
   overworld_palette_sp0 = 0;
   sprite_aux1_palette = 14;
   sprite_aux2_palette = 3;
-  Dungeon_SaveAndLoadLoadAllPalettes(1, 0x7f);
+  Attract_LoadDungeonGfxAndTiles(1, 0x7f);
   main_palette_buffer[0x1d] = 0x3800;
 
   messaging_module = 0;
@@ -287,7 +287,7 @@ void Attract_PrepZeldaPrison() {
 void Attract_PrepMaidenWarp() {
   uint16 bak0 = attract_var12;
   uint16 bak1 = WORD(attract_state);
-  Dungeon_LoadAndDrawEntranceRoom(0x75);
+  Attract_LoadDungeonRoom(0x75);
   WORD(attract_state) = bak1;
   attract_var12 = bak0;
 
@@ -297,14 +297,14 @@ void Attract_PrepMaidenWarp() {
   sprite_aux2_palette = 3;
 
   overworld_palette_aux_or_main = 0;
-  Palette_Load_SpritePal0Left();
-  Palette_Load_SpriteMain();
-  Palette_Load_SpriteAux1();
-  Palette_Load_SpriteAux2();
-  Palette_Load_SpriteEnvironment_Dungeon();
-  Palette_Load_HUD();
-  Palette_Load_DungeonSet();
-  Dungeon_SaveAndLoadLoadAllPalettes(2, 0x7f);
+  Palette_SpriteAux3();
+  Palette_MainSpr();
+  Palette_SpriteAux1();
+  Palette_SpriteAux2();
+  Palette_MiscSprite_Indoors();
+  Palette_Hud();
+  Palette_DungBgMain();
+  Attract_LoadDungeonGfxAndTiles(2, 0x7f);
   aux_palette_buffer[0x1d] = main_palette_buffer[0x1d] = 0x3800;
 
   messaging_module = 0;
@@ -327,8 +327,8 @@ void Attract_PrepMaidenWarp() {
 
 void Death_Func31() {
   nmi_disable_core_updates++;
-  Intro_InitializeMemory_darken();
-  Overworld_LoadAllPalettes();
+  Intro_LoadTitleGraphics();
+  Intro_LoadPalettes();
   BYTE(BG3VOFS_copy2) = 0;
   M7Y_copy = 0;
   M7X_copy = 0;
@@ -343,19 +343,19 @@ void Death_Func31() {
   subsubmodule_index = 10;
 }
 
-void AttractScene_EndOfStory() {
-  Attract_SetUpConclusionHDMA();
+void Attract_PrepLast() {
+  OverworldMap_SetRegsForExit();
   Death_Func31();
 }
 
-void Attract_LoadNewScene() {
+void Attract_PrepNextSequence() {
   switch (attract_sequence) {
-  case 0: AttractScene_PolkaDots(); break;
-  case 1: AttractScene_WorldMap(); break;
-  case 2: AttractScene_ThroneRoom(); break;
+  case 0: Attract_PrepLegend(); break;
+  case 1: Attract_PrepMapZoom(); break;
+  case 2: Attract_PrepThroneRoom(); break;
   case 3: Attract_PrepZeldaPrison(); break;
   case 4: Attract_PrepMaidenWarp(); break;
-  case 5: AttractScene_EndOfStory(); break;
+  case 5: Attract_PrepLast(); break;
   }
 }
 
@@ -424,7 +424,7 @@ static const uint8 kAttract_Legendgraphics_3[265+1] = {
   0x39, 0x75, 0x38, 0x75, 0x37, 0x75, 0x48, 0x75, 0xff, 0x0
 };
 
-void Attract_BuildNextImageTileMap() {
+void Attract_LoadNextLegendGraphic() {
   static const uint8 *const kAttract_LegendGraphics_pointers[4] = {
     kAttract_Legendgraphics_0,
     kAttract_Legendgraphics_1,
@@ -437,7 +437,7 @@ void Attract_BuildNextImageTileMap() {
   nmi_load_bg_from_vram = 1;
 }
 
-void AttractDramatize_PolkaDots() {
+void Attract_Legend() {
   if (!(frame_counter & 3)) {
     BYTE(BG1VOFS_copy)++;
     BYTE(BG1HOFS_copy)++;
@@ -446,14 +446,14 @@ void AttractDramatize_PolkaDots() {
   }
 
   if (attract_legend_flag) {
-    Attract_BuildNextImageTileMap();
+    Attract_LoadNextLegendGraphic();
     attract_legend_flag = 0;
     attract_next_legend_gfx += 2;
   }
   joypad1L_last = 0;
   filtered_joypad_L = 0;
   filtered_joypad_H = 0;
-  RenderText();
+  Messaging_Text();
   if (!--attract_legend_ctr) {
     attract_sequence++;
     attract_state -= 3;
@@ -468,7 +468,7 @@ struct AttractOamInfo {
   uint8 c, f, e;
 };
 
-void Attract_DrawPreloadedSprite(const uint8 *xp, const uint8 *yp, const uint8 *cp, const uint8 *fp, const uint8 *ep, int n) {
+void Attract_DrawSpriteSet(const uint8 *xp, const uint8 *yp, const uint8 *cp, const uint8 *fp, const uint8 *ep, int n) {
   OamEnt *oam = &oam_buf[attract_oam_idx + 64];
   attract_oam_idx += n + 1;
   do {
@@ -497,7 +497,7 @@ void Attract_ShowTimedTextMessage() {
   BYTE(joypad1L_last) = 0;
   BYTE(filtered_joypad_L) = 0;
   BYTE(filtered_joypad_H) = 0;
-  RenderText();
+  Messaging_Text();
   if (oam_priority_value)
     oam_priority_value--;
 }
@@ -560,7 +560,7 @@ void Sprite_SimulateSoldier(int k, uint16 x, uint16 y, uint8 dir, uint8 flags, u
   Sprite_SetX(k, x);
   Sprite_SetY(k, y);
   sprite_z[k] = 0;
-  Sprite_Get16BitCoords(k);
+  Sprite_Get_16_bit_Coords(k);
   sprite_D[k] = sprite_head_dir[k] = dir;
   sprite_graphics[k] = kSimulateSoldier_Gfx[dir] + gfx;
   sprite_flags3[k] = 16;
@@ -571,7 +571,7 @@ void Sprite_SimulateSoldier(int k, uint16 x, uint16 y, uint8 dir, uint8 flags, u
   int oam_idx = k * 8;
   oam_cur_ptr = 0x800 + oam_idx * 4;
   oam_ext_cur_ptr = 0xa20 + oam_idx;
-  Guard_HandleAllAnimation(k);
+  Soldier_Draw(k);
 }
 
 void Attract_ZeldaPrison_Case0() {
@@ -688,7 +688,7 @@ void Attract_ZeldaPrison_DrawA() {
   attract_oam_idx += 2;
 }
 
-void AttractDramatize_Prison() {
+void Attract_ZeldaPrison() {
   static const uint8 kAttract_ZeldaPrison_Tab0[16] = { 0, 1, 2, 3, 4, 5, 5, 5, 4, 4, 3, 3, 2, 2, 1, 1 };
   static const int8 kZeldaPrison_Soldier_X[2] = { 32, -12 };
   static const int8 kZeldaPrison_Soldier_Y[2] = { 24, 24 };
@@ -697,7 +697,7 @@ void AttractDramatize_Prison() {
 
   attract_oam_idx = 0;
   if (!attract_var18)
-    Attract_FadeInStep();
+    Attract_SlowBrigthenSetFlag();
   attract_x_base = 56;
   Attract_DrawZelda();
   if (attract_var10 >= 192) {
@@ -710,7 +710,7 @@ void AttractDramatize_Prison() {
     Attract_ZeldaPrison_DrawA();
 
     for (int k = 1; k >= 0; k--) {
-      SpritePrep_ResetProperties(k * 2);
+      Sprite_ResetProperties(k * 2);
       uint16 x = kZeldaPrison_Soldier_X[k] + attract_vram_dst + 0x100;
       attract_var4 = x;
       Sprite_SimulateSoldier(k * 2,
@@ -872,16 +872,16 @@ void Attract_MaidenWarp_Case4() {
   }
 }
 
-void AttractDramatize_AgahnimAltar() {
+void Attract_MaidenWarp() {
   if (attract_var22) {
     attract_sequence++;
     attract_state -= 2;
     return;
   }
   attract_oam_idx = 0;
-  HandleScreenFlash();
+  Filter_MajorWhitenMain();
   if (!attract_var18)
-    Attract_FadeInStep();
+    Attract_SlowBrigthenSetFlag();
   if (attract_var17 != 255)
     attract_var17++;
   if (intro_times_pal_flash & 4)
@@ -900,7 +900,7 @@ void AttractDramatize_AgahnimAltar() {
   static const uint8 kMaidenWarp_Soldier_Flags[6] = { 9, 9, 9, 9, 7, 9 };
   for (int k = 5; k >= 0; k--) {
 
-    SpritePrep_ResetProperties(k);
+    Sprite_ResetProperties(k);
     Sprite_SimulateSoldier(k, kMaidenWarp_Soldier_X[k], kMaidenWarp_Soldier_Y[k],
                            kMaidenWarp_Soldier_Dir[k], kMaidenWarp_Soldier_Flags[k], 0);
   }
@@ -1011,31 +1011,31 @@ void AttractDramatize_AgahnimAltar() {
 
 }
 
-void Attract_EnactStory() {
+void Attract_RunSequence() {
   switch (attract_sequence) {
-  case 0: AttractDramatize_PolkaDots(); break;
-  case 1: AttractDramatize_WorldMap(); break;
+  case 0: Attract_Legend(); break;
+  case 1: Attract_MapZoom(); break;
   case 2: Attract_ThroneRoom(); break;
-  case 3: AttractDramatize_Prison(); break;
-  case 4: AttractDramatize_AgahnimAltar(); break;
+  case 3: Attract_ZeldaPrison(); break;
+  case 4: Attract_MaidenWarp(); break;
   }
 }
-void Attract_SkipToFileSelect() {
+void Attract_Exit() {
   if (--INIDISP_copy)
     return;
   EnableForceBlank();
   zelda_ppu_write(BG1SC, 0x13);
   zelda_ppu_write(BG2SC, 0x3);
-  Attract_SetUpConclusionHDMA();
+  OverworldMap_SetRegsForExit();
   M7Y_copy = 0;
   M7X_copy = 0;
   BG1HOFS_copy = 0;
   BG1VOFS_copy = 0;
   BG3VOFS_copy2 = 0;
-  FadeMusicAndResetSRAMMirror();
+  Intro_ShowPlayerSelect();
 }
 
-void Module14_Attract() {
+void Module_Attract() {
   uint8 st = attract_state;
   if (INIDISP_copy && INIDISP_copy != 128 && st && st != 2 && st != 6 && filtered_joypad_H & 0x90)
     attract_state = st = 9;
@@ -1043,14 +1043,14 @@ void Module14_Attract() {
   switch (st) {
   case 0: Attract_Fade(); break;
   case 1: Attract_InitGraphics(); break;
-  case 2: Attract_FadeOutSequence(); break;
-  case 3: Attract_LoadNewScene(); break;
-  case 4: Attract_FadeInSequence(); break;
-  case 5: Attract_EnactStory(); break;
-  case 6: Attract_FadeOutSequence(); break;
-  case 7: Attract_LoadNewScene(); break;
-  case 8: Attract_EnactStory(); break;
-  case 9: Attract_SkipToFileSelect(); break;
+  case 2: Attract_SlowFadeToBlank(); break;
+  case 3: Attract_PrepNextSequence(); break;
+  case 4: Attract_SlowBrighten(); break;
+  case 5: Attract_RunSequence(); break;
+  case 6: Attract_SlowFadeToBlank(); break;
+  case 7: Attract_PrepNextSequence(); break;
+  case 8: Attract_RunSequence(); break;
+  case 9: Attract_Exit(); break;
   }
 }
 

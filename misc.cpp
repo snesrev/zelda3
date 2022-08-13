@@ -52,7 +52,7 @@ const uint16 *SrcPtr(uint16 src) {
   return &kPredefinedTileData[src >> 1];
 }
 
-uint8 CalculateSfxPan(uint16 x) {
+uint8 Sound_GetPanForX(uint16 x) {
   static const uint8 kPanTable[] = { 0, 0x80, 0x40 };
   int o = 0;
   x -= BG2HOFS_copy2 + 80;
@@ -61,44 +61,44 @@ uint8 CalculateSfxPan(uint16 x) {
   return kPanTable[o];
 }
 
-void SpriteSfx_QueueSfx1WithPan(int k, uint8 a) {
+void Sound_SetSfx1Pan(int k, uint8 a) {
   if (sound_effect_ambient == 0)
-    sound_effect_ambient = a | Sprite_CalculateSfxPan(k);
+    sound_effect_ambient = a | Sprite_GetSfxPan(k);
 }
 
-void SpriteSfx_QueueSfx2WithPan(int k, uint8 a) {
+void Sound_SetSfx2Pan(int k, uint8 a) {
   if (sound_effect_1 == 0)
-    sound_effect_1 = a | Sprite_CalculateSfxPan(k);
+    sound_effect_1 = a | Sprite_GetSfxPan(k);
 }
 
-void SpriteSfx_QueueSfx3WithPan(int k, uint8 a) {
+void Sound_SetSfx3Pan(int k, uint8 a) {
   if (sound_effect_2 == 0)
-    sound_effect_2 = a | Sprite_CalculateSfxPan(k);
+    sound_effect_2 = a | Sprite_GetSfxPan(k);
 }
 
 
-uint8 Sprite_CalculateSfxPan(int k) {
-  return CalculateSfxPan(Sprite_GetX(k));
+uint8 Sprite_GetSfxPan(int k) {
+  return Sound_GetPanForX(Sprite_GetX(k));
 }
 
-uint8 Link_CalculateSfxPan() {
-  return CalculateSfxPan(link_x_coord);
+uint8 Sound_GetPanForPlayer() {
+  return Sound_GetPanForX(link_x_coord);
 }
 
-static uint8 PlaySfx_SetPan(uint8 a) {
+static uint8 GetPlayerRelativePan(uint8 a) {
   byte_7E0CF8 = a;
-  return a | Link_CalculateSfxPan();
+  return a | Sound_GetPanForPlayer();
 }
 
-uint8 Ancilla_Sfx2_Near(uint8 a) {
-  return sound_effect_1 = PlaySfx_SetPan(a);
+uint8 Player_DoSfx2(uint8 a) {
+  return sound_effect_1 = GetPlayerRelativePan(a);
 }
 
-void Ancilla_Sfx3_Near(uint8 a) {
-  sound_effect_2 = PlaySfx_SetPan(a);
+void Player_DoSfx3(uint8 a) {
+  sound_effect_2 = GetPlayerRelativePan(a);
 }
 
-void TriforceRoom_LinkApproachTriforce() {
+void Player_ApproachTriforce() {
   uint8 y = link_y_coord;
   if (y < 152) {
     link_animation_steps = 0;
@@ -129,25 +129,25 @@ void Main_ShowTextMessage() {
 }
 
 
-uint8 HandleItemTileAction_Overworld(uint16 x, uint16 y) {
+uint8 ToolAndTileInteraction(uint16 x, uint16 y) {
   if (player_is_indoors)
-    return HandleItemTileAction_Dungeon(x, y);
+    return Dungeon_ToolAndTileInteraction(x, y);
   else
     return Overworld_ToolAndTileInteraction(x, y);
 }
 
 void WallMaster_SendPlayerToLastEntrance() {
-  SaveDungeonKeys();
-  Dungeon_FlagRoomData_Quadrants();
+  Dungeon_SaveRoomData_justKeys();
+  Dungeon_SaveRoomQuadrantData();
   Sprite_ResetAll();
   death_var4 = 0;
   main_module_index = 17;
   submodule_index = 0;
   nmi_load_bg_from_vram = 0;
-  ResetSomeThingsAfterDeath(17);  // wtf: argument?
+  Player_ResetSomeStuff2(17);  // wtf: argument?
 }
 
-void ItemReceipt_GiveBottledItem(uint8 item) {
+void GiveBottledItem(uint8 item) {
   static const uint8 kBottleList[7] = { 0x16, 0x2b, 0x2c, 0x2d, 0x3d, 0x3c, 0x48 };
   static const uint8 kPotionList[5] = { 0x2e, 0x2f, 0x30, 0xff, 0xe };
   int j;
@@ -213,8 +213,8 @@ static const int8 kValueToGiveItemTo[76] = {
     -1,   1,   3,  1,
 };
 
-void AncillaAdd_ItemReceipt(uint8 ain, uint8 yin, int chest_pos) {
-  int ancilla = AncillaAdd_AddAncilla_Bank09(ain, yin);
+void AddReceivedItem(uint8 ain, uint8 yin, int chest_pos) {
+  int ancilla = AddAncilla(ain, yin);
   if (ancilla < 0)
     return;
 
@@ -264,8 +264,8 @@ void AncillaAdd_ItemReceipt(uint8 ain, uint8 yin, int chest_pos) {
       link_bunny_transform_timer = 32;
       link_disable_sprite_damage = 0;
       link_cape_mode = 0;
-      AncillaAdd_CapePoof(0x23, 4);
-      sound_effect_1 = 0x15 | Link_CalculateSfxPan();
+      Cape_DoAnim(0x23, 4);
+      sound_effect_1 = 0x15 | Sound_GetPanForPlayer();
     }
   } else if (j == 0x29) {
     if (link_item_mushroom != 2) {
@@ -279,25 +279,25 @@ void AncillaAdd_ItemReceipt(uint8 ain, uint8 yin, int chest_pos) {
     Hud_RefreshIcon();
   } else if (j == 0x17) {
     *p = (*p + 1) & 3;
-    sound_effect_2 = 0x2d | Link_CalculateSfxPan();
+    sound_effect_2 = 0x2d | Sound_GetPanForPlayer();
   } else if (j == 1) {
     Overworld_SetSongList();
   } else {
-    ItemReceipt_GiveBottledItem(j);
+    GiveBottledItem(j);
   }
 
   uint8 gfx = kReceiveItemGfx[j];
   if (gfx == 0xff) {
     gfx = 0;
   } else if (gfx == 0x20 || gfx == 0x2d || gfx == 0x2e) {
-    DecompressShieldGraphics();
-    Palette_Load_Shield();
+    DecompShieldGfx();
+    Palette_Shield();
   }
   DecodeAnimatedSpriteTile_variable(gfx);
 
   if ((gfx == 6 || gfx == 0x18) && j != 0) {
-    DecompressSwordGraphics();
-    Palette_Load_Sword();
+    DecompSwordGfx();
+    Palette_Sword();
   }
 
   ancilla_item_to_link[ancilla] = j;
@@ -307,7 +307,7 @@ void AncillaAdd_ItemReceipt(uint8 ain, uint8 yin, int chest_pos) {
     ancilla_timer[ancilla] = 160;
     submodule_index = 43;
     BYTE(palette_filter_countdown) = 0;
-    AncillaAdd_MSCutscene(0x35, 4);
+    AddSwordCeremony(0x35, 4);
     ancilla_arr3[ancilla] = 2;
   } else {
     ancilla_arr3[ancilla] = 9;
@@ -330,11 +330,11 @@ void AncillaAdd_ItemReceipt(uint8 ain, uint8 yin, int chest_pos) {
     x += kReceiveItem_Tab3[j];
   } else {
     if (ancilla_step[ancilla] == 0 && j == 1) {
-      sound_effect_1 = Link_CalculateSfxPan() | 0x2c;
+      sound_effect_1 = Sound_GetPanForPlayer() | 0x2c;
     } else if (j == 0x20 || j == 0x37 || j == 0x38 || j == 0x39) {
-      music_control = Link_CalculateSfxPan() | 0x13;
+      music_control = Sound_GetPanForPlayer() | 0x13;
     } else if (j != 0x3e && j != 0x17) {
-      sound_effect_2 = Link_CalculateSfxPan() | 0xf;
+      sound_effect_2 = Sound_GetPanForPlayer() | 0xf;
     }
     int method = item_receipt_method == 3 ? 0 : item_receipt_method;
     x = (method != 0) ? kReceiveItem_Tab3[j] :
@@ -348,7 +348,7 @@ void AncillaAdd_ItemReceipt(uint8 ain, uint8 yin, int chest_pos) {
 
 
 
-uint8 CalculateSfxPan_Arbitrary(uint8 a) {
+uint8 LightTorch_GetSfxPan(uint8 a) {
   static const uint8 kTorchPans[] = { 0x80, 0x80, 0x80, 0, 0, 0x40, 0x40, 0x40 };
   return kTorchPans[((a - BG2HOFS_copy2) >> 5) & 7];
 }
@@ -382,7 +382,7 @@ int Dungeon_PrepOverlayDma_nextPrep(int dst, uint16 r8) {
   return Dungeon_PrepOverlayDma_watergate(dst, r8, r6, 4);
 }
 
-void RoomDraw_AdjustTorchLightingChange(uint16 x, uint16 y, uint16 r8) {
+void Dungeon_PrepOverlayDma(uint16 x, uint16 y, uint16 r8) {
   const uint16 *ptr = SrcPtr(y);
   x >>= 1;
   overworld_tileattr[x + 0] = ptr[0];
@@ -408,9 +408,9 @@ void Dungeon_LightTorch() {
     dung_torch_data[opos] = dung_object_tilemap_pos[i];
 
   uint16 x = dung_object_tilemap_pos[i] & 0x3fff;
-  RoomDraw_AdjustTorchLightingChange(x, 0xeca, x);
+  Dungeon_PrepOverlayDma(x, 0xeca, x);
 
-  sound_effect_1 = 42 | CalculateSfxPan_Arbitrary((x & 0x7f) * 2);
+  sound_effect_1 = 42 | LightTorch_GetSfxPan((x & 0x7f) * 2);
 
   nmi_copy_packets_flag = 1;
   if (dung_want_lights_out) {
@@ -427,7 +427,7 @@ void Dungeon_LightTorch() {
 }
 
 
-void LoadDungeonRoomRebuildHUD() {
+void Module_LoadGame_indoors() {
   mosaic_level = 0;
   MOSAIC_copy = 7;
   Hud_SearchForEquippedItem();
@@ -469,7 +469,7 @@ void Init_LoadDefaultTileAttr() {
   memcpy(attributes_for_tile + 0x1c0, kDungeon_DefaultAttr + 0x140, 64);
 }
 
-void Module05_LoadFile() {
+void Module_LoadFile() {
   EnableForceBlank();
   overworld_map_state = 0;
   dung_unk6 = 0;
@@ -478,15 +478,15 @@ void Module05_LoadFile() {
   tagalong_var5 = 0;
   byte_7E0379 = 0;
   byte_7E03FD = 0;
-  EraseTileMaps_normal();
+  Vram_EraseTilemaps_normal();
   zelda_ppu_write(OBSEL, 2);
-  LoadDefaultGraphics();
-  Sprite_LoadGraphicsProperties();
+  LoadDefaultGfx();
+  Overworld_LoadGfxProperties();
   Init_LoadDefaultTileAttr();
-  DecompressSwordGraphics();
-  DecompressShieldGraphics();
-  Link_Initialize();
-  LoadFollowerGraphics();
+  DecompSwordGfx();
+  DecompShieldGfx();
+  Init_Player();
+  Tagalong_LoadGfx();
   sprite_gfx_subset_0 = 70;
   sprite_gfx_subset_1 = 70;
   sprite_gfx_subset_2 = 70;
@@ -495,7 +495,7 @@ void Module05_LoadFile() {
   virq_trigger = 48;
   if (savegame_is_darkworld) {
     if (player_is_indoors) {
-      LoadDungeonRoomRebuildHUD();
+      Module_LoadGame_indoors();
       return;
     }
     Hud_SearchForEquippedItem();
@@ -509,7 +509,7 @@ void Module05_LoadFile() {
     death_var4 = 0;
   } else {
     if (mosaic_level || death_var5 != 0 && !death_var4 || sram_progress_indicator < 2 || which_starting_point == 5) {
-      LoadDungeonRoomRebuildHUD();
+      Module_LoadGame_indoors();
       return;
     }
     dialogue_message_index = (link_item_mirror == 2) ? 0x185 : 0x184;
@@ -530,7 +530,7 @@ void Module_Unknown1() {
 }
 
 
-void BossVictory_Heal() {
+void Module_Victory_0() {
   if (!Hud_RefillMagicPower())
     overworld_map_state++;
   if (!Hud_RefillHealth())
@@ -549,18 +549,18 @@ void BossVictory_Heal() {
   Hud_RefillLogic();
 }
 
-void Dungeon_StartVictorySpin() {
+void Module_Victory_1() {
   if (--subsubmodule_index)
     return;
   flag_is_link_immobilized = 0;
   link_direction_facing = 2;
-  Link_AnimateVictorySpin();
+  Link_SetSpinAttacking();
   Ancilla_TerminateSelectInteractives(0);
-  AncillaAdd_VictorySpin();
+  AddVictorySpinEffect();
   submodule_index++;
 }
-void Dungeon_RunVictorySpin() {
-  Link_Main();
+void Module_Victory_2() {
+  Player_Main();
   if (link_player_handler_state != 0)
     return;
   if (link_sword_type + 1 & 0xfe)
@@ -570,7 +570,7 @@ void Dungeon_RunVictorySpin() {
   submodule_index++;
 }
 
-void Dungeon_CloseVictorySpin() {
+void Module_Victory_3() {
   if (--subsubmodule_index)
     return;
   submodule_index++;
@@ -580,33 +580,33 @@ void Dungeon_CloseVictorySpin() {
 }
 
 static PlayerHandlerFunc *const kModule_BossVictory[6] = {
-  &BossVictory_Heal,
-  &Dungeon_StartVictorySpin,
-  &Dungeon_RunVictorySpin,
-  &Dungeon_CloseVictorySpin,
-  &Dungeon_PrepExitWithSpotlight,
-  &Spotlight_ConfigureTableAndControl,
+  &Module_Victory_0,
+  &Module_Victory_1,
+  &Module_Victory_2,
+  &Module_Victory_3,
+  &CloseSpotlight_Init,
+  &OpenSpotlight_Next,
 };
 
-void Module13_BossVictory_Pendant() {
+void Module_BossVictory() {
   kModule_BossVictory[submodule_index]();
   Sprite_Main();
-  LinkOam_Main();
+  PlayerOam_Main();
 }
 
 static void KillAgahnim_LoadMusic() {
   nmi_disable_core_updates = 0;
   overworld_map_state++;
   submodule_index++;
-  LoadOWMusicIfNeeded();
+  Overworld_LoadMusicIfNeeded();
 }
 static void KillAghanim_Init() {
   music_control = 8;
   BYTE(overworld_screen_trans_dir_bits) = 8;
-  InitializeMirrorHDMA();
+  Mirror_InitHdmaSettings();
   overworld_map_state = 0;
-  PaletteFilter_InitializeWhiteFilter();
-  Overworld_LoadGFXAndScreenSize();
+  Palette_InitWhiteFilter();
+  Overworld_LoadMapProperties();
   submodule_index++;
   link_player_handler_state = kPlayerState_Mirror;
   bg1_x_offset = 0;
@@ -616,23 +616,23 @@ static void KillAghanim_Init() {
   main_palette_buffer[0] = 0x7fff;
   main_palette_buffer[32] = 0x7fff;
   Ancilla_TerminateSelectInteractives(0);
-  Link_ResetProperties_A();
+  Player_ResetState();
 }
 static void KillAghanim_Func2() {
   HDMAEN_copy = 192;
-  MirrorWarp_BuildWavingHDMATable();
+  Overworld_MirrorWarp_State3();
   submodule_index++;
   subsubmodule_index = 0;
 }
 static void KillAghanim_Func3() {
-  MirrorWarp_BuildWavingHDMATable();
+  Overworld_MirrorWarp_State3();
   if (subsubmodule_index) {
     subsubmodule_index = 0;
     submodule_index++;
   }
 }
 static void KillAghanim_Func4() {
-  MirrorWarp_BuildDewavingHDMATable();
+  Overworld_MirrorWarp_State4();
   if (subsubmodule_index) {
     subsubmodule_index = 0;
     submodule_index++;
@@ -646,7 +646,7 @@ static void KillAghanim_Func5() {
   darkening_or_lightening_screen = 0;
   dialogue_message_index = 0x35;
   Main_ShowTextMessage();
-  ReloadPreviouslyLoadedSheets();
+  DecompAuxAndSprites();
   Hud_RebuildIndoor();
   HDMAEN_copy = 0x80;
   main_module_index = 21;
@@ -660,7 +660,7 @@ static void KillAghanim_Func6() {
   }
 }
 static void KillAghanim_Func7() {
-  RenderText();
+  Messaging_Text();
   if (!submodule_index) {
     overworld_map_state = 0;
     sound_effect_ambient = 5;
@@ -676,7 +676,7 @@ static void KillAghanim_Func7() {
   }
 }
 static void KillAghanim_Func8() {
-  RenderText();
+  Messaging_Text();
   if (!submodule_index) {
     subsubmodule_index = 32;
     submodule_index = 12;
@@ -686,7 +686,7 @@ static void KillAghanim_Func8() {
 static void KillAghanim_Func12() {
   if (--subsubmodule_index)
     return;
-  ResetAncillaAndCutscene();
+  Mirror_Func30();
   Overworld_SetSongList();
   save_ow_event_info[0x1b] |= 32;
   BYTE(cur_palace_index_x2) = 255;
@@ -708,21 +708,21 @@ static PlayerHandlerFunc *const kModule_KillAgahnim[13] = {
   &KillAghanim_Func6,
   &KillAghanim_Func7,
   &KillAghanim_Func8,
-  &BossVictory_Heal,
-  &Dungeon_StartVictorySpin,
-  &Dungeon_RunVictorySpin,
+  &Module_Victory_0,
+  &Module_Victory_1,
+  &Module_Victory_2,
   &KillAghanim_Func12,
 };
 
-void Module15_MirrorWarpFromAga() {
+void Module_KillAgahnim() {
   kModule_KillAgahnim[submodule_index]();
   if (submodule_index < 2 || submodule_index >= 5) {
     Sprite_Main();
-    LinkOam_Main();
+    PlayerOam_Main();
   }
 }
 
-void Module16_04_FadeAndEnd() {
+void Module_Victory_4() {
   if (--INIDISP_copy)
     return;
   bg1_x_offset = 0;
@@ -740,19 +740,19 @@ void Module16_04_FadeAndEnd() {
   OpenSpotlight_Next2();
 }
 
-void Module16_BossVictory_Crystal() {
+void Module_Victory() {
   switch (submodule_index) {
-  case 0: BossVictory_Heal(); break;
-  case 1: Dungeon_StartVictorySpin(); break;
-  case 2: Dungeon_RunVictorySpin(); break;
-  case 3: Dungeon_CloseVictorySpin(); break;
-  case 4: Module16_04_FadeAndEnd(); break;
+  case 0: Module_Victory_0(); break;
+  case 1: Module_Victory_1(); break;
+  case 2: Module_Victory_2(); break;
+  case 3: Module_Victory_3(); break;
+  case 4: Module_Victory_4(); break;
   }
   Sprite_Main();
-  LinkOam_Main();
+  PlayerOam_Main();
 }
 
-void Module17_SaveAndQuit() {
+void Module_Quit() {
   switch (submodule_index) {
   case 0:
     submodule_index++;
@@ -765,67 +765,67 @@ void Module17_SaveAndQuit() {
     break;
   }
   Sprite_Main();
-  LinkOam_Main();
+  PlayerOam_Main();
 }
 
-void Module1A_Credits();
+void Module_EndSequence();
 
 static PlayerHandlerFunc *const kMainRouting[28] = {
-  &Module00_Intro,
-  &Module01_FileSelect,
-  &Module02_CopyFile,
-  &Module03_KILLFile,
-  &Module04_NameFile,
+  &Module_Intro,
+  &Module_SelectFile,
+  &Module_CopyFile,
+  &Module_EraseFile,
+  &Module_NamePlayer,
 
-  &Module05_LoadFile,
+  &Module_LoadFile,
   &Module_PreDungeon,
-  &Module07_Dungeon,
-  &Module08_OverworldLoad,
-  &Module09_Overworld,
+  &Module_Dungeon,
+  &Module_PreOverworld,
+  &Module_Overworld,
 
-  &Module08_OverworldLoad,
-  &Module09_Overworld,
+  &Module_PreOverworld,
+  &Module_Overworld,
   &Module_Unknown0,
   &Module_Unknown1,
-  &Module0E_Interface,
+  &Module_Messaging,
 
-  &Module0F_SpotlightClose,
-  &Module10_SpotlightOpen,
-  &Module11_DungeonFallingEntrance,
-  &Module12_GameOver,
-  &Module13_BossVictory_Pendant,
+  &Module_CloseSpotlight,
+  &Module_OpenSpotlight,
+  &Module_HoleToDungeon,
+  &Module_Death,
+  &Module_BossVictory,
 
-  &Module14_Attract,
-  &Module15_MirrorWarpFromAga,
-  &Module16_BossVictory_Crystal,
-  &Module17_SaveAndQuit,
-  &Module18_GanonEmerges,
-  &Module19_TriforceRoom,
-  &Module1A_Credits,
-  &Module1B_SpawnSelect,
+  &Module_Attract,
+  &Module_KillAgahnim,
+  &Module_Victory,
+  &Module_Quit,
+  &Module_GanonEmerges,
+  &Module_TriforceRoom,
+  &Module_EndSequence,
+  &Module_LocationMenu,
 };
 
 void Module_MainRouting() {
   kMainRouting[main_module_index]();
 }
 
-void LoadOverworldSongs() {
-  LoadSongBank(kSoundBank_intro);
+void Sound_LoadLightWorldSongBank() {
+  Sound_LoadSongBank(kSoundBank_intro);
 }
 
 void Sound_LoadIntroSongBank() {
-  LoadSongBank(kSoundBank_intro);
+  Sound_LoadSongBank(kSoundBank_intro);
 }
 
-void LoadDungeonSongs() {
-  LoadSongBank(kSoundBank_indoor);
+void Sound_LoadIndoorSongBank() {
+  Sound_LoadSongBank(kSoundBank_indoor);
 }
 
-void LoadCreditsSongs() {
-  LoadSongBank(kSoundBank_ending);
+void Sound_LoadEndingSongBank() {
+  Sound_LoadSongBank(kSoundBank_ending);
 }
 
-uint8 GetRandomNumber() {
+uint8 GetRandomInt() {
   uint8 t = byte_7E0FA1 + frame_counter;
   t = (t & 1) ? (t >> 1) : (t >> 1) ^ 0xb8;
   byte_7E0FA1 = t;
@@ -833,7 +833,7 @@ uint8 GetRandomNumber() {
 }
 
 
-void NMI_PrepareSprites() {
+void Main_PrepSpritesForNmi() {
   static const uint16 kLinkDmaSources1[303] = {
     0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x8040, 0x8040, 0x8040, 0x8040, 0x8040, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000,
     0x9440, 0x8080, 0x8080, 0x8080, 0x9400, 0x8040, 0x80c0, 0x80c0, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000,

@@ -7,16 +7,16 @@
 #include "overworld.h"
 #include "messaging.h"
 
-void LoadFileSelectGraphics() {
+void LoadSelectScreenGfx() {
   zelda_ppu_write(OBSEL, 2);
   zelda_ppu_write(VMAIN, 0x80);
   zelda_ppu_write_word(VMADDL, 0x5000);
 
   Decomp_spr(&g_ram[0x14000], 0x5e);
-  Do3To4High(&g_ram[0x14000]);
+  Upload3To4High(&g_ram[0x14000]);
 
   Decomp_spr(&g_ram[0x14000], 0x5f);
-  Do3To4High(&g_ram[0x14000]);
+  Upload3To4High(&g_ram[0x14000]);
 
   zelda_ppu_write_word(VMADDL, 0x7000);
 
@@ -65,33 +65,33 @@ void Module_SelectFile_0() {
   overworld_palette_aux_or_main = 0x200;
   dung_hdr_palette_1 = 6;
   nmi_disable_core_updates = 6;
-  Palette_Load_DungeonSet();
-  Palette_Load_OWBG3();
+  Palette_DungBgMain();
+  Palette_OverworldBgAux3();
   hud_palette = 0;
-  Palette_Load_HUD();
+  Palette_Hud();
   hud_cur_item = 0;
   misc_sprites_graphics_index = 1;
   main_tile_theme_index = 35;
   aux_tile_theme_index = 81;
-  LoadDefaultGraphics();
-  InitializeTilesets();
-  LoadFileSelectGraphics();
+  LoadDefaultGfx();
+  InitTilesets();
+  LoadSelectScreenGfx();
   Intro_ValidateSram();
-  DecompressEnemyDamageSubclasses();
+  LoadEnemyDamageData();
 }
 
-void FileSelect_EraseTriforce() {
+void Module_EraseFile_0() {
   nmi_disable_core_updates = 128;
   EnableForceBlank();
-  EraseTileMaps_triforce();
-  Palette_LoadForFileSelect();
+  Vram_EraseTilemaps_Triforce();
+  Palette_SelectScreen();
   flag_update_cgram_in_nmi++;
   submodule_index++;
 }
 
-void FileSelect_ReInitSaveFlagsAndEraseTriforce() {
+void Module_SelectFile_1() {
   memset(selectfile_arr1, 0, 6);
-  FileSelect_EraseTriforce();
+  Module_EraseFile_0();
 }
 
 uint16 *SelectFile_Func1() {
@@ -141,14 +141,14 @@ void SelectFile_Func2_Vram() {
 #define selectfile_R18 WORD(g_ram[0xca])
 #define selectfile_R20 WORD(g_ram[0xcc])
 
-void FileSelect_TriggerStripesAndAdvance() {
+void Module_SelectFile_3() {
   selectfile_R16 = selectfile_var2;
   submodule_index++;
   nmi_load_bg_from_vram = 6;
 }
 
 
-void FileSelect_TriggerNameStripesAndAdvance() {
+void Module_SelectFile_4() {
   static const uint8 kSelectFile_Func3_Data[253] = {
     0x61, 0x29,    0, 0x25, 0xe7, 0x18, 0xa9, 0x18, 0xa9, 0x18, 0xa9, 0x18, 0xa9, 0x18, 0xa9, 0x18, 
     0xa9, 0x18, 0xa9, 0x18, 0xa9, 0x18, 0xa9, 0x18, 0xa9, 0x18, 0xa9, 0x18, 0xa9, 0x18, 0xa9, 0x18, 
@@ -174,7 +174,7 @@ void FileSelect_TriggerNameStripesAndAdvance() {
   nmi_load_bg_from_vram = 6;
 }
 
-void FileSelect_DrawFairy(uint8 x, uint8 y) {
+void SelectFile_DrawFaerie(uint8 x, uint8 y) {
   oam_buf[0].x = x;
   oam_buf[0].y = y;
   oam_buf[0].charnum = frame_counter & 8 ? 0xaa : 0xa8;
@@ -290,7 +290,7 @@ void SelectFile_Func17(int k) {
 
 
 
-void FileSelect_Main() {
+void Module_SelectFile_5() {
   static const uint8 kSelectFile_Faerie_Y[5] = {0x4a, 0x6a, 0x8a, 0xaf, 0xbf};
 
   uint8 *cart = g_zenv.sram;
@@ -307,7 +307,7 @@ void FileSelect_Main() {
     }
   }
 
-  FileSelect_DrawFairy(0x1c, kSelectFile_Faerie_Y[selectfile_R16]);
+  SelectFile_DrawFaerie(0x1c, kSelectFile_Faerie_Y[selectfile_R16]);
   nmi_load_bg_from_vram = 1;
 
   uint8 a = (filtered_joypad_L & 0xc0 | filtered_joypad_H) & 0xfc;
@@ -333,7 +333,7 @@ void FileSelect_Main() {
         music_control = 0xf1;
         srm_var1 = selectfile_R16 * 2 + 2;
         WORD(g_ram[0]) = selectfile_R16 * 0x500;
-        CopySaveToWRAM();
+        Death_RestoreFromSrm();
       }
     } else if (selectfile_arr1[0] | selectfile_arr1[1] | selectfile_arr1[2]) {
       main_module_index = (selectfile_R16 == 3) ? 2 : 3;
@@ -347,16 +347,16 @@ void FileSelect_Main() {
 }
 
 
-void Module01_FileSelect() {
+void Module_SelectFile() {
   BG3HOFS_copy2 = 0;
   BG3VOFS_copy2 = 0;
   switch (submodule_index) {
   case 0: Module_SelectFile_0(); break;
-  case 1: FileSelect_ReInitSaveFlagsAndEraseTriforce(); break;
+  case 1: Module_SelectFile_1(); break;
   case 2: SelectFile_Func2_Vram(); break;
-  case 3: FileSelect_TriggerStripesAndAdvance(); break;
-  case 4: FileSelect_TriggerNameStripesAndAdvance(); break;
-  case 5: FileSelect_Main(); break;
+  case 3: Module_SelectFile_3(); break;
+  case 4: Module_SelectFile_4(); break;
+  case 5: Module_SelectFile_5(); break;
   }
 }
 
@@ -417,7 +417,7 @@ void SelectFile_Func10() {
       }
     }
   }
-  FileSelect_DrawFairy(kSelectFile_Func10_FaerieX[selectfile_R16], kSelectFile_Func10_FaerieY[selectfile_R16]);
+  SelectFile_DrawFaerie(kSelectFile_Func10_FaerieX[selectfile_R16], kSelectFile_Func10_FaerieY[selectfile_R16]);
 
   uint8 a = (filtered_joypad_L & 0xc0 | filtered_joypad_H) & 0xfc;
   if (a & 0x2c) {
@@ -465,7 +465,7 @@ void SelectFile_Func8() {
   }
 }
 
-void CopyFile_ChooseSelection() {
+void Module_CopyFile_3() {
   SelectFile_Func10();
   if (submodule_index == 3 && !(frame_counter & 0x30))
     SelectFile_Func8();
@@ -526,7 +526,7 @@ void SelectFile_Func12() {
 
   vram_upload_offset = 132;
 
-  FileSelect_DrawFairy(kSelectFile_Func12_FaerieX[selectfile_R16], kSelectFile_Func12_FaerieY[selectfile_R16]);
+  SelectFile_DrawFaerie(kSelectFile_Func12_FaerieX[selectfile_R16], kSelectFile_Func12_FaerieY[selectfile_R16]);
 
   uint8 a = (filtered_joypad_L & 0xc0 | filtered_joypad_H) & 0xfc;
   if (a & 0x2c) {
@@ -559,7 +559,7 @@ void SelectFile_Func12() {
   }
 }
 
-void CopyFile_ChooseTarget() {
+void Module_CopyFile_4() {
   SelectFile_Func12();
   if (submodule_index == 4 && !(frame_counter & 0x30))
     SelectFile_Func8();
@@ -568,7 +568,7 @@ void CopyFile_ChooseTarget() {
 
 void SelectFile_Func13() {
   static const uint8 kSelectFile_Func13_FaerieY[2] = {0xaf, 0xbf};
-  FileSelect_DrawFairy(0x1c, kSelectFile_Func13_FaerieY[selectfile_R16]);
+  SelectFile_DrawFaerie(0x1c, kSelectFile_Func13_FaerieY[selectfile_R16]);
 
   uint8 a = (filtered_joypad_L & 0xc0 | filtered_joypad_H) & 0xfc;
   if (a & 0x2c) {
@@ -591,24 +591,24 @@ void SelectFile_Func13() {
   }
 }
 
-void CopyFile_ConfirmSelection() {
+void Module_CopyFile_5() {
   SelectFile_Func13();
   nmi_load_bg_from_vram = 1;
 }
 
-void Module02_CopyFile() {
+void Module_CopyFile() {
   selectfile_var2 = 0;
   switch (submodule_index) {
-  case 0: FileSelect_EraseTriforce(); break;
+  case 0: Module_EraseFile_0(); break;
   case 1: SelectFile_Func2_Vram(); break;
   case 2: Module_CopyFile_2(); break;
-  case 3: CopyFile_ChooseSelection(); break;
-  case 4: CopyFile_ChooseTarget(); break;
-  case 5: CopyFile_ConfirmSelection(); break;
+  case 3: Module_CopyFile_3(); break;
+  case 4: Module_CopyFile_4(); break;
+  case 5: Module_CopyFile_5(); break;
   }
 }
 
-void KILLFile_SetUp() {
+void Module_EraseFile_2() {
   nmi_load_bg_from_vram = 8;
   submodule_index++;
   INIDISP_copy = 0xf;
@@ -654,7 +654,7 @@ void SelectFile_Func15() {
       SelectFile_Func17(k);
   }
 
-  FileSelect_DrawFairy(kSelectFile_Func15_FaerieX[selectfile_R16], kSelectFile_Func15_FaerieY[selectfile_R16]);
+  SelectFile_DrawFaerie(kSelectFile_Func15_FaerieX[selectfile_R16], kSelectFile_Func15_FaerieY[selectfile_R16]);
 
   int k = selectfile_R16;
   if (filtered_joypad_H & 0x2c) {
@@ -696,7 +696,7 @@ void SelectFile_Func15() {
   }
 }
 
-void KILLFile_HandleSelection() {
+void Module_EraseFile_3() {
   if (selectfile_R16 < 3)
     selectfile_var2 = selectfile_R16;
   SelectFile_Func15();
@@ -705,7 +705,7 @@ void KILLFile_HandleSelection() {
 
 void SelectFile_Func16() {
   static const uint8 kSelectFile_Func16_FaerieY[2] = {175, 191};
-  FileSelect_DrawFairy(0x1c, kSelectFile_Func16_FaerieY[selectfile_R16]);
+  SelectFile_DrawFaerie(0x1c, kSelectFile_Func16_FaerieY[selectfile_R16]);
 
   int k = selectfile_R16;
   if (filtered_joypad_H & 0x2c) {
@@ -730,23 +730,23 @@ void SelectFile_Func16() {
   }
 }
 
-void KILLFile_HandleConfirmation() {
+void Module_EraseFile_4() {
   SelectFile_Func16();
   nmi_load_bg_from_vram = 1;
 }
 
-void Module03_KILLFile() {
+void Module_EraseFile() {
   switch (submodule_index) {
-  case 0: FileSelect_EraseTriforce(); break;
+  case 0: Module_EraseFile_0(); break;
   case 1: SelectFile_Func2_Vram(); break;
-  case 2: KILLFile_SetUp(); break;
-  case 3: KILLFile_HandleSelection(); break;
-  case 4: KILLFile_HandleConfirmation(); break;
+  case 2: Module_EraseFile_2(); break;
+  case 3: Module_EraseFile_3(); break;
+  case 4: Module_EraseFile_4(); break;
   }
 }
 
 void Module_NamePlayer_0() {
-  FileSelect_EraseTriforce();
+  Module_EraseFile_0();
   irq_flag = 1;
   selectfile_var3 = 0;
   selectfile_var4 = 0;
@@ -966,7 +966,7 @@ void Module_NamePlayer_3() {
   sound_effect_1 = 0x2c;
 }
 
-void Module04_NameFile() {
+void Module_NamePlayer() {
   switch (submodule_index) {
   case 0: Module_NamePlayer_0(); break;
   case 1: Module_NamePlayer_1(); break;

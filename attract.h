@@ -1,6 +1,6 @@
 #pragma once
 
-void Module14_Attract();
+void Module_Attract();
 void Death_Func31();
 
 extern const uint16 kMapMode_Zooms1[224];

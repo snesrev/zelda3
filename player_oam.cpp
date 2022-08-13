@@ -34,7 +34,7 @@ bool PlayerOam_WantInvokeSword() {
   return ((link_sword_type + 1) & 0xfe) != 0;
 }
 
-uint8 FindMostSignificantBit(uint8 v) {
+uint8 PlayerOam_GetHighestSetBit(uint8 v) {
   int i = 7;
   while (!(v & 0x80) && --i >= 0)
     v <<= 1;
@@ -92,7 +92,7 @@ static const int8 kSwordOamXOffs[511] = {
   -1, -5, -11, -14, -8, -7, -6, 3, 5, 8, 12, 18, 22, 3, -2, -8, -13, -16, -20, -15, -12, 1, 5, 10, 16, 21, 24, 28, 23, 20, 7, 
 };
 
-void CalculateSwordHitBox() {
+void Player_CalcSwordOamOffs() {
   if (link_sword_type == 0 || link_sword_type == 0xff)
     return;
   if (link_sword_type >= 2 && button_b_frames < 9) {
@@ -167,7 +167,7 @@ static const uint8 kPlayerOam_Main_SwordStuff_array3[76] = {
 static const uint8 kPlayerOam_Main_SwordStuff_array4[10] = {1, 4, 1, 4, 6, 2, 0, 5, 0, 5};
 
 
-bool LinkOam_SetWeaponVRAMOffsets(int r2, SwordResult *sr) {
+bool PlayerOam_Main_SwordStuff_DoDma(int r2, SwordResult *sr) {
   uint8 j = kPlayerOam_Main_SwordStuff_array1[r2];
   if ((sr->r6 = j) == 0xff)
     return true;
@@ -791,7 +791,7 @@ static const LinkSpriteBody kLinkSpriteBodys[303] = {
 };
 
 
-bool LinkOam_SetEquipmentVRAMOffsets(int r2, SwordResult *sr) {
+bool PlayerOam_ShieldStuff(int r2, SwordResult *sr) {
   uint8 j = kPlayerOam_ShieldStuff_array1[r2];
   if ((sr->r6 = j) == 0xff)
     return true;
@@ -809,7 +809,7 @@ bool LinkOam_SetEquipmentVRAMOffsets(int r2, SwordResult *sr) {
   return false;
 }
 
-void LinkOam_CalculateXOffsetRelativeLink(uint8 x) {
+void PlayerOam_GetRelativeHighBit(uint8 x) {
   bit9_of_xcoord = (link_x_coord + (int8)x - BG2HOFS_copy2) >> 8 & 1;
 }
 
@@ -819,7 +819,7 @@ static const int8 kPlayerOam_DrawOam_Throwing_State[16] = {-1, -1, -1, -1, 0, -1
 static const int8 kPlayerOam_DrawOam_Throwing_X[16] = {-1, -1, -1, -1, 8, -1, -1, -1, 8, 5, -1, -1, 8, 5, 2, -1};
 static const int8 kPlayerOam_DrawOam_Throwing_Y[16] = {-1, -1, -1, -1, 14, -1, -1, -1, 14, 22, -1, -1, 14, 22, 30, -1};
 
-void LinkOam_UnusedWeaponSettings(int r4loc, uint8 oam_x, uint8 oam_y) {
+void PlayerOam_DrawOam_Throwing(int r4loc, uint8 oam_x, uint8 oam_y) {
   int j = link_var30e * 4;
   int oam_pos = ((draw_water_ripples_or_grass != 0 ? kSwordStuff_oam_index_ptrs_1 : kSwordStuff_oam_index_ptrs_0)[r4loc] + sort_sprites_offset_into_oam_buffer)>>2;
   OamEnt *oam = &oam_buf[oam_pos];
@@ -835,7 +835,7 @@ void LinkOam_UnusedWeaponSettings(int r4loc, uint8 oam_x, uint8 oam_y) {
   }
 }
 
-int LinkOam_CalculateSwordSparklePosition(int oam_pos, uint8 oam_x, uint8 oam_y) {
+int PlayerOam_DrawTipOfBetterSword(int oam_pos, uint8 oam_x, uint8 oam_y) {
   if (link_player_handler_state | link_speed_setting)
     return oam_pos;
   if (link_sword_type == 0 || link_sword_type == 1 || link_sword_type == 0xff || !(button_mask_b_y & 0x80) || button_b_frames >= 9)
@@ -855,7 +855,7 @@ int LinkOam_CalculateSwordSparklePosition(int oam_pos, uint8 oam_x, uint8 oam_y)
   oam_y += player_oam_y_offset;
   oam_buf[oam_pos].x = oam_x;
   oam_buf[oam_pos].y = oam_y;
-  LinkOam_CalculateXOffsetRelativeLink(player_oam_x_offset);
+  PlayerOam_GetRelativeHighBit(player_oam_x_offset);
   bytewise_extended_oam[oam_pos] = bit9_of_xcoord;
   return oam_pos + 1;
 }
@@ -867,7 +867,7 @@ static const uint8 kShadow_oam_indexes_1[12] = {12, 12, 0, 0, 0, 12, 12, 0, 0, 0
 static const uint8 kShadow_oam_indexes_0[12] = {40, 40, 40, 40, 40, 40, 40, 40, 0, 40, 40, 40};
 static const uint16 kLinkShadows_Chardata[22] = {0x286c, 0x686c, 0x2828, 0x6828, 0x2838, 0xffff, 0x286e, 0x686e, 0x287e, 0x687e, 0x24d8, 0x64d8, 0x24d9, 0x64d9, 0x24da, 0x64da, 0x22c8, 0x62c8, 0x22c9, 0x62c9, 0x22ca, 0x62ca};
 
-void LinkOam_DrawFootObject(int r4loc, uint8 oam_x, uint8 oam_y) {
+void PlayerOam_DrawGrassOrWater(int r4loc, uint8 oam_x, uint8 oam_y) {
   primary_water_grass_timer = (primary_water_grass_timer + 1) & 0xf;
   if (primary_water_grass_timer >= 9) {
     primary_water_grass_timer = 0;
@@ -918,7 +918,7 @@ void LinkOam_DrawFootObject(int r4loc, uint8 oam_x, uint8 oam_y) {
 
 static const uint8 kPlayerOam_DrawOam_2X[3] = {0, 0, 4};
 
-void LinkOam_DrawDungeonFallShadow(int r4loc, uint8 xcoord) {
+void PlayerOam_DrawOam_2(int r4loc, uint8 xcoord) {
   uint8 yd = tiledetect_which_y_pos[0] - 12 - link_y_coord;
   int yv = yd >= 240 ? 0 : 
            yd >= 96 ? 2 : 
@@ -940,7 +940,7 @@ void LinkOam_DrawDungeonFallShadow(int r4loc, uint8 xcoord) {
   }
 }
 
-void LinkOam_Main() {
+void PlayerOam_Main() {
   uint16 y_coord_backup = link_y_coord;
 
   if (submodule_index == 18 || submodule_index == 19) {
@@ -1044,7 +1044,7 @@ void LinkOam_Main() {
   }
 
   if (link_state_bits != 0) {
-    uint8 bit = FindMostSignificantBit(link_state_bits);
+    uint8 bit = PlayerOam_GetHighestSetBit(link_state_bits);
     if (bit < 6)
       link_direction_facing_mirror = 2;
     yt = kPlayerOam_Tab4[bit];
@@ -1067,11 +1067,11 @@ link_state_is_empty:
   }
 
   if (link_item_in_hand != 0) {
-    yt = kPlayerOam_Tab2[FindMostSignificantBit(link_item_in_hand)];
+    yt = kPlayerOam_Tab2[PlayerOam_GetHighestSetBit(link_item_in_hand)];
     rt = player_handler_timer;
     goto continue_after_set;
   } else if (link_position_mode != 0) {
-    yt = kPlayerOam_Tab3[FindMostSignificantBit(link_position_mode)];
+    yt = kPlayerOam_Tab3[PlayerOam_GetHighestSetBit(link_position_mode)];
     rt = player_handler_timer;
     goto continue_after_set;
   }
@@ -1146,8 +1146,8 @@ continue_after_set:
   SwordResult sr;
 
   if (link_picking_throw_state & 4) {
-    LinkOam_UnusedWeaponSettings(r4loc, xcoord, ycoord);
-  } else if (PlayerOam_WantInvokeSword() && !LinkOam_SetWeaponVRAMOffsets(r2, &sr)) {
+    PlayerOam_DrawOam_Throwing(r4loc, xcoord, ycoord);
+  } else if (PlayerOam_WantInvokeSword() && !PlayerOam_Main_SwordStuff_DoDma(r2, &sr)) {
     uint8 zcoord = ((int16)link_z_coord >= 0 || BYTE(link_z_coord) < 0xf0) ? BYTE(link_z_coord) : 0;
     uint8 oam_y = kDrawSword_y[r2] + ycoord - zcoord;
     uint8 oam_x = kDrawSword_x[r2] + xcoord;
@@ -1165,7 +1165,7 @@ continue_after_set:
       oam_pal = 0x400;  // cane of byrna
 
     int oam_pos = ((scratch_0_var ? kSwordStuff_oam_index_ptrs_1 : kSwordStuff_oam_index_ptrs_0)[r4loc] + sort_sprites_offset_into_oam_buffer)>>2;
-    oam_pos = LinkOam_CalculateSwordSparklePosition(oam_pos, xcoord, ycoord);
+    oam_pos = PlayerOam_DrawTipOfBetterSword(oam_pos, xcoord, ycoord);
 
     int j = sr.r6 * 3;
     for (int i = 0; i != 3; i++, j++) {
@@ -1191,12 +1191,12 @@ continue_after_set:
   }
 
   //SwordStuff_fail
-  if (link_shield_type && sram_progress_indicator && !LinkOam_SetEquipmentVRAMOffsets(r2, &sr)) {
+  if (link_shield_type && sram_progress_indicator && !PlayerOam_ShieldStuff(r2, &sr)) {
     uint8 zcoord = ((int16)link_z_coord >= 0 || BYTE(link_z_coord) < 0xf0) ? BYTE(link_z_coord) : 0;
     uint8 oam_y = kShieldStuff_y[r2] + ycoord - 1 - zcoord;
     uint8 oam_x = kShieldStuff_x[r2] + xcoord;
 
-    LinkOam_CalculateXOffsetRelativeLink(kShieldStuff_x[r2]);
+    PlayerOam_GetRelativeHighBit(kShieldStuff_x[r2]);
 
     uint16 oam_pal = (link_palette_bits_of_oam >> 8) ? 0xa00 : 0x600;
 
@@ -1219,11 +1219,11 @@ continue_after_set:
 
   if (link_visibility_status != 12 && link_player_handler_state != kPlayerState_AsleepInBed) {
     if (value_computed_for_player_oam != 5 && draw_water_ripples_or_grass) {
-      LinkOam_DrawFootObject(r4loc, xcoord, ycoord);
+      PlayerOam_DrawGrassOrWater(r4loc, xcoord, ycoord);
     } else if (link_auxiliary_state != 4 && link_player_handler_state != kPlayerState_Swimming) {
       if (player_near_pit_state != 0 && player_near_pit_state != 1) {
         if (link_this_controls_sprite_oam >= 6) {
-          LinkOam_DrawDungeonFallShadow(r4loc, xcoord);
+          PlayerOam_DrawOam_2(r4loc, xcoord);
           r4loc = 2; // wtf
         }
       } else {
