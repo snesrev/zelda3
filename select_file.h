@@ -1,7 +1,7 @@
 #pragma once
 
 
-void Module01_FileSelect();
-void Module02_CopyFile();
-void Module03_KILLFile();
-void Module04_NameFile();
+void Module_SelectFile();
+void Module_CopyFile();
+void Module_EraseFile();
+void Module_NamePlayer();

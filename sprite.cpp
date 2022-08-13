@@ -46,7 +46,7 @@ static const uint16 kOamGetBufferPos_Tab1[48] = {
   0x120, 0x124, 0x128, 0x12c, 0x130, 0x134, 0x138, 0x13c, 0x140, 0x150, 0x160, 0x170, 0x180, 0x190, 0x1a0, 0x1b8, 
 };
 
-uint8 Oam_GetBufferPosition(uint8 num, uint8 y) {
+uint8 OAM_GetBufferPosition(uint8 num, uint8 y) {
   y >>= 1;
   uint16 p = oam_region_base[y], pstart = p;
   p += num;
@@ -61,44 +61,44 @@ uint8 Oam_GetBufferPosition(uint8 num, uint8 y) {
   return oam_cur_ptr;
 }
 
-uint8 Oam_AllocateFromRegionA(uint8 num) {
-  return Oam_GetBufferPosition(num, 0);
+uint8 OAM_AllocateFromRegionA(uint8 num) {
+  return OAM_GetBufferPosition(num, 0);
 }
 
-uint8 Oam_AllocateFromRegionB(uint8 num) {
-  return Oam_GetBufferPosition(num, 2);
+uint8 OAM_AllocateFromRegionB(uint8 num) {
+  return OAM_GetBufferPosition(num, 2);
 }
 
-uint8 Oam_AllocateFromRegionC(uint8 num) {
-  return Oam_GetBufferPosition(num, 4);
+uint8 OAM_AllocateFromRegionC(uint8 num) {
+  return OAM_GetBufferPosition(num, 4);
 }
 
-uint8 Oam_AllocateFromRegionD(uint8 num) {
-  return Oam_GetBufferPosition(num, 6);
+uint8 OAM_AllocateFromRegionD(uint8 num) {
+  return OAM_GetBufferPosition(num, 6);
 }
 
-uint8 Oam_AllocateFromRegionE(uint8 num) {
-  return Oam_GetBufferPosition(num, 8);
+uint8 OAM_AllocateFromRegionE(uint8 num) {
+  return OAM_GetBufferPosition(num, 8);
 }
 
-uint8 Oam_AllocateFromRegionF(uint8 num) {
-  return Oam_GetBufferPosition(num, 10);
+uint8 OAM_AllocateFromRegionF(uint8 num) {
+  return OAM_GetBufferPosition(num, 10);
 }
 
-void Oam_AllocateDeferToPlayer(int k) {
+void OAM_AllocateDeferToPlayer(int k) {
   if (sprite_floor[k] != link_is_on_lower_level)
     return;
-  PairU8 right = Sprite_IsRightOfLink(k);
+  PairU8 right = Sprite_IsToRightOfPlayer(k);
   if ((uint8)(right.b + 0x10) >= 0x20)
     return;
-  PairU8 below = Sprite_IsBelowLink(k);
+  PairU8 below = Sprite_IsBelowPlayer(k);
   if ((uint8)(below.b + 0x20) >= 0x48)
     return;
   uint8 nslots = ((sprite_flags2[k] & 0x1f) + 1) << 2;
   if (below.a)
-    Oam_AllocateFromRegionC(nslots);
+    OAM_AllocateFromRegionC(nslots);
   else
-    Oam_AllocateFromRegionB(nslots);
+    OAM_AllocateFromRegionB(nslots);
 }
 
 
@@ -108,7 +108,7 @@ void SpriteAddXY(int k, int xv, int yv) {
 }
 
 void Sprite_DrawMultiplePlayerDeferred(int k, const DrawMultipleData *src, int n, PrepOamCoordsRet *info) {
-  Oam_AllocateDeferToPlayer(k);
+  OAM_AllocateDeferToPlayer(k);
   Sprite_DrawMultiple(k, src, n, info);
 }
 
@@ -138,14 +138,14 @@ void Sprite_DrawMultiple(int k, const DrawMultipleData *src, int n, PrepOamCoord
   } while (src++, oam++, --n);
 }
 
-void Sprite_BounceOffWall(int k) {
+void Sprite_WallInducedSpeedInversion(int k) {
   if (sprite_wallcoll[k] & 3)
     sprite_x_vel[k] = -sprite_x_vel[k];
   if (sprite_wallcoll[k] & 12)
     sprite_y_vel[k] = -sprite_y_vel[k];
 }
 
-void Sprite_InvertSpeed_XY(int k) {
+void Sprite_NegateVel(int k) {
   sprite_x_vel[k] = -sprite_x_vel[k];
   sprite_y_vel[k] = -sprite_y_vel[k];
 }
@@ -172,7 +172,7 @@ void Sprite_MoveY(int k) {
   }
 }
 
-void Sprite_MoveXY(int k) {
+void Sprite_Move(int k) {
   Sprite_MoveX(k);
   Sprite_MoveY(k);
 }
@@ -183,7 +183,7 @@ void Sprite_MoveZ(int k) {
   sprite_z[k] = z >> 8;
 }
 
-void Sprite_MoveXYZ(int k) {
+void Sprite_MoveXyz(int k) {
   Sprite_MoveZ(k);
   Sprite_MoveX(k);
   Sprite_MoveY(k);
@@ -219,7 +219,7 @@ bool Sprite_ReturnIfRecoiling(int k) {
       else
         sprite_y_recoil[k] = sprite_y_vel[k] = 0;
     } else {
-      Sprite_MoveXY(k);
+      Sprite_Move(k);
     }
   }
   sprite_y_vel[k] = yvbak;
@@ -277,7 +277,7 @@ void Sprite_SetupHitBox(int k, SpriteHitBox *hb) {
 }
 
 // Returns the carry flag
-bool CheckIfHitBoxesOverlap(SpriteHitBox *hb) {
+bool Utility_CheckIfHitBoxesOverlap(SpriteHitBox *hb) {
   int t, u;
   uint8 r15, r12;
 
@@ -308,7 +308,7 @@ bool CheckIfHitBoxesOverlap(SpriteHitBox *hb) {
 static const uint8 kSpriteDamage_Tab2[4] = {6, 4, 0, 0};
 static const uint8 kSpriteDamage_Tab3[4] = {4, 6, 0, 2};
 
-bool Sprite_CheckDamageToLink(int k) {
+bool Sprite_CheckDamageToPlayer(int k) {
   if (link_disable_sprite_damage)
     return false;
   return Sprite_CheckDamageToPlayer_1(k);
@@ -317,24 +317,24 @@ bool Sprite_CheckDamageToLink(int k) {
 bool Sprite_CheckDamageToPlayer_1(int k) {
   if ((k ^ frame_counter) & 3 | sprite_hit_timer[k])
     return false;
-  return Sprite_CheckDamageToLink_same_layer(k);
+  return Sprite_CheckDamageToPlayerSameLayer(k);
 }
 
-bool Sprite_CheckDamageToLink_same_layer(int k) {
+bool Sprite_CheckDamageToPlayerSameLayer(int k) {
   if (link_is_on_lower_level != sprite_floor[k])
     return false;
-  return Sprite_CheckDamageToLink_ignore_layer(k);
+  return Sprite_CheckDamageToPlayerIgnoreLayer(k);
 }
 
-bool Sprite_CheckDamageToLink_ignore_layer(int k) {
+bool Sprite_CheckDamageToPlayerIgnoreLayer(int k) {
   uint8 carry, t;
   if (sprite_flags4[k]) {
     SpriteHitBox hitbox;
-    Link_SetupHitBox(&hitbox);
+    GetPlayerHitBox(&hitbox);
     Sprite_SetupHitBox(k, &hitbox);
-    carry = CheckIfHitBoxesOverlap(&hitbox);
+    carry = Utility_CheckIfHitBoxesOverlap(&hitbox);
   } else {
-    carry = Sprite_SetupHitBox00(k);
+    carry = Sprite_CheckDamageToPlayer_CheckCoord(k);
   }
 
   if (sign8(sprite_flags2[k]))
@@ -350,15 +350,15 @@ bool Sprite_CheckDamageToLink_ignore_layer(int k) {
   t = button_b_frames ? kSpriteDamage_Tab2[link_direction_facing >> 1] : link_direction_facing;
   if (t != kSpriteDamage_Tab3[sprite_D[k]]) {
 if_3:
-    Sprite_AttemptDamageToLinkPlusRecoil(k);
+    Sprite_AttemptDamageToPlayerPlusRecoil(k);
     if (sprite_type[k] == 0xc)
       Sprite_Func3(k);
     return true;
   }
-  SpriteSfx_QueueSfx2WithPan(k, 6);
+  Sound_SetSfx2Pan(k, 6);
   Sprite_PlaceRupulseSpark_2(k);
   if (sprite_type[k] == 0x95) {
-    SpriteSfx_QueueSfx3WithPan(k, 0x26);
+    Sound_SetSfx3Pan(k, 0x26);
     return false;
   } else if (sprite_type[k] == 0x9B) {
     Sprite_Invert_XY_Speeds(k);
@@ -367,7 +367,7 @@ if_3:
     sprite_state[k] = 9;
     return false;
   } else if (sprite_type[k] == 0x1B) { // arrow
-    Sprite_ScheduleForBreakage(k);
+    Sprite_Func2(k);
     return false;  // unk ret val
   } else if (sprite_type[k] == 0xc) {
     Sprite_Func3(k);
@@ -378,22 +378,22 @@ if_3:
 }
 
 
-bool Sprite_SetupHitBox00(int k) {
+bool Sprite_CheckDamageToPlayer_CheckCoord(int k) {
   return (uint16)(link_x_coord - cur_sprite_x + 11) < 23 &&
          (uint16)(link_y_coord - cur_sprite_y + sprite_z[k] + 16) < 24;
 }
 
-void ThrownSprite_CheckDamageToSprites(int k) {
+void ThrownSprite_CheckDamageToPeers(int k) {
   if (sprite_delay_aux4[k] || !(sprite_x_vel[k] | sprite_y_vel[k]))
     return;
   for (int i = 15; i >= 0; i--) {
     if (i != cur_object_index && sprite_type[k] != 0xd2 && sprite_state[i] >= 9 && 
       ((i ^ frame_counter) & 3 | sprite_ignore_projectile[i] | sprite_hit_timer[i]) == 0 && sprite_floor[k] == sprite_floor[i])
-      ThrownSprite_CheckDamageToSingleSprite(k, i);
+      ThrownSprite_CheckDamageToSinglePeer(k, i);
   }
 }
 
-void ThrownSprite_CheckDamageToSingleSprite(int k, int j) {
+void ThrownSprite_CheckDamageToSinglePeer(int k, int j) {
   SpriteHitBox hb;
   hb.r0_xlo = sprite_x_lo[k];
   hb.r8_xhi = sprite_x_hi[k];
@@ -404,37 +404,37 @@ void ThrownSprite_CheckDamageToSingleSprite(int k, int j) {
   hb.r9_yhi = sprite_y_hi[k] + (u >> 8) - (t < 0);
   hb.r3 = 8;
   Sprite_SetupHitBox(j, &hb);
-  if (!CheckIfHitBoxesOverlap(&hb))
+  if (!Utility_CheckIfHitBoxesOverlap(&hb))
     return;
   if (sprite_type[j] == 0x3f) {
-    Sprite_PlaceWeaponTink(k);
+    Sprite_PlaceRupulseSpark(k);
   } else {
     uint8 a = (sprite_type[k] == 0xec && sprite_C[k] == 2 && !player_is_indoors) ? 1 : 3;
-    Ancilla_CheckDamageToSprite_preset(j, a);
+    Sprite_Func11(j, a);
 
     sprite_x_recoil[j] = sprite_x_vel[k] * 2;
     sprite_y_recoil[j] = sprite_y_vel[k] * 2;
     sprite_delay_aux4[k] = 16;
   }
-  Sprite_ApplyRicochet(k);
+  Sprite_NegateHalveSpeedEtc(k);
 }
 
-void Sprite_ApplyRicochet(int k) {
-  Sprite_InvertSpeed_XY(k);
-  Sprite_HalveSpeed_XY(k);
-  ThrowableScenery_TransmuteIfValid(k);
+void Sprite_NegateHalveSpeedEtc(int k) {
+  Sprite_NegateVel(k);
+  Sprite_HalveVelocity(k);
+  Sprite_Func20(k);
 }
 
-void ThrowableScenery_TransmuteIfValid(int k) {
+void Sprite_Func20(int k) {
   if (sprite_type[k] != 0xec)
     return;
   repulsespark_timer = 0;
-  ThrowableScenery_TransmuteToDebris(k);
+  Sprite_Func21(k);
 }
 
 static const uint8 kSprite_Func21_Sfx[9] = {0x1f, 0x1f, 0x1e, 0x1e, 0x1e, 0x1f, 0x1f, 0x1f, 0x1f};
 
-void ThrowableScenery_TransmuteToDebris(int k) {
+void Sprite_Func21(int k) {
   uint8 a = sprite_graphics[k];
   if (a != 0) {
     BYTE(dung_secrets_unk1) = a;
@@ -443,27 +443,27 @@ void ThrowableScenery_TransmuteToDebris(int k) {
   }
   a = player_is_indoors ? 0 : sprite_C[k];
   sound_effect_1 = 0;
-  SpriteSfx_QueueSfx2WithPan(k, kSprite_Func21_Sfx[a]);
-  Sprite_ScheduleForBreakage(k);
+  Sound_SetSfx2Pan(k, kSprite_Func21_Sfx[a]);
+  Sprite_Func2(k);
 }
 
-void Sprite_ScheduleForBreakage(int k) {
+void Sprite_Func2(int k) {
   sprite_delay_main[k] = 31;
   sprite_state[k] = 6;
   sprite_flags2[k] += 4;
 }
 
-void Sprite_HalveSpeed_XY(int k) {
+void Sprite_HalveVelocity(int k) {
   sprite_x_vel[k] = (int8)sprite_x_vel[k] >> 1;
   sprite_y_vel[k] = (int8)sprite_y_vel[k] >> 1;
 }
 
-void Sprite_SpawnLeapingFish(int k) {
+void Fish_SpawnLeapingFish(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xd2, &info);
   if (j < 0)
     return;
-  Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_InitFromInfo(j, &info);
   sprite_ai_state[j] = 2;
   sprite_delay_main[j] = 48;
   if (sprite_type[k] == 0xd2)
@@ -481,9 +481,9 @@ void SpriteStunned_Main_Func1(int k) {
     uint8 t = ((k << 4) ^ frame_counter) | submodule_index;
     if (t & kSpriteStunned_Main_Func1_Masks[sprite_delay_main[k] >> 4])
       return;
-    uint16 x = kSparkleGarnish_XY[GetRandomNumber() & 3];
-    uint16 y = kSparkleGarnish_XY[GetRandomNumber() & 3];
-    Sprite_GarnishSpawn_Sparkle(k, x, y);
+    uint16 x = kSparkleGarnish_XY[GetRandomInt() & 3];
+    uint16 y = kSparkleGarnish_XY[GetRandomInt() & 3];
+    Sprite_SpawnSimpleSparkleGarnish(k, x, y);
   } else {
     if ((frame_counter & 1) | submodule_index | flag_unk1)
       return;
@@ -511,9 +511,9 @@ void Sprite_DrawRippleIfInWater(int k) {
     if (sprite_type[k] == 0xdf)
       cur_sprite_y -= 7;
   }
-  SpriteDraw_WaterRipple(k);
-  Sprite_Get16BitCoords(k);
-  Oam_AllocateFromRegionA(((sprite_flags2[k] & 0x1f) + 1) * 4);
+  Sprite_DrawWaterRipple(k);
+  Sprite_Get_16_bit_Coords(k);
+  OAM_AllocateFromRegionA(((sprite_flags2[k] & 0x1f) + 1) * 4);
 }
 
 int Sprite_SpawnSimpleSparkleGarnishEx(int k, uint16 x, uint16 y, int limit) {
@@ -531,38 +531,38 @@ int Sprite_SpawnSimpleSparkleGarnishEx(int k, uint16 x, uint16 y, int limit) {
   return j;
 }
 
-int Sprite_GarnishSpawn_Sparkle(int k, uint16 x, uint16 y) {
+int Sprite_SpawnSimpleSparkleGarnish(int k, uint16 x, uint16 y) {
   return Sprite_SpawnSimpleSparkleGarnishEx(k, x, y, 29);
 }
 
-void Sprite_GarnishSpawn_Sparkle_limited(int k, uint16 x, uint16 y) {
+void Sprite_SpawnSimpleSparkleGarnish_SlotRestricted(int k, uint16 x, uint16 y) {
   Sprite_SpawnSimpleSparkleGarnishEx(k, x, y, 14);
 }
 
 
 void Sprite_CheckTileCollisionSingleLayer(int k) {
   if (sprite_flags2[k] & 0x20) {
-    if (Sprite_CheckTileProperty(k, 0x6a))
+    if (Sprite_Func5(k, 0x6a))
       sprite_wallcoll[k]++;
     return;
   }
 
   if (sign8(sprite_flags4[k]) || dung_hdr_collision == 0) {
     if (sprite_y_vel[k])
-      Sprite_CheckForTileInDirection_vertical(k, sign8(sprite_y_vel[k]) ? 0 : 1);
+      Sprite_Func6(k, sign8(sprite_y_vel[k]) ? 0 : 1);
     if (sprite_x_vel[k])
-      Sprite_CheckForTileInDirection_horizontal(k, sign8(sprite_x_vel[k]) ? 2 : 3);
+      Sprite_Func7(k, sign8(sprite_x_vel[k]) ? 2 : 3);
   } else {
-    Sprite_CheckForTileInDirection_vertical(k, 1);
-    Sprite_CheckForTileInDirection_vertical(k, 0);
-    Sprite_CheckForTileInDirection_horizontal(k, 3);
-    Sprite_CheckForTileInDirection_horizontal(k, 2);
+    Sprite_Func6(k, 1);
+    Sprite_Func6(k, 0);
+    Sprite_Func7(k, 3);
+    Sprite_Func7(k, 2);
   }
 
   if (sign8(sprite_flags5[k]) || sprite_z[k])
     return;
 
-  Sprite_CheckTileProperty(k, 0x68);
+  Sprite_Func5(k, 0x68);
   sprite_I[k] = sprite_tiletype;
   if (sprite_tiletype == 0x1c) {
     if (sort_sprites_setting && sprite_state[k] == 11)
@@ -583,14 +583,14 @@ void Sprite_CheckTileCollisionSingleLayer(int k) {
     }
   } else if (sprite_tiletype == 0xc) {
     if (byte_7FFABC[k] == 0x1c) {
-      SpriteFall_AdjustPosition(k);
+      Sprite_Func9(k);
       sprite_wallcoll[k] |= 0x20;
     }
   } else if (sprite_tiletype >= 0x68 && sprite_tiletype < 0x6c) {
-    Sprite_ApplyConveyor(k, sprite_tiletype);
+    Sprite_ApplyConveyorAdjustment(k, sprite_tiletype);
   } else if (sprite_tiletype == 8) {
     if (dung_hdr_collision == 4)
-      Sprite_ApplyConveyor(k, 0x6a);
+      Sprite_ApplyConveyorAdjustment(k, 0x6a);
   }
 }
 
@@ -619,8 +619,8 @@ uint8 Sprite_CheckTileCollision(int k) {
 
 static const uint8 kSprite_Func7_Tab[4] = {8, 4, 2, 1};
 
-void Sprite_CheckForTileInDirection_horizontal(int k, int yy) {
-  if (!Sprite_CheckTileInDirection(k, yy))
+void Sprite_Func7(int k, int yy) {
+  if (!Sprite_Func10(k, yy))
     return;
   sprite_wallcoll[k] |= kSprite_Func7_Tab[yy];
   if ((sprite_subtype[k] & 7) < 5) {
@@ -629,8 +629,8 @@ void Sprite_CheckForTileInDirection_horizontal(int k, int yy) {
   }
 }
 
-void Sprite_CheckForTileInDirection_vertical(int k, int yy) {
-  if (!Sprite_CheckTileInDirection(k, yy))
+void Sprite_Func6(int k, int yy) {
+  if (!Sprite_Func10(k, yy))
     return;
   sprite_wallcoll[k] |= kSprite_Func7_Tab[yy];
   if ((sprite_subtype[k] & 7) < 5) {
@@ -639,14 +639,14 @@ void Sprite_CheckForTileInDirection_vertical(int k, int yy) {
   }
 }
 
-void SpriteFall_AdjustPosition(int k) {
+void Sprite_Func9(int k) {
   SpriteAddXY(k, dung_floor_x_vel, dung_floor_y_vel);
 }
 
-bool Sprite_CheckTileInDirection(int k, int yy) {
+bool Sprite_Func10(int k, int yy) {
   uint8 t = (sprite_flags[k] & 0xf0);
   yy = 2 * ((t >> 2) + yy);
-  return Sprite_CheckTileProperty(k, yy);
+  return Sprite_Func5(k, yy);
 }
 
 static const int8 kSprite_Func5_X[54] = {
@@ -700,7 +700,7 @@ static const int8 kSprite_Func5_Tab3[256] = {
   1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 };
 
-bool Sprite_CheckTileProperty(int k, int j) {
+bool Sprite_Func5(int k, int j) {
   uint16 x, y;
   bool in_bounds;
   j >>= 1;
@@ -724,7 +724,7 @@ bool Sprite_CheckTileProperty(int k, int j) {
     }
   }
 
-  int b = Sprite_GetTileAttribute(k, &x, y);
+  int b = Sprite_GetTileAttrLocal(k, &x, y);
 
   if (sprite_defl_bits[k] & 8) {
     uint8 a = kSprite_SimplifiedTileAttr[b];
@@ -753,7 +753,7 @@ bool Sprite_CheckTileProperty(int k, int j) {
 
   if (sprite_tiletype == 0x44) {
     if (sprite_F[k] && !sign8(sprite_give_damage[k])) {
-      Ancilla_CheckDamageToSprite_preset(k, 4);
+      Sprite_Func11(k, 4);
       if (sprite_hit_timer[k]) {
         sprite_hit_timer[k] = 153;
         sprite_F[k] = 0;
@@ -765,7 +765,7 @@ bool Sprite_CheckTileProperty(int k, int j) {
   return true;
 }
 
-uint8 GetTileAttribute(uint8 floor, uint16 *x, uint16 y) {
+uint8 Entity_GetTileAttr(uint8 floor, uint16 *x, uint16 y) {
   uint8 tiletype;
   if (player_is_indoors) {
     int t = (floor >= 1) ? 0x1000 : 0;
@@ -773,14 +773,14 @@ uint8 GetTileAttribute(uint8 floor, uint16 *x, uint16 y) {
     t += (y & 0x1f8) << 3;
     tiletype = dung_bg2_attr_table[t];
   } else {
-    tiletype = Overworld_GetTileAttributeAtLocation(*x >>= 3, y);
+    tiletype = Overworld_GetTileAttrAtLocation(*x >>= 3, y);
   }
   sprite_tiletype = tiletype;
   return tiletype;
 }
 
-uint8 Sprite_GetTileAttribute(int k, uint16 *x, uint16 y) {
-  return GetTileAttribute(sprite_floor[k], x, y);
+uint8 Sprite_GetTileAttrLocal(int k, uint16 *x, uint16 y) {
+  return Entity_GetTileAttr(sprite_floor[k], x, y);
 }
 
 static const int8 kSlopedTile[32] = {
@@ -797,15 +797,15 @@ bool Entity_CheckSlopedTileCollision(uint16 x, uint16 y) {
   return (r6 < 2) ? (b >= a) : (a >= b);
 }
 
-ProjectSpeedRet Sprite_ProjectSpeedTowardsLink(int k, uint8 vel) {
+ProjectSpeedRet Sprite_ProjectSpeedTowardsPlayer(int k, uint8 vel) {
   if (vel == 0) {
     ProjectSpeedRet rv = { 0, 0, 0, 0 };
     return rv;
   }
-  PairU8 below = Sprite_IsBelowLink(k);
+  PairU8 below = Sprite_IsBelowPlayer(k);
   uint8 r12 = sign8(below.b) ? -below.b : below.b;
 
-  PairU8 right = Sprite_IsRightOfLink(k);
+  PairU8 right = Sprite_IsToRightOfPlayer(k);
   uint8 r13 = sign8(right.b) ? -right.b : right.b;
   uint8 t;
   bool swapped = false;
@@ -832,13 +832,13 @@ ProjectSpeedRet Sprite_ProjectSpeedTowardsLink(int k, uint8 vel) {
   return rv;
 }
 
-void Sprite_ApplySpeedTowardsLink(int k, uint8 vel) {
-  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, vel);
+void Sprite_ApplySpeedTowardsPlayer(int k, uint8 vel) {
+  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsPlayer(k, vel);
   sprite_x_vel[k] = pt.x;
   sprite_y_vel[k] = pt.y;
 }
 
-uint8 Sprite_ConvertVelocityToAngle(uint8 x, uint8 y) {
+uint8 ConvertVelocityToAngle(uint8 x, uint8 y) {
   static const uint8 kConvertVelocityToAngle_Tab0[32] = {
     0, 0, 1, 1, 1, 2, 2, 2, 0, 0, 15, 15, 15, 14, 14, 14, 
     8, 8, 7, 7, 7, 6, 6, 6, 8, 8,  9,  9,  9, 10, 10, 10, 
@@ -857,15 +857,15 @@ uint8 Sprite_ConvertVelocityToAngle(uint8 x, uint8 y) {
   }
 }
 
-ProjectSpeedRet Sprite_ProjectSpeedTowardsLocation(int k, uint16 x, uint16 y, uint8 vel) {
+ProjectSpeedRet Sprite_ProjectSpeedTowardsEntity(int k, uint16 x, uint16 y, uint8 vel) {
   if (vel == 0) {
     ProjectSpeedRet rv = { 0, 0, 0, 0 };
     return rv;
   }
-  PairU8 below = Sprite_IsBelowLocation(k, y);
+  PairU8 below = Sprite_IsBelowEntity(k, y);
   uint8 r12 = sign8(below.b) ? -below.b : below.b;
 
-  PairU8 right = Sprite_IsRightOfLocation(k, x);
+  PairU8 right = Sprite_IsToRightOfEntity(k, x);
   uint8 r13 = sign8(right.b) ? -right.b : right.b;
   uint8 t;
   bool swapped = false;
@@ -891,9 +891,9 @@ ProjectSpeedRet Sprite_ProjectSpeedTowardsLocation(int k, uint16 x, uint16 y, ui
   return rv;
 }
 
-uint8 Sprite_DirectionToFaceLink(int k, PointU8 *coords_out) {
-  PairU8 below = Sprite_IsBelowLink(k);
-  PairU8 right = Sprite_IsRightOfLink(k);
+uint8 Sprite_DirectionToFacePlayer(int k, PointU8 *coords_out) {
+  PairU8 below = Sprite_IsBelowPlayer(k);
+  PairU8 right = Sprite_IsToRightOfPlayer(k);
   uint8 ym = sign8(below.b) ? -below.b : below.b;
   tmp_counter = ym;
   uint8 xm = sign8(right.b) ? -right.b : right.b;
@@ -902,7 +902,7 @@ uint8 Sprite_DirectionToFaceLink(int k, PointU8 *coords_out) {
   return (xm >= ym) ? right.a : below.a + 2;
 }
 
-PairU8 Sprite_IsBelowLink(int k) {
+PairU8 Sprite_IsBelowPlayer(int k) {
   int t = BYTE(link_y_coord) + 8;
   int u = (t & 0xff) + sprite_z[k];
   int v = (u & 0xff) - sprite_y_lo[k];
@@ -912,27 +912,27 @@ PairU8 Sprite_IsBelowLink(int k) {
   return rv;
 }
 
-PairU8 Sprite_IsRightOfLink(int k) {
+PairU8 Sprite_IsToRightOfPlayer(int k) {
   uint16 x = link_x_coord - Sprite_GetX(k);
   PairU8 rv = { (uint8)(sign16(x) ? 1 : 0), (uint8)x };
   return rv;
 }
 
-PairU8 Sprite_IsBelowLocation(int k, uint16 y) {
+PairU8 Sprite_IsBelowEntity(int k, uint16 y) {
   uint16 yv = y - Sprite_GetY(k);
   PairU8 rv = { (uint8)(sign16(yv) ? 1 : 0), (uint8)yv };
   return rv;
 }
 
-PairU8 Sprite_IsRightOfLocation(int k, uint16 x) {
+PairU8 Sprite_IsToRightOfEntity(int k, uint16 x) {
   uint16 xv = x - Sprite_GetX(k);
   PairU8 rv = { (uint8)(sign16(xv) ? 1 : 0), (uint8)xv };
   return rv;
 }
 
-uint8 Sprite_DirectionToFaceLocation(int k, uint16 x, uint16 y) {
-  PairU8 below = Sprite_IsBelowLocation(k, y);
-  PairU8 right = Sprite_IsRightOfLocation(k, x);
+uint8 Sprite_DirectionToFaceEntity(int k, uint16 x, uint16 y) {
+  PairU8 below = Sprite_IsBelowEntity(k, y);
+  PairU8 right = Sprite_IsToRightOfEntity(k, x);
   uint8 ym = sign8(below.b) ? -below.b : below.b;
   tmp_counter = ym;
   uint8 xm = sign8(right.b) ? -right.b : right.b;
@@ -942,52 +942,52 @@ uint8 Sprite_DirectionToFaceLocation(int k, uint16 x, uint16 y) {
 static const uint8 kSprite_Func1_Tab[8] = {15, 15, 24, 15, 15, 19, 15, 15};
 static const uint8 kSprite_Func1_Tab2[8] = {6, 6, 6, 12, 6, 6, 6, 15};
 
-void Guard_ParrySwordAttacks(int k) {
+void Sprite_Func1(int k) {
   if (link_is_on_lower_level != sprite_floor[k] || link_incapacitated_timer | link_auxiliary_state || sign8(sprite_hit_timer[k]))
     return;
   SpriteHitBox hb;
-  Sprite_DoHitBoxesFast(k, &hb);
+  Sprite_Func12(k, &hb);
   if (link_position_mode & 0x10 || player_oam_y_offset == 0x80) {
-    Sprite_AttemptDamageToLinkWithCollisionCheck(k);
+    Sprite_StaggeredCheckDamageToPlayerPlusRecoil(k);
     return;
   }
   Player_SetupActionHitBox(&hb);
-  if (sign8(button_b_frames) || !CheckIfHitBoxesOverlap(&hb)) {
+  if (sign8(button_b_frames) || !Utility_CheckIfHitBoxesOverlap(&hb)) {
     Sprite_SetupHitBox(k, &hb);
-    if (!CheckIfHitBoxesOverlap(&hb))
-      Sprite_AttemptDamageToLinkWithCollisionCheck(k);
+    if (!Utility_CheckIfHitBoxesOverlap(&hb))
+      Sprite_StaggeredCheckDamageToPlayerPlusRecoil(k);
     else
-      Sprite_AttemptZapDamage(k);
+      Sprite_Func13(k);
     return;
   }
   if (sprite_type[k] != 0x6a)
-    sprite_F[k] = kSprite_Func1_Tab[GetRandomNumber() & 7];
-  link_incapacitated_timer = kSprite_Func1_Tab2[GetRandomNumber() & 7];
-  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, sign8(button_b_frames - 9) ? 32 : 24);
+    sprite_F[k] = kSprite_Func1_Tab[GetRandomInt() & 7];
+  link_incapacitated_timer = kSprite_Func1_Tab2[GetRandomInt() & 7];
+  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsPlayer(k, sign8(button_b_frames - 9) ? 32 : 24);
   sprite_x_recoil[k] = -pt.x;
   sprite_y_recoil[k] = -pt.y;
-  Sprite_ApplyRecoilToLink(k, sign8(button_b_frames - 9) ? 8 : 16);
-  Link_PlaceWeaponTink();
+  Sprite_ApplyRecoilToPlayer(k, sign8(button_b_frames - 9) ? 8 : 16);
+  Player_PlaceRepulseSpark();
   set_when_damaging_enemies = 0x90;
 }
 
-void Sprite_AttemptZapDamage(int k) {
+void Sprite_Func13(int k) {
   uint8 a = sprite_type[k];
   if ((a == 0x7a || a == 0xd && (a = link_sword_type) < 4 || (a == 0x24 || a == 0x23) && sprite_delay_main[k] != 0) && sprite_state[k] == 9) {
     if (!countdown_for_blink) {
       sprite_delay_aux1[k] = 64;
       link_electrocute_on_touch = 64;
-      Sprite_AttemptDamageToLinkPlusRecoil(k);
+      Sprite_AttemptDamageToPlayerPlusRecoil(k);
     }
   } else {
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, sign8(button_b_frames - 9) ? 0x50 : 0x40);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsPlayer(k, sign8(button_b_frames - 9) ? 0x50 : 0x40);
     sprite_x_recoil[k] = -pt.x;
     sprite_y_recoil[k] = -pt.y;
-    Sprite_CalculateSwordDamage(k);
+    Sprite_Func14(k);
   }
 }
 
-void Ancilla_CheckDamageToSprite_preset(int k, int a) {
+void Sprite_Func11(int k, int a) {
   if (a == 15 && sprite_z[k] != 0)
     return;
 
@@ -1005,17 +1005,17 @@ void Ancilla_CheckDamageToSprite_preset(int k, int a) {
   repulsespark_y_lo = ancilla_y_lo[j];
   repulsespark_floor_status = link_is_on_lower_level;
   sound_effect_1 = 0;
-  SpriteSfx_QueueSfx2WithPan(k, 5);
+  Sound_SetSfx2Pan(k, 5);
 }
 
 void Sprite_Func15(int k, int a) {
   damage_type_determiner = a;
-  Sprite_ApplyCalculatedDamage(k, a == 8 ? 0x35 : 0x20);
+  Sprite_Func16(k, a == 8 ? 0x35 : 0x20);
 }
 
 static const uint8 kSprite_Func14_Damage[12] = {1, 2, 3, 4, 2, 3, 4, 5, 1, 1, 2, 3};
 
-void Sprite_CalculateSwordDamage(int k) {
+void Sprite_Func14(int k) {
   if (sprite_flags3[k] & 0x40)
     return;
   sprite_unk1[k] = link_is_running;
@@ -1027,7 +1027,7 @@ void Sprite_CalculateSwordDamage(int k) {
     damage_type_determiner = 3;
   link_sword_delay_timer = 4;
   set_when_damaging_enemies = 16;
-  Sprite_ApplyCalculatedDamage(k, 0x9d);
+  Sprite_Func16(k, 0x9d);
 }
 
 static const uint8 kEnemyDamages[128] = {
@@ -1041,15 +1041,15 @@ static const uint8 kEnemyDamages[128] = {
   0, 254, 64, 16, 0, 0, 0, 0, 0, 32, 64, 255, 0, 0, 0, 250, 
 };
 
-void Sprite_ApplyCalculatedDamage(int k, int a) {
+void Sprite_Func16(int k, int a) {
   if ((sprite_flags3[k] & 0x40) || sprite_type[k] >= 0xD8)
     return;
   uint8 dmg = kEnemyDamages[damage_type_determiner * 8 | enemy_damage_data[sprite_type[k] * 16 | damage_type_determiner]];
-  AgahnimBalls_DamageAgahnim(k, dmg, a);
+  Sprite_Func17(k, dmg, a);
 }
 
 
-void AgahnimBalls_DamageAgahnim(int k, uint8 dmg, uint8 r0_hit_timer) {
+void Sprite_Func17(int k, uint8 dmg, uint8 r0_hit_timer) {
   if (dmg == 249) {
     Sprite_Func18(k, 0xe3);
     return;
@@ -1087,20 +1087,20 @@ void AgahnimBalls_DamageAgahnim(int k, uint8 dmg, uint8 r0_hit_timer) {
     sprite_state[k] = 9;
     sprite_ai_state[k] = 4;
     sprite_delay_main[k] = 15;
-    SpriteSfx_QueueSfx2WithPan(k, 0x28);
+    Sound_SetSfx2Pan(k, 0x28);
     return;
   }
   if (sprite_type[k] == 0x1b) {
-    SpriteSfx_QueueSfx2WithPan(k, 5);
-    Sprite_ScheduleForBreakage(k);
-    Sprite_PlaceWeaponTink(k);
+    Sound_SetSfx2Pan(k, 5);
+    Sprite_Func2(k);
+    Sprite_PlaceRupulseSpark(k);
     return;
   }
   sprite_hit_timer[k] = r0_hit_timer;
   if (sprite_type[k] != 0x92 || sprite_C[k] >= 3) {
     uint8 sfx = sprite_flags[k] & 2 ? 0x21 :
                 sprite_flags5[k] & 0x10 ? 0x1c : 8;
-    sound_effect_2 = sfx | Sprite_CalculateSfxPan(k);
+    sound_effect_2 = sfx | Sprite_GetSfxPan(k);
   }
 flag4:
   uint8 type = sprite_type[k];
@@ -1255,8 +1255,8 @@ static const uint8 kSpriteInit_DeflBits[243] = {
   0x80, 0x80, 0x20, 
 };
 
-void SpritePrep_LoadProperties(int k) {
-  SpritePrep_ResetProperties(k);
+void Sprite_LoadProperties(int k) {
+  Sprite_ResetProperties(k);
   int j = sprite_type[k];
   sprite_flags2[k] = kSpriteInit_Flags2[j];
   sprite_health[k] = kSpriteInit_Health[j];
@@ -1270,13 +1270,13 @@ void SpritePrep_LoadProperties(int k) {
   sprite_oam_flags[k] = kSpriteInit_Flags3[j] & 0xf;
 }
 
-void SpritePrep_LoadPalette(int k) {
+void Sprite_LoadPalette(int k) {
   int f = kSpriteInit_Flags3[sprite_type[k]];
   sprite_flags3[k] = f;
   sprite_oam_flags[k] = f & 15;
 }
 
-void SpritePrep_ResetProperties(int k) {
+void Sprite_ResetProperties(int k) {
   sprite_pause[k] = 0;
   sprite_E[k] = 0;
   sprite_x_vel[k] = 0;
@@ -1321,10 +1321,10 @@ void SpritePrep_ResetProperties(int k) {
 
 void Sprite_Func18(int k, uint8 new_type) {
   sprite_type[k] = new_type;
-  SpritePrep_LoadProperties(k);
+  Sprite_LoadProperties(k);
   Sprite_SpawnPoofGarnish(k);
   sound_effect_2 = 0;
-  SpriteSfx_QueueSfx3WithPan(k, 0x32);
+  Sound_SetSfx3Pan(k, 0x32);
   sprite_hit_timer[k] = 0;
   sprite_give_damage[k] = 0;
 }
@@ -1335,18 +1335,18 @@ void Sprite_Func3(int k) {
   sprite_flags2[k] = 3;
 }
 
-void Sprite_ZeroVelocity_XY(int k) {
+void Sprite_ZeroVelocity(int k) {
   sprite_x_vel[k] = sprite_y_vel[k] = 0;
 }
 
-uint8 Sprite_CheckDamageFromLink(int k) {
+uint8 Sprite_CheckDamageFromPlayer(int k) {
   if (sprite_hit_timer[k] & 0x80 || sprite_floor[k] != link_is_on_lower_level || player_oam_y_offset == 0x80)
     return 0;
 
   SpriteHitBox hb;
   Player_SetupActionHitBox(&hb);
   Sprite_SetupHitBox(k, &hb);
-  if (!CheckIfHitBoxesOverlap(&hb))
+  if (!Utility_CheckIfHitBoxesOverlap(&hb))
     return 0;
 
   set_when_damaging_enemies = 0;
@@ -1360,7 +1360,7 @@ uint8 Sprite_CheckDamageFromLink(int k) {
       sprite_state[k] = 2;
       sprite_delay_main[k] = 32;
       sprite_flags2[k] = (sprite_flags2[k] & 0xe0) | 3;
-      SpriteSfx_QueueSfx2WithPan(k, 0x1f);
+      Sound_SetSfx2Pan(k, 0x1f);
       return kCheckDamageFromPlayer_Carry | kCheckDamageFromPlayer_Ne;
     }
   }
@@ -1370,13 +1370,13 @@ uint8 Sprite_CheckDamageFromLink(int k) {
       return 0;
   } else if (type == 9) {
     if (!sprite_A[k]) {
-      Sprite_ApplyRecoilToLink(k, 48);
+      Sprite_ApplyRecoilToPlayer(k, 48);
       set_when_damaging_enemies = 144;
       link_incapacitated_timer = 16;
-      SpriteSfx_QueueSfx2WithPan(k, 0x21);
+      Sound_SetSfx2Pan(k, 0x21);
       sprite_delay_aux1[k] = 48;
-      sound_effect_2 = Sprite_CalculateSfxPan(k);
-      Link_PlaceWeaponTink();
+      sound_effect_2 = Sprite_GetSfxPan(k);
+      Player_PlaceRepulseSpark();
       return kCheckDamageFromPlayer_Carry;
     }
   } else if (type == 0x92) {
@@ -1385,43 +1385,43 @@ uint8 Sprite_CheckDamageFromLink(int k) {
     goto getting_out;
   } else if (type == 0x26 || type == 0x13 || type == 2) {
     bool cond = (type == 0x13 && kSpriteDamage_Tab3[sprite_D[k]] == link_direction_facing) || (type == 2);
-    Sprite_AttemptZapDamage(k);
-    Sprite_ApplyRecoilToLink(k, 32);
+    Sprite_Func13(k);
+    Sprite_ApplyRecoilToPlayer(k, 32);
     set_when_damaging_enemies = 16;
     link_incapacitated_timer = 16;
     if (cond) {
       sprite_hit_timer[k] = 0;
-      Link_PlaceWeaponTink();
+      Player_PlaceRepulseSpark();
     }
     return 0; // what return value?
   } else if (type == 0xcb || type == 0xcd || type == 0xcc || type == 0xd6 || type == 0xd7 || type == 0xce || type == 0x54) {
 is_many:
-    Sprite_ApplyRecoilToLink(k, 32);
+    Sprite_ApplyRecoilToPlayer(k, 32);
     set_when_damaging_enemies = 144;
     link_incapacitated_timer = 16;
   }
   if (!(sprite_defl_bits[k] & 4)) {
-    Sprite_AttemptZapDamage(k);
+    Sprite_Func13(k);
     return kCheckDamageFromPlayer_Carry;
   }
 getting_out:
   if (!set_when_damaging_enemies) {
-    Sprite_ApplyRecoilToLink(k, 4);
+    Sprite_ApplyRecoilToPlayer(k, 4);
     link_incapacitated_timer = 16;
     set_when_damaging_enemies = 16;
   }
-  Link_PlaceWeaponTink();
+  Player_PlaceRepulseSpark();
   return kCheckDamageFromPlayer_Carry;
 }
 
-void Sprite_AttemptDamageToLinkWithCollisionCheck(int k) {
+void Sprite_StaggeredCheckDamageToPlayerPlusRecoil(int k) {
   if ((k ^ frame_counter) & 1)
     return;
   SpriteHitBox hb;
-  Sprite_DoHitBoxesFast(k, &hb);
-  Link_SetupHitBox_conditional(&hb);
-  if (CheckIfHitBoxesOverlap(&hb))
-    Sprite_AttemptDamageToLinkPlusRecoil(k);
+  Sprite_Func12(k, &hb);
+  GetPlayerHitBoxUnlessDisabled(&hb);
+  if (Utility_CheckIfHitBoxesOverlap(&hb))
+    Sprite_AttemptDamageToPlayerPlusRecoil(k);
 }
 
 static const int8 kPlayerDamages[30] = {
@@ -1429,11 +1429,11 @@ static const int8 kPlayerDamages[30] = {
   8, 4, 32, 16, 8, 32, 24, 16, 24, 16, 8, 64, 48, 24, 
 };
 
-void Sprite_AttemptDamageToLinkPlusRecoil(int k) {
+void Sprite_AttemptDamageToPlayerPlusRecoil(int k) {
   if (countdown_for_blink | link_disable_sprite_damage)
     return;
   link_incapacitated_timer = 19;
-  Sprite_ApplyRecoilToLink(k, 24);
+  Sprite_ApplyRecoilToPlayer(k, 24);
   link_auxiliary_state = 1;
   link_give_damage = kPlayerDamages[3 * (sprite_bump_damage[k] & 0xf) + link_armor];
   if (sprite_type[k] == 0x61 && sprite_C[k]) {
@@ -1520,7 +1520,7 @@ void Player_SetupActionHitBox(SpriteHitBox *hb) {
   }
 }
 
-void Sprite_DoHitBoxesFast(int k, SpriteHitBox *hb) {
+void Sprite_Func12(int k, SpriteHitBox *hb) {
   if (HIBYTE(dungmap_var8) == 0x80) {
     hb->r10_spr_xhi = 0x80;
     return;
@@ -1535,15 +1535,15 @@ void Sprite_DoHitBoxesFast(int k, SpriteHitBox *hb) {
   hb->r6_spr_xsize = hb->r7_spr_ysize = (sprite_type[k] == 0x6a) ? 16 : 3;
 }
 
-void Sprite_ApplyRecoilToLink(int k, uint8 vel) {
-  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, vel);
+void Sprite_ApplyRecoilToPlayer(int k, uint8 vel) {
+  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsPlayer(k, vel);
   link_actual_vel_x = pt.x;
   link_actual_vel_y = pt.y;
   g_ram[0xc7] = link_actual_vel_z = vel >> 1;
   link_z_coord = 0;
 }
 
-void Link_PlaceWeaponTink() {
+void Player_PlaceRepulseSpark() {
   if (repulsespark_timer)
     return;
   repulsespark_timer = 5;
@@ -1552,13 +1552,13 @@ void Link_PlaceWeaponTink() {
   t = (uint8)link_y_coord + player_oam_y_offset + (t >> 8);  // carry wtf
   repulsespark_y_lo = t;
   repulsespark_floor_status = link_is_on_lower_level;
-  sound_effect_1 = Link_CalculateSfxPan() | 5;
+  sound_effect_1 = Sound_GetPanForPlayer() | 5;
 }
 
-void Sprite_PlaceWeaponTink(int k) {
+void Sprite_PlaceRupulseSpark(int k) {
   if (repulsespark_timer)
     return;
-  SpriteSfx_QueueSfx2WithPan(k, 5);
+  Sound_SetSfx2Pan(k, 5);
   Sprite_PlaceRupulseSpark_2(k);
 }
 
@@ -1573,14 +1573,14 @@ void Sprite_PlaceRupulseSpark_2(int k) {
   repulsespark_floor_status = sprite_floor[k];
 }
 
-void Link_SetupHitBox_conditional(SpriteHitBox *hb) {
+void GetPlayerHitBoxUnlessDisabled(SpriteHitBox *hb) {
   if (link_disable_sprite_damage)
     hb->r9_yhi = 0x80;
   else
-    Link_SetupHitBox(hb);
+    GetPlayerHitBox(hb);
 }
 
-void Link_SetupHitBox(SpriteHitBox *hb) {
+void GetPlayerHitBox(SpriteHitBox *hb) {
   hb->r3 = hb->r2 = 8;
   uint16 x = link_x_coord + 4;
   hb->r0_xlo = x;
@@ -1636,17 +1636,17 @@ void Sprite_PrepAndDrawSingleLargeNoPrep(int k, PrepOamCoordsRet *info) {
   }
   bytewise_extended_oam[oam - oam_buf] = 2 | ((info->x >= 256) ? 1: 0);
   if (sprite_flags3[k] & 0x10)
-    SpriteDraw_Shadow(k, info);
+    Sprite_DrawShadow(k, info);
 }
 
-void SpriteDraw_SingleLarge(int k) {
+void Sprite_PrepAndDrawSingleLarge(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
   Sprite_PrepAndDrawSingleLargeNoPrep(k, &info);
 }
 
-void SpriteDraw_SingleSmall(int k) {
+void Sprite_PrepAndDrawSingleSmall(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
@@ -1659,10 +1659,10 @@ void SpriteDraw_SingleSmall(int k) {
   }
   bytewise_extended_oam[oam - oam_buf] = 0 | (info.x >= 256);
   if (sprite_flags3[k] & 0x10)
-    SpriteDraw_Shadow_custom(k, &info, 2);
+    Sprite_DrawShadowEx(k, &info, 2);
 }
 
-void Sprite_DrawThinAndTall(int k) {
+void Sprite_DrawKey(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
@@ -1676,14 +1676,14 @@ void Sprite_DrawThinAndTall(int k) {
   oam[1].charnum = a + 0x10;
   oam[0].flags = oam[1].flags = info.flags;
   if (sprite_flags3[k] & 0x10)
-    SpriteDraw_Shadow(k, &info);
+    Sprite_DrawShadow(k, &info);
 }
 
-void SpriteDraw_Shadow(int k, PrepOamCoordsRet *oam) {
-  SpriteDraw_Shadow_custom(k, oam, 10);
+void Sprite_DrawShadow(int k, PrepOamCoordsRet *oam) {
+  Sprite_DrawShadowEx(k, oam, 10);
 }
 
-void SpriteDraw_Shadow_custom(int k, PrepOamCoordsRet *info, uint8 a) {
+void Sprite_DrawShadowEx(int k, PrepOamCoordsRet *info, uint8 a) {
   uint16 y = Sprite_GetY(k) + a;
   info->y = y;
   if (sprite_pause[k] || sprite_state[k] == 10 && sprite_unk3[k] == 3)
@@ -1711,10 +1711,10 @@ void Sprite_Func8(int k) {
   sprite_state[k] = 1;
   sprite_delay_main[k] = 0x1f;
   sound_effect_1 = 0;
-  SpriteSfx_QueueSfx2WithPan(k, 0x20);
+  Sound_SetSfx2Pan(k, 0x20);
 }
 
-void Sprite_ApplyConveyor(int k, int j) {
+void Sprite_ApplyConveyorAdjustment(int k, int j) {
   if (!(frame_counter & 1))
     return;
   static const int8 kConveyorAdjustment_X[] = {0, 0, -1, 1};
@@ -1727,15 +1727,15 @@ void Sprite_ApplyConveyor(int k, int j) {
 void Dungeon_CacheTransSprites();
 void Sprite_DisableAll();
 void Dungeon_LoadSprites();
-int Dungeon_LoadSingleSprite(int k, const uint8 *data);
-void Overworld_LoadSprites();
-void Sprite_ActivateAllProxima();
+int Dungeon_LoadSprite(int k, const uint8 *data);
+void LoadOverworldSprites_A();
+void LoadOverworldSprites_B();
 void Sprite_ResetAll_noDisable();
-void Sprite_ActivateWhenProximal();
-void Sprite_ActivateWhenProximalBig();
-void Sprite_Overworld_ProximityMotivatedLoad(uint16 x, uint16 y);
-void Overworld_LoadProximaSpriteIfAlive(uint16 blk);
-void Dungeon_LoadSingleOverlord(const uint8 *src);
+void Sprite_RangeBasedActivation_Func1();
+void Sprite_RangeBasedActivation_Func2();
+void Sprite_RangeBasedActivation_Func3(uint16 x, uint16 y);
+void Overworld_LoadSpritesInBlk(uint16 blk);
+void Dungeon_LoadOverlord(const uint8 *src);
 
 static int AllocOverlord() {
   int i = 7;
@@ -1832,10 +1832,10 @@ void Dungeon_LoadSprites() {
   byte_7E0FB0 = (dungeon_room_index2 & 0xf) << 1;
   sort_sprites_setting = *src++;
   for (int k = 0; *src != 0xff; src += 3)
-    k = Dungeon_LoadSingleSprite(k, src) + 1;
+    k = Dungeon_LoadSprite(k, src) + 1;
 }
 
-int Dungeon_LoadSingleSprite(int k, const uint8 *src) {
+int Dungeon_LoadSprite(int k, const uint8 *src) {
   uint8 y = src[0], x = src[1], type = src[2];
   if (type == 0xe4) {
     if (y == 0xfe || y == 0xfd) {
@@ -1843,7 +1843,7 @@ int Dungeon_LoadSingleSprite(int k, const uint8 *src) {
       return k - 1;
     }
   } else if (x >= 0xe0) {
-    Dungeon_LoadSingleOverlord(src);
+    Dungeon_LoadOverlord(src);
     return k - 1;
   }
   if (!(kSpriteInit_DeflBits[type] & 1) && (sprite_where_in_room[dungeon_room_index2] & (1 << k)))
@@ -1862,7 +1862,7 @@ int Dungeon_LoadSingleSprite(int k, const uint8 *src) {
   return k;
 }
 
-void Dungeon_LoadSingleOverlord(const uint8 *src) {
+void Dungeon_LoadOverlord(const uint8 *src) {
   int k = AllocOverlord();
   if (k < 0)
     return;
@@ -1908,14 +1908,14 @@ void Sprite_ResetAll_noDisable() {
   memset(dungeon_room_history, 0xff, 8);
 }
 
-void Sprite_ReloadAll_Overworld() {
+void Sprite_OverworldReloadAll() {
   Sprite_DisableAll();
   Sprite_OverworldReloadAll_justLoad();
 }
 void Sprite_OverworldReloadAll_justLoad() {
   Sprite_ResetAll_noDisable();
-  Overworld_LoadSprites();
-  Sprite_ActivateAllProxima();
+  LoadOverworldSprites_A();
+  LoadOverworldSprites_B();
 }
 
 static const uint8 kOverworldAreaSprcollSizes[192] = {
@@ -1933,7 +1933,7 @@ static const uint8 kOverworldAreaSprcollSizes[192] = {
   4, 4, 2, 2, 2, 4, 4, 2, 4, 4, 2, 2, 2, 4, 4, 2, 
 };
 
-void Overworld_LoadSprites() {
+void LoadOverworldSprites_A() {
   sprcoll_x_base = (overworld_area_index & 7) << 9;
   sprcoll_y_base = ((overworld_area_index & 0x3f) >> 2 & 0xe) << 8;
   sprcoll_x_size = sprcoll_y_size = kOverworldAreaSprcollSizes[BYTE(overworld_area_index)] << 8;
@@ -1952,50 +1952,50 @@ void Overworld_LoadSprites() {
   }
 }
 
-void Sprite_ActivateAllProxima() {
+void LoadOverworldSprites_B() {
   uint16 bak0 = BG2HOFS_copy2;
   uint8 bak1 = byte_7E069E[1];
   byte_7E069E[1] = 0xff;
   for (int i = 21; i >= 0; i--) {
-    Sprite_ActivateWhenProximal();
+    Sprite_RangeBasedActivation_Func1();
     BG2HOFS_copy2 += 16;
   }
   byte_7E069E[1] = bak1;
   BG2HOFS_copy2 = bak0;
 }
 
-void Sprite_ProximityActivation() {
+void Sprite_RangeBasedActivation() {
   if (submodule_index != 0) {
-    Sprite_ActivateWhenProximal();
-    Sprite_ActivateWhenProximalBig();
+    Sprite_RangeBasedActivation_Func1();
+    Sprite_RangeBasedActivation_Func2();
   } else {
     if (!(spr_ranged_based_toggler & 1))
-      Sprite_ActivateWhenProximal();
+      Sprite_RangeBasedActivation_Func1();
     if (spr_ranged_based_toggler & 1)
-      Sprite_ActivateWhenProximalBig();
+      Sprite_RangeBasedActivation_Func2();
     spr_ranged_based_toggler++;
   }
 }
 
-void Sprite_ActivateWhenProximal() {
+void Sprite_RangeBasedActivation_Func1() {
   if (byte_7E069E[1]) {
     uint16 x = BG2HOFS_copy2 + (sign8(byte_7E069E[1]) ? -0x10 : 0x110);
     uint16 y = BG2VOFS_copy2 - 48;
     for (int i = 21; i >= 0; i--, y += 16)
-      Sprite_Overworld_ProximityMotivatedLoad(x, y);
+      Sprite_RangeBasedActivation_Func3(x, y);
   }
 }
 
-void Sprite_ActivateWhenProximalBig() {
+void Sprite_RangeBasedActivation_Func2() {
   if (byte_7E069E[0]) {
     uint16 x = BG2HOFS_copy2 - 48;
     uint16 y = BG2VOFS_copy2 + (sign8(byte_7E069E[0]) ? -0x10 : 0x110);
     for (int i = 21; i >= 0; i--, x += 16)
-      Sprite_Overworld_ProximityMotivatedLoad(x, y);
+      Sprite_RangeBasedActivation_Func3(x, y);
   }
 }
 
-void Sprite_Overworld_ProximityMotivatedLoad(uint16 x, uint16 y) {
+void Sprite_RangeBasedActivation_Func3(uint16 x, uint16 y) {
   uint16 xt = (uint16)(x - sprcoll_x_base);
   uint16 yt = (uint16)(y - sprcoll_y_base);
   if (xt >= sprcoll_x_size || yt >= sprcoll_y_size)
@@ -2003,7 +2003,7 @@ void Sprite_Overworld_ProximityMotivatedLoad(uint16 x, uint16 y) {
 
   uint8 r1 = (yt >> 8) * 4 | (xt >> 8);
   uint8 r0 = y & 0xf0 | x >> 4 & 0xf;
-  Overworld_LoadProximaSpriteIfAlive(r1 << 8 | r0);
+  Overworld_LoadSpritesInBlk(r1 << 8 | r0);
 }
 
 static int Overworld_AllocSprite(uint8 type) {
@@ -2017,7 +2017,7 @@ static int Overworld_AllocSprite(uint8 type) {
   return i;
 }
 
-void Overworld_LoadProximaSpriteIfAlive(uint16 blk) {
+void Overworld_LoadSpritesInBlk(uint16 blk) {
   uint8 *p5 = sprite_where_in_overworld + blk;
   uint8 sprite_to_spawn = *p5;
   if (!sprite_to_spawn)
@@ -2098,7 +2098,7 @@ bool Garnish_ReturnIfPrepFails(int k, Point16U *pt) {
   return false;
 }
 
-void Garnish01_FireSnakeTail(int k) {
+void Garnish_WinderTrail(int k) {
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
@@ -2110,7 +2110,7 @@ void Garnish01_FireSnakeTail(int k) {
   oam->flags = sprite_oam_flags[j] | sprite_obj_prio[j];
   bytewise_extended_oam[oam - oam_buf] = 2;
 }
-void Garnish02_MothulaBeamTrail(int k) {
+void Garnish_MothulaBeamTrail(int k) {
   OamEnt *oam = GetOamCurPtr();
   oam->x = garnish_x_lo[k] - BG2HOFS_copy2;
   oam->y = garnish_y_lo[k] - BG2VOFS_copy2;
@@ -2119,7 +2119,7 @@ void Garnish02_MothulaBeamTrail(int k) {
   oam->flags = sprite_oam_flags[j] | sprite_obj_prio[j];
   bytewise_extended_oam[oam - oam_buf] = 2;
 }
-void Garnish03_FallingTile(int k) {
+void Garnish_CrumbleTile(int k) {
   static const uint8 kCrumbleTile_XY[5] = {4, 0, 0, 0, 0};
   static const uint8 kCrumbleTile_Char[5] = {0x80, 0xcc, 0xcc, 0xea, 0xca};
   static const uint8 kCrumbleTile_Flags[5] = {0x30, 0x31, 0x31, 0x31, 0x31};
@@ -2127,7 +2127,7 @@ void Garnish03_FallingTile(int k) {
 
   int j;
   if ((j = garnish_countdown[k]) == 0x1e && (j = (submodule_index | flag_unk1)) == 0)
-    Dungeon_UpdateTileMapWithCommonTile(Garnish_GetX(k), Garnish_GetY(k) - 16, 4);
+    Dungeon_SpriteInducedTilemapUpdate(Garnish_GetX(k), Garnish_GetY(k) - 16, 4);
   j >>= 3;
 
   uint16 x = Garnish_GetX(k) + kCrumbleTile_XY[j] - BG2HOFS_copy2;
@@ -2142,7 +2142,7 @@ void Garnish03_FallingTile(int k) {
     bytewise_extended_oam[oam - oam_buf] = kCrumbleTile_Ext[j];
   }
 }
-void Garnish04_LaserTrail(int k) {
+void Garnish_LaserBeamTrail(int k) {
   static const uint8 kLaserBeamTrail_Char[2] = {0xd2, 0xf3};
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
@@ -2174,11 +2174,11 @@ void Garnish_SimpleSparkle(int k) {
   Garnish_SparkleCommon(k, 3);
 }
 
-void Garnish12_Sparkle(int k) {
+void Garnish_Sparkle(int k) {
   Garnish_SparkleCommon(k, 2);
 }
 
-void Garnish06_ZoroTrail(int k) {
+void Garnish_ZoroDander(int k) {
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
@@ -2190,7 +2190,7 @@ void Garnish06_ZoroTrail(int k) {
   oam->flags = sprite_oam_flags[j] | sprite_obj_prio[j];
   bytewise_extended_oam[oam - oam_buf] = 0;
 }
-void Garnish07_BabasuFlash(int k) {
+void Garnish_BabusuFlash(int k) {
   static const uint8 kBabusuFlash_Char[4] = {0xa8, 0x8a, 0x86, 0x86};
   static const uint8 kBabusuFlash_Flags[4] = {0x2d, 0x2c, 0x2c, 0x2c};
   Point16U pt;
@@ -2204,7 +2204,7 @@ void Garnish07_BabasuFlash(int k) {
   oam->flags = kBabusuFlash_Flags[j];
   bytewise_extended_oam[oam - oam_buf] = 2;
 }
-void Garnish08_KholdstareTrail(int k) {
+void Garnish_Nebule(int k) {
   static const int8 kGarnish_Nebule_XY[3] = { -1, -1, 0 };
   static const uint8 kGarnish_Nebule_Char[3] = { 0x9c, 0x9d, 0x8d };
 
@@ -2221,7 +2221,7 @@ void Garnish08_KholdstareTrail(int k) {
   bytewise_extended_oam[oam - oam_buf] = 0;
 }
 
-void Garnish0A_CannonSmoke(int k) {
+void Garnish_CannonPoof(int k) {
   static const uint8 kGarnish_CannonPoof_Char[2] = { 0x8a, 0x86 };
   static const uint8 kGarnish_CannonPoof_Flags[4] = { 0x20, 0x10, 0x30, 0x30 };
   Point16U pt;
@@ -2235,12 +2235,12 @@ void Garnish0A_CannonSmoke(int k) {
   oam->flags = kGarnish_CannonPoof_Flags[j] | 4;
   bytewise_extended_oam[oam - oam_buf] = 2;
 }
-void Garnish0C_TrinexxIceBreath(int k) {
+void Garnish_TrinexxIce(int k) {
   static const uint8 kTrinexxIce_Char[12] = {0xe8, 0xe8, 0xe6, 0xe6, 0xe4, 0xe4, 0xe4, 0xe4, 0xe4, 0xe4, 0xe4, 0xe4};
   static const uint8 kTrinexxIce_Flags[4] = {0, 0x40, 0xc0, 0x80};
 
   if (garnish_countdown[k] == 0x50 && (submodule_index | flag_unk1) == 0) {
-    Dungeon_UpdateTileMapWithCommonTile(Garnish_GetX(k), Garnish_GetY(k) - 16, 18);
+    Dungeon_SpriteInducedTilemapUpdate(Garnish_GetX(k), Garnish_GetY(k) - 16, 18);
   }
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
@@ -2254,7 +2254,7 @@ void Garnish0C_TrinexxIceBreath(int k) {
   bytewise_extended_oam[oam - oam_buf] = 2;
 }
 
-void Garnish0E_TrinexxFireBreath(int k) {
+void Garnish_TrinexxLavaBubble(int k) {
   static const uint8 kTrinexxLavaBubble_Char[4] = {0x83, 0xc7, 0x80, 0x9d};
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
@@ -2268,7 +2268,7 @@ void Garnish0E_TrinexxFireBreath(int k) {
   bytewise_extended_oam[oam - oam_buf] = 0;
 
 }
-void Garnish0F_BlindLaserTrail(int k) {
+void Garnish_BlindLaserTrail(int k) {
   static const uint8 kBlindLaserTrail_Char[4] = {0x61, 0x71, 0x70, 0x60};
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
@@ -2296,7 +2296,7 @@ void Garnish_CheckPlayerCollision(int k, int x, int y) {
   }
 }
 
-void Garnish10_GanonBatFlame(int k) {
+void Garnish_GanonBatFlame(int k) {
   static const uint8 kGanonBatFlame_Idx[32] = {
     7, 6, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 
     5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 5, 4, 
@@ -2318,7 +2318,7 @@ void Garnish10_GanonBatFlame(int k) {
   bytewise_extended_oam[oam - oam_buf] = 2;
   Garnish_CheckPlayerCollision(k, pt.x, pt.y);
 }
-void Garnish11_WitheringGanonBatFlame(int k) {
+void Garnish_GanonBatFlameout(int k) {
   if ((submodule_index | flag_unk1) == 0) {
     Garnish_SetY(k, Garnish_GetY(k) - 1);
   }
@@ -2337,7 +2337,7 @@ void Garnish11_WitheringGanonBatFlame(int k) {
   bytewise_extended_oam[oam - oam_buf] = 0;
   bytewise_extended_oam[oam - oam_buf + 1] = 0;
 }
-void Garnish13_PyramidDebris(int k) {
+void Garnish_PyramidDebris(int k) {
   OamEnt *oam = GetOamCurPtr();
 
   int y = (garnish_y_lo[k] << 8) + garnish_y_subpixel[k] + ((int8)garnish_y_vel[k] << 4);
@@ -2379,7 +2379,7 @@ void Garnish_DustCommon(int k, uint8 shift) {
   bytewise_extended_oam[oam - oam_buf] = 0;
 }
 
-void Garnish14_KakKidDashDust(int k) {
+void Garnish_RunningManDashDust(int k) {
   Garnish_DustCommon(k, 2);
 }
 
@@ -2388,7 +2388,7 @@ void Garnish_WaterTrail(int k) {
 }
 
 
-void Garnish09_LightningTrail(int k) {
+void Garnish_LightningTrail(int k) {
   static const uint8 kLightningTrail_Char[8] = {0xcc, 0xec, 0xce, 0xee, 0xcc, 0xec, 0xce, 0xee};
   static const uint8 kLightningTrail_Flags[8] = {0x31, 0x31, 0x31, 0x31, 0x71, 0x71, 0x71, 0x71};
   Point16U pt;
@@ -2405,7 +2405,7 @@ void Garnish09_LightningTrail(int k) {
 }
 
 
-void Garnish15_ArrghusSplash(int k) {
+void Garnish_ArrghusSplash(int k) {
   static const int8 kArrghusSplash_X[8] = {-12, 20, -10, 10, -8, 8, -4, 4};
   static const int8 kArrghusSplash_Y[8] = {-4, -4, -2, -2, 0, 0, 0, 0};
   static const uint8 kArrghusSplash_Char[8] = {0xae, 0xae, 0xae, 0xae, 0xae, 0xae, 0xac, 0xac};
@@ -2451,7 +2451,7 @@ void ScatterDebris_Draw(int k, Point16U pt) {
     oam++;
   }
 }
-void Garnish16_ThrownItemDebris(int k) {
+void Garnish_ScatterDebris(int k) {
   static const int16 kScatterDebris_Draw_X[64] = {
      0,  8,  0,  8, -2,  9, -1,  9, -4,  9, -1, 10, -6,  9, -1, 12, 
     -7,  9, -2, 13, -9,  9, -3, 14, -4, -4,  9, 15, -3, -3, -3,  9, 
@@ -2504,28 +2504,28 @@ void Garnish16_ThrownItemDebris(int k) {
   }
 }
 static HandlerFuncK *const kGarnish_Funcs[22] = {
-  &Garnish01_FireSnakeTail,
-  &Garnish02_MothulaBeamTrail,
-  &Garnish03_FallingTile,
-  &Garnish04_LaserTrail,
+  &Garnish_WinderTrail,
+  &Garnish_MothulaBeamTrail,
+  &Garnish_CrumbleTile,
+  &Garnish_LaserBeamTrail,
   &Garnish_SimpleSparkle,
-  &Garnish06_ZoroTrail,
-  &Garnish07_BabasuFlash,
-  &Garnish08_KholdstareTrail,
-  &Garnish09_LightningTrail,
-  &Garnish0A_CannonSmoke,
+  &Garnish_ZoroDander,
+  &Garnish_BabusuFlash,
+  &Garnish_Nebule,
+  &Garnish_LightningTrail,
+  &Garnish_CannonPoof,
   &Garnish_WaterTrail,
-  &Garnish0C_TrinexxIceBreath,
+  &Garnish_TrinexxIce,
   NULL,
-  &Garnish0E_TrinexxFireBreath,
-  &Garnish0F_BlindLaserTrail,
-  &Garnish10_GanonBatFlame,
-  &Garnish11_WitheringGanonBatFlame,
-  &Garnish12_Sparkle,
-  &Garnish13_PyramidDebris,
-  &Garnish14_KakKidDashDust,
-  &Garnish15_ArrghusSplash,
-  &Garnish16_ThrownItemDebris,
+  &Garnish_TrinexxLavaBubble,
+  &Garnish_BlindLaserTrail,
+  &Garnish_GanonBatFlame,
+  &Garnish_GanonBatFlameout,
+  &Garnish_Sparkle,
+  &Garnish_PyramidDebris,
+  &Garnish_RunningManDashDust,
+  &Garnish_ArrghusSplash,
+  &Garnish_ScatterDebris,
 };
 
 void Garnish_ExecuteSingle(int k) {
@@ -2540,17 +2540,17 @@ void Garnish_ExecuteSingle(int k) {
   uint8 sprsize = kGarnish_OamMemSize[garnish_type[k]];
   if (sort_sprites_setting) {
     if (garnish_floor[k])
-      Oam_AllocateFromRegionF(sprsize);
+      OAM_AllocateFromRegionF(sprsize);
     else
-      Oam_AllocateFromRegionD(sprsize);
+      OAM_AllocateFromRegionD(sprsize);
   } else {
-    Oam_AllocateFromRegionA(sprsize);
+    OAM_AllocateFromRegionA(sprsize);
   }
   kGarnish_Funcs[garnish_type[k] - 1](k);
 }
 
 void Garnish_ExecuteUpperSlots() {
-  HandleScreenFlash();
+  Filter_MajorWhitenMain();
 
   if (garnish_active) {
     for (int i = 29; i >= 15; i--)
@@ -2583,10 +2583,10 @@ void SpriteFall_Draw(int k, PrepOamCoordsRet *info) {
   Sprite_CorrectOamEntries(k, 0, 0);
 }
 
-void SpriteModule_Fall1(int k) {
+void SpriteFall_Main(int k) {
   if (!sprite_delay_main[k]) {
     sprite_state[k] = 0;
-    Sprite_ManuallySetDeathFlagUW(k);
+    Sprite_SetDungeonSpriteDeathFlag(k);
   } else {
     PrepOamCoordsRet info;
     if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
@@ -2594,7 +2594,7 @@ void SpriteModule_Fall1(int k) {
     SpriteFall_Draw(k, &info);
   }
 }
-void SpriteModule_Poof(int k) {
+void SpritePoof_Main(int k) {
   static const int8 kSpritePoof_X[16] = {-6, 10, 1, 13, -6, 10, 1, 13, -7, 4, -5, 6, -1, 1, -2, 0};
   static const int8 kSpritePoof_Y[16] = {-6, -4, 10, 9, -6, -4, 10, 9, -8, -10, 4, 3, -1, -2, 0, 1};
   static const uint8 kSpritePoof_Char[16] = {0x9b, 0x9b, 0x9b, 0x9b, 0xb3, 0xb3, 0xb3, 0xb3, 0x8a, 0x8a, 0x8a, 0x8a, 0x8a, 0x8a, 0x8a, 0x8a};
@@ -2605,15 +2605,15 @@ void SpriteModule_Poof(int k) {
     if (sprite_type[k] == 0xd && sprite_head_dir[k] != 0) {
       // buzz blob?
       int bakx = Sprite_GetX(k);
-      PrepareEnemyDrop(k, 0xd);
+      SpriteDeath_Func3(k, 0xd);
       Sprite_SetX(k, bakx);
       sprite_z_vel[k] = 0;
       sprite_ignore_projectile[k] = 0;
     } else {
       if (sprite_die_action[k] == 0) {
-        ForcePrizeDrop(k, 2, 2);
+        SpriteDeath_Func2(k, 2, 2);
       } else {
-        Sprite_DoTheDeath(k);
+        SpriteDeath_Func1(k);
       }
     }
   } else {
@@ -2632,7 +2632,7 @@ void SpriteModule_Poof(int k) {
     Sprite_CorrectOamEntries(k, 3, 0xff);
   }
 }
-void SpriteModule_Drown(int k) {
+void SpriteDrown_Main(int k) {
   static const DrawMultipleData kSpriteDrown_Dmd[8] = {
     {-7, -7, 0x0480, 0},
     {14, -6, 0x0483, 0},
@@ -2648,9 +2648,9 @@ void SpriteModule_Drown(int k) {
 
   if (sprite_ai_state[k]) {
     if (sprite_A[k] == 6)
-      Oam_AllocateFromRegionC(8);
+      OAM_AllocateFromRegionC(8);
     sprite_flags3[k] ^= 16;
-    SpriteDraw_SingleLarge(k);
+    Sprite_PrepAndDrawSingleLarge(k);
     OamEnt *oam = GetOamCurPtr();
     int j = sprite_delay_main[k];
     if (j == 1)
@@ -2667,7 +2667,7 @@ void SpriteModule_Drown(int k) {
     if (Sprite_ReturnIfPaused(k))
       return;
     sprite_subtype2[k]++;
-    Sprite_MoveXY(k);
+    Sprite_Move(k);
     Sprite_MoveZ(k);
     sprite_z_vel[k] -= 2;
     if (sign8(sprite_z[k])) {
@@ -2692,7 +2692,7 @@ void SpriteExplode_SpawnEA(int k) {
   tmp_counter = sprite_type[k];
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamicallyEx(k, 0xea, &info, 14);
-  Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_InitFromInfo(j, &info);
   sprite_z_vel[j] = 32;
   sprite_floor[j] = link_is_on_lower_level;
   sprite_A[j] = (j == 9) ? 2 : 6;
@@ -2708,7 +2708,7 @@ void SpriteExplode_SpawnEA(int k) {
   }
 }
 
-void SpriteModule_Explode(int k) {
+void SpriteExplode_Main(int k) {
   static const DrawMultipleData kSpriteExplode_Dmd[32] = {
     { 0,  0, 0x0060, 2},
     { 0,  0, 0x0060, 2},
@@ -2752,7 +2752,7 @@ void SpriteModule_Explode(int k) {
           return;
       }
       load_chr_halfslot_even_odd = 1;
-      if (!Sprite_CheckIfScreenIsClear())
+      if (!Sprite_VerifyAllOnScreenDefeated())
         flag_block_link_menu = 0;
     } else {
       Sprite_DrawMultiple(k, &kSpriteExplode_Dmd[((sprite_delay_main[k] >> 2) ^ 7) * 4], 4, NULL);
@@ -2764,11 +2764,11 @@ void SpriteModule_Explode(int k) {
   if (sprite_delay_main[k] == 32) {
     sprite_state[k] = 0;
     flag_is_link_immobilized = 0;
-    if (player_near_pit_state != 2 && Sprite_CheckIfScreenIsClear()) {
+    if (player_near_pit_state != 2 && Sprite_VerifyAllOnScreenDefeated()) {
       if (sprite_type[k] >= 0xd6) {
         music_control = 0x13;
       } else if (sprite_type[k] == 0x7a) {
-        PrepareDungeonExitFromBossFight();
+        PrepDungeonBossExit();
       } else {
         SpriteExplode_SpawnEA(k);
         return;
@@ -2783,7 +2783,7 @@ void SpriteModule_Explode(int k) {
   if (sprite_delay_main[k] >= 0xc0)
     return;
   if ((sprite_delay_main[k] & 3) == 0)
-    SpriteSfx_QueueSfx2WithPan(k, 0xc);
+    Sound_SetSfx2Pan(k, 0xc);
   if (sprite_delay_main[k] & ((type == 0x92) ? 3 : 7))
     return;
 
@@ -2795,8 +2795,8 @@ void SpriteModule_Explode(int k) {
     sprite_state[j] = 4;
     sprite_flags2[j] = 3;
     sprite_oam_flags[j] = 0xc;
-    int xoff = kSpriteExplode_RandomXY[(GetRandomNumber() & 7) | ((type == 0x92) ? 8 : 0)];
-    int yoff = kSpriteExplode_RandomXY[(GetRandomNumber() & 7) | ((type == 0x92) ? 8 : 0)];
+    int xoff = kSpriteExplode_RandomXY[(GetRandomInt() & 7) | ((type == 0x92) ? 8 : 0)];
+    int yoff = kSpriteExplode_RandomXY[(GetRandomInt() & 7) | ((type == 0x92) ? 8 : 0)];
     Sprite_SetX(j, info.r0_x + xoff);
     Sprite_SetY(j, info.r2_y + yoff - info.r4_z);
     sprite_delay_main[j] = 31;
@@ -2816,53 +2816,53 @@ static const uint8 kSpriteFall_Tab2[32] = {
 static const uint8 kSpriteFall_Tab3[16] = {0xff, 0x3f, 0x1f, 0xf, 0xf, 7, 3, 1, 0xff, 0x3f, 0x1f, 0xf, 7, 3, 1, 0};
 static const int8 kSpriteFall_Tab4[4] = {0, 4, 8, 0};
 
-void SpriteModule_Fall2(int k) {
+void SpriteCustomFall_Main(int k) {
   uint8 delay = sprite_delay_main[k];
   if (!delay) {
     sprite_state[k] = 0;
-    Sprite_ManuallySetDeathFlagUW(k);
+    Sprite_SetDungeonSpriteDeathFlag(k);
     return;
   }
 
   if (delay >= 0x40) {
     if (sprite_oam_flags[k] != 5) {
       if (!(delay & 7 | submodule_index | flag_unk1))
-        SpriteSfx_QueueSfx3WithPan(k, 0x31);
+        Sound_SetSfx3Pan(k, 0x31);
       SpriteActive_Main(k);
       PrepOamCoordsRet info;
       if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
         return;
-      Sprite_DrawDistress_custom(info.x, info.y - 8, delay + 20);
+      Sprite_CustomTimedDrawDistressMarker(info.x, info.y - 8, delay + 20);
       return;
     }
     sprite_delay_main[k] = delay = 63;
   }
 
   if (delay == 61)
-    SpriteSfx_QueueSfx2WithPan(k, 0x20);
+    Sound_SetSfx2Pan(k, 0x20);
 
   int j = delay >> 1;
 
   if (sprite_type[k] == 0x26 || sprite_type[k] == 0x13) {
     sprite_graphics[k] = kSpriteFall_Tab2[j];
-    SpriteDraw_FallingHelmaBeetle(k);
+    Sprite_DrawFall_Type0(k);
   } else {
     uint8 t = kSpriteFall_Tab1[j];
     if (t < 12)
       t += kSpriteFall_Tab4[sprite_D[k]];
     sprite_graphics[k] = t;
-    SpriteDraw_FallingHumanoid(k);
+    Sprite_DrawFall_Type1(k);
   }
   if (frame_counter & kSpriteFall_Tab3[sprite_delay_main[k] >> 3] | submodule_index)
     return;
-  Sprite_CheckTileProperty(k, 0x68);
+  Sprite_Func5(k, 0x68);
   if (sprite_tiletype != 0x20) {
     sprite_y_recoil[k] = 0;
     sprite_x_recoil[k] = 0;
   }
   sprite_y_vel[k] = (int8)sprite_y_recoil[k] >> 2;
   sprite_x_vel[k] = (int8)sprite_x_recoil[k] >> 2;
-  Sprite_MoveXY(k);
+  Sprite_Move(k);
 }
 
 static const DrawMultipleData kSpriteDrawFall0Data[12] = {
@@ -2880,7 +2880,7 @@ static const DrawMultipleData kSpriteDrawFall0Data[12] = {
   {4, 4, 0x0080, 0},
 };
 
-void SpriteDraw_FallingHelmaBeetle(int k) {
+void Sprite_DrawFall_Type0(int k) {
   PrepOamCoordsRet info;
   const DrawMultipleData *src = kSpriteDrawFall0Data + sprite_graphics[k];
   if (sprite_type[k] == 0x13)
@@ -2919,7 +2919,7 @@ static const uint8 kSpriteDrawFall1_Ext[56] = {
   0, 0, 0, 0, 0, 0, 0, 0, 
 };
 
-void SpriteDraw_FallingHumanoid(int k) {
+void Sprite_DrawFall_Type1(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
@@ -2941,8 +2941,8 @@ void SpriteDraw_FallingHumanoid(int k) {
 static const int8 kSpriteDistress_X[4] = {-3, 2, 7, 11};
 static const int8 kSpriteDistress_Y[4] = {-5, -7, -7, -5};
 
-void Sprite_DrawDistress_custom(uint16 xin, uint16 yin, uint8 time) {
-  Oam_AllocateFromRegionA(0x10);
+void Sprite_CustomTimedDrawDistressMarker(uint16 xin, uint16 yin, uint8 time) {
+  OAM_AllocateFromRegionA(0x10);
   if (!(time & 0x18))
     return;
   int i = 3;
@@ -2971,7 +2971,7 @@ void SpriteDeath_MainEx(int k, bool second_entry) {
       return;
     }
     if (sprite_delay_main[k] == 0) {
-      Sprite_DoTheDeath(k);
+      SpriteDeath_Func1(k);
       return;
     }
   }
@@ -2981,7 +2981,7 @@ void SpriteDeath_MainEx(int k, bool second_entry) {
   }
   if (!((frame_counter & 3) | submodule_index | flag_unk1))
     sprite_delay_main[k]++;
-  SpriteDeath_DrawPoof(k);
+  SpriteDeath_DrawPerishingOverlay(k);
   
   if (sprite_type[k] != 0x40 && sprite_delay_main[k] < 10)
     return;
@@ -2993,7 +2993,7 @@ void SpriteDeath_MainEx(int k, bool second_entry) {
   sprite_flags2[k] = bak;
 }
 
-void SpriteModule_Die(int k) {
+void SpriteDeath_Main(int k) {
   SpriteDeath_MainEx(k, false);
 }
 
@@ -3007,7 +3007,7 @@ static const uint8 kPrizeItems[56] = {
 };
 static const uint8 kPrizeZ[15] = {0, 0x24, 0x24, 0x24, 0x20, 0x20, 0x20, 0x24, 0x24, 0x24, 0x24, 0, 0x24, 0x20, 0x20};
 
-void Sprite_DoTheDeath(int k) {
+void SpriteDeath_Func1(int k) {
   uint8 type = sprite_type[k];
   // This is how Vitreous knows whether to come out of his slime pool
   if (type == 0xBE)
@@ -3015,7 +3015,7 @@ void Sprite_DoTheDeath(int k) {
 
   if (type == 0xaa && sprite_E[k] != 0) {
     uint8 bak = sprite_subtype[k];
-    PrepareEnemyDrop(k, kPikitDropItems[sprite_E[k] - 1]);
+    SpriteDeath_Func3(k, kPikitDropItems[sprite_E[k] - 1]);
     sprite_subtype[k] = bak;
     if (bak == 1) {
       sprite_oam_flags[k] = 9;
@@ -3035,7 +3035,7 @@ void Sprite_DoTheDeath(int k) {
     sprite_N[k] = 255;
     uint8 arg = (drop_item == 1) ? 0xe4 : // small key, big key or rupee
                 (drop_item == 3) ? 0xd9 : 0xe5;
-    PrepareEnemyDrop(k, arg);
+    SpriteDeath_Func3(k, arg);
     return;
   }
 
@@ -3046,12 +3046,12 @@ void Sprite_DoTheDeath(int k) {
       if (++luck_kill_counter >= 10)
         item_drop_luck = 0;
       if (luck == 1) {
-        ForcePrizeDrop(k, prize, 1);
+        SpriteDeath_Func2(k, prize, 1);
         return;
       }
     } else {
-      if (!(GetRandomNumber() & kPrizeMasks[prize])) {
-        ForcePrizeDrop(k, prize, prize);
+      if (!(GetRandomInt() & kPrizeMasks[prize])) {
+        SpriteDeath_Func2(k, prize, prize);
         return;
       }
     }
@@ -3060,22 +3060,22 @@ void Sprite_DoTheDeath(int k) {
   SpriteDeath_Func4(k);
 }
 
-void ForcePrizeDrop(int k, uint8 prize, uint8 slot) {
+void SpriteDeath_Func2(int k, uint8 prize, uint8 slot) {
   prize = prize * 8 | prizes_arr1[slot];
   prizes_arr1[slot] = (prizes_arr1[slot] + 1) & 7;
-  PrepareEnemyDrop(k, kPrizeItems[prize]);
+  SpriteDeath_Func3(k, kPrizeItems[prize]);
 }
 
-void PrepareEnemyDrop(int k, uint8 item) {
+void SpriteDeath_Func3(int k, uint8 item) {
   sprite_type[k] = item;
   if (item == 0xe5)
-    SpritePrep_BigKey_load_graphics(k);
+    SpritePrep_LoadBigKeyGfx(k);
   else if (item == 0xe4)
     SpritePrep_KeySetItemDrop(k);
 
   sprite_state[k] = 9;
   uint8 zbak = sprite_z[k];
-  SpritePrep_LoadProperties(k);
+  Sprite_LoadProperties(k);
   sprite_ignore_projectile[k]++;
 
   uint8 pz = kPrizeZ[sprite_type[k] - 0xd8];
@@ -3088,14 +3088,14 @@ void PrepareEnemyDrop(int k, uint8 item) {
 }
 
 
-void Ancilla_SpawnFallingPrize(uint8 item) {
-  AncillaAdd_FallingPrize(0x29, item, 4);
+void Sprite_SpawnFallingItem(uint8 item) {
+  AddPendantOrCrystal(0x29, item, 4);
 }
 
 void SpriteDeath_Func4(int k) {
-  if (sprite_type[k] == 0xa2 && Sprite_CheckIfScreenIsClear())
-    Ancilla_SpawnFallingPrize(4);
-  Sprite_ManuallySetDeathFlagUW(k);
+  if (sprite_type[k] == 0xa2 && Sprite_VerifyAllOnScreenDefeated())
+    Sprite_SpawnFallingItem(4);
+  Sprite_SetDungeonSpriteDeathFlag(k);
   num_sprites_killed++;
   if (sprite_type[k] == 0x40) {
     // evil barrier
@@ -3122,7 +3122,7 @@ static const uint8 kPerishOverlay_Flags[32] = {
   4, 0x44, 4, 0x44, 4, 0x44, 4, 0x44, 0x44, 4, 0xc4, 0x84, 4, 0x44, 0x84, 0xc4, 
 };
 
-void SpriteDeath_DrawPoof(int k) {
+void SpriteDeath_DrawPerishingOverlay(int k) {
   if (dung_hdr_collision == 4)
     sprite_obj_prio[k] = 0x30;
   PrepOamCoordsRet info;
@@ -3159,7 +3159,7 @@ void Sprite_CorrectOamEntries(int k, int n, uint8 islarge) {
   } while (oam++, extp++, --n >= 0);
 }
 
-void SpriteModule_Burn(int k) {
+void SpriteBurn_Main(int k) {
   static const uint8 kFlame_Gfx[32] = {
     5, 4, 3, 1, 2, 0, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 
     1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 1, 2, 3, 0, 
@@ -3167,7 +3167,7 @@ void SpriteModule_Burn(int k) {
   sprite_hit_timer[k] = 0;
   int j = sprite_delay_main[k] - 1;
   if (j == 0) {
-    Sprite_DoTheDeath(k);
+    SpriteDeath_Func1(k);
     return;
   }
   uint8 bak = sprite_graphics[k];
@@ -3188,7 +3188,7 @@ void SpriteModule_Burn(int k) {
   }
 }
 
-void CarriedSprite_CheckForThrow(int k) {
+void SpriteHeld_ThrowQuery(int k) {
   static const int8 kSpriteHeld_Throw_Xvel[4] = {0, 0, -62, 63};
   static const int8 kSpriteHeld_Throw_Yvel[4] = {-62, 63, 0, 0};
   static const uint8 kSpriteHeld_Throw_Zvel[4] = {4, 4, 4, 4};
@@ -3206,7 +3206,7 @@ void CarriedSprite_CheckForThrow(int k) {
     }
   }
 
-  SpriteSfx_QueueSfx3WithPan(k, 0x13);
+  Sound_SetSfx3Pan(k, 0x13);
   link_picking_throw_state = 2;
   sprite_state[k] = sprite_unk4[k];
   sprite_z_vel[k] = 0;
@@ -3219,7 +3219,7 @@ void CarriedSprite_CheckForThrow(int k) {
   sprite_delay_aux4[k] = 0;
 }
 
-void SpriteModule_Carried(int k) {
+void SpriteHeld_Main(int k) {
 
 
   static const uint8 kSpriteHeld_ZForFrame[6] = {3, 2, 1, 3, 2, 1};
@@ -3251,8 +3251,8 @@ void SpriteModule_Carried(int k) {
   uint16 z = link_z_coord + 1 + kSpriteHeld_ZForFrame[an];
   Sprite_SetY(k, link_y_coord + 8 - z);
   sprite_floor[k] = link_is_on_lower_level & 1;
-  CarriedSprite_CheckForThrow(k);
-  Sprite_Get16BitCoords(k);
+  SpriteHeld_ThrowQuery(k);
+  Sprite_Get_16_bit_Coords(k);
   if (sprite_unk4[k] != 11) {
     SpriteActive_Main(k);
     if (sprite_delay_aux4[k] == 1) {
@@ -3268,31 +3268,31 @@ void SpriteModule_Carried(int k) {
   }
 }
 
-void SpriteModule_Stunned(int k) {
+void SpriteStunned_Main(int k) {
   SpriteStunned_MainEx(k, false);
 }
 static HandlerFuncK *const kSprite_ExecuteSingle[12] = {
   &Sprite_inactiveSprite,
-  &SpriteModule_Fall1,
-  &SpriteModule_Poof,
-  &SpriteModule_Drown,
-  &SpriteModule_Explode,
-  &SpriteModule_Fall2,
-  &SpriteModule_Die,
-  &SpriteModule_Burn,
-  &SpriteModule_Initialize,
+  &SpriteFall_Main,
+  &SpritePoof_Main,
+  &SpriteDrown_Main,
+  &SpriteExplode_Main,
+  &SpriteCustomFall_Main,
+  &SpriteDeath_Main,
+  &SpriteBurn_Main,
+  &SpritePrep_Main,
   &SpriteActive_Main,
-  &SpriteModule_Carried,
-  &SpriteModule_Stunned,
+  &SpriteHeld_Main,
+  &SpriteStunned_Main,
 };
 
-bool Sprite_TutorialGuard_ShowMessageOnContact(int k, uint16 msg) {
+bool Sprite_ShowMessageIfPlayerTouching(int k, uint16 msg) {
   dialogue_message_index = msg;
   uint8 bak2 = sprite_flags2[k];
   uint8 bak4 = sprite_flags4[k];
   sprite_flags2[k] = 0x80;
   sprite_flags4[k] = 0x07;
-  bool rv = Sprite_CheckDamageToLink_same_layer(k);
+  bool rv = Sprite_CheckDamageToPlayerSameLayer(k);
   sprite_flags2[k] = bak2;
   sprite_flags4[k] = bak4;
   if (!rv)
@@ -3313,7 +3313,7 @@ void Sprite_ShowMessageMinimal() {
   main_module_index = 14;
 }
 
-void Sprite_MiniMoldorm_Recoil(int k) {
+void Sprite_HitTimer24(int k) {
   if (sprite_state[k] < 9)
     return;
   tmp_counter = sprite_state[k];
@@ -3321,7 +3321,7 @@ void Sprite_MiniMoldorm_Recoil(int k) {
   uint8 dmg = sprite_give_damage[k];
   if (dmg == 253) {
     sprite_give_damage[k] = 0;
-    SpriteSfx_QueueSfx3WithPan(k, 9);
+    Sound_SetSfx3Pan(k, 9);
     sprite_state[k] = 7;
     sprite_delay_main[k] = 0x70;
     sprite_flags2[k] += 2;
@@ -3337,10 +3337,10 @@ void Sprite_MiniMoldorm_Recoil(int k) {
     if (sprite_unk5[k]) {
       sprite_defl_bits[k] |= 8;
       sprite_flags5[k] &= ~0x80;
-      SpriteSfx_QueueSfx2WithPan(k, 15);
+      Sound_SetSfx2Pan(k, 15);
       sprite_z_vel[k] = 24;
       sprite_bump_damage[k] &= ~0x80;
-      Sprite_ZeroVelocity_XY(k);
+      Sprite_ZeroVelocity(k);
     }
     sprite_state[k] = 11;
     sprite_delay_main[k] = 64;
@@ -3368,13 +3368,13 @@ void Sprite_MiniMoldorm_Recoil(int k) {
 
   uint8 type = sprite_type[k];
   if (type != 0x1b)
-    SpriteSfx_QueueSfx3WithPan(k, 9);
+    Sound_SetSfx3Pan(k, 9);
 
   if (type == 0x40)
     save_ow_event_info[BYTE(overworld_screen_index)] |= 0x40;
   else if (type == 0xec) {
     if (sprite_C[k] == 2)
-      ThrowableScenery_TransmuteToDebris(k);
+      Sprite_Func21(k);
     return;
   }
 
@@ -3387,7 +3387,7 @@ void Sprite_MiniMoldorm_Recoil(int k) {
   if (type == 0xc) {
     Sprite_Func3(k);
   } else if (type == 0x92) {
-    Sprite_KillFriends();
+    Sprite_SchedulePeersForDeath();
     sprite_delay_main[k] = 255;
     goto out_common;
   } else if (type == 0xcb) {
@@ -3415,7 +3415,7 @@ void Sprite_MiniMoldorm_Recoil(int k) {
     sprite_state[k] = 9;
     goto out_common;
   } else if (type == 0x7a) {
-    Sprite_KillFriends();
+    Sprite_SchedulePeersForDeath();
     sprite_state[k] = 9;
     sprite_ignore_projectile[k] = 9;
     if (is_in_dark_world == 0) {
@@ -3446,7 +3446,7 @@ void Sprite_MiniMoldorm_Recoil(int k) {
       sprite_flags5[k] = 1;
   } else {
     if (type != 0xa2)
-      Sprite_KillFriends();
+      Sprite_SchedulePeersForDeath();
     sprite_state[k] = 4;
     sprite_A[k] = 0;
     sprite_delay_main[k] = 255;
@@ -3455,11 +3455,11 @@ void Sprite_MiniMoldorm_Recoil(int k) {
     flag_block_link_menu++;
   out_common2:
     sound_effect_2 = 0;
-    SpriteSfx_QueueSfx3WithPan(k, 0x22);
+    Sound_SetSfx3Pan(k, 0x22);
   }
 }
 
-void Sprite_KillFriends() {
+void Sprite_SchedulePeersForDeath() {
   for(int j = 15; j >= 0; j--) {
     if (j != cur_object_index && sprite_state[j] && !(sprite_defl_bits[j] & 2) && sprite_type[j] != 0x7a) {
       sprite_state[j] = 6;
@@ -3480,23 +3480,23 @@ void Sprite_HitTimer31(int k) {
   }
 }
 
-void Sprite_Get16BitCoords(int k) {
+void Sprite_Get_16_bit_Coords(int k) {
   cur_sprite_x = sprite_x_lo[k] | sprite_x_hi[k] << 8;
   cur_sprite_y = sprite_y_lo[k] | sprite_y_hi[k] << 8;
 }
 
-void Sprite_TimersAndOam(int k) {
-  Sprite_Get16BitCoords(k);
+void Sprite_ExecuteSingle2(int k) {
+  Sprite_Get_16_bit_Coords(k);
 
   uint8 num = ((sprite_flags2[k] & 0x1f) + 1) * 4;
 
   if (sort_sprites_setting) {
     if (sprite_floor[k])
-      Oam_AllocateFromRegionF(num);
+      OAM_AllocateFromRegionF(num);
     else
-      Oam_AllocateFromRegionD(num);
+      OAM_AllocateFromRegionD(num);
   } else {
-    Oam_AllocateFromRegionA(num);
+    OAM_AllocateFromRegionA(num);
   }
 
   if (!(submodule_index | flag_unk1)) {
@@ -3515,7 +3515,7 @@ void Sprite_TimersAndOam(int k) {
         if (timer == 31) {
           Sprite_HitTimer31(k);
         } else if (timer == 24) {
-          Sprite_MiniMoldorm_Recoil(k);
+          Sprite_HitTimer24(k);
         }
       }
       if (sprite_give_damage[k] < 251)
@@ -3539,11 +3539,11 @@ void Sprite_TimersAndOam(int k) {
 void Sprite_ExecuteSingle(int k) {
   uint8 st = sprite_state[k];
   if (st != 0)
-    Sprite_TimersAndOam(k);
+    Sprite_ExecuteSingle2(k);
   kSprite_ExecuteSingle[st](k);
 }
 
-void UncacheAndExecuteSprite(int k) {
+void CacheSprite_ExecuteSingle(int k) {
   uint8 bak0 = sprite_state[k];
   uint8 bak1 = sprite_type[k];
   uint8 bak2 = sprite_x_lo[k];
@@ -3622,7 +3622,7 @@ void UncacheAndExecuteSprite(int k) {
 
 }
 
-void ExecuteCachedSprites() {
+void CacheSprite_ExecuteAll() {
   if (!player_is_indoors || submodule_index == 0 || submodule_index == 14 || alt_sprites_flag == 0) {
     alt_sprites_flag = 0;
     return;
@@ -3630,12 +3630,12 @@ void ExecuteCachedSprites() {
   for (int i = 15; i >= 0; i--) {
     cur_object_index = i;
     if (alt_sprite_state[i])
-      UncacheAndExecuteSprite(i);
+      CacheSprite_ExecuteSingle(i);
   }
 }
 // it's not my job to tell you what to think, my job is to think about what you tell me'
 
-void Sprite_KillSelf(int k) {
+void Sprite_SelfTerminate(int k) {
   if (!(sprite_defl_bits[k] & 0x40) && player_is_indoors)
     return;
   sprite_state[k] = 0;
@@ -3670,7 +3670,7 @@ bool Sprite_PrepOamCoordOrDoubleRet(int k, PrepOamCoordsRet *ret) {
   if ((uint16)(x + 0x40) >= 0x170 || (uint16)(y + 0x40) >= 0x170 && !(sprite_flags4[k] & 0x20)) {
     sprite_pause[k]++;
     if (!(sprite_defl_bits[k] & 0x80))
-      Sprite_KillSelf(k);
+      Sprite_SelfTerminate(k);
     out_of_bounds = true;
   }
   ret->x = R0;
@@ -3679,7 +3679,7 @@ bool Sprite_PrepOamCoordOrDoubleRet(int k, PrepOamCoordsRet *ret) {
   HIBYTE(dungmap_var7) = ret->y;
   return out_of_bounds;
 }
-void Sprite_PrepOamCoord(int k, PrepOamCoordsRet *ret) {
+void Sprite_PrepOamCoordSafe(int k, PrepOamCoordsRet *ret) {
   Sprite_PrepOamCoordOrDoubleRet(k, ret);
 }
 
@@ -3690,14 +3690,14 @@ void Sprite_Main() {
     ancilla_floor[2] = 0;
     ancilla_floor[3] = 0;
     ancilla_floor[4] = 0;
-    Sprite_ProximityActivation();
+    Sprite_RangeBasedActivation();
   }
   is_in_dark_world = (savegame_is_darkworld != 0);
   if (submodule_index == 0)
     drag_player_x = drag_player_y = 0;
   Oam_ResetRegionBases();
   Garnish_ExecuteUpperSlots();
-  Follower_Main();
+  Tagalong_Main();
   byte_7E0FB2 = flag_is_sprite_to_pick_up;
   flag_is_sprite_to_pick_up = 0;
   HIBYTE(dungmap_var8) = 0x80;
@@ -3720,7 +3720,7 @@ void Sprite_Main() {
   }
   Garnish_ExecuteLowerSlots();
   byte_7E069E[0] = byte_7E069E[1] = 0;
-  ExecuteCachedSprites();
+  CacheSprite_ExecuteAll();
   if (load_chr_halfslot_even_odd)
     byte_7E0FC6 = load_chr_halfslot_even_odd;
 }
@@ -3739,7 +3739,7 @@ int Sprite_SpawnDynamicallyEx(int k, uint8 what, SpriteSpawnInfo *info, int j) {
       info->r4_z = sprite_z[k];
       info->r5_overlord_x = overlord_x_lo[k] | overlord_x_hi[k] << 8;
       info->r7_overlord_y = overlord_y_lo[k] | overlord_y_hi[k] << 8;
-      SpritePrep_LoadProperties(j);
+      Sprite_LoadProperties(j);
       if (!player_is_indoors) {
         sprite_N_word[j] = 0xffff;
       } else {
@@ -3766,18 +3766,18 @@ void Sprite_NullifyHookshotDrag() {
   link_y_coord_safe_return_hi = link_y_coord >> 8;
   link_x_coord = link_x_coord_prev;
   link_y_coord = link_y_coord_prev;
-  HandleIndoorCameraAndDoors();
+  Player_CheckDoorwayQuadrantMovement();
 }
 
-int Sprite_ShowSolicitedMessage(int k, uint16 msg) {
+int Sprite_ShowSolicitedMessageIfPlayerFacing(int k, uint16 msg) {
   static const uint8 kShowMessageFacing_Tab0[4] = {4, 6, 0, 2};
   dialogue_message_index = msg;
-  if (!Sprite_CheckDamageToLink_same_layer(k) ||
-      Sprite_CheckIfLinkIsBusy() ||
+  if (!Sprite_CheckDamageToPlayerSameLayer(k) ||
+      Sprite_CheckIfPlayerPreoccupied() ||
       !(filtered_joypad_L & 0x80) ||
       sprite_delay_aux4[k] || link_auxiliary_state == 2)
     return sprite_D[k];
-  uint8 dir = Sprite_DirectionToFaceLink(k, NULL);
+  uint8 dir = Sprite_DirectionToFacePlayer(k, NULL);
   if (link_direction_facing != kShowMessageFacing_Tab0[dir])
     return sprite_D[k];
   Sprite_ShowMessageUnconditional(dialogue_message_index);
@@ -3785,12 +3785,12 @@ int Sprite_ShowSolicitedMessage(int k, uint16 msg) {
   return dir ^ 0x103;
 }
 
-int Sprite_ShowMessageOnContact(int k, uint16 msg) {
+int Sprite_ShowMessageFromPlayerContact(int k, uint16 msg) {
   dialogue_message_index = msg;
-  if (!Sprite_CheckDamageToLink_same_layer(k) || link_auxiliary_state == 2)
+  if (!Sprite_CheckDamageToPlayerSameLayer(k) || link_auxiliary_state == 2)
     return sprite_D[k];
   Sprite_ShowMessageUnconditional(dialogue_message_index);
-  return Sprite_DirectionToFaceLink(k, NULL) ^ 0x103;
+  return Sprite_DirectionToFacePlayer(k, NULL) ^ 0x103;
 }
 
 void Sprite_ShowMessageUnconditional(uint16 msg) {
@@ -3802,14 +3802,14 @@ void Sprite_ShowMessageUnconditional(uint16 msg) {
   main_module_index = 14;
   Sprite_NullifyHookshotDrag();
   link_speed_setting = 0;
-  Link_CancelDash();
+  Player_HaltDashAttack();
   link_auxiliary_state = 0;
   link_incapacitated_timer = 0;
   if (link_player_handler_state == kPlayerState_RecoilWall)
     link_player_handler_state = kPlayerState_Ground;
 }
 
-bool Sprite_CheckIfLinkIsBusy() {
+bool Sprite_CheckIfPlayerPreoccupied() {
   if (link_auxiliary_state | link_pose_for_item | (link_state_bits & 0x80))
     return true;
   for (int i = 4; i >= 0; i--) {
@@ -3819,14 +3819,14 @@ bool Sprite_CheckIfLinkIsBusy() {
   return false;
 }
 
-bool Sprite_CheckDamageToAndFromLink(int k) {
-  Sprite_CheckDamageFromLink(k);
-  return Sprite_CheckDamageToLink(k);
+bool Sprite_CheckDamageBoth(int k) {
+  Sprite_CheckDamageFromPlayer(k);
+  return Sprite_CheckDamageToPlayer(k);
 }
 
 void SpriteStunned_MainEx(int k, bool second_entry) {
   if (second_entry)
-    goto ThrownSprite_TileAndSpriteInteraction;
+    goto ThrownSprite_TileAndPeerInteraction;
   Sprite_DrawRippleIfInWater(k);
   SpriteStunned_Main_Func1(k);
   if (Sprite_ReturnIfPaused(k))
@@ -3837,22 +3837,22 @@ void SpriteStunned_MainEx(int k, bool second_entry) {
     sprite_x_vel[k] = sprite_y_vel[k] = 0;
   }
   if (sprite_delay_main[k] < 0x20)
-    Sprite_CheckDamageFromLink(k);
+    Sprite_CheckDamageFromPlayer(k);
   if (Sprite_ReturnIfRecoiling(k))
     return;
-  Sprite_MoveXY(k);
+  Sprite_Move(k);
   if (!sprite_E[k]) {
     Sprite_CheckTileCollision(k);
     if (!sprite_state[k])
       return;
-  ThrownSprite_TileAndSpriteInteraction:
+  ThrownSprite_TileAndPeerInteraction:
     if (sprite_wallcoll[k] & 0xf) {
-      Sprite_ApplyRicochet(k);
+      Sprite_NegateHalveSpeedEtc(k);
       if (sprite_state[k] == 11)
-        SpriteSfx_QueueSfx2WithPan(k, 5);
+        Sound_SetSfx2Pan(k, 5);
     }
   }
-  Sprite_CheckTileProperty(k, 0x68);
+  Sprite_Func5(k, 0x68);
 
   if (kSpriteInit_Flags3[sprite_type[k]] & 0x10) {
     sprite_flags3[k] |= 0x10;
@@ -3870,7 +3870,7 @@ void SpriteStunned_MainEx(int k, bool second_entry) {
       sprite_flags2[k] = 3;
       return;
     }
-    ThrowableScenery_TransmuteIfValid(k);
+    Sprite_Func20(k);
     uint8 a = sprite_tiletype;
     if (sprite_tiletype == 32 && !(a = sprite_flags[k] >> 1, sprite_flags[k] & 1)) {  // wtf
       Sprite_Func8(k);
@@ -3883,12 +3883,12 @@ void SpriteStunned_MainEx(int k, bool second_entry) {
       SpriteSpawnInfo info;
 
       if (sign8(z - 0xf0) && (j = Sprite_SpawnDynamically(k, 0xec, &info)) >= 0) {
-        Sprite_SetSpawnedCoordinates(j, &info);
+        Sprite_InitFromInfo(j, &info);
         Sprite_Func22(j);
       }
     } else if (a == 8) {
-      if (sprite_type[k] == 0xd2 || (GetRandomNumber() & 1))
-        Sprite_SpawnLeapingFish(k);
+      if (sprite_type[k] == 0xd2 || (GetRandomInt() & 1))
+        Fish_SpawnLeapingFish(k);
       Sprite_Func22(k);
       return;
     }
@@ -3908,27 +3908,27 @@ void SpriteStunned_MainEx(int k, bool second_entry) {
     if (Sprite_ReturnIfLifted(k))
       return;
     if (sprite_type[k] != 0x4a)
-      ThrownSprite_CheckDamageToSprites(k);
+      ThrownSprite_CheckDamageToPeers(k);
   }
 }
 
 void Sprite_Func22(int k) {
-  sound_effect_1 = Sprite_CalculateSfxPan(k) | 0x28;
+  sound_effect_1 = Sprite_GetSfxPan(k) | 0x28;
   sprite_state[k] = 3;
   sprite_delay_main[k] = 15;
   sprite_ai_state[k] = 0;
-  GetRandomNumber(); // wtf
+  GetRandomInt(); // wtf
   sprite_flags2[k] = 3;
 }
 
 void ThrowableScenery_InteractWithSpritesAndTiles(int k) {
-  Sprite_MoveXY(k);
+  Sprite_Move(k);
   if (!sprite_E[k])
     Sprite_CheckTileCollision(k);
-  ThrownSprite_TileAndSpriteInteraction(k);
+  ThrownSprite_TileAndPeerInteraction(k);
 }
 
-void ThrownSprite_TileAndSpriteInteraction(int k) {
+void ThrownSprite_TileAndPeerInteraction(int k) {
   SpriteStunned_MainEx(k, true);
 }
 
@@ -3953,16 +3953,16 @@ static const uint8 kSpawnSecretItem_ZVel[22] = {
   0, 0, 16, 0, 0, 0, 
 };
 
-void SpritePrep_SmallKey(int k);
+void SpritePrep_Key(int k);
 
 void Sprite_SpawnSecret(int k) {
-  if (!player_is_indoors && (GetRandomNumber() & 8))
+  if (!player_is_indoors && (GetRandomInt() & 8))
     return;
   int b = BYTE(dung_secrets_unk1);
   if (b == 0)
     return;
   if (b == 4)
-    b = 19 + (GetRandomNumber() & 3);
+    b = 19 + (GetRandomInt() & 3);
   if (!kSpawnSecretItems[b - 1])
     return;
   SpriteSpawnInfo info;
@@ -3980,7 +3980,7 @@ void Sprite_SpawnSecret(int k) {
   sprite_delay_aux2[j] = 48;
   uint8 type = sprite_type[j];
   if (type == 0xe4) {
-    SpritePrep_SmallKey(j);
+    SpritePrep_Key(j);
     sprite_stunned[j] = 255;
   } else if (type == 0xb) {
     sound_effect_1 = 0x30;
@@ -4007,21 +4007,21 @@ bool Sprite_ReturnIfLiftedPermissive(int k) {
     return false;
   if ((uint8)(flag_is_sprite_to_pick_up_cached - 1) != cur_object_index) {
     SpriteHitBox hb;
-    Link_SetupHitBox_conditional(&hb);
+    GetPlayerHitBoxUnlessDisabled(&hb);
     Sprite_SetupHitBox(k, &hb);
-    if (CheckIfHitBoxesOverlap(&hb))
+    if (Utility_CheckIfHitBoxesOverlap(&hb))
       byte_7E0FB2 = flag_is_sprite_to_pick_up = k + 1;
     return false;
   } else {
     BYTE(filtered_joypad_L) = 0;
     sprite_E[k] = 0;
-    SpriteSfx_QueueSfx2WithPan(k, 0x1d);
+    Sound_SetSfx2Pan(k, 0x1d);
     sprite_unk4[k] = sprite_state[k];
     sprite_state[k] = 10;
     sprite_delay_main[k] = 16;
     sprite_unk3[k] = 0;
     sprite_I[k] = 0;
-    link_direction_facing = kSprite_ReturnIfLifted_Dirs[Sprite_DirectionToFaceLink(k, NULL)];
+    link_direction_facing = kSprite_ReturnIfLifted_Dirs[Sprite_DirectionToFacePlayer(k, NULL)];
     return true;
   }
 }
@@ -4039,7 +4039,7 @@ bool Sprite_ReturnIfLifted(int k) {
   return Sprite_ReturnIfLiftedPermissive(k);
 }
 
-void Sprite_CheckIfLifted_permissive(int k) {
+void Sprite_CheckIfLiftedPermissive(int k) {
   Sprite_ReturnIfLiftedPermissive(k);
 }
 
@@ -4057,7 +4057,7 @@ uint8 Sprite_BounceFromTileCollision(int k) {
   return 0;
 }
 
-void Sprite_SetSpawnedCoordinates(int k, SpriteSpawnInfo *info) {
+void Sprite_InitFromInfo(int k, SpriteSpawnInfo *info) {
   sprite_x_lo[k] = info->r0_x;
   sprite_x_hi[k] = info->r0_x >> 8;
   sprite_y_lo[k] = info->r2_y;
@@ -4068,7 +4068,7 @@ void Sprite_SetSpawnedCoordinates(int k, SpriteSpawnInfo *info) {
 static const uint8 kAbsorbable_Tab1[15] = {0, 1, 1, 1, 2, 2, 2, 0, 1, 1, 2, 2, 1, 2, 2};
 static const uint8 kAbsorbable_Tab2[19] = {0, 0, 0, 0, 1, 2, 3, 0, 0, 4, 5, 0, 0, 0, 0, 2, 4, 6, 2};
 
-bool SpriteDraw_AbsorbableTransient(int k, bool transient) {
+bool Sprite_DrawAbsorbableOrReturn(int k, bool transient) {
   if (transient && Sprite_ReturnIfPhasingOut(k))
     return false;
   if (sort_sprites_setting == 0 && player_is_indoors != 0)
@@ -4076,7 +4076,7 @@ bool SpriteDraw_AbsorbableTransient(int k, bool transient) {
   if (byte_7E0FC6 >= 3)
     return false;
   if (sprite_delay_aux2[k] != 0)
-    Oam_AllocateFromRegionC(12);
+    OAM_AllocateFromRegionC(12);
   if (sprite_E[k] != 0)
     return true;
   uint8 j = sprite_type[k];
@@ -4088,7 +4088,7 @@ bool SpriteDraw_AbsorbableTransient(int k, bool transient) {
   }
   uint8 t = kAbsorbable_Tab1[j - 0xd8];
   if (t == 0) {
-    SpriteDraw_SingleSmall(k);
+    Sprite_PrepAndDrawSingleSmall(k);
     return false;
   }
   if (t == 2) {
@@ -4097,11 +4097,11 @@ bool SpriteDraw_AbsorbableTransient(int k, bool transient) {
         goto draw_key;
       sprite_graphics[k] = 1;
     }
-    SpriteDraw_SingleLarge(k);
+    Sprite_PrepAndDrawSingleLarge(k);
     return false;
   }
 draw_key:
-  Sprite_DrawThinAndTall(k);
+  Sprite_DrawKey(k);
   return false;
 }
 
@@ -4142,7 +4142,7 @@ void Sprite_DrawNumberedAbsorbable(int k, int a) {
     oam->flags = info.flags;
     bytewise_extended_oam[oam - oam_buf] = kNumberedAbsorbable_Ext[j] | (x >> 8 & 1);
   } while (oam++, --n >= 0);
-  SpriteDraw_Shadow(k, &info);
+  Sprite_DrawShadow(k, &info);
 }
 
 void Sprite_CheckAbsorptionByPlayer(int k) {
@@ -4158,7 +4158,7 @@ const uint8 kAbsorbBigKey[2] = {0x40, 0x20};
 void Sprite_HandleAbsorptionByPlayer(int k) {
   sprite_state[k] = 0;
   int t = sprite_type[k] - 0xd8;
-  SpriteSfx_QueueSfx3WithPan(k, kAbsorptionSfx[t]);
+  Sound_SetSfx3Pan(k, kAbsorptionSfx[t]);
   switch(t) {
   case 0:
     link_hearts_filler += 8;
@@ -4182,7 +4182,7 @@ void Sprite_HandleAbsorptionByPlayer(int k) {
     link_arrow_filler += 10;
     break;
   case 11:
-    SpriteSfx_QueueSfx2WithPan(k, 0x31);
+    Sound_SetSfx2Pan(k, 0x31);
     link_hearts_filler += 56;
     break;
   case 12:
@@ -4194,7 +4194,7 @@ void Sprite_HandleAbsorptionByPlayer(int k) {
   after_getkey:
     sprite_N[k] = sprite_subtype[k];
     dung_savegame_state_bits |= kAbsorbBigKey[sprite_die_action[k]] << 8;
-    Sprite_ManuallySetDeathFlagUW(k);
+    Sprite_SetDungeonSpriteDeathFlag(k);
     break;
   case 14:
     link_shield_type = sprite_subtype[k];
@@ -4202,13 +4202,13 @@ void Sprite_HandleAbsorptionByPlayer(int k) {
   }
 }
 
-void Sprite_ManuallySetDeathFlagUW(int k) {
+void Sprite_SetDungeonSpriteDeathFlag(int k) {
   if (!player_is_indoors || sprite_defl_bits[k] & 1 || sign8(sprite_N[k]))
     return;
   sprite_where_in_room[dungeon_room_index2] |= 1 << sprite_N[k];
 }
 
-bool Sprite_HandleDraggingByAncilla(int k) {
+bool Sprite_ReturnHandleDraggingByAncilla(int k) {
   int j = sprite_B[k];
   if (j-- == 0)
     return false;
@@ -4224,7 +4224,7 @@ bool Sprite_HandleDraggingByAncilla(int k) {
   return true;
 }
 
-bool Sprite_CheckIfScreenIsClear() {
+bool Sprite_VerifyAllOnScreenDefeated() {
   for (int i = 15; i >= 0; i--) {
     if (sprite_state[i] && !(sprite_flags4[i] & 0x40)) {
       uint16 x = Sprite_GetX(i) - BG2HOFS_copy2;
@@ -4233,18 +4233,18 @@ bool Sprite_CheckIfScreenIsClear() {
         return false;
     }
   }
-  return Sprite_CheckIfOverlordsClear();
+  return Sprite_VerifyOverlordDefeated();
 }
 
-bool Sprite_CheckIfRoomIsClear() {
+bool Sprite_VerifyAllOnScreenDefeatedB() {
   for (int i = 15; i >= 0; i--) {
     if (sprite_state[i] && !(sprite_flags4[i] & 0x40))
       return false;
   }
-  return Sprite_CheckIfOverlordsClear();
+  return Sprite_VerifyOverlordDefeated();
 }
 
-bool Sprite_CheckIfOverlordsClear() {
+bool Sprite_VerifyOverlordDefeated() {
   for (int i = 7; i >= 0; i--) {
     if (overlord_type[i] == 0x14 || overlord_type[i] == 0x18)
       return false;
@@ -4252,7 +4252,7 @@ bool Sprite_CheckIfOverlordsClear() {
   return true;
 }
 
-void Sprite_InitializeMirrorPortal() {
+void Sprite_ReinitWarpVortex() {
   for (int k = 15; k >= 0; k--) {
     if (sprite_state[k] && sprite_type[k] == 0x6c)
       sprite_state[k] = 0;
@@ -4271,7 +4271,7 @@ void Sprite_InitializeMirrorPortal() {
 }
 
 
-void Sprite_InitializeSlots() {
+void InitSpriteSlots() {
   for (int k = 15; k >= 0; k--) {
     uint8 st = sprite_state[k], ty = sprite_type[k];
     if (st != 0) {
@@ -4293,21 +4293,21 @@ void Sprite_InitializeSlots() {
   }
 }
 
-void Sprite_HaltAllMovement() {
+void Player_HaltSpecialPlayerMovement() {
   Sprite_NullifyHookshotDrag();
   link_speed_setting = 0;
-  Link_CancelDash();
+  Player_HaltDashAttack();
 }
 
-void Sprite_BehaveAsBarrier(int k) {
+void Sprite_PlayerCantPassThrough(int k) {
   uint8 bak = sprite_flags4[k];
   sprite_flags4[k] = 0;
-  if (Sprite_CheckDamageToLink_same_layer(k))
-    Sprite_HaltAllMovement();
+  if (Sprite_CheckDamageToPlayerSameLayer(k))
+    Player_HaltSpecialPlayerMovement();
   sprite_flags4[k] = bak;
 }
 
-bool Sprite_TrackBodyToHead(int k) {
+bool Sprite_MakeBodyTrackHeadDirection(int k) {
   if (sprite_head_dir[k] != sprite_D[k]) {
     if (frame_counter & 0x1f)
       return false;
@@ -4330,7 +4330,7 @@ void Overworld_SubstituteAlternateSecret() {
   };
   static const uint8 kSecretSubst_Tab2[16] = { 1, 1, 1, 1, 15, 1, 1, 18, 16, 1, 1, 1, 17, 1, 1, 3 };
   static const uint8 kSecretSubst_Tab1[16] = { 0, 0, 0, 0, 2, 0, 0, 8, 16, 0, 0, 0, 1, 0, 0, 0 };
-  if (GetRandomNumber() & 1)
+  if (GetRandomInt() & 1)
     return;
   int n = 0;
   for (int j = 15; j >= 0; j--) {
@@ -4344,7 +4344,7 @@ void Overworld_SubstituteAlternateSecret() {
     BYTE(dung_secrets_unk1) = kSecretSubst_Tab2[j];
 }
 
-int Sprite_SpawnThrowableTerrain_silently(uint8 what, uint16 x, uint16 y) {
+int Sprite_SpawnThrowableTerrain_Internal(uint8 what, uint16 x, uint16 y) {
   int k = 15;
   for (; k >= 0 && sprite_state[k] != 0; k--);
   if (k < 0)
@@ -4353,7 +4353,7 @@ int Sprite_SpawnThrowableTerrain_silently(uint8 what, uint16 x, uint16 y) {
   sprite_type[k] = 0xEC;
   Sprite_SetX(k, x);
   Sprite_SetY(k, y);
-  SpritePrep_LoadProperties(k);
+  Sprite_LoadProperties(k);
   sprite_floor[k] = link_is_on_lower_level;
   sprite_C[k] = what;
   if (what >= 6)
@@ -4389,7 +4389,7 @@ void Entity_ApplyRumbleToSprites(SpriteHitBox *hb) {
       continue;
     if (byte_7E0FC6 != 0xe) {
       Sprite_SetupHitBox(j, hb);
-      if (!CheckIfHitBoxesOverlap(hb))
+      if (!Utility_CheckIfHitBoxesOverlap(hb))
         continue;
     }
     sprite_E[j] = 0;
@@ -4399,11 +4399,11 @@ void Entity_ApplyRumbleToSprites(SpriteHitBox *hb) {
     sprite_delay_aux3[j] = 0x30;
     sprite_stunned[j] = 255;
     if (sprite_type[j] == 0xd8)
-      Sprite_TransmuteToBomb(j);
+      Sprite_TransmuteToEnemyBomb(j);
   }
 }
 
-void Prepare_ApplyRumbleToSprites() {
+void ApplyRumbleToSprites() {
   static const int8 kApplyRumble_X[4] = { -32, -32, -32, 16 };
   static const int8 kApplyRumble_Y[4] = { -32, 32, -24, -24 };
   static const uint8 kApplyRumble_WH[6] = { 0x50, 0x50, 0x20, 0x20, 0x50, 0x50 };
@@ -4423,19 +4423,19 @@ void Prepare_ApplyRumbleToSprites() {
 void Sprite_SpawnImmediatelySmashedTerrain(uint8 what, uint16 x, uint16 y) {
   uint8 bak1 = flag_is_sprite_to_pick_up;
   uint8 bak2 = byte_7E0FB2;
-  int k = Sprite_SpawnThrowableTerrain_silently(what, x, y);
+  int k = Sprite_SpawnThrowableTerrain_Internal(what, x, y);
   if (k >= 0)
-    ThrowableScenery_TransmuteToDebris(k);
+    Sprite_Func21(k);
   byte_7E0FB2 = bak2;
   flag_is_sprite_to_pick_up = bak1;
 }
 
 void Sprite_SpawnThrowableTerrain(uint8 what, uint16 x, uint16 y) {
-  sound_effect_1 = Link_CalculateSfxPan() | 29;
-  Sprite_SpawnThrowableTerrain_silently(what, x, y);
+  sound_effect_1 = Sound_GetPanForPlayer() | 29;
+  Sprite_SpawnThrowableTerrain_Internal(what, x, y);
 }
 
-int ReleaseFairy() {
+int SpawnFairy() {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(0, 0xe3, &info), i;
   if (j >= 0) {

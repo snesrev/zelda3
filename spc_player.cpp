@@ -1039,7 +1039,7 @@ static void Spc_Loop_Part2(SpcPlayer *p, uint8 ticks) {
   }
 }
 
-static void Interrupt_Reset(SpcPlayer *p) {
+static void Vector_RESET(SpcPlayer *p) {
   dsp_reset(p->dsp);
 
   memset(&p->new_value_from_snes, 0, sizeof(SpcPlayer) - offsetof(SpcPlayer, new_value_from_snes));
@@ -1062,7 +1062,7 @@ SpcPlayer *SpcPlayer_Create() {
 }
 
 void SpcPlayer_Initialize(SpcPlayer *p) {
-  Interrupt_Reset(p);
+  Vector_RESET(p);
   Spc_Loop_Part1(p);
 }
 

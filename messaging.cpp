@@ -49,7 +49,7 @@ void DungMap_Backup() {
   music_control = 0xf2;
 }
 
-void Module0E_03_01_00_PrepMapGraphics() {
+void DungMap_Init0_SetupGraphics() {
   uint8 hdmaen_bak = HDMAEN_copy;
   zelda_snes_dummy_write(HDMAEN, 0);
   HDMAEN_copy = 0;
@@ -63,13 +63,13 @@ void Module0E_03_01_00_PrepMapGraphics() {
   aux_tile_theme_index = 64;
   TM_copy = 0x16;
   TS_copy = 1;
-  EraseTileMaps_dungeonmap();
-  InitializeTilesets();
+  Vram_EraseTilemaps_PalaceMap();
+  InitTilesets();
   overworld_palette_aux_or_main = 0x200;
-  Palette_Load_DungeonMapBG();
-  Palette_Load_DungeonMapSprite();
+  Palette_PalaceMapBg();
+  Palette_PalaceMapSpr();
   hud_palette = 1;
-  Palette_Load_HUD();
+  Palette_Hud();
   LoadActualGearPalettes();
   flag_update_cgram_in_nmi++;
   dungmap_init_state++;
@@ -84,7 +84,7 @@ static const uint16 kDungMap_Tab2[8] = {0x2118, 0x2119, 0xa109, 0x211a, 0x211b, 
 static const uint8 kDungMap_Tab3[14] = {0x60, 0x84, 0, 0xb, 0x32, 0x21, 0x33, 0x21, 0x38, 0x21, 0x3a, 0x21, 0x7f, 0x20};
 static const uint8 kDungMap_Tab4[14] = {0x60, 0xa4, 0, 0xb, 0x42, 0x21, 0x43, 0x21, 0x49, 0x21, 0x4a, 0x21, 0x7f, 0x20};
 
-void Module0E_03_01_01_DrawLEVEL() {
+void DungMap_Init1_OptionalGraphic() {
   // Display FLOOR instead of MAP
   int i = kDungMap_Tab0[cur_palace_index_x2 >> 1] >> 1;
   if (i >= 0) {
@@ -106,7 +106,7 @@ static const uint16 kDungMap_Tab6[21] = {0xaa10, 0x100, 0x1b2f, 0xc910, 0x300, 0
 static const uint16 kDungMap_Tab5[14] = {0x21, 0x23, 0x20, 0x21, 0x70, 0x12, 0x11, 0x212, 2, 0x217, 0x160, 0x12, 0x113, 0x171};
 static const uint16 kDungMap_Tab7[9] = {0x1223, 0x1263, 0x12a3, 0x12e3, 0x1323, 0x11e3, 0x11a3, 0x1163, 0x1123};
 static const uint16 kDungMap_Tab9[8] = {0xf26, 0xf27, 0x4f27, 0x4f26, 0x8f26, 0x8f27, 0xcf27, 0xcf26};
-void DungeonMap_BuildFloorListBoxes(uint8 t5, uint16 r14) {
+void DungMap_Init2_Helper(uint8 t5, uint16 r14) {
   int n = (t5 & 0xf) + (t5 >> 4);
   uint8 r12 = dung_cur_floor + (t5 & 0xf);
   r14 -= 0x40 - 2;
@@ -131,7 +131,7 @@ loop2:
   vram_upload_offset = offs * 2;
 }
 
-void Module0E_03_01_02_DrawFloorsBackdrop() {
+void DungMap_Init2() {
   int offs = 0;
   uint16 t5 = kDungMap_Tab5[cur_palace_index_x2 >> 1];
   if (t5 & 0x100) {
@@ -153,7 +153,7 @@ void Module0E_03_01_02_DrawFloorsBackdrop() {
     j += (j != 6);
   } while (t7 += 0x20, t7 < 0x1360);
   vram_upload_offset = offs * 2;
-  DungeonMap_BuildFloorListBoxes(t5, t7_org);
+  DungMap_Init2_Helper(t5, t7_org);
   ((uint8 *)vram_upload_data)[vram_upload_offset] = 0xff;
   dungmap_init_state++;
   nmi_load_bg_from_vram = 1;
@@ -164,7 +164,7 @@ static const uint16 kDungMap_Tab12[2] = {0xe4, 0x3a4};
 static const uint16 kDungMap_Tab13[2] = {0x1f1a, 0x9f1a};
 static const uint16 kDungMap_Tab14[2] = {0x122, 0x138};
 static const uint16 kDungMap_Tab15[2] = {0x1f1b, 0x5f1b};
-void DungeonMap_DrawBorderForRooms(uint16 pd, uint16 mask) {
+void DungMap_Init3A(uint16 pd, uint16 mask) {
   for (int i = 0; i != 4; i++)
     messaging_buf[((kDungMap_Tab10[i] + pd) & 0xfff) >> 1] = kDungMap_Tab11[i] & mask;
   for (int i = 0; i != 2; i++) {
@@ -182,7 +182,7 @@ void DungeonMap_DrawBorderForRooms(uint16 pd, uint16 mask) {
 
 static const uint16 kDungMap_Tab16[8] = {0x1f1e, 0x1f1f, 0x1f20, 0x1f21, 0x1f22, 0x1f23, 0x1f24, 0x1f25};
 
-void DungeonMap_DrawFloorNumbersByRoom(uint16 pd, uint16 r8) {
+void DungMap_Init3B(uint16 pd, uint16 r8) {
   uint16 p = 0xDE;
   do {
     int t = ((p + pd) & 0xfff) >> 1;
@@ -233,7 +233,7 @@ uint8 GetOtherDungmapInfo(int count) {
   return kDungMap_Tiles[cur_palace_index_x2 >> 1][count];
 }
 
-void DungeonMap_DrawSingleRowOfRooms(int i, int arg_x) {
+void DungMap_Init3D(int i, int arg_x) {
   uint16 t5 = kDungMap_Tab5[cur_palace_index_x2 >> 1];
   int dungmask = kUpperBitmasks[cur_palace_index_x2 >> 1];
   
@@ -322,12 +322,12 @@ void DungeonMap_DrawSingleRowOfRooms(int i, int arg_x) {
   }
 }
 
-void DungeonMap_DrawDungeonLayout(int pd) {
+void DungMap_Init3C(int pd) {
   for (int i = 0; i < 5; i++)
-    DungeonMap_DrawSingleRowOfRooms(i, ((292 + 128 * i + pd) & 0xfff) >> 1);
+    DungMap_Init3D(i, ((292 + 128 * i + pd) & 0xfff) >> 1);
 }
 
-void Module0E_03_01_03_DrawRooms() {
+void DungMap_Init3() {
   dungmap_var2 = 0;
   dungmap_idx = 0;
   uint8 t = -(kDungMap_Tab5[cur_palace_index_x2 >> 1] & 0xf);
@@ -337,13 +337,13 @@ void Module0E_03_01_03_DrawRooms() {
     dungmap_cur_floor = WORD(dung_cur_floor) + 1;
     dungmap_idx += 2;
   }
-  DungeonMap_DrawFloorNumbersByRoom(0, ~0x1000);
-  DungeonMap_DrawBorderForRooms(0, ~0x1000);
-  DungeonMap_DrawDungeonLayout(0);
+  DungMap_Init3B(0, ~0x1000);
+  DungMap_Init3A(0, ~0x1000);
+  DungMap_Init3C(0);
   BYTE(dungmap_cur_floor)--;
-  DungeonMap_DrawFloorNumbersByRoom(0x300, ~0x1000);
-  DungeonMap_DrawBorderForRooms(0x300, ~0x1000);
-  DungeonMap_DrawDungeonLayout(0x300);
+  DungMap_Init3B(0x300, ~0x1000);
+  DungMap_Init3A(0x300, ~0x1000);
+  DungMap_Init3C(0x300);
   dungmap_cur_floor++;
   WORD(g_ram[6]) = 0;
   WORD(g_ram[10]) = 0;
@@ -358,7 +358,7 @@ static const uint16 kDungMap_Tab24[2] = {0x1f, 0x7f};
 static const uint16 kDungMap_Tab25[14] = {15, 15, 200, 51, 32, 6, 90, 144, 41, 222, 7, 172, 164, 13};
 static const int16 kDungMap_Tab28[14] = {-1, -1, 1, 1, 6, 0xff, 0xff, 0xff, 0xfe, 0xf9, 5, 0xff, 0xfd, 6};
 
-void DungeonMap_DrawRoomMarkers() {
+void DungMap_Init4() {
   int dung = cur_palace_index_x2 >> 1;
   uint8 t5 = (kDungMap_Tab5[dung] & 0xf);
   uint8 floor1 = t5 + dung_cur_floor;
@@ -411,14 +411,14 @@ void DungeonMap_DrawRoomMarkers() {
 }
 
 static PlayerHandlerFunc *const kDungMapInit[] = {
-  &Module0E_03_01_00_PrepMapGraphics,
-  &Module0E_03_01_01_DrawLEVEL,
-  &Module0E_03_01_02_DrawFloorsBackdrop,
-  &Module0E_03_01_03_DrawRooms,
-  &DungeonMap_DrawRoomMarkers,
+  &DungMap_Init0_SetupGraphics,
+  &DungMap_Init1_OptionalGraphic,
+  &DungMap_Init2,
+  &DungMap_Init3,
+  &DungMap_Init4,
 };
 
-void Module0E_03_01_DrawMap() {
+void DungMap_Init() {
   kDungMapInit[dungmap_init_state]();
 }
 void DungMap_LightenUpMap() {
@@ -428,7 +428,7 @@ void DungMap_LightenUpMap() {
 
 static const uint8 kDungMap_Tab38[4] = {0x39, 0x3b, 0x3d, 0x3b};
 
-int DungeonMap_DrawBlinkingIndicator(int spr_pos) {
+int DungMap_Func6(int spr_pos) {
   bytewise_extended_oam[spr_pos] = 0;
   oam_buf[spr_pos].x = dungmap_var3 - 3;
   oam_buf[spr_pos].y = ((dungmap_var5 < 256) ? dungmap_var5 : 0xf0) - 3;
@@ -442,7 +442,7 @@ static const int8 kDungMap_Tab30[4] = {-8, -8, 9, 9};
 static const uint8 kDungMap_Tab31[4] = {0xf1, 0xb1, 0x71, 0x31};
 static const uint8 kDungMap_Tab32[4] = {0xc, 0xc, 8, 0xa};
 
-int DungeonMap_DrawLocationMarker(int spr_pos, uint16 r14) {
+int DungMap_Func7(int spr_pos, uint16 r14) {
   for (int i = 3; i >= 0; i--, spr_pos++) {
     bytewise_extended_oam[spr_pos] = 2;
     oam_buf[spr_pos].x = kDungMap_Tab29[i] + (dungmap_var3 & 0xf0);
@@ -459,7 +459,7 @@ int DungeonMap_DrawLocationMarker(int spr_pos, uint16 r14) {
 static const uint8 kDungMap_Tab33[8] = {187, 171, 155, 139, 123, 107, 91, 75};
 static const uint8 kDungMap_Tab34[8] = {0x1e, 0x1f, 0x20, 0x21, 0x22, 0x23, 0x24, 0x25};
 
-int DungeonMap_DrawFloorNumberObjects(int spr_pos) {
+int DungMap_Func8(int spr_pos) {
   uint8 r2 = (kDungMap_Tab5[cur_palace_index_x2 >> 1] >> 4 & 0xf);
   uint8 r3 = (kDungMap_Tab5[cur_palace_index_x2 >> 1] & 0xf);
   uint8 yv = 7;
@@ -495,7 +495,7 @@ int DungeonMap_DrawFloorNumberObjects(int spr_pos) {
 static const uint8 kDungMap_Tab35[2] = {0, 8};
 static const uint8 kDungMap_Tab36[4] = {0x37, 0x38, 0x38, 0x37};
 
-void DungeonMap_DrawFloorBlinker() {
+void DungMap_Func9() {
   uint8 floor = dungmap_cur_floor;
   uint8 t5 = kDungMap_Tab5[cur_palace_index_x2 >> 1];
   uint8 flag = ((t5 >> 4 & 0xf) + (t5 & 0xf) != 1);
@@ -538,7 +538,7 @@ void DungeonMap_DrawFloorBlinker() {
 
 static const int16 kDungMap_Tab37[14] = { -1, -1, 0x808, 8, 0, 8, 0x808, 8, 0x808, 0x800, 0x404, 0x808, 8, 8 };
 
-int DungeonMap_DrawBossIconByFloor(int spr_pos) {
+int DungMap_DrawBossFloorIndicator(int spr_pos) {
   int dung = cur_palace_index_x2 >> 1;
   uint8 t5 = kDungMap_Tab5[dung];
   uint8 r2 = t5 & 0xf;
@@ -560,7 +560,7 @@ int DungeonMap_DrawBossIconByFloor(int spr_pos) {
   return spr_pos + 1;
 }
 
-void DungeonMap_DrawLinkPointing(int spr_pos, uint8 r2, uint8 r3) {
+void DungMap_DrawPlayerFloorIndicator(int spr_pos, uint8 r2, uint8 r3) {
   int dung = cur_palace_index_x2 >> 1;
   uint8 t5 = kDungMap_Tab5[dung];
   if (4 - r2 >= 0) {
@@ -576,11 +576,11 @@ void DungeonMap_DrawLinkPointing(int spr_pos, uint8 r2, uint8 r3) {
   oam_buf[spr_pos].flags = overworld_palette_swap_flag ? 0x30 : 0x3e;
 }
 
-int DungeonMap_DrawBossIcon(int spr_pos) {
+int DungMap_Func10(int spr_pos) {
   int dung = cur_palace_index_x2 >> 1;
   if (save_dung_info[kDungMap_Tab25[dung]] & 0x800 || !(link_compass & kUpperBitmasks[dung]) || kDungMap_Tab28[dung] < 0)
     return spr_pos;
-  spr_pos = DungeonMap_DrawBossIconByFloor(spr_pos);
+  spr_pos = DungMap_DrawBossFloorIndicator(spr_pos);
   if ((frame_counter & 0xf) >= 10)
     return spr_pos;
   bytewise_extended_oam[spr_pos] = 0;
@@ -594,7 +594,7 @@ int DungeonMap_DrawBossIcon(int spr_pos) {
 
 static const int8 kDungMap_Tab39[2] = {-4, 4};
 static const int8 kDungMap_Tab40[2] = {4, -4};
-void DungeonMap_ScrollFloors() {
+void DungMap_Func5() {
   int x = WORD(g_ram[10]) >> 3 & 1;
   dungmap_var5 += kDungMap_Tab39[x];
   dungmap_var8 += kDungMap_Tab39[x];
@@ -603,7 +603,7 @@ void DungeonMap_ScrollFloors() {
     dungmap_var2 = 0;
 }
 static const int16 kDungMap_Tab26[2] = {0x60, -0x60};
-void DungeonMap_HandleFloorSelect() {
+void DungMap_Func4() {
   uint8 r2 = (kDungMap_Tab5[cur_palace_index_x2 >> 1] >> 4 & 0xf);
   uint8 r3 = (kDungMap_Tab5[cur_palace_index_x2 >> 1] & 0xf);
   uint8 yv = 7;
@@ -622,9 +622,9 @@ void DungeonMap_HandleFloorSelect() {
     dungmap_cur_floor -= 2;
     r6 = (r6 + 0x600) & 0xfff;
   }
-  DungeonMap_DrawFloorNumbersByRoom(r6, ~0x1000);
-  DungeonMap_DrawBorderForRooms(r6, ~0x1000);
-  DungeonMap_DrawDungeonLayout(r6);
+  DungMap_Init3B(r6, ~0x1000);
+  DungMap_Init3A(r6, ~0x1000);
+  DungMap_Init3C(r6);
   dungmap_var2++;
   WORD(g_ram[10]) = joypad1H_last;
   int x = joypad1H_last >> 3 & 1;
@@ -637,42 +637,42 @@ void DungeonMap_HandleFloorSelect() {
   nmi_subroutine_index = 8;
 }
 
-void DungeonMap_HandleMovementInput() {
-  DungeonMap_HandleFloorSelect();
+void DungMap_Func3() {
+  DungMap_Func4();
   if (dungmap_var2)
-    DungeonMap_ScrollFloors();
+    DungMap_Func5();
 }
 
-void DungeonMap_DrawSprites() {
+void DungMap_Func2() {
   int dung = cur_palace_index_x2 >> 1;
   uint8 r2 = (kDungMap_Tab5[dung] & 0xf);
   uint8 floor = r2 + dung_cur_floor;
 
   int spr_pos = 0;
   uint8 r14 = 0;
-  DungeonMap_DrawLinkPointing(spr_pos++, r2, floor);
+  DungMap_DrawPlayerFloorIndicator(spr_pos++, r2, floor);
   do {
-    spr_pos = DungeonMap_DrawLocationMarker(spr_pos, r14);
+    spr_pos = DungMap_Func7(spr_pos, r14);
     r14 += 1;
   } while (spr_pos != 9);
-  spr_pos = DungeonMap_DrawBlinkingIndicator(spr_pos);
-  spr_pos = DungeonMap_DrawBossIcon(spr_pos);
-  spr_pos = DungeonMap_DrawFloorNumberObjects(spr_pos);
-  DungeonMap_DrawFloorBlinker();
+  spr_pos = DungMap_Func6(spr_pos);
+  spr_pos = DungMap_Func10(spr_pos);
+  spr_pos = DungMap_Func8(spr_pos);
+  DungMap_Func9();
 }
 
-void DungeonMap_HandleInput() {
+void DungMap_Func1() {
   if (filtered_joypad_L & 0x40) {
     overworld_map_state += 2;
     dungmap_init_state = 0;
   } else {
-    DungeonMap_HandleMovementInput();
+    DungMap_Func3();
   }
 }
 
-void DungeonMap_HandleInputAndSprites() {
-  DungeonMap_HandleInput();
-  DungeonMap_DrawSprites();
+void DungMap_State3() {
+  DungMap_Func1();
+  DungMap_Func2();
 }
 
 void DungMap_4() {
@@ -698,18 +698,18 @@ void DungMap_FadeMapToBlack() {
   flag_update_cgram_in_nmi++;
 }
 
-void DungeonMap_RecoverGFX() {
+void DungMap_RestoreGraphics() {
   uint8 hdmaen_bak = HDMAEN_copy;
   zelda_snes_dummy_write(HDMAEN, 0);
   HDMAEN_copy = 0;
-  EraseTileMaps_normal();
+  Vram_EraseTilemaps_normal();
 
   TM_copy = mapbak_TM;
   TS_copy = mapbak_TS;
   main_tile_theme_index = mapbak_main_tile_theme_index;
   sprite_graphics_index = mapbak_sprite_graphics_index;
   aux_tile_theme_index = mapbak_aux_tile_theme_index;
-  InitializeTilesets();
+  InitTilesets();
   overworld_palette_aux_or_main = 0;
   hud_palette = 0;
   Hud_Rebuild();
@@ -717,9 +717,9 @@ void DungeonMap_RecoverGFX() {
   overworld_screen_transition = 0;
   dung_cur_quadrant_upload = 0;
   do {
-    WaterFlood_BuildOneQuadrantForVRAM();
+    Dungeon_Upload_BG1_Outer();
     NMI_UploadTilemap();
-    Dungeon_PrepareNextRoomQuadrantUpload();
+    Dungeon_Upload_BG2();
     NMI_UploadTilemap();
   } while (dung_cur_quadrant_upload != 0x10);
 
@@ -734,20 +734,20 @@ void DungeonMap_RecoverGFX() {
 
   sound_effect_2 = 16;
   music_control = 0xf3;
-  RecoverPegGFXFromMapping();
+  Dungeon_OrangeBlueBarrierUpload_C();
   flag_update_cgram_in_nmi++;
   overworld_map_state++;
   INIDISP_copy = 0;
   nmi_disable_core_updates = 0;
 }
 
-void ToggleStarTilesAndAdvance() {
+void DungMap_RestoreStarTileState() {
   Dungeon_RestoreStarTileChr();
   overworld_map_state++;
 }
 
 void DungMap_RestoreOld() {
-  OrientLampLightCone();
+  OrientLampBg();
   if (++INIDISP_copy != 0xf)
     return;
   main_module_index = saved_module_for_menu;
@@ -759,17 +759,17 @@ void DungMap_RestoreOld() {
 }
 static PlayerHandlerFunc *const kDungMapSubmodules[] = {
   &DungMap_Backup,
-  &Module0E_03_01_DrawMap,
+  &DungMap_Init,
   &DungMap_LightenUpMap,
-  &DungeonMap_HandleInputAndSprites,
+  &DungMap_State3,
   &DungMap_4,
   &DungMap_FadeMapToBlack,
-  &DungeonMap_RecoverGFX,
-  &ToggleStarTilesAndAdvance,
+  &DungMap_RestoreGraphics,
+  &DungMap_RestoreStarTileState,
   &DungMap_RestoreOld,
 };
 
-void Module0E_03_DungeonMap() {
+void Messaging_DungMap() {
   kDungMapSubmodules[overworld_map_state]();
 }
 
@@ -777,7 +777,7 @@ void Module_Messaging_0() {
   assert(0);
 }
 
-void RenderText_Draw_EmptyBuffer() {
+void VWF_ClearBuffer() {
   memset(messaging_buf, 0, 0x7e0);
   dialogue_msg_src_offs = 0;
   dialogue_msg_dst_offs++;
@@ -793,7 +793,7 @@ void Text_InitVwfState() {
 
 static const uint16 kText_Positions[2] = {0x6125, 0x6244};
 
-void RenderText_SetDefaultWindowPosition() {
+void Text_SetDefaultWindowPos() {
   uint16 y = link_y_coord - BG2VOFS_copy2;
   int flag = (y < 0x78);
   text_msgbox_topleft = kText_Positions[flag];
@@ -947,7 +947,7 @@ void Text_LoadCharacterBuffer() {
     if (!(c & 0x80)) {
       switch (c) {
       case 0x67 + 3: dst = Text_WritePlayerName(dst); break;
-      case 0x67 + 4:  // RenderText_ExtendedCommand_SetWindowType
+      case 0x67 + 4:  // Text_SetWindowType
         text_render_state = *src++;
         break;
       case 0x67 + 5: {  // Text_WritePreloadedNumber
@@ -993,10 +993,10 @@ static const int8 kText_InitializationData[32] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 
 void Text_Initialize_initModuleStateLoop() {
   memcpy(&text_msgbox_topleft_copy, kText_InitializationData, 32);
   Text_InitVwfState();
-  RenderText_SetDefaultWindowPosition();
+  Text_SetDefaultWindowPos();
   text_tilemap_cur = 0x3980;
   Text_LoadCharacterBuffer();
-  RenderText_Draw_EmptyBuffer();
+  VWF_ClearBuffer();
   dialogue_msg_dst_offs = 0;
   nmi_subroutine_index = 2;
   nmi_disable_core_updates = 2;
@@ -1004,18 +1004,18 @@ void Text_Initialize_initModuleStateLoop() {
 
 void Text_Initialize() {
   if (main_module_index == 20)
-    ResetHUDPalettes4and5();
-  Attract_DecompressStoryGFX();
+    Palette_ResetHud45ForText();
+  Text_DecompressStoryGfx();
   Text_Initialize_initModuleStateLoop();
 }
 
-void RenderText_DrawBorderInitialize() {
+void Text_InitBorderOffsets() {
   text_msgbox_topleft_copy = text_msgbox_topleft;
 }
 
 static const uint16 kText_BorderTiles[9] = {0x28f3, 0x28f4, 0x68f3, 0x28c8, 0x387f, 0x68c8, 0xa8f3, 0xa8f4, 0xe8f3};
 
-uint16 *RenderText_DrawBorderRow(uint16 *d, int y) {
+uint16 *Text_DrawBorderRow(uint16 *d, int y) {
   y >>= 1;
   *d++ = swap16(text_msgbox_topleft_copy);
   text_msgbox_topleft_copy += 0x20;
@@ -1028,17 +1028,17 @@ uint16 *RenderText_DrawBorderRow(uint16 *d, int y) {
   return d;
 }
 
-void RenderText_Draw_Border() {
-  RenderText_DrawBorderInitialize();
-  uint16 *d = RenderText_DrawBorderRow(vram_upload_data, 0);
+void Text_DrawBorder() {
+  Text_InitBorderOffsets();
+  uint16 *d = Text_DrawBorderRow(vram_upload_data, 0);
   for(int i = 0; i != 6; i++)
-    d = RenderText_DrawBorderRow(d, 6);
-  d = RenderText_DrawBorderRow(d, 12);
+    d = Text_DrawBorderRow(d, 6);
+  d = Text_DrawBorderRow(d, 12);
   nmi_load_bg_from_vram = 1;
   text_render_state = 2;
 }
 
-void RenderText_Draw_BorderIncremental() {
+void Text_DrawBorderIncremenal() {
   nmi_load_bg_from_vram = 1;
   uint8 a = text_incremental_state;
   uint16 *d = vram_upload_data;
@@ -1046,24 +1046,24 @@ void RenderText_Draw_BorderIncremental() {
     a = (a < 7) ? 1 : 2;
   switch (a) {
   case 0:
-    RenderText_DrawBorderInitialize();
-    d = RenderText_DrawBorderRow(d, 0);
+    Text_InitBorderOffsets();
+    d = Text_DrawBorderRow(d, 0);
     text_incremental_state++;
     break;
   case 1:
-    d = RenderText_DrawBorderRow(d, 6);
+    d = Text_DrawBorderRow(d, 6);
     text_incremental_state++;
     break;
   case 2:
     text_render_state = 2;
-    d = RenderText_DrawBorderRow(d, 12);
+    d = Text_DrawBorderRow(d, 12);
     text_incremental_state++;
     break;
   }
 }
 
-void RenderText_Refresh() {
-  RenderText_DrawBorderInitialize();
+void Text_DrawCharacterTilemap() {
+  Text_InitBorderOffsets();
   text_msgbox_topleft_copy += 0x21;
   uint16 *d = vram_upload_data;
   uint16 *s = (uint16 *)&g_ram[0x1300];
@@ -1112,10 +1112,10 @@ void Text_BuildCharacterTilemap() {
   uint16 *vwf300 = (uint16 *)&g_ram[0x1300];
   for (int i = 0; i < 126; i++)
     vwf300[i] = text_tilemap_cur++;
-  RenderText_Refresh();
+  Text_DrawCharacterTilemap();
 }
 
-void RenderText_Draw_CharacterTilemap() {
+void Text_CharacterTilemap() {
   Text_BuildCharacterTilemap();
   text_render_state++;
 }
@@ -1204,15 +1204,15 @@ void VWF_RenderSingle() {
   vwf_line_mode = vwf_line_speed;
 }
 
-void RenderText_Draw_MessageCharacters();
+void Text_MessageHandler();
 
-void RenderText_Draw_RenderCharacter_All() {
+void VWF_RenderRecursive() {
   VWF_RenderSingle();
   if (dialogue_msg_src_offs != 19 && dialogue_msg_src_offs != 59 && dialogue_msg_src_offs != 99)
-    RenderText_Draw_MessageCharacters();
+    Text_MessageHandler();
 }
 
-void RenderText_Draw_Scroll() {
+void VWF_Scroll() {
   uint8 r2 = byte_7E1CEA;
   do {
     for (int i = 0; i < 0x7e0; i += 16) {
@@ -1244,7 +1244,7 @@ void RenderText_Draw_Scroll() {
 static const uint16 kVWF_RowPositions[3] = {0, 2, 4};
 static const uint16 kVWF_LinePositions[3] = {0, 40, 80};
 
-void RenderText_Draw_Choose2LowOr3() {
+void VWF_Select2Or3_Indented() {
   if (text_wait_countdown2 != 0) {
     if (--text_wait_countdown2 == 1)
       sound_effect_2 = 36;
@@ -1265,7 +1265,7 @@ void RenderText_Draw_Choose2LowOr3() {
   }
 }
 
-void RenderText_DrawSelectedYItem() {
+void VWF_ChangeItemTiles() {
   int item = choice_in_multiselect_box;
   const uint16 *p = kHudItemBoxGfxPtrs[item];
   p += ((item == 3 || item == 32) ? 1 : (&link_item_bow)[item]) * 4;
@@ -1274,7 +1274,7 @@ void RenderText_DrawSelectedYItem() {
   memcpy(vwf300 + 0xec, p + 2, 4);
 }
 
-void RenderText_FindYItem_Previous() {
+void VWF_SelectPrevItem() {
   for (;;) {
     uint8 x = choice_in_multiselect_box;
     if (sign8(x))
@@ -1283,10 +1283,10 @@ void RenderText_FindYItem_Previous() {
       break;
     choice_in_multiselect_box--;
   }
-  RenderText_DrawSelectedYItem();
+  VWF_ChangeItemTiles();
 }
 
-void RenderText_FindYItem_Next() {
+void VWF_SelectNextItem() {
   for (;;) {
     uint8 x = choice_in_multiselect_box;
     if (x >= 32)
@@ -1295,13 +1295,13 @@ void RenderText_FindYItem_Next() {
       break;
     choice_in_multiselect_box++;
   }
-  RenderText_DrawSelectedYItem();
+  VWF_ChangeItemTiles();
 }
 
-void RenderText_Draw_ChooseItem() {
+void VWF_SelectItem() {
   if (text_wait_countdown2 != 0) {
     if (--text_wait_countdown2 == 1)
-      RenderText_FindYItem_Next();
+      VWF_SelectNextItem();
   } else if ((filtered_joypad_H | filtered_joypad_L) & 0xc0) {
     text_render_state = 4;
   } else {
@@ -1309,16 +1309,16 @@ void RenderText_Draw_ChooseItem() {
       choice_in_multiselect_box++;
     } else if (filtered_joypad_H & 10) {
       choice_in_multiselect_box--;
-      RenderText_FindYItem_Previous();
-      RenderText_Refresh();
+      VWF_SelectPrevItem();
+      Text_DrawCharacterTilemap();
       return;
     }
-    RenderText_FindYItem_Next();
-    RenderText_Refresh();
+    VWF_SelectNextItem();
+    Text_DrawCharacterTilemap();
   }
 }
 
-void RenderText_Draw_Choose2HiOr3() {
+void VWF_Select2Or3() {
   if (text_wait_countdown2 != 0) {
     if (--text_wait_countdown2 == 1)
       sound_effect_2 = 36;
@@ -1339,7 +1339,7 @@ void RenderText_Draw_Choose2HiOr3() {
   }
 }
 
-void RenderText_Draw_Choose3() {
+void VWF_Choose3() {
   uint8 y;
   if (text_wait_countdown2 != 0) {
     if (--text_wait_countdown2 == 1)
@@ -1363,7 +1363,7 @@ void RenderText_Draw_Choose3() {
   }
 }
 
-void RenderText_Draw_Choose1Or2() {
+void VWF_Choose1Or2() {
   uint8 y;
   if (text_wait_countdown2 != 0) {
     if (--text_wait_countdown2 == 1)
@@ -1385,18 +1385,18 @@ void RenderText_Draw_Choose1Or2() {
   }
 }
 static const uint16 kVWF_Command7B[4] = {0x24b8, 0x24ba, 0x24bc, 0x24be};
-void RenderText_Draw_Command7B() {
+void VWF_Command7B() {
   int i = (messaging_text_buffer[dialogue_msg_dst_offs + 1] & 0x7f);
   int j = dialogue_msg_src_offs;
   WORD(g_ram[0x2D8 + j]) = kVWF_Command7B[i * 2 + 0];
   WORD(g_ram[0x300 + j]) = kVWF_Command7B[i * 2 + 1];
   dialogue_msg_src_offs = j + 2;
   dialogue_msg_dst_offs += 2;
-  RenderText_Draw_MessageCharacters();
+  Text_MessageHandler();
 }
 
 static const uint16 kVWF_Command7C[8] = {0x24b8, 0x24ba, 0x24bc, 0x24be, 0x24b8, 0x24ba, 0x24bc, 0x24be};
-void RenderText_Draw_ABunchOfSpaces() {
+void VWF_Command7C() {
   int i = (messaging_text_buffer[dialogue_msg_dst_offs + 1] & 0x7f);
   int j = dialogue_msg_src_offs;
   WORD(g_ram[0x2D8 + j]) = kVWF_Command7C[i * 4 + 0];
@@ -1405,12 +1405,12 @@ void RenderText_Draw_ABunchOfSpaces() {
   WORD(g_ram[0x302 + j]) = kVWF_Command7C[i * 4 + 3];
   dialogue_msg_src_offs = j + 4;
   dialogue_msg_dst_offs += 2;
-  RenderText_Draw_MessageCharacters();
+  Text_MessageHandler();
 }
 
 static const uint16 kText_WaitDurations[16] = {31, 63, 94, 125, 156, 188, 219, 250, 281, 313, 344, 375, 406, 438, 469, 500};
 
-void RenderText_Draw_MessageCharacters() {
+void Text_MessageHandler() {
 restart:
   if (dialogue_msg_src_offs >= 99) {
     dialogue_msg_src_offs = 0;
@@ -1430,10 +1430,10 @@ restart:
   if (t < 0)
     t = 0;
   switch (t) {
-  case 0:  // RenderText_Draw_RenderCharacter
+  case 0:  // VWF_Render
     switch (vwf_line_mode < 2 ? vwf_line_mode : 2) {
-    case 0:  // RenderText_Draw_RenderCharacter_All
-      RenderText_Draw_RenderCharacter_All();
+    case 0:  // VWF_RenderRecursive
+      VWF_RenderRecursive();
       break;
     case 1:  // VWF_RenderSingle
       VWF_RenderSingle();
@@ -1443,7 +1443,7 @@ restart:
       break;
     }
     break;
-  case 1:  // RenderText_Draw_NextImage
+  case 1:  // VWF_NextPicture
     if (main_module_index == 20) {
       PaletteFilterHistory();
       if (!BYTE(palette_filter_countdown))
@@ -1452,34 +1452,34 @@ restart:
       dialogue_msg_dst_offs++;
     }
     break;
-  case 2:  // RenderText_Draw_Choose2LowOr3
-    RenderText_Draw_Choose2LowOr3();
+  case 2:  // VWF_Select2Or3_Indented
+    VWF_Select2Or3_Indented();
     break;
-  case 3:  // RenderText_Draw_ChooseItem
-    RenderText_Draw_ChooseItem();
+  case 3:  // VWF_SelectItem
+    VWF_SelectItem();
     break;
   case 4:  // 
   case 5:  // 
   case 6:  // 
   case 7:  // 
-  case 8:  // RenderText_Draw_Ignore
+  case 8:  // VWF_IgnoreCommand
     byte_7E1CEA = messaging_text_buffer[dialogue_msg_dst_offs + 1];
     dialogue_msg_dst_offs += 2;
     break;
-  case 9:   // RenderText_Draw_Choose2HiOr3
-    RenderText_Draw_Choose2HiOr3();
+  case 9:   // VWF_Select2Or3
+    VWF_Select2Or3();
     break;
   case 10:  // 
     assert(0);
     break;
-  case 11:  // RenderText_Draw_Choose3 
-    RenderText_Draw_Choose3();
+  case 11:  // VWF_Choose3 
+    VWF_Choose3();
     break;
-  case 12:  // RenderText_Draw_Choose1Or2
-    RenderText_Draw_Choose1Or2();
+  case 12:  // VWF_Choose1Or2
+    VWF_Choose1Or2();
     break;
-  case 13:  // RenderText_Draw_Scroll
-    RenderText_Draw_Scroll();
+  case 13:  // VWF_Scroll
+    VWF_Scroll();
     break;
   case 14:  // 
   case 15:  // 
@@ -1490,12 +1490,12 @@ restart:
     dialogue_msg_dst_offs++;
     text_next_position = 0;
     break;
-  case 17:  // RenderText_Draw_SetColor
+  case 17:  // VWF_SetPalette
     byte_7E1CDC &= ~0x1c;
     byte_7E1CDC |= (messaging_text_buffer[dialogue_msg_dst_offs + 1] & 7) << 2;
     dialogue_msg_dst_offs += 2;
     break;
-  case 18:  // RenderText_Draw_Wait
+  case 18:  // VWF_Wait
     switch (joypad1L_last & 0x80 ? 1 : text_wait_countdown >= 2 ? 2 : text_wait_countdown) {
     case 0:
       text_wait_countdown = kText_WaitDurations[messaging_text_buffer[dialogue_msg_dst_offs + 1] & 0xf] - 1;
@@ -1509,24 +1509,24 @@ restart:
       break;
     }
     break;
-  case 19:  // RenderText_Draw_PlaySfx
+  case 19:  // VWF_PlaySound
     sound_effect_2 = messaging_text_buffer[dialogue_msg_dst_offs + 1];
     dialogue_msg_dst_offs += 2;
     break;
-  case 20:  // RenderText_Draw_SetSpeed
+  case 20:  // VWF_SetSpeed
     vwf_line_speed = vwf_line_mode = messaging_text_buffer[dialogue_msg_dst_offs + 1];
     dialogue_msg_dst_offs += 2;
     break;
-  case 21:  // RenderText_Draw_Command7B
-    RenderText_Draw_Command7B();
+  case 21:  // VWF_Command7B
+    VWF_Command7B();
     break;
-  case 22:  // RenderText_Draw_ABunchOfSpaces
-    RenderText_Draw_ABunchOfSpaces();
+  case 22:  // VWF_Command7C
+    VWF_Command7C();
     break;
-  case 23:  // RenderText_Draw_EmptyBuffer
-    RenderText_Draw_EmptyBuffer();
+  case 23:  // VWF_ClearBuffer
+    VWF_ClearBuffer();
     break;
-  case 24:  // RenderText_Draw_PauseForInput
+  case 24:  // VWF_WaitKey
     if (text_wait_countdown2 != 0) {
       if (--text_wait_countdown2 == 1)
         sound_effect_2 = 36;
@@ -1537,7 +1537,7 @@ restart:
       }
     }
     break;
-  case 25:  // RenderText_Draw_Terminate
+  case 25:  // VWF_EndMessage
     if (text_wait_countdown2 != 0) {
       if (--text_wait_countdown2 == 1)
         sound_effect_2 = 36;
@@ -1553,8 +1553,8 @@ restart:
   nmi_disable_core_updates = 2;
 }
 
-void RenderText_Draw_Finish() {
-  RenderText_DrawBorderInitialize();
+void Text_Close() {
+  Text_InitBorderOffsets();
   uint16 *d = vram_upload_data;
   d[0] = swap16(text_msgbox_topleft_copy);
   d[1] = 0x2E42;
@@ -1567,18 +1567,18 @@ void RenderText_Draw_Finish() {
 }
 
 static PlayerHandlerFunc *const kText_Render[] = {
-  &RenderText_Draw_Border,
-  &RenderText_Draw_BorderIncremental,
-  &RenderText_Draw_CharacterTilemap,
-  &RenderText_Draw_MessageCharacters,
-  &RenderText_Draw_Finish,
+  &Text_DrawBorder,
+  &Text_DrawBorderIncremenal,
+  &Text_CharacterTilemap,
+  &Text_MessageHandler,
+  &Text_Close,
 };
 
 void Text_Render() {
   kText_Render[text_render_state]();
 }
 
-void RenderText_PostDeathSaveOptions() {
+void Text_PostDeathSaveOptions() {
   dialogue_message_index = 3;
   Text_Initialize_initModuleStateLoop();
   text_msgbox_topleft = 0x61e8;
@@ -1590,14 +1590,14 @@ void RenderText_PostDeathSaveOptions() {
 static PlayerHandlerFunc *const kMessaging_Text[] = {
   &Text_Initialize,
   &Text_Render,
-  &RenderText_PostDeathSaveOptions,
+  &Text_PostDeathSaveOptions,
 };
 
-void RenderText() {
+void Messaging_Text() {
   kMessaging_Text[messaging_module]();
 }
 
-Pair16U DesertHDMA_CalculateIrisShapeLine() {
+Pair16U PrayingScene_Func1() {
   static const uint8 kPrayingScene_Tab1[129] = {
     0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xfe, 0xfe, 0xfe, 0xfe, 
     0xfd, 0xfd, 0xfd, 0xfd, 0xfc, 0xfc, 0xfc, 0xfb, 0xfb, 0xfb, 0xfa, 0xfa, 0xf9, 0xf9, 0xf8, 0xf8, 
@@ -1629,7 +1629,7 @@ Pair16U DesertHDMA_CalculateIrisShapeLine() {
   return ret;
 }
 
-void DesertPrayer_BuildIrisHDMATable() {
+void PrayingScene_HDMAStuff() {
   uint16 r14 = link_y_coord - BG2VOFS_copy2 + 12;
   spotlight_y_lower = r14 - spotlight_var1;
   uint16 r4 = sign16(spotlight_y_lower) ? spotlight_y_lower : 0;
@@ -1649,7 +1649,7 @@ void DesertPrayer_BuildIrisHDMATable() {
         break;
       k = (r4 - 1);
     } else {
-      Pair16U pair = DesertHDMA_CalculateIrisShapeLine();
+      Pair16U pair = PrayingScene_Func1();
       if (pair.a == 0) {
         spotlight_y_lower = 0;
       } else {
@@ -1695,7 +1695,7 @@ void DesertPrayer_BuildIrisHDMATable() {
     W12SEL_copy = 0;
     W34SEL_copy = 0;
     WOBJSEL_copy = 0;
-    IrisSpotlight_ResetTable();
+    ResetSpotlightTable();
   } else {
     static const uint8 kPrayingScene_Delays[5] = {22, 22, 22, 64, 1};
     if (sign8(--link_delay_timer_spin_attack)) {
@@ -1707,7 +1707,7 @@ void DesertPrayer_BuildIrisHDMATable() {
   }
 }
 
-void CleanUpAndPrepDesertPrayerHDMA() {
+void PrayingScene_ResetHDMA() {
   HdmaSetup(0, 0x2c80c, 0x41, 0, (uint8)WH0, 0);
 
   W12SEL_copy = 0x33;
@@ -1719,30 +1719,30 @@ void CleanUpAndPrepDesertPrayerHDMA() {
   memset(mode7_hdma_table, 0, 0x1e0);
 }
 
-void DesertPrayer_InitializeIrisHDMA() {
-  CleanUpAndPrepDesertPrayerHDMA();
+void PrayingScene_InitHDMA() {
+  PrayingScene_ResetHDMA();
   spotlight_var1 = 0x26;
   BYTE(spotlight_var2) = 0;
-  DesertPrayer_BuildIrisHDMATable();
+  PrayingScene_HDMAStuff();
   subsubmodule_index++;
 }
 
 
-void Module0E_05_DesertPrayer() {
+void Messaging_PrayingPlayer() {
   switch (subsubmodule_index) {
-  case 0: ResetTransitionPropsAndAdvance_ResetInterface(); break;
-  case 1: ApplyPaletteFilter_bounce(); break;
+  case 0: Dungeon_Teleport0(); break;
+  case 1: PaletteFilter_doFiltering(); break;
   case 2: 
-    DesertPrayer_InitializeIrisHDMA();
+    PrayingScene_InitHDMA();
     BYTE(palette_filter_countdown) = mosaic_target_level - 1;
     mosaic_target_level = 0;
     BYTE(darkening_or_lightening_screen) = 2;
     break;
   case 3: 
-    ApplyPaletteFilter_bounce();
+    PaletteFilter_doFiltering();
     // fall through
   case 4:
-    DesertPrayer_BuildIrisHDMATable();
+    PrayingScene_HDMAStuff();
     break;
   }
 }
@@ -1752,7 +1752,7 @@ void Module_Messaging_6() {
 }
 
 
-void Module0E_04_RedPotion() {
+void Module_Messaging_4() {
   if (Hud_RefillHealth()) {
     button_mask_b_y &= ~0x40;
     flag_update_hud_in_nmi++;
@@ -1761,7 +1761,7 @@ void Module0E_04_RedPotion() {
   }
 }
 
-void Module0E_08_GreenPotion() {
+void Module_Messaging_8() {
   if (Hud_RefillMagicPower()) {
     button_mask_b_y &= ~0x40;
     flag_update_hud_in_nmi++;
@@ -1770,14 +1770,14 @@ void Module0E_08_GreenPotion() {
   }
 }
 
-void Module0E_09_BluePotion() {
+void Module_Messaging_9() {
   if (Hud_RefillHealth())
     submodule_index = 8;
   if (Hud_RefillMagicPower())
     submodule_index = 4;
 }
 
-void WorldMap_FadeOut() {
+void OverworldMap_Backup() {
   if (--INIDISP_copy)
     return;
   mapbak_HDMAEN = HDMAEN_copy;
@@ -1828,13 +1828,13 @@ static const uint16 kOverworldMapPaletteData[256] = {
   0, 0x7c1f, 0x7c1f, 0x7c1f, 0x7c1f, 0x2e31, 0xe4, 0x2169, 0x2e0e, 0x42f1, 0x7c1f, 0x7c1f, 0x7c1f, 0x4a1d, 0x4e3f, 0x5a5f, 
 };
 
-void WorldMap_FillTilemapWithEF() {
+void ClearMode7Tilemap() {
   uint16 *dst = g_zenv.vram;
   for (int i = 0; i != 0x4000; i++)
     BYTE(dst[i]) = 0xef;
 }
 
-void TransferMode7Characters() {
+void WriteMode7GraphicsData() {
   uint16 *dst = g_zenv.vram;
   const uint8 *src = kOverworldMapGfx;
   for (int i = 0; i != 0x4000; i++)
@@ -1847,7 +1847,7 @@ void OverworldMap_SetupHdma() {
   HdmaSetup(a, a, 0x42, (uint8)M7A, (uint8)M7D, 10);
 }
 
-void WorldMap_SetUpHDMA() {
+void ConfigureHdmaForMapMode() {
   BG1HOFS_copy2 = 0x80;
   BG1VOFS_copy2 = 0xc8;
   M7Y_copy = 0x1c9;
@@ -1890,12 +1890,12 @@ void WorldMap_SetUpHDMA() {
   }
 }
 
-void WorldMap_LoadLightWorldMap() {
-  WorldMap_FillTilemapWithEF();
+void OverworldMap_InitGfx() {
+  ClearMode7Tilemap();
   TM_copy = 0x11;
   TS_copy = 0;
-  TransferMode7Characters();
-  WorldMap_SetUpHDMA();
+  WriteMode7GraphicsData();
+  ConfigureHdmaForMapMode();
   LoadOverworldMapPalette();
   LoadActualGearPalettes();
   flag_update_cgram_in_nmi++;
@@ -1905,14 +1905,14 @@ void WorldMap_LoadLightWorldMap() {
   overworld_map_state++;
 }
 
-void WorldMap_LoadSpriteGFX() {
+void OverworldMap_LoadSprGfx() {
   load_chr_halfslot_even_odd = 0x10;
-  Graphics_LoadChrHalfSlot();
+  Graphics_MaybeLoadChrHalfSlot();
   load_chr_halfslot_even_odd = 0;
   overworld_map_state++;
 }
 
-void WorldMap_Brighten() {
+void OverworldMap_BrightenScreen() {
   if (++INIDISP_copy == 15)
     overworld_map_state++;
 }
@@ -1941,7 +1941,7 @@ static const uint8 kOverworldMap_tab1[333] = {
   0xeb, 0xea, 0xe9, 0xe8, 0xe8, 0xe7, 0xe6, 0xe5, 0xe4, 0xe3, 0xe2, 0xe1, 0xe0,
 };
 
-bool WorldMap_CalculateOamCoordinates(PointU8 *pt) {
+bool OverworldMap_GetCoords(PointU8 *pt) {
   uint8 r14, r15;
 
   if (overworld_map_flags == 0) {
@@ -1997,7 +1997,7 @@ bool WorldMap_CalculateOamCoordinates(PointU8 *pt) {
 
 static const uint8 kOverworldMapData[7] = {0x79, 0x6e, 0x6f, 0x6d, 0x7c, 0x6c, 0x7f};
 
-void WorldMap_HandleSpriteBlink(int spr, uint8 r11_ext, uint8 r12_flags, uint8 r13_char, uint8 r14_x, uint8 r15_y) {
+void OverworldMap_AddObj(int spr, uint8 r11_ext, uint8 r12_flags, uint8 r13_char, uint8 r14_x, uint8 r15_y) {
   if (!(frame_counter & 0x10) && r13_char == 100) {
     assert(spr >= 8);
     r13_char = kOverworldMapData[spr - 8];
@@ -2020,7 +2020,7 @@ static const uint8 kBirdTravel_x_hi[8] = {6, 0xc, 2, 8, 0xf, 0, 7, 0xe};
 static const uint8 kBirdTravel_y_lo[8] = {0x5b, 0x98, 0xc0, 0x20, 0x50, 0xb0, 0x30, 0x80};
 static const uint8 kBirdTravel_y_hi[8] = {3, 5, 7, 0xb, 0xb, 0xf, 0xf, 0xf};
 
-void FluteMenu_HandleSelection() {
+void BirdTravel_Main() {
   PointU8 pt;
 
   if (g_ram[0xc8] == 0) {
@@ -2040,8 +2040,8 @@ void FluteMenu_HandleSelection() {
     sound_effect_2 = 32;
   }
   birdtravel_var1[0] = birdtravel_var1[0] & 7;
-  if (frame_counter & 0x10 && WorldMap_CalculateOamCoordinates(&pt))
-    WorldMap_HandleSpriteBlink(16, 2, 0x3e, 0, pt.x - 4, pt.y - 4);
+  if (frame_counter & 0x10 && OverworldMap_GetCoords(&pt))
+    OverworldMap_AddObj(16, 2, 0x3e, 0, pt.x - 4, pt.y - 4);
 
   uint16 ybak = link_y_coord_spexit;
   uint16 xbak = link_x_coord_spexit;
@@ -2054,14 +2054,14 @@ void FluteMenu_HandleSelection() {
     bird_travel_y_hi[i] = kBirdTravel_y_hi[i];
     link_y_coord_spexit = kBirdTravel_y_hi[i] << 8 | kBirdTravel_y_lo[i];
 
-    if (WorldMap_CalculateOamCoordinates(&pt))
-      WorldMap_HandleSpriteBlink(i, 0, (i == birdtravel_var1[0]) ? 0x30 + (frame_counter & 6) : 0x32, kBirdTravel_tab1[i], pt.x, pt.y);
+    if (OverworldMap_GetCoords(&pt))
+      OverworldMap_AddObj(i, 0, (i == birdtravel_var1[0]) ? 0x30 + (frame_counter & 6) : 0x32, kBirdTravel_tab1[i], pt.x, pt.y);
   }
   link_x_coord_spexit = xbak;
   link_y_coord_spexit = ybak;
 }
 
-void Attract_SetUpConclusionHDMA() {
+void OverworldMap_SetRegsForExit() {
   HdmaSetup(0xABDDD, 0xABDDD, 0x42, (uint8)M7A, (uint8)M7D, 0);
   HDMAEN_copy = 0x80;
   zelda_ppu_write(BGMODE, 9);
@@ -2069,7 +2069,7 @@ void Attract_SetUpConclusionHDMA() {
   nmi_disable_core_updates = 0;
 }
 
-void WorldMap_RestoreGraphics() {
+void OverworldMap_PrepExit() {
   if (--INIDISP_copy)
     return;
   EnableForceBlank();
@@ -2082,22 +2082,22 @@ void WorldMap_RestoreGraphics() {
   BG1VOFS_copy2 = mapbak_BG1VOFS_copy2;
   BG2VOFS_copy2 = mapbak_BG2VOFS_copy2;
   WORD(TM_copy) = WORD(mapbak_TM);
-  Attract_SetUpConclusionHDMA();
+  OverworldMap_SetRegsForExit();
 }
 
-void FluteMenu_LoadSelectedScreen() {
+void BirdTravel_LoadTargetArea() {
   save_ow_event_info[0x3b] &= ~0x20;
   save_ow_event_info[0x7b] &= ~0x20;
   save_dung_info[267] &= ~0x80;
   save_dung_info[40] &= ~0x100;
-  FluteMenu_LoadTransport();
-  FluteMenu_LoadSelectedScreenPalettes();
+  BirdTravel_LoadTargetAreaData();
+  BirdTravel_LoadTargetAreaPalettes();
   uint8 t = overworld_screen_index & 0xbf;
-  DecompressAnimatedOverworldTiles((t == 3 || t == 5 || t == 7) ? 0x58 : 0x5a);
-  Overworld_SetFixedColAndScroll();
+  DecompOwAnimatedTiles((t == 3 || t == 5 || t == 7) ? 0x58 : 0x5a);
+  Overworld_SetFixedColorsAndScroll();
   overworld_palette_aux_or_main = 0;
   hud_palette = 0;
-  InitializeTilesets();
+  InitTilesets();
   overworld_map_state++;
   BYTE(dung_draw_width_indicator) = 0;
   Overworld_LoadOverlays2();
@@ -2108,10 +2108,10 @@ void FluteMenu_LoadSelectedScreen() {
   music_control = (m & 0xf) != music_unk1 ? (m & 0xf) : 0xf3;
 }
 
-void Overworld_LoadOverlayAndMap() {
+void BirdTravel_LoadAmbientOverlay() {
   uint16 bak1 = WORD(main_module_index);
   uint16 bak2 = WORD(overworld_map_state);
-  Overworld_LoadAndBuildScreen();
+  Overworld_LoadAmbientOverlayAndMapData();
   WORD(overworld_map_state) = bak2 + 1;
   WORD(main_module_index) = bak1;
 }
@@ -2128,7 +2128,7 @@ void BirdTravel_Finish_Doit() {
 
 
 
-void FluteMenu_FadeInAndQuack() {
+void BirdTravel_Finish() {
   if (++INIDISP_copy == 15) {
     BirdTravel_Finish_Doit();
   } else {
@@ -2136,10 +2136,10 @@ void FluteMenu_FadeInAndQuack() {
   }
 }
 
-void WorldMap_ExitMap() {
+void OverworldMap_RestoreGfx() {
   overworld_palette_aux_or_main = 0;
   hud_palette = 0;
-  InitializeTilesets();
+  InitTilesets();
   flag_update_cgram_in_nmi++;
   BYTE(dung_draw_width_indicator) = 0;
   overworld_map_state = 0;
@@ -2156,11 +2156,11 @@ void WorldMap_ExitMap() {
 static const uint8 kPendantBitMask[3] = {4, 1, 2};
 static const uint8 kCrystalBitMask[7] = {2, 0x40, 8, 0x20, 1, 4, 0x10};
 
-bool OverworldMap_CheckForPendant(int k) {
+bool OverworldMap_CheckPendant(int k) {
   return (savegame_map_icons_indicator == 3) && (link_which_pendants & kPendantBitMask[k]) != 0;
 }
 
-bool OverworldMap_CheckForCrystal(int k) {
+bool OverworldMap_CheckCrystal(int k) {
   return (savegame_map_icons_indicator == 7) && (link_has_crystals & kCrystalBitMask[k]) != 0;
 }
 
@@ -2191,11 +2191,11 @@ static const uint8 kOverworldMap_Timer[2] = {33, 12};
 static const int16 kOverworldMap_Table3[8] = {0, 0, 1, 2, -1, -2, 1, 2};
 static const int16 kOverworldMap_Table2[6] = {0, 0, 224, 480, -72, -224};
 
-void WorldMap_HandleSprites() {
+void OverworldMap_AddSprites() {
   PointU8 pt;
 
-  if (frame_counter & 0x10 && WorldMap_CalculateOamCoordinates(&pt))
-    WorldMap_HandleSpriteBlink(0, 2, 0x3e, 0, pt.x - 4, pt.y - 4);
+  if (frame_counter & 0x10 && OverworldMap_GetCoords(&pt))
+    OverworldMap_AddObj(0, 2, 0x3e, 0, pt.x - 4, pt.y - 4);
 
   uint16 ybak = link_y_coord_spexit;
   uint16 xbak = link_x_coord_spexit;
@@ -2206,8 +2206,8 @@ void WorldMap_HandleSprites() {
       birdtravel_var1[k]++;
     link_x_coord_spexit = bird_travel_x_hi[k] << 8 | bird_travel_x_lo[k];
     link_y_coord_spexit = bird_travel_y_hi[k] << 8 | bird_travel_y_lo[k];
-    if (WorldMap_CalculateOamCoordinates(&pt))
-      WorldMap_HandleSpriteBlink(15, 2, kOverworldMap_Table4[frame_counter >> 1 & 3], 0x6a, pt.x, pt.y);
+    if (OverworldMap_GetCoords(&pt))
+      OverworldMap_AddObj(15, 2, kOverworldMap_Table4[frame_counter >> 1 & 3], 0x6a, pt.x, pt.y);
   }
 
   if (save_ow_event_info[0x5b] & 0x20 || (((savegame_map_icons_indicator >= 6) ^ is_in_dark_world) & 1))
@@ -2216,7 +2216,7 @@ void WorldMap_HandleSprites() {
   k = savegame_map_icons_indicator;
   uint16 x;
 
-  if (!OverworldMap_CheckForPendant(0) && !OverworldMap_CheckForCrystal(0) && !sign16(kOwMapCrystal0_x[k])) {
+  if (!OverworldMap_CheckPendant(0) && !OverworldMap_CheckCrystal(0) && !sign16(kOwMapCrystal0_x[k])) {
     link_x_coord_spexit = kOwMapCrystal0_x[k];
     link_y_coord_spexit = kOwMapCrystal0_y[k];
     uint8 t = kOwMapCrystal0_tab[k] >> 8;
@@ -2225,17 +2225,17 @@ void WorldMap_HandleSprites() {
         goto endif_crystal0;
       link_x_coord_spexit -= 4, link_y_coord_spexit -= 4;
     }
-    if (WorldMap_CalculateOamCoordinates(&pt)) {
+    if (OverworldMap_GetCoords(&pt)) {
       uint16 info = kOwMapCrystal0_tab[k];
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(14, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      OverworldMap_AddObj(14, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal0:;
   }
 
-  if (!OverworldMap_CheckForPendant(1) && !OverworldMap_CheckForCrystal(1) && !sign16(kOwMapCrystal1_x[k])) {
+  if (!OverworldMap_CheckPendant(1) && !OverworldMap_CheckCrystal(1) && !sign16(kOwMapCrystal1_x[k])) {
     link_x_coord_spexit = kOwMapCrystal1_x[k];
     link_y_coord_spexit = kOwMapCrystal1_y[k];
     uint8 t = kOwMapCrystal1_tab[k] >> 8;
@@ -2244,17 +2244,17 @@ void WorldMap_HandleSprites() {
         goto endif_crystal1;
       link_x_coord_spexit -= 4, link_y_coord_spexit -= 4;
     }
-    if (WorldMap_CalculateOamCoordinates(&pt)) {
+    if (OverworldMap_GetCoords(&pt)) {
       uint16 info = kOwMapCrystal1_tab[k];
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(13, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      OverworldMap_AddObj(13, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal1:;
   }
 
-  if (!OverworldMap_CheckForPendant(2) && !OverworldMap_CheckForCrystal(2) && !sign16(kOwMapCrystal2_x[k])) {
+  if (!OverworldMap_CheckPendant(2) && !OverworldMap_CheckCrystal(2) && !sign16(kOwMapCrystal2_x[k])) {
     link_x_coord_spexit = kOwMapCrystal2_x[k];
     link_y_coord_spexit = kOwMapCrystal2_y[k];
     uint8 t = kOwMapCrystal2_tab[k] >> 8;
@@ -2263,17 +2263,17 @@ void WorldMap_HandleSprites() {
         goto endif_crystal2;
       link_x_coord_spexit -= 4, link_y_coord_spexit -= 4;
     }
-    if (WorldMap_CalculateOamCoordinates(&pt)) {
+    if (OverworldMap_GetCoords(&pt)) {
       uint16 info = kOwMapCrystal2_tab[k];
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(12, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      OverworldMap_AddObj(12, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal2:;
   }
 
-  if (!OverworldMap_CheckForCrystal(3) && !sign16(kOwMapCrystal3_x[k])) {
+  if (!OverworldMap_CheckCrystal(3) && !sign16(kOwMapCrystal3_x[k])) {
     link_x_coord_spexit = kOwMapCrystal3_x[k];
     link_y_coord_spexit = kOwMapCrystal3_y[k];
     uint8 t = kOwMapCrystal3_tab[k] >> 8;
@@ -2282,17 +2282,17 @@ void WorldMap_HandleSprites() {
         goto endif_crystal3;
       link_x_coord_spexit -= 4, link_y_coord_spexit -= 4;
     }
-    if (WorldMap_CalculateOamCoordinates(&pt)) {
+    if (OverworldMap_GetCoords(&pt)) {
       uint16 info = kOwMapCrystal3_tab[k];
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(11, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      OverworldMap_AddObj(11, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal3:;
   }
 
-  if (!OverworldMap_CheckForCrystal(4) && !sign16(kOwMapCrystal4_x[k])) {
+  if (!OverworldMap_CheckCrystal(4) && !sign16(kOwMapCrystal4_x[k])) {
     link_x_coord_spexit = kOwMapCrystal4_x[k];
     link_y_coord_spexit = kOwMapCrystal4_y[k];
     uint8 t = kOwMapCrystal4_tab[k] >> 8;
@@ -2301,17 +2301,17 @@ void WorldMap_HandleSprites() {
         goto endif_crystal4;
       link_x_coord_spexit -= 4, link_y_coord_spexit -= 4;
     }
-    if (WorldMap_CalculateOamCoordinates(&pt)) {
+    if (OverworldMap_GetCoords(&pt)) {
       uint16 info = kOwMapCrystal4_tab[k];
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(10, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      OverworldMap_AddObj(10, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal4:;
   }
 
-  if (!OverworldMap_CheckForCrystal(5) && !sign16(kOwMapCrystal5_x[k])) {
+  if (!OverworldMap_CheckCrystal(5) && !sign16(kOwMapCrystal5_x[k])) {
     link_x_coord_spexit = kOwMapCrystal5_x[k];
     link_y_coord_spexit = kOwMapCrystal5_y[k];
     uint8 t = kOwMapCrystal5_tab[k] >> 8;
@@ -2320,17 +2320,17 @@ void WorldMap_HandleSprites() {
         goto endif_crystal5;
       link_x_coord_spexit -= 4, link_y_coord_spexit -= 4;
     }
-    if (WorldMap_CalculateOamCoordinates(&pt)) {
+    if (OverworldMap_GetCoords(&pt)) {
       uint16 info = kOwMapCrystal5_tab[k];
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(9, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      OverworldMap_AddObj(9, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal5:;
   }
 
-  if (!OverworldMap_CheckForCrystal(6) && !sign16(kOwMapCrystal6_x[k])) {
+  if (!OverworldMap_CheckCrystal(6) && !sign16(kOwMapCrystal6_x[k])) {
     link_x_coord_spexit = kOwMapCrystal6_x[k];
     link_y_coord_spexit = kOwMapCrystal6_y[k];
     uint8 t = kOwMapCrystal6_tab[k] >> 8;
@@ -2339,12 +2339,12 @@ void WorldMap_HandleSprites() {
         goto endif_crystal6;
       link_x_coord_spexit -= 4, link_y_coord_spexit -= 4;
     }
-    if (WorldMap_CalculateOamCoordinates(&pt)) {
+    if (OverworldMap_GetCoords(&pt)) {
       uint16 info = kOwMapCrystal6_tab[k];
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(8, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      OverworldMap_AddObj(8, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal6:;
   }
@@ -2355,7 +2355,7 @@ out:
 }
 
 
-void WorldMap_PlayerControl() {
+void OverworldMap_Main() {
   if (overworld_map_flags & 0x80) {
     overworld_map_flags &= ~0x80;
     OverworldMap_SetupHdma();
@@ -2398,14 +2398,14 @@ void WorldMap_PlayerControl() {
     if (BG1HOFS_copy2 != kOverworldMap_Table2[k])
       BG1HOFS_copy2 += kOverworldMap_Table3[k];
   }
-  WorldMap_HandleSprites();
+  OverworldMap_AddSprites();
 }
 
 const uint8 *GetLightOverworldTilemap() {
   return kLightOverworldTilemap;
 }
 
-void WorldMap_LoadDarkWorldMap() {
+void OverworldMap_DarkWorldTilemap() {
   if (overworld_screen_index & 0x40) {
     memcpy(&uvram, kDarkOverworldTilemap, 1024);
     nmi_subroutine_index = 21;
@@ -2416,75 +2416,75 @@ void WorldMap_LoadDarkWorldMap() {
 void Messaging_OverworldMap() {
   switch (overworld_map_state) {
   case 0:
-    WorldMap_FadeOut();
+    OverworldMap_Backup();
     break;
   case 1:
-    WorldMap_LoadLightWorldMap();
+    OverworldMap_InitGfx();
     break;
   case 2:
-    WorldMap_LoadDarkWorldMap();
+    OverworldMap_DarkWorldTilemap();
     break;
   case 3:
-    WorldMap_LoadSpriteGFX();
+    OverworldMap_LoadSprGfx();
     break;
   case 4:
-    WorldMap_Brighten();
+    OverworldMap_BrightenScreen();
     break;
   case 5:
-    WorldMap_PlayerControl();
+    OverworldMap_Main();
     break;
   case 6:
-    WorldMap_RestoreGraphics();
+    OverworldMap_PrepExit();
     break;
   case 7:
-    WorldMap_ExitMap();
+    OverworldMap_RestoreGfx();
     break;
   }
 }
 
-void Module0E_0A_FluteMenu() {
+void Messaging_BirdTravel() {
   switch (overworld_map_state) {
   case 0:
-    WorldMap_FadeOut();
+    OverworldMap_Backup();
     break;
   case 1:
     birdtravel_var1[0] = 0;
-    WorldMap_LoadLightWorldMap();
+    OverworldMap_InitGfx();
     break;
   case 2:
-    WorldMap_LoadSpriteGFX();
+    OverworldMap_LoadSprGfx();
     break;
   case 3:
-    WorldMap_Brighten();
+    OverworldMap_BrightenScreen();
     break;
   case 4:
     g_ram[0xc8] = 0x10;
     overworld_map_state++;
     break;
   case 5:
-    FluteMenu_HandleSelection();
+    BirdTravel_Main();
     break;
   case 6:
-    WorldMap_RestoreGraphics();
+    OverworldMap_PrepExit();
     break;
   case 7:
-    FluteMenu_LoadSelectedScreen();
+    BirdTravel_LoadTargetArea();
     break;
   case 8:
-    Overworld_LoadOverlayAndMap();
+    BirdTravel_LoadAmbientOverlay();
     break;
   case 9:
-    FluteMenu_FadeInAndQuack();
+    BirdTravel_Finish();
     break;
   default:
     assert(0);
   }
 }
-void Module0E_0B_SaveMenu() {
+void Module_Messaging_11() {
   // This is the continue / save and quit menu
   if (!player_is_indoors)
     Overworld_DwDeathMountainPaletteAnimation();
-  RenderText();
+  Messaging_Text();
   flag_update_hud_in_nmi = 0;
   nmi_disable_core_updates = 0;
   if (subsubmodule_index < 3)
@@ -2509,23 +2509,23 @@ void Module0E_0B_SaveMenu() {
 static PlayerHandlerFunc *const kMessagingSubmodules[12] = {
   &Module_Messaging_0,
   &Hud_Module_Run,
-  &RenderText,
-  &Module0E_03_DungeonMap,
-  &Module0E_04_RedPotion,
-  &Module0E_05_DesertPrayer,
+  &Messaging_Text,
+  &Messaging_DungMap,
+  &Module_Messaging_4,
+  &Messaging_PrayingPlayer,
   &Module_Messaging_6,
   &Messaging_OverworldMap,
-  &Module0E_08_GreenPotion,
-  &Module0E_09_BluePotion,
-  &Module0E_0A_FluteMenu,
-  &Module0E_0B_SaveMenu,
+  &Module_Messaging_8,
+  &Module_Messaging_9,
+  &Messaging_BirdTravel,
+  &Module_Messaging_11,
 };
 
-static void RunInterface() {
+static void Messaging_Main() {
   kMessagingSubmodules[submodule_index]();
 }
 
-void Module0E_Interface() {
+void Module_Messaging() {
   bool skip_run = false;
   if (player_is_indoors) {
     if (submodule_index == 3) {
@@ -2538,14 +2538,14 @@ void Module0E_Interface() {
   }
   if (!skip_run) {
     Sprite_Main();
-    LinkOam_Main();
+    PlayerOam_Main();
     if (!player_is_indoors)
-      OverworldOverlay_HandleRain();
+      Overworld_DrawBadWeather();
     Hud_RefillLogic();
     if (submodule_index != 2)
-      OrientLampLightCone();
+      OrientLampBg();
   }
-  RunInterface();
+  Messaging_Main();
   BG2HOFS_copy = BG2HOFS_copy2 + bg1_x_offset;
   BG2VOFS_copy = BG2VOFS_copy2 + bg1_y_offset;
   BG1HOFS_copy = BG1HOFS_copy2 + bg1_x_offset;
@@ -2554,7 +2554,7 @@ void Module0E_Interface() {
 
 void Death_Func1();
 
-void GameOver_AdvanceImmediately() {
+void Death_Func0() {
   submodule_index++;
   Death_Func1();
 }
@@ -2593,11 +2593,11 @@ void Death_InitializeGameOverLetters() {
   hookshot_effect_index = 6;
 }
 
-void GameOver_DelayBeforeIris() {
+void Death_Func2() {
   if (--g_ram[0xc8])
     return;
   Death_InitializeGameOverLetters();
-  IrisSpotlight_close();
+  Spotlight_close();
   WOBJSEL_copy = 48;
   W34SEL_copy = 0;
   submodule_index++;
@@ -2611,7 +2611,7 @@ void Death_PrepFaint() {
   some_animation_timer = 5;
   link_hearts_filler = 0;
   link_health_current = 0;
-  Link_ResetProperties_C();
+  Player_ResetState3();
   player_on_somaria_platform = 0;
   draw_water_ripples_or_grass = 0;
   link_is_bunny_mirror = 0;
@@ -2626,7 +2626,7 @@ void Death_PrepFaint() {
   if (link_item_moon_pearl)
     link_is_bunny = 0;
   link_timer_tempbunny = 0;
-  sound_effect_1 = 0x27 | Link_CalculateSfxPan();
+  sound_effect_1 = 0x27 | Sound_GetPanForPlayer();
   for (int i = 0; i != 4; i++) {
     if (link_bottle_info[i] == 6)
       return;
@@ -2634,11 +2634,11 @@ void Death_PrepFaint() {
   index_of_changable_dungeon_objs[0] = index_of_changable_dungeon_objs[1] = 0;
 }
 
-void GameOver_IrisWipe() {
-  PaletteFilter_RestoreBGSubstractiveStrict();
+void Death_Func3() {
+  PaletteFilter_Restore_Strictly_Bg_Subtractive();
   main_palette_buffer[0] = main_palette_buffer[32];
   uint8 bak = main_module_index;
-  IrisSpotlight_ConfigureTable();
+  ConfigureSpotlightTable();
   main_module_index = bak;
   if (submodule_index)
     return;
@@ -2652,7 +2652,7 @@ void GameOver_IrisWipe() {
   }
   main_palette_buffer[0] = main_palette_buffer[32] = 0x18;
 
-  IrisSpotlight_ResetTable();
+  ResetSpotlightTable();
   COLDATA_copy0 = 32;
   COLDATA_copy1 = 64;
   COLDATA_copy2 = 128;
@@ -2702,7 +2702,7 @@ void Death_PlayerSwoon() {
   oam_buf[spr].flags = kDeath_SprFlags[link_is_on_lower_level] | 2;
 }
 
-void GameOver_AnimateChoiceFairy() {
+void Death_AddSomeSprite() {
   int spr = 0x14;
   bytewise_extended_oam[spr] = 2;
   oam_buf[spr].x = 0x34;
@@ -2714,12 +2714,12 @@ void GameOver_AnimateChoiceFairy() {
 void Death_Func4() {
   Death_PlayerSwoon();
 }
-void GameOver_SplatAndFade() {
+void Death_Func5() {
   if (g_ram[0xc8]) {
     g_ram[0xc8]--;
     return;
   }
-  PaletteFilter_RestoreBGSubstractiveStrict();
+  PaletteFilter_Restore_Strictly_Bg_Subtractive();
   main_palette_buffer[0] = main_palette_buffer[32];
   if (BYTE(darkening_or_lightening_screen) != 0xff)
     return;
@@ -2732,7 +2732,7 @@ void GameOver_SplatAndFade() {
       link_bottle_info[i] = 2;
       g_ram[0xc8] = 12;
       load_chr_halfslot_even_odd = 15;
-      Graphics_LoadChrHalfSlot();
+      Graphics_MaybeLoadChrHalfSlot();
       load_chr_halfslot_even_odd = 0;
       submodule_index = 10;
       return;
@@ -2748,12 +2748,12 @@ void GameOver_SplatAndFade() {
 void Death_Func6() {
   g_ram[0xc8] = 12;
   load_chr_halfslot_even_odd = 15;
-  Graphics_LoadChrHalfSlot();
+  Graphics_MaybeLoadChrHalfSlot();
   load_chr_halfslot_even_odd = 0;
   palette_sp6 = 5;
   overworld_palette_aux_or_main = 0x200;
-  Palette_Load_SpriteEnvironment_Dungeon();
-  Palette_Load_SpriteMain();
+  Palette_MiscSprite_Indoors();
+  Palette_MainSpr();
   flag_update_cgram_in_nmi++;
   submodule_index++;
   Death_PlayerSwoon();
@@ -2814,7 +2814,7 @@ draw:
   GameOverText_Draw();
 }
 
-void Animate_GAMEOVER_Letters() {
+void Ancilla_GameOverTextLong() {
   switch (ancilla_type[0]) {
   case 0:
     submodule_index++;
@@ -2831,9 +2831,9 @@ void Animate_GAMEOVER_Letters() {
   }
 }
 
-void ConfigureRevivalAncillae();
+void Ancilla_ConfigureRevivalObjects();
 
-void SaveGameFile() {
+void Main_SaveGameFile() {
   int offs = ((srm_var1 >> 1) - 1) * 0x500;
   memcpy(g_zenv.sram + offs, save_dung_info, 0x500);
   memcpy(g_zenv.sram + offs + 0xf00, save_dung_info, 0x500);
@@ -2845,7 +2845,7 @@ void SaveGameFile() {
   WORD(g_zenv.sram[offs + 0x4fe + 0xf00]) = t;
 }
 
-void CopySaveToWRAM() {
+void Death_RestoreFromSrm() {
   int k = 0xf;
   bird_travel_x_hi[k] = 0;
   bird_travel_y_hi[k] = 0;
@@ -2872,8 +2872,8 @@ void CopySaveToWRAM() {
   hud_palette = 0;
 }
 
-void Animate_GAMEOVER_Letters_bounce() {
-  Animate_GAMEOVER_Letters();
+void Death_Func7() {
+  Ancilla_GameOverTextLong();
 }
 
 const uint8 kHealthAfterDeath[21] = {
@@ -2881,12 +2881,12 @@ const uint8 kHealthAfterDeath[21] = {
   0x40, 0x48, 0x48, 0x48, 0x50, 
 };
 
-void GameOver_Finalize_GAMEOVR() {
-  Animate_GAMEOVER_Letters();
+void Death_ShowSaveOptionsMenu() {
+  Ancilla_GameOverTextLong();
   uint8 bak1 = main_module_index;
   uint8 bak2 = submodule_index;
   messaging_module = 2;
-  RenderText();
+  Messaging_Text();
   submodule_index = bak2 + 1;
   main_module_index = bak1;
   g_ram[0xc8] = 2;
@@ -2896,17 +2896,17 @@ void GameOver_Finalize_GAMEOVR() {
 void Death_Func15() {
   music_control = 0xf1;
   if (player_is_indoors)
-    Dungeon_FlagRoomData_Quadrants();
-  AdjustLinkBunnyStatus();
+    Dungeon_SaveRoomQuadrantData();
+  PreOverworld_LoadBunnyStuff();
   if (sram_progress_indicator < 3) {
     savegame_is_darkworld = 0;
     if (!link_item_moon_pearl)
-      ForceNonbunnyStatus();
+      Player_RemoveBunny();
   }
   if (dungeon_room_index == 0)
     player_is_indoors = 0;
 
-  ResetSomeThingsAfterDeath((uint8)dungeon_room_index);
+  Player_ResetSomeStuff2((uint8)dungeon_room_index);
   if (savegame_tagalong == 6 || savegame_tagalong == 9 || savegame_tagalong == 10 || savegame_tagalong == 13)
     savegame_tagalong = 0;
 
@@ -2934,7 +2934,7 @@ void Death_Func15() {
 
     if (sram_progress_indicator) {
       if (subsubmodule_index == 0)
-        SaveGameFile();
+        Main_SaveGameFile();
       main_module_index = 5;
       submodule_index = 0;
       nmi_load_bg_from_vram = 0;
@@ -2943,11 +2943,11 @@ void Death_Func15() {
       int offs = kSrmOffsets[(slot >> 1) - 1];
       WORD(g_ram[0]) = offs;
       death_var5 = 0;
-      CopySaveToWRAM();
+      Death_RestoreFromSrm();
     }
   } else {
     if (sram_progress_indicator)
-      SaveGameFile();
+      Main_SaveGameFile();
     TM_copy = 16;
     player_is_indoors = 0;
     Death_Func31();
@@ -2968,15 +2968,15 @@ void Death_Func15() {
     BG2VOFS_copy = 0;
     memset(save_dung_info, 0, 256 * 5);
     flag_which_music_type = 0;
-    LoadOverworldSongs();
+    Sound_LoadLightWorldSongBank();
     zelda_snes_dummy_write(NMITIMEN, 0x81);
   }
 }
 
-void GameOver_SaveAndOrContinue() {
-  GameOver_AnimateChoiceFairy();
+void Death_Func9() {
+  Death_AddSomeSprite();
   if (ancilla_type)
-    Animate_GAMEOVER_Letters();
+    Ancilla_GameOverTextLong();
 
   if (filtered_joypad_H & 0x20)
     goto do_inc;
@@ -3002,17 +3002,17 @@ do_inc:
   Death_Func15();
 }
 
-void GameOver_InitializeRevivalFairy() {
-  ConfigureRevivalAncillae();
+void Death_Func10() {
+  Ancilla_ConfigureRevivalObjects();
   link_hearts_filler = 56;
   submodule_index += 1;
   overworld_map_state = 0;
 }
 
-void RevivalFairy_Main_bounce() {
-  RevivalFairy_Main();
+void Death_Func11() {
+  Ancilla_RevivalFaerie();
 }
-void GameOver_RiseALittle() {
+void Death_Func12() {
   if (link_hearts_filler == 0) {
     memcpy(aux_palette_buffer, mapbak_palette, 256);
     memset(main_palette_buffer + 32, 0, 192);
@@ -3022,31 +3022,31 @@ void GameOver_RiseALittle() {
     WORD(CGWSEL_copy) = mapbak_CGWSEL;
     submodule_index++;
   }
-  RevivalFairy_Main();
+  Ancilla_RevivalFaerie();
   Hud_RefillLogic();
 }
-void GameOver_Restore0D() {
+void Death_Func13() {
   if (!is_doing_heart_animation) {
     load_chr_halfslot_even_odd = 1;
-    Graphics_LoadChrHalfSlot();
+    Graphics_MaybeLoadChrHalfSlot();
     Dungeon_ApproachFixedColor_variable(overworld_fixed_color_plusminus);
     submodule_index++;
   }
-  RevivalFairy_Main();
+  Ancilla_RevivalFaerie();
   Hud_RefillLogic();
 }
-void GameOver_Restore0E() {
-  Graphics_LoadChrHalfSlot();
+void Death_Func14() {
+  Graphics_MaybeLoadChrHalfSlot();
   TS_copy = mapbak_TS;
   submodule_index++;
 }
-void GameOver_ResituateLink() {
-  PaletteFilter_RestoreBGAdditiveStrict();
+void Death_RestoreScreenPostRevival() {
+  PaletteFilter_Restore_Strictly_Bg_Additive();
   main_palette_buffer[0] = main_palette_buffer[32];
   if (BYTE(palette_filter_countdown) != 32)
     return;
   if (!player_is_indoors)
-    Overworld_SetFixedColAndScroll();
+    Overworld_SetFixedColorsAndScroll();
   TS_copy = mapbak_TS;
   main_module_index = saved_module_for_menu;
   submodule_index = 0;
@@ -3058,43 +3058,43 @@ void GameOver_ResituateLink() {
 }
 
 static PlayerHandlerFunc *const kModule_Death[16] = {
-  &GameOver_AdvanceImmediately,
+  &Death_Func0,
   &Death_Func1,
-  &GameOver_DelayBeforeIris,
-  &GameOver_IrisWipe,
+  &Death_Func2,
+  &Death_Func3,
   &Death_Func4,
-  &GameOver_SplatAndFade,
+  &Death_Func5,
   &Death_Func6,
-  &Animate_GAMEOVER_Letters_bounce,
-  &GameOver_Finalize_GAMEOVR,
-  &GameOver_SaveAndOrContinue,
-  &GameOver_InitializeRevivalFairy,
-  &RevivalFairy_Main_bounce,
-  &GameOver_RiseALittle,
-  &GameOver_Restore0D,
-  &GameOver_Restore0E,
-  &GameOver_ResituateLink,
+  &Death_Func7,
+  &Death_ShowSaveOptionsMenu,
+  &Death_Func9,
+  &Death_Func10,
+  &Death_Func11,
+  &Death_Func12,
+  &Death_Func13,
+  &Death_Func14,
+  &Death_RestoreScreenPostRevival,
 };
 
-void Module12_GameOver() {
+void Module_Death() {
   kModule_Death[submodule_index]();
   if (submodule_index != 9)
-    LinkOam_Main();
+    PlayerOam_Main();
 }
 
 static const uint8 kLocationMenuStartPos[3] = {0, 1, 6};
 
-void Module1B_SpawnSelect() {
-  RenderText();
+void Module_LocationMenu() {
+  Messaging_Text();
   if (submodule_index)
     return;
   nmi_load_bg_from_vram = 0;
   EnableForceBlank();
-  EraseTileMaps_normal();
+  Vram_EraseTilemaps_normal();
   uint8 bak = which_starting_point;
   which_starting_point = kLocationMenuStartPos[choice_in_multiselect_box];
   subsubmodule_index = 0;
-  LoadDungeonRoomRebuildHUD();
+  Module_LoadGame_indoors();
   which_starting_point = bak;
 }
 

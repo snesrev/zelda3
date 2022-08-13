@@ -8,7 +8,7 @@
 #include "messaging.h"
 #include "player_oam.h"
 
-void Module18_GanonEmerges() {
+void Module_GanonEmerges() {
   uint16 hofs2 = BG2HOFS_copy2;
   uint16 vofs2 = BG2VOFS_copy2;
   uint16 hofs1 = BG1HOFS_copy2;
@@ -26,14 +26,14 @@ void Module18_GanonEmerges() {
 
   switch (overworld_map_state) {
   case 0:  // GetBirdForPursuit
-    Dungeon_HandleLayerEffect();
-    CallForDuckIndoors();
-    SaveDungeonKeys();
+    Dungeon_Effect_Handler();
+    GanonEmerges_SpawnTravelBird();
+    Dungeon_SaveRoomData_justKeys();
     overworld_map_state++;
     flag_is_link_immobilized++;
     break;
   case 1:  // PrepForPyramidLocation
-    Dungeon_HandleLayerEffect();
+    Dungeon_Effect_Handler();
     if (submodule_index == 10) {
       overworld_screen_index = 91;
       player_is_indoors = 0;
@@ -43,7 +43,7 @@ void Module18_GanonEmerges() {
     }
     break;
   case 2:  // FadeOutDungeonScreen
-    Dungeon_HandleLayerEffect();
+    Dungeon_Effect_Handler();
     if (--INIDISP_copy)
       break;
     EnableForceBlank();
@@ -54,19 +54,19 @@ void Module18_GanonEmerges() {
   case 3:  // LOadPyramidArea
     birdtravel_var1[0] = 8;
     birdtravel_var1[1] = 0;
-    FluteMenu_LoadSelectedScreen();
-    LoadOWMusicIfNeeded();
+    BirdTravel_LoadTargetArea();
+    Overworld_LoadMusicIfNeeded();
     music_control = 9;
     break;
   case 4:  // LoadAmbientOverlay
-    Overworld_LoadOverlayAndMap();
+    BirdTravel_LoadAmbientOverlay();
     subsubmodule_index = 0;
     break;
   case 5:  // BrightenScreenThenSpawnBat
     if (++INIDISP_copy == 15) {
       dung_savegame_state_bits = 0;
       flag_unk1 = 0;
-      Sprite_SpawnBatCrashCutscene();
+      GanonEmerges_SpawnRetreatBat();
       link_direction_facing = 2;
       saved_module_for_menu = 9;
       player_is_indoors = 0;
@@ -86,5 +86,5 @@ void Module18_GanonEmerges() {
     break;
   }
 
-  LinkOam_Main();
+  PlayerOam_Main();
 }

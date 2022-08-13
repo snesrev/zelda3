@@ -28,10 +28,10 @@ static const uint8 kDungeonExit_To[12] = {201, 99, 119, 32, 40, 74, 89, 152, 14,
 
 
 void Module_PreDungeon_setAmbientSfx();
-void HandleDungeonLandingFromPit();
-void Dungeon_SetBossMusicUnorthodox();
-void RoomDraw_FloorChunks(const uint16 *src);
-bool RoomTag_CheckForPressedSwitch(uint8 *y_out);
+void HoleToDungeon_Helper1();
+void Dungeon_Staircase_MusicFunc1();
+void Dung_FillFloor(const uint16 *src);
+bool Dung_CheckStarTileSwitch(uint8 *y_out);
 
 
 static const uint16 kObjectSubtype1Params[] = {
@@ -116,12 +116,12 @@ uint16 *DstoPtr(uint16 d) {
   return (uint16 *)&(g_ram[dung_line_ptrs_row0 + d * 2]);
 }
 
-void RoomDraw_GetObjectSize_1to15or32() {
+void Object_Size_1_to_15_or_32() {
   uint16 x = dung_draw_width_indicator << 2 | dung_draw_height_indicator;
   dung_draw_width_indicator = x ? x : 32;
 }
 
-void RoomDraw_GetObjectSize_1to15or26() {
+void Object_Size_1_to_15_or_26() {
   uint16 x = dung_draw_width_indicator << 2 | dung_draw_height_indicator;
   dung_draw_width_indicator = x ? x : 26;
 }
@@ -132,13 +132,13 @@ void Object_SizeAtoAplus15(uint8 a) {
 }
 
 
-void RoomDraw_GetObjectSize_1to16() {
+void Object_Size_1_to_16() {
   dung_draw_width_indicator = (dung_draw_width_indicator << 2 | dung_draw_height_indicator) + 1;
   dung_draw_height_indicator = 0;
 }
 
 
-void RoomDraw_Rightwards2x2(const uint16 *src, uint16 *dst) {
+void Object_Draw_2x2(const uint16 *src, uint16 *dst) {
   dst[XY(0, 0)] = src[0];
   dst[XY(0, 1)] = src[1];
   dst[XY(1, 0)] = src[2];
@@ -146,14 +146,14 @@ void RoomDraw_Rightwards2x2(const uint16 *src, uint16 *dst) {
 }
 
 
-uint16 *RoomDraw_RightwardBarSegment(const uint16 *src, uint16 *dst) {
+uint16 *Object_Draw1x3(const uint16 *src, uint16 *dst) {
   dst[XY(0, 0)] = src[0];
   dst[XY(0, 1)] = src[1];
   dst[XY(0, 2)] = src[2];
   return dst;
 }
 
-uint16 *RoomDraw_DrawObject2x2and1(const uint16 *src, uint16 *dst) {
+uint16 *Object_Draw1x5(const uint16 *src, uint16 *dst) {
   dst[XY(0, 0)] = src[0];
   dst[XY(0, 1)] = src[1];
   dst[XY(0, 2)] = src[2];
@@ -162,7 +162,7 @@ uint16 *RoomDraw_DrawObject2x2and1(const uint16 *src, uint16 *dst) {
   return dst;
 }
 
-uint16 *RoomDraw_RightwardShelfEnd(const uint16 *src, uint16 *dst) {
+uint16 *Object_Draw1x4(const uint16 *src, uint16 *dst) {
   dst[XY(0, 0)] = src[0];
   dst[XY(0, 1)] = src[1];
   dst[XY(0, 2)] = src[2];
@@ -180,7 +180,7 @@ void Object_Draw_3x2(const uint16 *src, uint16 *dst) {
 }
 
 
-void RoomDraw_1x3_rightwards(int n, const uint16 *src, uint16 *dst) {
+void Object_Draw_Nx3(int n, const uint16 *src, uint16 *dst) {
   do {
     dst[XY(0, 0)] = src[0];
     dst[XY(0, 1)] = src[1];
@@ -195,7 +195,7 @@ void Object_Fill_Nx1(int n, const uint16 *src, uint16 *dst) {
 }
 
 
-void RoomDraw_Object_Nx4(int n, const uint16 *src, uint16 *dst) {
+void Object_Draw_Nx4(int n, const uint16 *src, uint16 *dst) {
   do {
     dst[XY(0, 0)] = src[0];
     dst[XY(0, 1)] = src[1];
@@ -217,7 +217,7 @@ void Object_Draw_5x4(const uint16 *src, uint16 *dst) {
   } while (--n);
 }
 
-void RoomDraw_A_Many32x32Blocks(int n, const uint16 *src, uint16 *dst) {
+void Object_Draw_N_4x4(int n, const uint16 *src, uint16 *dst) {
   do {
     // draw 4x2 twice
     for (int i = 0; i < 2; i++) {
@@ -235,11 +235,11 @@ void RoomDraw_A_Many32x32Blocks(int n, const uint16 *src, uint16 *dst) {
   } while (--n);
 }
 
-void RoomDraw_4x4(const uint16 *src, uint16 *dst) {
-  RoomDraw_Object_Nx4(4, src, dst);
+void Object_Draw4x4(const uint16 *src, uint16 *dst) {
+  Object_Draw_Nx4(4, src, dst);
 }
 
-void RoomDraw_Downwards4x2VariableSpacing(int increment, const uint16 *src, uint16 *dst) {
+void Object_Draw_4x2_N(int increment, const uint16 *src, uint16 *dst) {
   do {
     dst[XY(0, 0)] = src[0];
     dst[XY(1, 0)] = src[1];
@@ -265,7 +265,7 @@ void Object_Draw_4x2_BothBgs(const uint16 *src, uint16 dsto) {
 }
 
 
-void RoomDraw_SinglePot(const uint16 *src, uint16 *dst, uint16 dsto) {
+void Object_Pot(const uint16 *src, uint16 *dst, uint16 dsto) {
   int i = dung_misc_objs_index >> 1;
   dung_misc_objs_index += 2;
   dung_replacement_tile_state[i] = 0x1111;
@@ -277,10 +277,10 @@ void RoomDraw_SinglePot(const uint16 *src, uint16 *dst, uint16 dsto) {
   replacement_tilemap_LR[i] = 0x4d1e;
   if (savegame_is_darkworld)
     src = SrcPtr(0xe92);
-  RoomDraw_Rightwards2x2(src, dst);
+  Object_Draw_2x2(src, dst);
 }
 
-void RoomDraw_HammerPegSingle(const uint16 *src, uint16 *dst, uint16 dsto) {
+void Object_PegBlock(const uint16 *src, uint16 *dst, uint16 dsto) {
   int i = dung_misc_objs_index >> 1;
   dung_misc_objs_index += 2;
   dung_replacement_tile_state[i] = 0x4040;
@@ -290,7 +290,7 @@ void RoomDraw_HammerPegSingle(const uint16 *src, uint16 *dst, uint16 dsto) {
   replacement_tilemap_LL[i] = 0x19d9;
   replacement_tilemap_UR[i] = 0x59d8;
   replacement_tilemap_LR[i] = 0x59d9;
-  RoomDraw_Rightwards2x2(src, dst);
+  Object_Draw_2x2(src, dst);
 }
 
 
@@ -345,7 +345,7 @@ void Object_Hole(const uint16 *src, uint16 *dst) {
   }
 }
 
-bool RoomDraw_CheckIfWallIsMoved() {
+bool Object_MovingWall_IsEnabled() {
   dung_some_subpixel[0] = dung_some_subpixel[1] = 0;
   dung_floor_move_flags = 0;
   int i;
@@ -374,7 +374,7 @@ void DrawWaterThing(uint16 *dst, const uint16 *src) {
 static const uint8 kMovingWall_Sizes0[4] = { 5, 7, 11, 15 };
 static const uint8 kMovingWall_Sizes1[4] = { 8, 16, 24, 32 };
 
-void MovingWall_FillReplacementBuffer(int dsto) {
+void Object_MovingWall_Func1(int dsto) {
   for (int i = 0; i < 64; i++)
     moving_wall_arr1[i] = 0x1ec;
   moving_wall_var1 = (dsto & 0x1f) | (dsto & 0x20 ? 0x400 : 0) | 0x1000;
@@ -387,23 +387,23 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
   int n;
 
   switch (idx) {
-  case 0x0:  // RoomDraw_Rightwards2x2_1to15or32 - Ceiling
+  case 0x0:  // Object_Draw2x2s_AdvanceRight - Ceiling
   case 0xb8: case 0xb9: // B8 -  Blue Switch Block [L-R]
-    RoomDraw_GetObjectSize_1to15or32();
+    Object_Size_1_to_15_or_32();
     do {
-      RoomDraw_Rightwards2x2(src, dst), dst += XY(2, 0);
+      Object_Draw_2x2(src, dst), dst += XY(2, 0);
     } while (--dung_draw_width_indicator);
     break;
-  case 0x1: case 0x2:  // RoomDraw_Rightwards2x4_1to15or26 - [N]Wall Horz: [L-R]
+  case 0x1: case 0x2:  // Object_Draw_WallHorz_LR - [N]Wall Horz: [L-R]
   case 0xb6: case 0xb7:  // B6 -  [N]Wall Decor: 1/2 [L-R]
-    RoomDraw_GetObjectSize_1to15or26();
+    Object_Size_1_to_15_or_26();
     do {
-      RoomDraw_Object_Nx4(2, src, dst), dst += XY(2, 0);
+      Object_Draw_Nx4(2, src, dst), dst += XY(2, 0);
     } while (--dung_draw_width_indicator);
     break;
 
-  case 0x3: case 0x4:  // RoomDraw_Rightwards2x4spaced4_1to16 - 03 -  [N]Wall Horz: (LOW) [L-R]
-    RoomDraw_GetObjectSize_1to16();
+  case 0x3: case 0x4:  // Object_Draw_WallHorz_LR_BothBgs - 03 -  [N]Wall Horz: (LOW) [L-R]
+    Object_Size_1_to_16();
     do {
       dung_bg1[dsto + XY(0, 0)] = dung_bg2[dsto + XY(0, 0)] = src[0];
       dung_bg1[dsto + XY(0, 1)] = dung_bg2[dsto + XY(0, 1)] = src[1];
@@ -417,31 +417,31 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
     } while (--dung_draw_width_indicator);
     break;
 
-  case 0x5: case 0x6: // RoomDraw_Rightwards2x4spaced4_1to16_BothBG - 05 -  [N]Wall Column [L-R]
-    RoomDraw_GetObjectSize_1to16();
+  case 0x5: case 0x6: // Object_Draw_05 - 05 -  [N]Wall Column [L-R]
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Object_Nx4(2, src, dst), dst += XY(6, 0);
+      Object_Draw_Nx4(2, src, dst), dst += XY(6, 0);
     } while (--dung_draw_width_indicator);
     break;
 
-  case 0x7: case 0x8: case 0x53: // RoomDraw_Rightwards2x2_1to16 - 07 -  [N]Wall Pit [L-R]
-    RoomDraw_GetObjectSize_1to16();
+  case 0x7: case 0x8: case 0x53: // Object_Draw_07 - 07 -  [N]Wall Pit [L-R]
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Rightwards2x2(src, dst), dst += XY(2, 0);
+      Object_Draw_2x2(src, dst), dst += XY(2, 0);
     } while (--dung_draw_width_indicator);
     break;
 
   case 0x9: case 0x0c: case 0x0d: case 0x10: case 0x11: case 0x14:  // 09 -  / Wall Wood Bot (HIGH) [NW]
     Object_SizeAtoAplus15(6);
     do {
-      RoomDraw_DrawObject2x2and1(src, dst), dst += XY(1, -1);
+      Object_Draw1x5(src, dst), dst += XY(1, -1);
     } while (--dung_draw_width_indicator);
     break;
 
   case 0x0a: case 0x0b: case 0x0e: case 0x0f: case 0x12: case 0x13:  // 12 -  \ Wall Tile2 Bot (HIGH) [SW]
     Object_SizeAtoAplus15(6);
     do {
-      RoomDraw_DrawObject2x2and1(src, dst), dst += XY(1, 1);
+      Object_Draw1x5(src, dst), dst += XY(1, 1);
     } while (--dung_draw_width_indicator);
     break;
 
@@ -471,11 +471,11 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
 
   case 0x21:  // 21 -  Mini Stairs [L-R]
     dung_draw_width_indicator = (dung_draw_width_indicator << 2 | dung_draw_height_indicator) * 2 + 1;
-    RoomDraw_1x3_rightwards(2, src, dst), dst += XY(2, 0);
+    Object_Draw_Nx3(2, src, dst), dst += XY(2, 0);
     do {
-      RoomDraw_1x3_rightwards(1, src + 3, dst), dst += XY(1, 0);
+      Object_Draw_Nx3(1, src + 3, dst), dst += XY(1, 0);
     } while (--dung_draw_width_indicator);
-    RoomDraw_1x3_rightwards(1, src + 6, dst);
+    Object_Draw_Nx3(1, src + 6, dst);
     break;
 
   case 0x22: { // 22 -  Horz: Rail Thin [L-R]
@@ -491,7 +491,7 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
   case 0x29: case 0x2a: case 0x2b: case 0x2c: case 0x2d: case 0x2e:  // 23 -  Pit [N]Edge [L-R]
   case 0x3f: case 0x40: case 0x41: case 0x42: case 0x43: case 0x44:  // 3F -  Water Edge [L-R]
   case 0x45: case 0x46: case 0xb3: case 0xb4:
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     n = dst[0] & 0x3ff;
     if (n != 0x1db && n != 0x1a6 && n != 0x1dd && n != 0x1fc)
       dst[0] = src[0];
@@ -544,9 +544,9 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
     break;
   case 0x33:  // 33 -  Red Carpet Floor [L-R]
   case 0xb2: case 0xba:  // B2 -  Floor? [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_4x4(src, dst), dst += XY(4, 0);
+      Object_Draw4x4(src, dst), dst += XY(4, 0);
     } while (--dung_draw_width_indicator);
     break;
   case 0x34:  // 34 -  Red Carpet Floor Trim [L-R]
@@ -555,86 +555,86 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
     do *dst++ = n; while (--dung_draw_width_indicator);
     break;
   case 0x36: case 0x37: // 36 -  [N]Curtain [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_4x4(src, dst), dst += XY(6, 0);
+      Object_Draw4x4(src, dst), dst += XY(6, 0);
     } while (--dung_draw_width_indicator);
     break;
   case 0x38:  // 38 -  Statue [L-R]
     src = (uint16 *)((uint8 *)src - param1 + 0xe26);
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_1x3_rightwards(2, src, dst), dst += XY(4, 0);
+      Object_Draw_Nx3(2, src, dst), dst += XY(4, 0);
     } while (--dung_draw_width_indicator);
     break;
   case 0x39: case 0x3d: // 39 -  Column [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Object_Nx4(2, src, dst), dst += XY(6, 0);
+      Object_Draw_Nx4(2, src, dst), dst += XY(6, 0);
     } while (--dung_draw_width_indicator);
     break;
   case 0x3a: case 0x3b: // 3A -  [N]Wall Decor: [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_1x3_rightwards(4, src, dst), dst += XY(8, 0);
+      Object_Draw_Nx3(4, src, dst), dst += XY(8, 0);
     } while (--dung_draw_width_indicator);
     break;
   case 0x3c:  // 3C -  Double Chair [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
       const uint16 *src = SrcPtr(0x8ca);
-      RoomDraw_Rightwards2x2(src + 0, dst);
-      RoomDraw_Rightwards2x2(src + 4, dst + XY(0, 6));
+      Object_Draw_2x2(src + 0, dst);
+      Object_Draw_2x2(src + 4, dst + XY(0, 6));
       dst += 4;
     } while (--dung_draw_width_indicator);
     break;
   case 0x3e: case 0x4b: // 3E -  [N]Wall Column [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Rightwards2x2(src, dst), dst += XY(14, 0);
+      Object_Draw_2x2(src, dst), dst += XY(14, 0);
     } while (--dung_draw_width_indicator);
     break;
   case 0x47:  // 47 -  Unused Waterfall [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     dung_draw_width_indicator <<= 1;
-    dst = RoomDraw_DrawObject2x2and1(src, dst) + 1;
+    dst = Object_Draw1x5(src, dst) + 1;
     do {
-      RoomDraw_DrawObject2x2and1(src + 5, dst);
+      Object_Draw1x5(src + 5, dst);
     } while (dst++, --dung_draw_width_indicator);
-    RoomDraw_DrawObject2x2and1(src + 10, dst);
+    Object_Draw1x5(src + 10, dst);
     break;
   case 0x48:
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     dung_draw_width_indicator <<= 1;
-    RoomDraw_1x3_rightwards(1, src, dst), dst += XY(1, 0);
+    Object_Draw_Nx3(1, src, dst), dst += XY(1, 0);
     do {
       dst[XY(0, 0)] = src[3];
       dst[XY(0, 1)] = src[4];
       dst[XY(0, 2)] = src[5];
     } while (dst++, --dung_draw_width_indicator);
-    RoomDraw_1x3_rightwards(1, src + 6, dst);
+    Object_Draw_Nx3(1, src + 6, dst);
     break;
-  case 0x49: case 0x4A:  // RoomDraw_RightwardsFloorTile4x2_1to16      ; 49 -  N/A
-    RoomDraw_GetObjectSize_1to16();
-    RoomDraw_Downwards4x2VariableSpacing(4, src, dst);
+  case 0x49: case 0x4A:  // Object_Draw_49      ; 49 -  N/A
+    Object_Size_1_to_16();
+    Object_Draw_4x2_N(4, src, dst);
     break;
   case 0x4c:  // 4C -  Bar [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     dung_draw_width_indicator <<= 1;
-    dst = RoomDraw_RightwardBarSegment(src, dst) + 1;
+    dst = Object_Draw1x3(src, dst) + 1;
     do {
-      dst = RoomDraw_RightwardBarSegment(src + 3, dst) + 1;
+      dst = Object_Draw1x3(src + 3, dst) + 1;
     } while (--dung_draw_width_indicator);
-    dst = RoomDraw_RightwardBarSegment(src + 6, dst) + 1;
+    dst = Object_Draw1x3(src + 6, dst) + 1;
     break;
 
   case 0x4d: case 0x4e: case 0x4f:  // 4C -  Bar [L-R]
-    RoomDraw_GetObjectSize_1to16();
-    RoomDraw_Object_Nx4(1, src, dst), dst += XY(1, 0);
+    Object_Size_1_to_16();
+    Object_Draw_Nx4(1, src, dst), dst += XY(1, 0);
     do {
-      RoomDraw_Object_Nx4(2, src + 4, dst), dst += XY(2, 0);
+      Object_Draw_Nx4(2, src + 4, dst), dst += XY(2, 0);
     } while (--dung_draw_width_indicator);
-    RoomDraw_RightwardShelfEnd(src + 12, dst);
+    Object_Draw1x4(src + 12, dst);
     break;
 
   case 0x50:   // 50 -  Cane Ride [L-R]
@@ -645,33 +645,33 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
 
   case 0x51: case 0x52: // 51 -  [N]Canon Hole [L-R]
   case 0x5B: case 0x5C:
-    RoomDraw_GetObjectSize_1to16();
-    RoomDraw_1x3_rightwards(2, src, dst), dst += XY(2, 0);
+    Object_Size_1_to_16();
+    Object_Draw_Nx3(2, src, dst), dst += XY(2, 0);
     while (--dung_draw_width_indicator)
-      RoomDraw_1x3_rightwards(2, src + 6, dst), dst += XY(2, 0);
-    RoomDraw_1x3_rightwards(2, src + 12, dst);
+      Object_Draw_Nx3(2, src + 6, dst), dst += XY(2, 0);
+    Object_Draw_Nx3(2, src + 12, dst);
     break;
 
   case 0x55: case 0x56:  // 55 -  [N]Wall Torches [L-R]
-    RoomDraw_GetObjectSize_1to16();
-    RoomDraw_Downwards4x2VariableSpacing(12, src, dst);
+    Object_Size_1_to_16();
+    Object_Draw_4x2_N(12, src, dst);
     break;
 
   case 0x5D:  // 5D -  Large Horz: Rail [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     dung_draw_width_indicator++;
-    RoomDraw_1x3_rightwards(2, src, dst), dst += XY(2, 0);
+    Object_Draw_Nx3(2, src, dst), dst += XY(2, 0);
     do {
-      RoomDraw_RightwardBarSegment(src + 6, dst), dst += XY(1, 0);
+      Object_Draw1x3(src + 6, dst), dst += XY(1, 0);
     } while (--dung_draw_width_indicator);
-    RoomDraw_1x3_rightwards(2, src + 9, dst);
+    Object_Draw_Nx3(2, src + 9, dst);
     break;
 
   case 0x5E:  // 5E -  Block [L-R]
   case 0xbb:  // BB -  N/A
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Rightwards2x2(src, dst), dst += XY(4, 0);
+      Object_Draw_2x2(src, dst), dst += XY(4, 0);
     } while (--dung_draw_width_indicator);
     break;
 
@@ -687,20 +687,20 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
 
   case 0x60:  // 60 -  Ceiling [U-D]
   case 0x92: case 0x93: // 92 -  Blue Peg Block [U-D]
-    RoomDraw_GetObjectSize_1to15or32();
+    Object_Size_1_to_15_or_32();
     do {
-      RoomDraw_Rightwards2x2(src, dst), dst += XY(0, 2);
+      Object_Draw_2x2(src, dst), dst += XY(0, 2);
     } while (--dung_draw_width_indicator);
     break;
 
   case 0x61: case 0x62: case 0x90: case 0x91:  // 61 -  [W]Wall Vert: [U-D]
-    RoomDraw_GetObjectSize_1to15or26();
-    RoomDraw_Downwards4x2VariableSpacing(2 * 64, src, dst);
+    Object_Size_1_to_15_or_26();
+    Object_Draw_4x2_N(2 * 64, src, dst);
     break;
 
   case 0x63:
-  case 0x64:  // RoomDraw_Downwards4x2_1to16_BothBG - 63 -  [W]Wall Vert: (LOW) [U-D]
-    RoomDraw_GetObjectSize_1to16();
+  case 0x64:  // Object_Draw_WallVert_BothBg - 63 -  [W]Wall Vert: (LOW) [U-D]
+    Object_Size_1_to_16();
     do {
       dung_bg1[dsto + XY(0, 0)] = dung_bg2[dsto + XY(0, 0)] = src[0];
       dung_bg1[dsto + XY(1, 0)] = dung_bg2[dsto + XY(1, 0)] = src[1];
@@ -715,15 +715,15 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
     break;
 
   case 0x65: case 0x66:  // 65 -  [W]Wall Column [U-D]
-    RoomDraw_GetObjectSize_1to16();
-    RoomDraw_Downwards4x2VariableSpacing(6 * 64, src, dst);
+    Object_Size_1_to_16();
+    Object_Draw_4x2_N(6 * 64, src, dst);
     break;
 
   case 0x67: case 0x68: // 67 -  [W]Wall Pit [U-D]
   case 0x7d:            // 7D -  Pipe Ride [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Rightwards2x2(src, dst), dst += XY(0, 2);
+      Object_Draw_2x2(src, dst), dst += XY(0, 2);
     } while (--dung_draw_width_indicator);
     break;
   case 0x69:  // 69 -  Vert: Rail Thin [U-D]
@@ -737,7 +737,7 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
   case 0x6a: case 0x6b: // 6A -  [W]Pit Edge [U-D]
   case 0x79: case 0x7a: // 79 -  Water Edge [U-D]
   case 0x8d: case 0x8e: // 8D -  [W]Edge [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
       dst[0] = src[0], dst += XY(0, 1);
     } while (--dung_draw_width_indicator);
@@ -786,9 +786,9 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
   case 0x72: case 0x7e:
     break;
   case 0x70: case 0x94:  // 70 -  Red Floor/Wire Floor [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_4x4(src, dst), dst += XY(0, 4);
+      Object_Draw4x4(src, dst), dst += XY(0, 4);
     } while (--dung_draw_width_indicator);
     break;
   case 0x71:  // 71 -  Red Carpet Floor Trim [U-D]
@@ -798,69 +798,69 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
     } while (--dung_draw_width_indicator);
     break;
   case 0x73: case 0x74:  // 73 -  [W]Curtain [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_4x4(src, dst), dst += XY(0, 6);
+      Object_Draw4x4(src, dst), dst += XY(0, 6);
     } while (--dung_draw_width_indicator);
     break;
   case 0x75: case 0x87:  // 75 -  Column [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Object_Nx4(2, src, dst), dst += XY(0, 6);
+      Object_Draw_Nx4(2, src, dst), dst += XY(0, 6);
     } while (--dung_draw_width_indicator);
     break;
   case 0x76: case 0x77:  // 76 -  [W]Wall Decor: [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Object_Nx4(3, src, dst), dst += XY(0, 8);
+      Object_Draw_Nx4(3, src, dst), dst += XY(0, 8);
     } while (--dung_draw_width_indicator);
     break;
   case 0x78: case 0x7b:  // 78 -  [W]Wall Top Column [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Rightwards2x2(src, dst), dst += XY(0, 14);
+      Object_Draw_2x2(src, dst), dst += XY(0, 14);
     } while (--dung_draw_width_indicator);
     break;
   case 0x7c:  // 7C -  Cane Ride [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     dung_draw_width_indicator += 1;
     do {
       dst[0] = src[0], dst += XY(0, 1);
     } while (--dung_draw_width_indicator);
     break;
   case 0x7f: case 0x80:  // 7F -  [W]Wall Torches [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Object_Nx4(2, src, dst), dst += XY(0, 12);
+      Object_Draw_Nx4(2, src, dst), dst += XY(0, 12);
     } while (--dung_draw_width_indicator);
     break;
   case 0x81: case 0x82: case 0x83: case 0x84: // 81 -  [W]Wall Decor: [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Object_Nx4(3, src, dst), dst += XY(0, 6);
+      Object_Draw_Nx4(3, src, dst), dst += XY(0, 6);
     } while (--dung_draw_width_indicator);
     break;
   case 0x85: case 0x86:  // 85 -  [W]Wall Canon Hole [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     Object_Draw_3x2(src, dst), dst += XY(0, 2);
     while (--dung_draw_width_indicator)
       Object_Draw_3x2(src + 6, dst), dst += XY(0, 2);
     Object_Draw_3x2(src + 12, dst);
     break;
   case 0x88: // 88 -  Large Vert: Rail [U-D]
-    RoomDraw_GetObjectSize_1to16();
-    RoomDraw_Rightwards2x2(src, dst), dst += XY(0, 2), src += 4;
+    Object_Size_1_to_16();
+    Object_Draw_2x2(src, dst), dst += XY(0, 2), src += 4;
     do {
       dst[XY(0, 0)] = src[0];
       dst[XY(1, 0)] = src[1];
       dst += XY(0, 1);
     } while (--dung_draw_width_indicator);
-    RoomDraw_1x3_rightwards(2, src + 2, dst);
+    Object_Draw_Nx3(2, src + 2, dst);
     break;
   case 0x89: // 89 -  Block Vert: [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_Rightwards2x2(src, dst), dst += XY(0, 4);
+      Object_Draw_2x2(src, dst), dst += XY(0, 4);
     } while (--dung_draw_width_indicator);
     break;
   case 0x8a: // 8A -  Long Vert: Rail [U-D]
@@ -886,16 +886,16 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
     } while (--dung_draw_width_indicator);
     break;
   case 0x95:  // 95 -  Fake Pot [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_SinglePot(src, dst, dsto);
+      Object_Pot(src, dst, dsto);
       dst += XY(0, 2), dsto += XY(0, 2);
     } while (--dung_draw_width_indicator);
     break;
   case 0x96:  // 96 -  Hammer Peg Block [U-D]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_HammerPegSingle(src, dst, dsto);
+      Object_PegBlock(src, dst, dsto);
       dst += XY(0, 2), dsto += XY(0, 2);
     } while (--dung_draw_width_indicator);
     break;
@@ -940,23 +940,23 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
     Object_Fill_Nx1(dung_draw_width_indicator, src, dst);
     break;
   case 0xb5:  // B5 -  N/A
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
       src = SrcPtr(0xb16);
-      RoomDraw_Object_Nx4(2, src, dst), dst += XY(2, 0);
+      Object_Draw_Nx4(2, src, dst), dst += XY(2, 0);
     } while (--dung_draw_width_indicator);
     break;
   case 0xbc: // BC -  fake pots [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_SinglePot(src, dst, dsto);
+      Object_Pot(src, dst, dsto);
       dst += XY(2, 0), dsto += XY(2, 0);
     } while (--dung_draw_width_indicator);
     break;
   case 0xbd: // BD -  Hammer Pegs [L-R]
-    RoomDraw_GetObjectSize_1to16();
+    Object_Size_1_to_16();
     do {
-      RoomDraw_HammerPegSingle(src, dst, dsto);
+      Object_PegBlock(src, dst, dsto);
       dst += XY(2, 0), dsto += XY(2, 0);
     } while (--dung_draw_width_indicator);
     break;
@@ -978,29 +978,29 @@ void LoadType1ObjectSubtype1(uint8 idx, uint16 *dst, uint16 dsto) {
     dung_draw_height_indicator += 1;
     // draw upper part
     uint16 *dsto = dst;
-    RoomDraw_1x3_rightwards(3, src, dst), src += 9, dst += XY(3, 0);
+    Object_Draw_Nx3(3, src, dst), src += 9, dst += XY(3, 0);
     for (int i = dung_draw_width_indicator; i--; )
-      RoomDraw_1x3_rightwards(2, src, dst), dst += XY(2, 0);
-    RoomDraw_1x3_rightwards(3, src + 6, dst), src += 6 + 9;
+      Object_Draw_Nx3(2, src, dst), dst += XY(2, 0);
+    Object_Draw_Nx3(3, src + 6, dst), src += 6 + 9;
     // draw center part
     dst = dsto + XY(0, 3);
     for (int i = dung_draw_height_indicator; i--; ) {
       uint16 *dt = dst;
       Object_Draw_3x2(src, dt), dt += XY(3, 0);
       for (int j = dung_draw_width_indicator; j--; )
-        RoomDraw_Rightwards2x2(src + 6, dt), dt += XY(2, 0);
+        Object_Draw_2x2(src + 6, dt), dt += XY(2, 0);
       Object_Draw_3x2(src + 10, dt);
       dst += XY(0, 2);
     }
     dsto = dst;
     src += 6 + 4 + 6;
-    RoomDraw_1x3_rightwards(3, src, dst), src += 9, dst += XY(3, 0);
+    Object_Draw_Nx3(3, src, dst), src += 9, dst += XY(3, 0);
     for (int i = dung_draw_width_indicator; i--; )
-      RoomDraw_1x3_rightwards(2, src, dst), dst += XY(2, 0);
-    RoomDraw_1x3_rightwards(3, src + 6, dst), src += 6 + 9;
+      Object_Draw_Nx3(2, src, dst), dst += XY(2, 0);
+    Object_Draw_Nx3(3, src + 6, dst), src += 6 + 9;
 
     src = SrcPtr(0x590);
-    RoomDraw_Rightwards2x2(src, dsto + XY(dung_draw_width_indicator + 2, -(dung_draw_height_indicator + 1)));
+    Object_Draw_2x2(src, dsto + XY(dung_draw_width_indicator + 2, -(dung_draw_height_indicator + 1)));
     break;
   }
   case 0xc3:  // C3 -  Falling Edge Mask [4-way]
@@ -1035,18 +1035,18 @@ fill_floor:
     dung_draw_width_indicator++;
     dung_draw_height_indicator++;
     do {
-      RoomDraw_A_Many32x32Blocks(dung_draw_width_indicator, src, dst);
+      Object_Draw_N_4x4(dung_draw_width_indicator, src, dst);
       dst += XY(0, 4);
     } while (--dung_draw_height_indicator);
     break;
 
   case 0xcd: { // CD -  Moving Wall Right [4-way]
-    if (!RoomDraw_CheckIfWallIsMoved())
+    if (!Object_MovingWall_IsEnabled())
       return;
     dung_hdr_collision_2_mirror++;
     int size0 = kMovingWall_Sizes0[dung_draw_width_indicator];
     int size1 = kMovingWall_Sizes1[dung_draw_height_indicator];
-    MovingWall_FillReplacementBuffer(dsto - size1 - 1);
+    Object_MovingWall_Func1(dsto - size1 - 1);
     moving_wall_var2 = dung_draw_height_indicator * 2;
     src = SrcPtr(0x3d8);
     uint16 *dst1 = dst - size1;
@@ -1062,33 +1062,33 @@ fill_floor:
       dst1++;
     } while (--size1);
     src = SrcPtr(0x72a);
-    RoomDraw_1x3_rightwards(3, src, dst);
+    Object_Draw_Nx3(3, src, dst);
     dst += XY(0, 3);
     do {
       Object_Draw_3x2(src + 9, dst);
     } while (dst += XY(0, 2), --size0);
-    RoomDraw_1x3_rightwards(3, src + 9 + 6, dst);
+    Object_Draw_Nx3(3, src + 9 + 6, dst);
     break;
   }
 
   case 0xce: { // CE -  Moving Wall Left [4-way]
-    if (!RoomDraw_CheckIfWallIsMoved())
+    if (!Object_MovingWall_IsEnabled())
       return;
     dung_hdr_collision_2_mirror++;
     src = SrcPtr(0x75a);
     int size1 = kMovingWall_Sizes1[dung_draw_height_indicator];
     int size0 = kMovingWall_Sizes0[dung_draw_width_indicator];
     moving_wall_var2 = dung_draw_height_indicator * 2;
-    MovingWall_FillReplacementBuffer(dsto + 3 + size1);
+    Object_MovingWall_Func1(dsto + 3 + size1);
     uint16 *dst1 = dst;
-    RoomDraw_1x3_rightwards(3, src, dst1);
+    Object_Draw_Nx3(3, src, dst1);
     dst1 += XY(0, 3);
     int n = size0;
     do {
       Object_Draw_3x2(src + 9, dst1);
       dst1 += XY(0, 2);
     } while (--n);
-    RoomDraw_1x3_rightwards(3, src + 15, dst1);
+    Object_Draw_Nx3(3, src + 15, dst1);
     src = SrcPtr(0x3d8);
     dst1 = dst + XY(3, 0);
     do {
@@ -1131,7 +1131,7 @@ fill_floor:
     } else {
       src = SrcPtr(0x110);
       do {
-        RoomDraw_A_Many32x32Blocks(dung_draw_width_indicator, src, dst);
+        Object_Draw_N_4x4(dung_draw_width_indicator, src, dst);
         dst += XY(0, 4);
       } while (--dung_draw_height_indicator);
     }
@@ -1213,7 +1213,7 @@ fill_floor:
       int n = dung_draw_width_indicator;
       uint16 *dst1 = dst;
       do {
-        RoomDraw_Rightwards2x2(src, dst1), dst1 += XY(2, 0);
+        Object_Draw_2x2(src, dst1), dst1 += XY(2, 0);
       } while (--n);
       dst += XY(0, 2);
     } while (--dung_draw_height_indicator);
@@ -1249,7 +1249,7 @@ void Object_DrawNx3_BothBgs(int n, const uint16 *src, int dsto) {
   } while (--n);
 }
 
-void RoomDraw_SingleLampCone(uint16 a, uint16 y) {
+void Object_LanternLayer_Helper(uint16 a, uint16 y) {
   const uint16 *src = SrcPtr(y);
   uint16 *dst = &dung_bg1[a / 2];
   for (int i = 0; i < 12; i++) {
@@ -1268,7 +1268,7 @@ static const uint8 kWatergateLayout[17] = {
   0xff, 0xff,
 };
 
-void RoomTag_OperateWaterFlooring() {
+void Object_WatergateChannelWater() {
   dung_load_ptr_offs = 0;
   const uint8 *layoutsrc = kWatergateLayout;
   for (;;) {
@@ -1314,7 +1314,7 @@ void LoadType1ObjectSubtype2(uint8 idx, uint16 *dst, uint16 dsto) {
   case 0x00: case 0x01: case 0x02: case 0x03:
   case 0x04: case 0x05: case 0x06: case 0x07:  // 00 -  Wall Outer Corner (HIGH) [NW]
   case 0x1c: case 0x24: case 0x25: case 0x29:
-    RoomDraw_Object_Nx4(4, src, dst);
+    Object_Draw_Nx4(4, src, dst);
     break;
   case 0x08: case 0x09: case 0x0a: case 0x0b:
   case 0x0c: case 0x0d: case 0x0e: case 0x0f:  // 08 -  Wall Outer Corner (LOW) [NW]
@@ -1328,36 +1328,36 @@ void LoadType1ObjectSubtype2(uint8 idx, uint16 *dst, uint16 dsto) {
     break;
   case 0x18: case 0x19: case 0x1a: case 0x1b:  // 18 -  Wall Pit Corner (Lower) [NW]
   case 0x27: case 0x2b: case 0x34:
-    RoomDraw_Rightwards2x2(src, dst);
+    Object_Draw_2x2(src, dst);
     break;
   case 0x1d: case 0x21: case 0x26:             // 1D -  Statue
-    RoomDraw_1x3_rightwards(2, src, dst);
+    Object_Draw_Nx3(2, src, dst);
     break;
   case 0x1e:                                   // 1E -  Star Tile Off
-    RoomDraw_Rightwards2x2(src, dst);
+    Object_Draw_2x2(src, dst);
     break;
   case 0x1f:                                   // 1F -  Star Tile On
     i = dung_num_star_shaped_switches >> 1;
     dung_num_star_shaped_switches += 2;
     star_shaped_switches_tile[i] = (dsto | (dung_line_ptrs_row0 != 0x4000 ? 0 : 0x1000));
-    RoomDraw_Rightwards2x2(src, dst);
+    Object_Draw_2x2(src, dst);
     break;
   case 0x20:                                   // 20 -  Torch Lit
     dung_num_lit_torches++;
-    RoomDraw_Rightwards2x2(src, dst);
+    Object_Draw_2x2(src, dst);
     break;
   case 0x22: case 0x28:                        // 22 -  Weird Bed
     Object_Draw_5x4(src, dst);
     break;
   case 0x23:                                   // 23 -  Table
-    RoomDraw_1x3_rightwards(4, src, dst);
+    Object_Draw_Nx3(4, src, dst);
     break;
   case 0x2a:                                   // 2A -  Wall Painting
     dung_draw_width_indicator = 1;
-    RoomDraw_Downwards4x2VariableSpacing(1, src, dst);
+    Object_Draw_4x2_N(1, src, dst);
     break;
   case 0x2c:                                   // 2C -  ???
-    RoomDraw_1x3_rightwards(6, src, dst);
+    Object_Draw_Nx3(6, src, dst);
     break;
   case 0x2d:    // 2D -  Floor Stairs Up (room)
     i = dung_num_inter_room_upnorth_stairs >> 1;
@@ -1372,7 +1372,7 @@ void LoadType1ObjectSubtype2(uint8 idx, uint16 *dst, uint16 dsto) {
       dung_num_wall_downnorth_spiral_stairs_2 =
       dung_num_inter_room_downnorth_straight_stairs =
       dung_num_inter_room_downsouth_straight_stairs = dung_num_inter_room_upnorth_stairs + 2;
-    RoomDraw_4x4(SrcPtr(0x1088), dst);
+    Object_Draw4x4(SrcPtr(0x1088), dst);
     break;
   case 0x2e:    // 2E -  Floor Stairs Down (room)
   case 0x2f:    // 2F -  Floor Stairs Down2 (room)
@@ -1383,7 +1383,7 @@ void LoadType1ObjectSubtype2(uint8 idx, uint16 *dst, uint16 dsto) {
       dung_num_wall_downnorth_spiral_stairs_2 =
       dung_num_inter_room_downnorth_straight_stairs =
       dung_num_inter_room_downsouth_straight_stairs = dung_num_inter_room_southdown_stairs + 2;
-    RoomDraw_4x4(SrcPtr(0x10A8), dst);
+    Object_Draw4x4(SrcPtr(0x10A8), dst);
     break;
   case 0x30:     // 30 -  Stairs [N](unused)
     assert(0);
@@ -1403,7 +1403,7 @@ non_submerged:
     dung_num_interpseudo_upnorth_stairs =
       dung_num_water_ladders =
       dung_some_stairs_unk4 = dung_num_interpseudo_upnorth_stairs + 2;
-    RoomDraw_4x4(src, dst);
+    Object_Draw4x4(src, dst);
     break;
   case 0x33:       // 33 -  Stairs Submerged [N](layer)
     if (dung_hdr_tag[1] == 27 && !(save_dung_info[dungeon_room_index] & 0x100)) {
@@ -1415,7 +1415,7 @@ non_submerged:
       dung_stairs_table_1[i] = dsto;
       dung_num_inroom_upnorth_stairs_water =
         dung_num_activated_water_ladders = dung_num_inroom_upnorth_stairs_water + 2;
-      RoomDraw_4x4(SrcPtr(0x10C8), dst);
+      Object_Draw4x4(SrcPtr(0x10C8), dst);
     }
     break;
   case 0x35:  // 35 -  Water Ladder
@@ -1424,7 +1424,7 @@ non_submerged:
     dung_stairs_table_1[dung_num_activated_water_ladders >> 1] = dsto;
     dung_num_activated_water_ladders += 2;
     dung_draw_width_indicator = 1;
-    RoomDraw_Downwards4x2VariableSpacing(1, SrcPtr(0x1108), dst);
+    Object_Draw_4x2_N(1, SrcPtr(0x1108), dst);
     break;
   case 0x36:  // 36 -  Water Ladder Inactive
 inactive_water_ladder:
@@ -1434,15 +1434,15 @@ inactive_water_ladder:
     break;
   case 0x37:  // 37 -  Water Gate Large
     if (!(dung_savegame_state_bits & 0x800)) {
-      RoomDraw_Object_Nx4(10, src, dst);
+      Object_Draw_Nx4(10, src, dst);
       watergate_var1 = 0xf;
       watergate_pos = dsto * 2;
     } else {
-      RoomDraw_Object_Nx4(10, SrcPtr(0x13e8), dst);
+      Object_Draw_Nx4(10, SrcPtr(0x13e8), dst);
       uint16 bak0 = dung_load_ptr;
       uint16 bak1 = dung_load_ptr_offs;
       uint8 bak2 = dung_load_ptr_bank;
-      RoomTag_OperateWaterFlooring();
+      Object_WatergateChannelWater();
       dung_load_ptr_bank = bak2;
       dung_load_ptr_offs = bak1;
       dung_load_ptr = bak0;
@@ -1460,7 +1460,7 @@ inactive_water_ladder:
       dung_num_wall_downnorth_spiral_stairs_2 =
       dung_num_inter_room_downnorth_straight_stairs =
       dung_num_inter_room_downsouth_straight_stairs = dung_num_wall_upnorth_spiral_stairs + 2;
-    RoomDraw_1x3_rightwards(4, SrcPtr(0x1148), dst);
+    Object_Draw_Nx3(4, SrcPtr(0x1148), dst);
     dung_bg2[dsto - 1] |= 0x2000;
     dung_bg2[dsto + 4] |= 0x2000;
     break;
@@ -1471,7 +1471,7 @@ inactive_water_ladder:
       dung_num_wall_downnorth_spiral_stairs_2 =
       dung_num_inter_room_downnorth_straight_stairs =
       dung_num_inter_room_downsouth_straight_stairs = dung_num_wall_downnorth_spiral_stairs + 2;
-    RoomDraw_1x3_rightwards(4, SrcPtr(0x1160), dst);
+    Object_Draw_Nx3(4, SrcPtr(0x1160), dst);
     dung_bg2[dsto - 1] |= 0x2000;
     dung_bg2[dsto + 4] |= 0x2000;
     break;
@@ -1486,7 +1486,7 @@ inactive_water_ladder:
       dung_num_wall_downnorth_spiral_stairs_2 =
       dung_num_inter_room_downnorth_straight_stairs =
       dung_num_inter_room_downsouth_straight_stairs = dung_num_wall_upnorth_spiral_stairs_2 + 2;
-    RoomDraw_1x3_rightwards(4, SrcPtr(0x1178), dst);
+    Object_Draw_Nx3(4, SrcPtr(0x1178), dst);
     dung_bg1[dsto - 1] |= 0x2000;
     dung_bg1[dsto + 4] |= 0x2000;
     break;
@@ -1497,7 +1497,7 @@ inactive_water_ladder:
       dung_num_inter_room_downnorth_straight_stairs =
       dung_num_inter_room_downsouth_straight_stairs =
       dung_num_wall_downnorth_spiral_stairs_2 + 2;
-    RoomDraw_1x3_rightwards(4, SrcPtr(0x1190), dst);
+    Object_Draw_Nx3(4, SrcPtr(0x1190), dst);
     dung_bg1[dsto - 1] |= 0x2000;
     dung_bg1[dsto + 4] |= 0x2000;
     break;
@@ -1512,10 +1512,10 @@ inactive_water_ladder:
       dsto += XY(0, 1);
       src++;
     }
-    RoomDraw_1x3_rightwards(4, src + 6, dst + 10);
+    Object_Draw_Nx3(4, src + 6, dst + 10);
     break;
   case 0x3e:  // 3E -  Church Pew
-    RoomDraw_1x3_rightwards(6, src, dst);
+    Object_Draw_Nx3(6, src, dst);
     break;
   case 0x3f: { // 3F - used in hole at the smithy dwarves
     dsto |= (dung_line_ptrs_row0 != 0x4000 ? 0 : 0x1000);
@@ -1539,7 +1539,7 @@ inactive_water_ladder:
   }
 }
 
-void RoomDraw_WaterHoldingObject(int n, const uint16 *src, uint16 *dst) {
+void Object_Draw_4xN(int n, const uint16 *src, uint16 *dst) {
   do {
     dst[0] = src[0];
     dst[1] = src[1];
@@ -1550,7 +1550,7 @@ void RoomDraw_WaterHoldingObject(int n, const uint16 *src, uint16 *dst) {
   } while (--n);
 }
 
-void RoomDraw_AgahnimsWindows(uint16 dsto) {
+void Object_AgahnimRoomFrame(uint16 dsto) {
   const uint16 *src;
 
   uint16 *d = &dung_bg2[dsto];
@@ -1636,11 +1636,11 @@ void Object_BombableFloorHelper(uint16 a, const uint16 *src, const uint16 *src_b
   replacement_tilemap_LL[i] = src_below[1];
   replacement_tilemap_UR[i] = src_below[2];
   replacement_tilemap_LR[i] = src_below[3];
-  RoomDraw_Rightwards2x2(src, dst);
+  Object_Draw_2x2(src, dst);
 }
 
 
-void RoomDraw_BombableFloor(const uint16 *src, uint16 *dst, uint16 dsto) {
+void Object_BombableFloor(const uint16 *src, uint16 *dst, uint16 dsto) {
   if (dungeon_room_index == 101 && (dung_savegame_state_bits & 0x1000)) {
     dung_draw_width_indicator = 0;
     dung_draw_height_indicator = 0;
@@ -1658,7 +1658,7 @@ void RoomDraw_BombableFloor(const uint16 *src, uint16 *dst, uint16 dsto) {
 }
 
 
-void DrawBigGraySegment(uint16 a, const uint16 *src, uint16 *dst, uint16 dsto) {
+void Object_ReplacementTileHelper(uint16 a, const uint16 *src, uint16 *dst, uint16 dsto) {
   int i = dung_misc_objs_index >> 1;
   dung_replacement_tile_state[i] = a;
   dung_misc_objs_index += 2;
@@ -1668,10 +1668,10 @@ void DrawBigGraySegment(uint16 a, const uint16 *src, uint16 *dst, uint16 dsto) {
   replacement_tilemap_LL[i] = dst[XY(0, 1)];
   replacement_tilemap_UR[i] = dst[XY(1, 0)];
   replacement_tilemap_LR[i] = dst[XY(1, 1)];
-  RoomDraw_Rightwards2x2(src, dst);
+  Object_Draw_2x2(src, dst);
 }
 
-void RoomDraw_FortuneTellerRoom(uint16 dsto) {
+void Object_FortuneTellerTemplate(uint16 dsto) {
   const uint16 *src = SrcPtr(0x202e), *src_org = src;
   uint16 *d = &dung_bg2[dsto];
   int j;
@@ -1716,13 +1716,13 @@ void RoomDraw_FortuneTellerRoom(uint16 dsto) {
 }
 
 void Object_Draw8x8(const uint16 *src, uint16 *dst) {
-  RoomDraw_4x4(src, dst + XY(0, 0));
-  RoomDraw_4x4(src + 16, dst + XY(4, 0));
-  RoomDraw_4x4(src + 32, dst + XY(0, 4));
-  RoomDraw_4x4(src + 48, dst + XY(4, 4));
+  Object_Draw4x4(src, dst + XY(0, 0));
+  Object_Draw4x4(src + 16, dst + XY(4, 0));
+  Object_Draw4x4(src + 32, dst + XY(0, 4));
+  Object_Draw4x4(src + 48, dst + XY(4, 4));
 }
 
-void RoomDraw_SomeBigDecors(int n, const uint16 *src, uint16 dsto) {
+void Object_Draw8xN_BG2(int n, const uint16 *src, uint16 dsto) {
   uint16 *dst = &dung_bg2[dsto | (dung_line_ptrs_row0 != 0x4000 ? 0 : 0x1000)];
   for (int i = 0; i < 8; i++) {
     for (int j = 0; j < n; j++)
@@ -1748,14 +1748,14 @@ void LoadType1ObjectSubtype3(uint8 idx, uint16 *dst, uint16 dsto) {
         goto water_face_open;
     }
     word_7E047C = dsto * 2;
-    RoomDraw_WaterHoldingObject(3, src, dst);
+    Object_Draw_4xN(3, src, dst);
     break;
   case 0x01:  // 01 -  Waterfall Face
 water_face_open:
-    RoomDraw_WaterHoldingObject(5, SrcPtr(0x162c), dst);
+    Object_Draw_4xN(5, SrcPtr(0x162c), dst);
     break;
   case 0x02:  // 02 -  Waterfall Face Longer
-    RoomDraw_WaterHoldingObject(7, src, dst);
+    Object_Draw_4xN(7, src, dst);
     break;
   case 0x03: case 0x0e:  // 03 -  Cane Ride Spawn [?]Block
     dung_unk6++;
@@ -1792,7 +1792,7 @@ water_face_open:
   case 0x50: case 0x51: case 0x52: case 0x53: case 0x56: case 0x57: case 0x58: case 0x59:
   case 0x5e: case 0x5f: case 0x63: case 0x64: case 0x65:
   case 0x75: case 0x7c: case 0x7d: case 0x7e:
-    RoomDraw_Rightwards2x2(src, dst);
+    Object_Draw_2x2(src, dst);
     break;
 
   case 0x12:  // 12 -  Rupee Floor
@@ -1808,23 +1808,23 @@ water_face_open:
     break;
   case 0x14: case 0x4E: // 14 -  Down Warp Door
   case 0x67: case 0x68: case 0x6c: case 0x6d: case 0x79:
-    RoomDraw_1x3_rightwards(4, src, dst);
+    Object_Draw_Nx3(4, src, dst);
     break;
   case 0x15:  // 15 -  Kholdstare Shell - BG2
     if (dung_savegame_state_bits & 0x8000)
       return;
     src = SrcPtr(0x1dfa);
-    RoomDraw_SomeBigDecors(10, src, dsto);
+    Object_Draw8xN_BG2(10, src, dsto);
     break;
   case 0x16:   // 16 -  Single Hammer Peg
-    RoomDraw_HammerPegSingle(src, dst, dsto);
+    Object_PegBlock(src, dst, dsto);
     break;
   case 0x18:  // 18 -  Cell Lock
     i = dung_num_bigkey_locks_x2 >> 1;
     dung_num_bigkey_locks_x2 += 2;
     if (!(dung_savegame_state_bits & kChestOpenMasks[i])) {
       dung_chest_locations[i] = dsto * 2;
-      RoomDraw_Rightwards2x2(SrcPtr(0x1494), dst);
+      Object_Draw_2x2(SrcPtr(0x1494), dst);
     } else {
       dung_chest_locations[i] = 0;
     }
@@ -1850,12 +1850,12 @@ water_face_open:
           return;
         dung_hdr_tag[h] = 0;
       }
-      RoomDraw_Rightwards2x2(SrcPtr(0x149c), dst);
+      Object_Draw_2x2(SrcPtr(0x149c), dst);
     } else {
       dung_chest_locations[i] = 0;
       if (h >= 0)
         dung_hdr_tag[h] = 0;
-      RoomDraw_Rightwards2x2(SrcPtr(0x14a4), dst);
+      Object_Draw_2x2(SrcPtr(0x14a4), dst);
     }
     break;
   }
@@ -1879,7 +1879,7 @@ stair1b:
 stairs_wet:
     dung_stairs_table_2[dung_num_stairs_wet >> 1] = dsto;
     dung_num_stairs_wet += 2;
-    RoomDraw_4x4(src, dst);
+    Object_Draw4x4(src, dst);
     break;
   case 0x1e:  // 1E -  Staircase going Up(Up)
     dung_inter_starcases[dung_num_inter_room_upnorth_straight_stairs >> 1] = dsto;
@@ -1890,13 +1890,13 @@ stairs_wet:
       dung_num_wall_downnorth_spiral_stairs_2 =
       dung_num_inter_room_downnorth_straight_stairs =
       dung_num_inter_room_downsouth_straight_stairs = dung_num_inter_room_upnorth_straight_stairs + 2;
-    RoomDraw_Object_Nx4(4, src, dst);
+    Object_Draw_Nx4(4, src, dst);
     break;
   case 0x1f: // 1F -  Staircase Going Down (Up)
     dung_inter_starcases[dung_num_inter_room_downnorth_straight_stairs >> 1] = dsto;
     dung_num_inter_room_downnorth_straight_stairs =
       dung_num_inter_room_downsouth_straight_stairs = dung_num_inter_room_downnorth_straight_stairs + 2;
-    RoomDraw_Object_Nx4(4, src, dst);
+    Object_Draw_Nx4(4, src, dst);
     break;
   case 0x20:  // 20 -  Staircase Going Up (Down)
     dung_inter_starcases[dung_num_inter_room_upsouth_straight_stairs >> 1] = dsto;
@@ -1906,12 +1906,12 @@ stairs_wet:
       dung_num_wall_downnorth_spiral_stairs_2 =
       dung_num_inter_room_downnorth_straight_stairs =
       dung_num_inter_room_downsouth_straight_stairs = dung_num_inter_room_upsouth_straight_stairs + 2;
-    RoomDraw_Object_Nx4(4, src, dst);
+    Object_Draw_Nx4(4, src, dst);
     break;
   case 0x21:  // 21 -  Staircase Going Down (Down)
     dung_inter_starcases[dung_num_inter_room_downsouth_straight_stairs >> 1] = dsto;
     dung_num_inter_room_downsouth_straight_stairs = dung_num_inter_room_downsouth_straight_stairs + 2;
-    RoomDraw_Object_Nx4(4, src, dst);
+    Object_Draw_Nx4(4, src, dst);
     break;
   case 0x26:  // 26 -  Staircase Going Up (Lower)
     i = dung_num_inter_room_upnorth_straight_stairs >> 1;
@@ -1972,19 +1972,19 @@ door28:
       dung_num_inter_room_downsouth_straight_stairs + 2;
     goto door28;
   case 0x2a:  // 2A -  Dark Room BG2 Mask
-    RoomDraw_SingleLampCone(0x514, 0x16dc);
-    RoomDraw_SingleLampCone(0x554, 0x17f6);
-    RoomDraw_SingleLampCone(0x1514, 0x1914);
-    RoomDraw_SingleLampCone(0x1554, 0x1a2a);
+    Object_LanternLayer_Helper(0x514, 0x16dc);
+    Object_LanternLayer_Helper(0x554, 0x17f6);
+    Object_LanternLayer_Helper(0x1514, 0x1914);
+    Object_LanternLayer_Helper(0x1554, 0x1a2a);
     break;
   case 0x2b:  // 2B -  Staircase Going Down (Lower) not really
-    DrawBigGraySegment(0x1010, src, dst, dsto);
+    Object_ReplacementTileHelper(0x1010, src, dst, dsto);
     break;
   case 0x2c: // 2C -  Large Pick Up Block
-    DrawBigGraySegment(0x2020, SrcPtr(0xe62), dst, dsto);
-    DrawBigGraySegment(0x2121, SrcPtr(0xe6a), dst + XY(2, 0), dsto + XY(2, 0));
-    DrawBigGraySegment(0x2222, SrcPtr(0xe72), dst + XY(0, 2), dsto + XY(0, 2));
-    DrawBigGraySegment(0x2323, SrcPtr(0xe7a), dst + XY(2, 2), dsto + XY(2, 2));
+    Object_ReplacementTileHelper(0x2020, SrcPtr(0xe62), dst, dsto);
+    Object_ReplacementTileHelper(0x2121, SrcPtr(0xe6a), dst + XY(2, 0), dsto + XY(2, 0));
+    Object_ReplacementTileHelper(0x2222, SrcPtr(0xe72), dst + XY(0, 2), dsto + XY(0, 2));
+    Object_ReplacementTileHelper(0x2323, SrcPtr(0xe7a), dst + XY(2, 2), dsto + XY(2, 2));
     break;
   case 0x2d: { // 2D -  Agahnim Altar
     src = SrcPtr(0x1b4a);
@@ -2001,13 +2001,13 @@ door28:
     break;
   }
   case 0x2e:  // 2E -  Agahnim Room
-    RoomDraw_AgahnimsWindows(dsto);
+    Object_AgahnimRoomFrame(dsto);
     break;
   case 0x2f:  // 2F -  Pot
-    RoomDraw_SinglePot(src, dst, dsto);
+    Object_Pot(src, dst, dsto);
     break;
   case 0x30: // 30 -  ??
-    DrawBigGraySegment(0x1212, src, dst, dsto);
+    Object_ReplacementTileHelper(0x1212, src, dst, dsto);
     break;
   case 0x31: // 31 -  Big Chest
     i = dung_num_chests_x2;
@@ -2015,14 +2015,14 @@ door28:
     if (dung_savegame_state_bits & kChestOpenMasks[i >> 1]) {
       dung_chest_locations[i >> 1] = 0;
       dung_num_chests_x2 = dung_num_bigkey_locks_x2 = i + 2;
-      RoomDraw_1x3_rightwards(4, SrcPtr(0x14c4), dst);
+      Object_Draw_Nx3(4, SrcPtr(0x14c4), dst);
     } else {
       dung_num_chests_x2 = dung_num_bigkey_locks_x2 = i + 2;
-      RoomDraw_1x3_rightwards(4, SrcPtr(0x14ac), dst);
+      Object_Draw_Nx3(4, SrcPtr(0x14ac), dst);
     }
     break;
   case 0x32:  // 32 -  Big Chest Open
-    RoomDraw_1x3_rightwards(4, src, dst);
+    Object_Draw_Nx3(4, src, dst);
     break;
   case 0x33:  // 33 -  Stairs Submerged [S](layer)
     if (dung_hdr_tag[1] == 27) {
@@ -2034,35 +2034,35 @@ door28:
     }
     dung_stairs_table_2[dung_num_inroom_upsouth_stairs_water >> 1] = dsto;
     dung_num_inroom_upsouth_stairs_water += 2;
-    RoomDraw_4x4(src, dst);
+    Object_Draw4x4(src, dst);
     break;
   case 0x34: case 0x35: case 0x36: case 0x37: case 0x38: case 0x39:
     assert(0);
     break;
   case 0x3a: case 0x3b: // 3A -  Pipe Ride Mouth [S]
-    RoomDraw_1x3_rightwards(4, src, dst);
-    RoomDraw_1x3_rightwards(4, src + 12, dst + XY(0, 3));
+    Object_Draw_Nx3(4, src, dst);
+    Object_Draw_Nx3(4, src + 12, dst + XY(0, 3));
     break;
   case 0x3c: case 0x3d: case 0x5c:  // 3C -  Pipe Ride Mouth [E]
-    RoomDraw_Object_Nx4(6, src, dst);
+    Object_Draw_Nx4(6, src, dst);
     break;
   case 0x47:  // 47 -  Bomb Floor
-    RoomDraw_BombableFloor(src, dst, dsto);
+    Object_BombableFloor(src, dst, dsto);
     break;
   case 0x48: case 0x66: case 0x6b: case 0x7a:  // 48 -  Fake Bomb Floor
-    RoomDraw_4x4(src, dst);
+    Object_Draw4x4(src, dst);
     break;
   case 0x4b: case 0x76: case 0x77:
-    RoomDraw_1x3_rightwards(8, src, dst);
+    Object_Draw_Nx3(8, src, dst);
     break;
   case 0x4c:
-    RoomDraw_SomeBigDecors(6, SrcPtr(0x1f92), dsto);
+    Object_Draw8xN_BG2(6, SrcPtr(0x1f92), dsto);
     break;
   case 0x4d: case 0x5d:  // 5D -  Forge
-    RoomDraw_1x3_rightwards(6, src, dst);
+    Object_Draw_Nx3(6, src, dst);
     break;
   case 0x54:
-    RoomDraw_FortuneTellerRoom(dsto);
+    Object_FortuneTellerTemplate(dsto);
     break;
   case 0x55:
   case 0x5b:  // 5B -  Water Troof
@@ -2081,12 +2081,12 @@ door28:
     break;
 
   case 0x5a:  // 5A -  Plate on Table
-    RoomDraw_WaterHoldingObject(2, src, dst);
+    Object_Draw_4xN(2, src, dst);
     break;
 
   case 0x60: case 0x61: // 60 -  Left/Right Warp Door
-    RoomDraw_1x3_rightwards(3, src, dst);
-    RoomDraw_1x3_rightwards(3, src + 9, dst + XY(0, 3));
+    Object_Draw_Nx3(3, src, dst);
+    Object_Draw_Nx3(3, src + 9, dst + XY(0, 3));
     break;
 
   case 0x62: {  // 62 ??
@@ -2116,13 +2116,13 @@ door28:
     break;
   }
   case 0x69: case 0x6a: case 0x6e: case 0x6f:  // 69 -  Left Crack Wall
-    RoomDraw_Object_Nx4(3, src, dst);
+    Object_Draw_Nx4(3, src, dst);
     break;
 
   case 0x70:  // 70 -  Window Light
-    RoomDraw_4x4(src, dst + XY(0, 0));
-    RoomDraw_4x4(SrcPtr(0x2376), dst + XY(0, 2));
-    RoomDraw_4x4(SrcPtr(0x2396), dst + XY(0, 6));
+    Object_Draw4x4(src, dst + XY(0, 0));
+    Object_Draw4x4(SrcPtr(0x2376), dst + XY(0, 2));
+    Object_Draw4x4(SrcPtr(0x2396), dst + XY(0, 6));
     break;
 
   case 0x71:  // 71 -  Floor Light Blind BG2
@@ -2133,30 +2133,30 @@ door28:
   case 0x72:  // 72 -  TrinexxShell  Boss Goo/Shell BG2
     if (dung_savegame_state_bits & 0x8000)
       return;
-    RoomDraw_SomeBigDecors(10, src, dsto);
+    Object_Draw8xN_BG2(10, src, dsto);
     break;
   case 0x73:  // 73 -  Entire floor is pit, Bg2 Full Mask
-    RoomDraw_FloorChunks(SrcPtr(0xe0));
+    Dung_FillFloor(SrcPtr(0xe0));
     break;
   case 0x74:  // 74 -  Boss Entrance
     Object_Draw8x8(src, dst);
     break;
 
   case 0x78:  // Triforce
-    RoomDraw_4x4(src, dst);
-    RoomDraw_4x4(src + 16, dst + XY(-2, 4));
-    RoomDraw_4x4(src + 16, dst + XY(2, 4));
+    Object_Draw4x4(src, dst);
+    Object_Draw4x4(src + 16, dst + XY(-2, 4));
+    Object_Draw4x4(src + 16, dst + XY(2, 4));
     break;
   case 0x7b: // 7B -  Vitreous Boss?
-    RoomDraw_A_Many32x32Blocks(5, src, dst);
-    RoomDraw_A_Many32x32Blocks(5, src, dst + XY(0, 4));
+    Object_Draw_N_4x4(5, src, dst);
+    Object_Draw_N_4x4(5, src, dst + XY(0, 4));
     break;
   default:
     assert(0);
   }
 }
 
-void RoomData_DrawObject(uint16 r0, const uint8 *level_data) {
+void Dungeon_LoadType1Object(uint16 r0, const uint8 *level_data) {
   uint16 offs = dung_load_ptr_offs;
   uint8 idx = level_data[offs + 2];
   dung_load_ptr_offs = offs + 3;
@@ -2200,47 +2200,47 @@ void RoomBounds_SubA(RoomBounds *r) {
   r->a1 -= 0x100;
 }
 
-void AdjustQuadrantAndCamera_left() {
+void Player_CrossQuadrantBoundary_Left() {
   link_quadrant_x ^= 1;
-  Dungeon_AdjustQuadrant();
+  UpdateCompositeOfLayoutAndQuadrant();
   RoomBounds_SubA(&room_bounds_x);
-  SetAndSaveVisitedQuadrantFlags();
+  Player_UpdateQuadrantsVisited();
 }
 
-void AdjustQuadrantAndCamera_right() {
+void Player_CrossQuadrantBoundary_Right() {
   link_quadrant_x ^= 1;
-  Dungeon_AdjustQuadrant();
+  UpdateCompositeOfLayoutAndQuadrant();
   RoomBounds_AddA(&room_bounds_x);
-  SetAndSaveVisitedQuadrantFlags();
+  Player_UpdateQuadrantsVisited();
 }
 
-void AdjustQuadrantAndCamera_up() {
+void Player_CrossQuadrantBoundary_Up() {
   link_quadrant_y ^= 2;
-  Dungeon_AdjustQuadrant();
+  UpdateCompositeOfLayoutAndQuadrant();
   RoomBounds_SubA(&room_bounds_y);
-  SetAndSaveVisitedQuadrantFlags();
+  Player_UpdateQuadrantsVisited();
 }
 
-void AdjustQuadrantAndCamera_down() {
+void Player_CrossQuadrantBoundary_Down() {
   link_quadrant_y ^= 2;
-  Dungeon_AdjustQuadrant();
+  UpdateCompositeOfLayoutAndQuadrant();
   RoomBounds_AddA(&room_bounds_y);
-  SetAndSaveVisitedQuadrantFlags();
+  Player_UpdateQuadrantsVisited();
 }
 
-void DungeonTransition_AdjustCamera_Y(uint8 arg) {
+void Dung_CopyInUpDownScrollTarget(uint8 arg) {
   static const uint16 kUpDownScroll[4] = { 0, 272, 256, 16 };
   up_down_scroll_target = kUpDownScroll[arg];
   up_down_scroll_target_end = kUpDownScroll[arg + 1];
 }
 
-void DungeonTransition_AdjustCamera_X(uint8 arg) {
+void Dung_CopyInLeftRightScrollTarget(uint8 arg) {
   static const uint16 kUpDownScroll[4] = { 0, 256, 256, 0 };
   left_right_scroll_target = kUpDownScroll[arg * 2];
   left_right_scroll_target_end = kUpDownScroll[arg * 2 + 1];
 }
 
-void HandleEdgeTransition_AdjustCameraBoundaries(uint8 arg) {
+void Dung_UpdateCameraScrollBounds(uint8 arg) {
   static const uint16 kCameraBoundsX[] = { 127, 383, 127, 383 };
   static const uint16 kCameraBoundsY[] = { 120, 376, 136, 392 };
   overworld_screen_transition = arg;
@@ -2274,7 +2274,7 @@ void Dungeon_ResetTorchBackgroundAndPlayerInner() {
 }
 
 void Dung_HandleExitToOverworld() {
-  SaveDungeonKeys();
+  Dungeon_SaveRoomData_justKeys();
   SaveQuadrantsToSram();
   saved_module_for_menu = 8;
   main_module_index = 15;
@@ -2282,7 +2282,7 @@ void Dung_HandleExitToOverworld() {
   subsubmodule_index = 0;
   Dungeon_ResetTorchBackgroundAndPlayerInner();
 }
-void Dungeon_AdjustAfterSpiralStairs() {
+void Dung_AdjustCoordsForNewRoom() {
   int xd = ((dungeon_room_index & 0xf) - (dungeon_room_index_prev & 0xf)) * 0x200;
   link_x_coord += xd;
   BG2HOFS_copy2 += xd;
@@ -2330,7 +2330,7 @@ void Dung_SaveDataForCurrentRoom() {
     (dung_door_opened & 0xf000) |
     dung_quadrants_visited;
 }
-void SaveDungeonKeys() {
+void Dungeon_SaveRoomData_justKeys() {
   uint8 idx = cur_palace_index_x2;
   if (idx == 0xff)
     return;
@@ -2345,11 +2345,11 @@ const uint8 kLayoutQuadrantFlags[] = { 0xF, 0xF, 0xF, 0xF, 0xB, 0xB, 7, 7, 0xF, 
 
 void Dungeon_StartInterRoomTrans_Left() {
   link_quadrant_x ^= 1;
-  Dungeon_AdjustQuadrant();
+  UpdateCompositeOfLayoutAndQuadrant();
   RoomBounds_SubA(&room_bounds_x);
   Dung_SaveDataForCurrentRoom();
-  DungeonTransition_AdjustCamera_X(link_quadrant_x ^ 1);
-  HandleEdgeTransition_AdjustCameraBoundaries(3);
+  Dung_CopyInLeftRightScrollTarget(link_quadrant_x ^ 1);
+  Dung_UpdateCameraScrollBounds(3);
   submodule_index++;
   if (link_quadrant_x) {
     RoomBounds_SubB(&room_bounds_x);
@@ -2360,7 +2360,7 @@ void Dungeon_StartInterRoomTrans_Left() {
     } else {
       if ((uint8)dungeon_room_index != (uint8)dungeon_room_index2) {
         BYTE(dungeon_room_index_prev) = dungeon_room_index2;
-        Dungeon_AdjustAfterSpiralStairs();
+        Dung_AdjustCoordsForNewRoom();
       }
       dungeon_room_index--;
     }
@@ -2384,11 +2384,11 @@ void Dung_StartInterRoomTrans_Left_Plus() {
 
 void Dungeon_StartInterRoomTrans_Right() {
   link_quadrant_x ^= 1;
-  Dungeon_AdjustQuadrant();
+  UpdateCompositeOfLayoutAndQuadrant();
   RoomBounds_AddA(&room_bounds_x);
   Dung_SaveDataForCurrentRoom();
-  DungeonTransition_AdjustCamera_X(link_quadrant_x);
-  HandleEdgeTransition_AdjustCameraBoundaries(2);
+  Dung_CopyInLeftRightScrollTarget(link_quadrant_x);
+  Dung_UpdateCameraScrollBounds(2);
   submodule_index++;
   if (!link_quadrant_x) {
     RoomBounds_AddB(&room_bounds_x);
@@ -2399,7 +2399,7 @@ void Dungeon_StartInterRoomTrans_Right() {
     } else {
       if ((uint8)dungeon_room_index != (uint8)dungeon_room_index2) {
         BYTE(dungeon_room_index_prev) = dungeon_room_index2;
-        Dungeon_AdjustAfterSpiralStairs();
+        Dung_AdjustCoordsForNewRoom();
       }
       dungeon_room_index += 1;
     }
@@ -2417,18 +2417,18 @@ void Dungeon_StartInterRoomTrans_Right() {
 }
 
 
-void HandleEdgeTransitionMovementEast_RightBy8() {
+void Dung_StartInterRoomTrans_RightPlus() {
   link_x_coord += 8;
   Dungeon_StartInterRoomTrans_Right();
 }
 
 void Dungeon_StartInterRoomTrans_Up() {
   link_quadrant_y ^= 2;
-  Dungeon_AdjustQuadrant();
+  UpdateCompositeOfLayoutAndQuadrant();
   RoomBounds_SubA(&room_bounds_y);
   Dung_SaveDataForCurrentRoom();
-  DungeonTransition_AdjustCamera_Y(link_quadrant_y ^ 2);
-  HandleEdgeTransition_AdjustCameraBoundaries(1);
+  Dung_CopyInUpDownScrollTarget(link_quadrant_y ^ 2);
+  Dung_UpdateCameraScrollBounds(1);
   submodule_index++;
   if (link_quadrant_y) {
     RoomBounds_SubB(&room_bounds_y);
@@ -2439,7 +2439,7 @@ void Dungeon_StartInterRoomTrans_Up() {
     }
 
     if (dungeon_room_index == 0) {
-      SaveDungeonKeys();
+      Dungeon_SaveRoomData_justKeys();
       main_module_index = 25;
       submodule_index = 0;
       subsubmodule_index = 0;
@@ -2448,7 +2448,7 @@ void Dungeon_StartInterRoomTrans_Up() {
 
     if (BYTE(dungeon_room_index2) == BYTE(dungeon_room_index)) {
       BYTE(dungeon_room_index_prev) = BYTE(dungeon_room_index2);
-      Dungeon_AdjustAfterSpiralStairs();
+      Dung_AdjustCoordsForNewRoom();
     }
     BYTE(dungeon_room_index) -= 0x10;
     submodule_index += 1;
@@ -2466,11 +2466,11 @@ void Dungeon_StartInterRoomTrans_Up() {
 
 void Dungeon_StartInterRoomTrans_Down() {
   link_quadrant_y ^= 2;
-  Dungeon_AdjustQuadrant();
+  UpdateCompositeOfLayoutAndQuadrant();
   RoomBounds_AddA(&room_bounds_y);
   Dung_SaveDataForCurrentRoom();
-  DungeonTransition_AdjustCamera_Y(link_quadrant_y);
-  HandleEdgeTransition_AdjustCameraBoundaries(0);
+  Dung_CopyInUpDownScrollTarget(link_quadrant_y);
+  Dung_UpdateCameraScrollBounds(0);
   submodule_index++;
   if (!link_quadrant_y) {
     RoomBounds_AddB(&room_bounds_y);
@@ -2482,7 +2482,7 @@ void Dungeon_StartInterRoomTrans_Down() {
 
     if ((uint8)dungeon_room_index != (uint8)dungeon_room_index2) {
       BYTE(dungeon_room_index_prev) = dungeon_room_index2;
-      Dungeon_AdjustAfterSpiralStairs();
+      Dung_AdjustCoordsForNewRoom();
     }
     BYTE(dungeon_room_index) += 16;
     submodule_index += 1;
@@ -2499,12 +2499,12 @@ void Dungeon_StartInterRoomTrans_Down() {
 }
 
 
-void HandleEdgeTransitionMovementSouth_DownBy16() {
+void Dung_StartInterRoomTrans_DownPlus() {
   link_y_coord += 16;
   Dungeon_StartInterRoomTrans_Down();
 }
 
-void Dungeon_DeleteRupeeTile(uint16 x, uint16 y) {
+void Dungeon_ClearRupeeTile(uint16 x, uint16 y) {
   int pos = (y & 0x1f8) * 8 | (x & 0x1f8) >> 3;
   uint16 *dst = &vram_upload_data[vram_upload_offset >> 1];
   dst[2] = 0x190f;
@@ -2536,11 +2536,11 @@ void SavePalaceDeaths() {
     death_save_counter = 0;
 }
 
-void PrepareDungeonExitFromBossFight() {
+void PrepDungeonBossExit() {
   SavePalaceDeaths();
-  SaveDungeonKeys();
+  Dungeon_SaveRoomData_justKeys();
   dung_savegame_state_bits |= 0x8000;
-  Dungeon_FlagRoomData_Quadrants();
+  Dungeon_SaveRoomQuadrantData();
 
   int j = FindInByteArray(kDungeonExit_From, BYTE(dungeon_room_index), countof(kDungeonExit_From));
   assert(j >= 0);
@@ -2549,7 +2549,7 @@ void PrepareDungeonExitFromBossFight() {
     sram_progress_indicator = 3;
     save_ow_event_info[2] |= 0x20;
     savegame_is_darkworld ^= 0x40;
-    Sprite_LoadGraphicsProperties_light_world_only();
+    Overworld_LoadGfxProperties_justLightWorld();
     Ancilla_TerminateSelectInteractives(0);
     link_disable_sprite_damage = 0;
     button_b_frames = 0;
@@ -2582,17 +2582,17 @@ void PrepareDungeonExitFromBossFight() {
 
 static const uint8 kQuadrantVisitingFlags[] = { 8, 4, 2, 1, 0xC, 0xC, 3, 3, 0xA, 5, 0xA, 5, 0xF, 0xF, 0xF, 0xF };
 
-void Dungeon_FlagRoomData_Quadrants() {
+void Dungeon_SaveRoomQuadrantData() {
   dung_quadrants_visited |= kQuadrantVisitingFlags[(quadrant_fullsize_y << 2) + (quadrant_fullsize_x << 1) + link_quadrant_y + link_quadrant_x];
   Dung_SaveDataForCurrentRoom();
 }
 
-void SetAndSaveVisitedQuadrantFlags() {
+void Player_UpdateQuadrantsVisited() {
   dung_quadrants_visited |= kQuadrantVisitingFlags[(quadrant_fullsize_y << 2) + (quadrant_fullsize_x << 1) + link_quadrant_y + link_quadrant_x];
   save_dung_info[dungeon_room_index] |= dung_quadrants_visited;
 }
 
-void Mirror_SaveRoomData() {
+void Dungeon_SaveRoomData() {
   if (cur_palace_index_x2 == 0xff) {
     sound_effect_1 = 60;
     return;
@@ -2600,8 +2600,8 @@ void Mirror_SaveRoomData() {
   submodule_index = 25;
   subsubmodule_index = 0;
   sound_effect_1 = 51;
-  Dungeon_FlagRoomData_Quadrants();
-  SaveDungeonKeys();
+  Dungeon_SaveRoomQuadrantData();
+  Dungeon_SaveRoomData_justKeys();
 }
 
 #define XY(x, y) ((y)*64+(x))
@@ -2614,12 +2614,12 @@ static const uint8 kDungeon_RupeeChestMinigamePrizes[32] = {
   0x34, 0x47, 0x41, 0x47, 0x41, 0x41, 0x47, 0x34, 0x41, 0x34, 0x47, 0x41, 0x34, 0x47, 0x41, 0x34,
 };
 
-uint16 RoomTag_BuildChestStripes(uint16 pos, uint16 y) {
+uint16 Dungeon_GetKeyedObjectRelativeVramAddr(uint16 pos, uint16 y) {
   pos += dung_chest_locations[y >> 1];
   return swap16(((pos & 0x40) << 4) | ((pos & 0x303f) >> 1) | ((pos & 0xf80) >> 2));
 }
 
-uint8 OpenMiniGameChest(int *chest_position) {
+uint8 Dungeon_OpenMiniGameChest(int *chest_position) {
   int t;
   if (minigame_credits == 0) {
     dialogue_message_index = 0x163;
@@ -2658,10 +2658,10 @@ uint8 OpenMiniGameChest(int *chest_position) {
   uint16 yy = 0x14A4; // wtf
 
   uint16 *dst = &vram_upload_data[vram_upload_offset >> 1];
-  dst[0] = RoomTag_BuildChestStripes((pos + 0) * 2, yy);
-  dst[3] = RoomTag_BuildChestStripes((pos + 64) * 2, yy);
-  dst[6] = RoomTag_BuildChestStripes((pos + 1) * 2, yy);
-  dst[9] = RoomTag_BuildChestStripes((pos + 65) * 2, yy);
+  dst[0] = Dungeon_GetKeyedObjectRelativeVramAddr((pos + 0) * 2, yy);
+  dst[3] = Dungeon_GetKeyedObjectRelativeVramAddr((pos + 64) * 2, yy);
+  dst[6] = Dungeon_GetKeyedObjectRelativeVramAddr((pos + 1) * 2, yy);
+  dst[9] = Dungeon_GetKeyedObjectRelativeVramAddr((pos + 65) * 2, yy);
 
   dst[2] = src[0];
   dst[5] = src[1];
@@ -2681,7 +2681,7 @@ uint8 OpenMiniGameChest(int *chest_position) {
 
   uint16 r16 = g_ram[0xc8];
 
-  t = GetRandomNumber();
+  t = GetRandomInt();
   if (BYTE(dungeon_room_index) == 0) {
     t = t & 0xf;
     rv = kDungeon_RupeeChestMinigamePrizes[t & 0xf];
@@ -2709,7 +2709,7 @@ uint8 OpenMiniGameChest(int *chest_position) {
   return rv;
 }
 
-void OpenBigChest(uint16 loc, int *chest_position) {
+void Dungeon_OpenBigChest(uint16 loc, int *chest_position) {
   uint16 pos = loc >> 1;
   const uint16 *src = SrcPtr(0x14C4);
 
@@ -2728,7 +2728,7 @@ void OpenBigChest(uint16 loc, int *chest_position) {
   WORD(dung_bg2_attr_table[pos + XY(2, 1)]) = 0x2727;
   WORD(dung_bg2_attr_table[pos + XY(0, 2)]) = 0x2727;
   WORD(dung_bg2_attr_table[pos + XY(2, 2)]) = 0x2727;
-  Dungeon_FlagRoomData_Quadrants();
+  Dungeon_SaveRoomQuadrantData();
   sound_effect_2 = 14;
   nmi_copy_packets_flag = 1;
   byte_7E0B9E = 1;
@@ -2736,10 +2736,10 @@ void OpenBigChest(uint16 loc, int *chest_position) {
 
 // This doesn't return exactly like the original
 // Also returns in scratch_0
-uint8 OpenChestForItem(uint8 tile, int *chest_position) {
+uint8 Dungeon_OpenKeyedObject(uint8 tile, int *chest_position) {
   static const uint16 kChestOpenMasks[] = { 0x100, 0x200, 0x400, 0x800, 0x1000, 0x2000 };
   if (tile == 0x63)
-    return OpenMiniGameChest(chest_position);
+    return Dungeon_OpenMiniGameChest(chest_position);
 
   int chest_idx = tile - 0x58, chest_idx_org = chest_idx;
 
@@ -2781,7 +2781,7 @@ uint8 OpenChestForItem(uint8 tile, int *chest_position) {
             return 0xff;
           }
           dung_savegame_state_bits |= kChestOpenMasks[chest_idx_org];
-          OpenBigChest(loc, chest_position);
+          Dungeon_OpenBigChest(loc, chest_position);
           return data;
         } else {
           dung_savegame_state_bits |= kChestOpenMasks[chest_idx_org];
@@ -2821,7 +2821,7 @@ afterStoreCrap:
 
           vram_upload_offset += 24;
           nmi_load_bg_from_vram = 1;
-          Dungeon_FlagRoomData_Quadrants();
+          Dungeon_SaveRoomQuadrantData();
           if (sound_effect_2 == 0)
             sound_effect_2 = 14;
 
@@ -2838,7 +2838,7 @@ static const int8 kDungeon_QueryIfTileLiftable_x[4] = { 7, 7, -3, 16 };
 static const int8 kDungeon_QueryIfTileLiftable_y[4] = { 3, 24, 14, 14 };
 static const uint16 kDungeon_QueryIfTileLiftable_rv[16] = { 0x5252, 0x5050, 0x5454, 0x0, 0x2323 };
 
-uint16 Dungeon_CheckForAndIDLiftableTile() {
+uint16 Dungeon_QueryIfTileLiftable() {
   uint16 x = (link_x_coord + kDungeon_QueryIfTileLiftable_x[link_direction_facing >> 1]) & 0x1f8;
   uint16 y = (link_y_coord + kDungeon_QueryIfTileLiftable_y[link_direction_facing >> 1]) & 0x1f8;
   uint16 xy = (y << 3) | (x >> 3) | (link_is_on_lower_level ? 0x1000 : 0x0);
@@ -2855,7 +2855,7 @@ uint16 Dungeon_CheckForAndIDLiftableTile() {
   return kDungeon_QueryIfTileLiftable_rv[rt & 0xf];
 }
 
-void RevealPotItem(uint16 pos6, uint16 pos4) {
+void Dungeon_LoadSecret(uint16 pos6, uint16 pos4) {
   BYTE(dung_secrets_unk1) = 0;
 
   const uint8 *src_ptr = kDungeonSecrets + WORD(kDungeonSecrets[dungeon_room_index * 2]);
@@ -2906,24 +2906,24 @@ void RevealPotItem(uint16 pos6, uint16 pos4) {
   }
 }
 
-void ManipBlock_Something(Point16U *pt) {
+void Dungeon_GetUprootedTerrainSpawnCoords(Point16U *pt) {
   uint16 pos = dung_object_tilemap_pos[dung_misc_objs_index >> 1];
   pt->x = (link_x_coord & 0xfe00) | ((pos & 0x007e) << 2);
   pt->y = (link_y_coord & 0xfe00) | ((pos & 0x1f80) >> 4);
 }
 
-uint8 ThievesAttic_DrawLightenedHole(uint16 pos6, uint16 a, Point16U *pt) {
+uint8 Dungeon_CustomIndexedRevealCoveredTiles(uint16 pos6, uint16 a, Point16U *pt) {
   dung_misc_objs_index = a;
-  RevealPotItem(pos6, dung_object_tilemap_pos[a >> 1]);
-  RoomDraw_16x16Single(a);
-  RoomDraw_16x16Single(a + 2);
-  RoomDraw_16x16Single(a + 4);
-  RoomDraw_16x16Single(a + 6);
-  ManipBlock_Something(pt);
+  Dungeon_LoadSecret(pos6, dung_object_tilemap_pos[a >> 1]);
+  Dungeon_EraseInteractive2x2(a);
+  Dungeon_EraseInteractive2x2(a + 2);
+  Dungeon_EraseInteractive2x2(a + 4);
+  Dungeon_EraseInteractive2x2(a + 6);
+  Dungeon_GetUprootedTerrainSpawnCoords(pt);
   return 0x55;
 }
 
-uint8 Dungeon_LiftAndReplaceLiftable(Point16U *pt) {
+uint8 Dungeon_RevealCoveredTiles(Point16U *pt) {
   uint16 x = link_x_coord + kDungeon_QueryIfTileLiftable_x[link_direction_facing >> 1];
   uint16 y = link_y_coord + kDungeon_QueryIfTileLiftable_y[link_direction_facing >> 1];
   pt->x = x;
@@ -2945,19 +2945,19 @@ uint8 Dungeon_LiftAndReplaceLiftable(Point16U *pt) {
 
   if ((rt & 0xf0f0) == 0x1010) {
     dung_misc_objs_index = attr * 2;
-    RevealPotItem(xy, dung_object_tilemap_pos[attr]);
-    RoomDraw_16x16Single(dung_misc_objs_index);
-    ManipBlock_Something(pt);
+    Dungeon_LoadSecret(xy, dung_object_tilemap_pos[attr]);
+    Dungeon_EraseInteractive2x2(dung_misc_objs_index);
+    Dungeon_GetUprootedTerrainSpawnCoords(pt);
     return kDungeon_QueryIfTileLiftable_rv[rt & 0xf];
   } else if ((rt & 0xf0f0) == 0x2020) {
-    return ThievesAttic_DrawLightenedHole(xy, (attr - (rt & 0xf)) * 2, pt);
+    return Dungeon_CustomIndexedRevealCoveredTiles(xy, (attr - (rt & 0xf)) * 2, pt);
   } else {
     return 0;
   }
   return 0;
 }
 
-uint8 HandleItemTileAction_Dungeon(uint16 x, uint16 y) {
+uint8 Dungeon_ToolAndTileInteraction(uint16 x, uint16 y) {
   if (!(link_item_in_hand & 2))
     return 0;
   uint16 pos = (y & 0x1f8) * 8 + x + (link_is_on_lower_level ? 0x1000 : 0);
@@ -2966,17 +2966,17 @@ uint8 HandleItemTileAction_Dungeon(uint16 x, uint16 y) {
     uint16 tile2 = dung_replacement_tile_state[tile & 0xf];
     if ((tile2 & 0xf0f0) == 0x4040) {
       dung_misc_objs_index = (tile & 0xf) * 2;
-      RoomDraw_16x16Single(dung_misc_objs_index);
+      Dungeon_EraseInteractive2x2(dung_misc_objs_index);
       sound_effect_1 = 0x11;
     } else if ((tile2 & 0xf0f0) == 0x1010) {
       dung_misc_objs_index = (tile & 0xf) * 2;
-      RevealPotItem(pos, dung_object_tilemap_pos[tile & 0xf]);
-      RoomDraw_16x16Single(dung_misc_objs_index);
+      Dungeon_LoadSecret(pos, dung_object_tilemap_pos[tile & 0xf]);
+      Dungeon_EraseInteractive2x2(dung_misc_objs_index);
       Point16U pt;
-      ManipBlock_Something(&pt);
+      Dungeon_GetUprootedTerrainSpawnCoords(&pt);
       BYTE(dung_secrets_unk1) |= 0x80;
       Sprite_SpawnImmediatelySmashedTerrain(1, pt.x, pt.y);
-      AncillaAdd_BushPoof(pt.x, pt.y);  // return value wtf?
+      AddDisintegratingBushPoof(pt.x, pt.y);  // return value wtf?
     }
   }
   return 0;
@@ -3009,7 +3009,7 @@ void Dungeon_PrepSpriteInducedDma(int x, int y, uint8 v) {
   vram_upload_offset += 24;
 }
 
-void Dungeon_UpdateTileMapWithCommonTile(int x, int y, uint8 v) {
+void Dungeon_SpriteInducedTilemapUpdate(int x, int y, uint8 v) {
   if (v == 8)
     Dungeon_PrepSpriteInducedDma(x + 16, y, v + 2);
   Dungeon_PrepSpriteInducedDma(x, y, v);
@@ -3048,7 +3048,7 @@ void Dungeon_Store2x2(uint16 pos, uint16 t0, uint16 t1, uint16 t2, uint16 t3, ui
   nmi_load_bg_from_vram = 1;
 }
 
-void RoomDraw_16x16Single(uint8 index) {
+void Dungeon_EraseInteractive2x2(uint8 index) {
   index >>= 1;
   uint16 pos = (dung_object_tilemap_pos[index] & 0x3fff) >> 1;
   Dungeon_Store2x2(pos,
@@ -3072,7 +3072,7 @@ uint16 Dungeon_MapVramAddrNoSwap(uint16 pos) {
 
 
 
-void RoomDraw_ExplodingWallColumn(const uint16 *src, uint16 *dst) {
+void Door_BlastWallUp_Helper2(const uint16 *src, uint16 *dst) {
   for (int i = 0; i < 6; i++) {
     dst[0] = src[0];
     dst[1] = src[6];
@@ -3080,8 +3080,8 @@ void RoomDraw_ExplodingWallColumn(const uint16 *src, uint16 *dst) {
   }
 }
 
-void RoomDraw_ExplodingWallSegment(const uint16 *src, uint16 dsto) {
-  RoomDraw_ExplodingWallColumn(src, DstoPtr(dsto));
+void Door_BlastWallUp_Helper(const uint16 *src, uint16 dsto) {
+  Door_BlastWallUp_Helper2(src, DstoPtr(dsto));
   src += 12, dsto += 2;
   int n = src[0];
   uint16 *d = &dung_bg2[dsto];
@@ -3091,12 +3091,12 @@ void RoomDraw_ExplodingWallSegment(const uint16 *src, uint16 dsto) {
     d[XY(0, 3)] = d[XY(0, 4)] = d[XY(0, 5)] = n;
     d++;
   } while (--dung_draw_width_indicator);
-  RoomDraw_ExplodingWallColumn(src + 1, DstoPtr(dsto + 18));
+  Door_BlastWallUp_Helper2(src + 1, DstoPtr(dsto + 18));
 }
 
 static const uint16 kDoor_BlastWallUp_Dsts[] = { 0xd8a, 0xdaa, 0xdca, 0x2b6, 0xab6, 0x12b6 };
 
-void RoomDraw_Door_ExplodingWall(int pos_enum) {
+void Door_BlastWallUp(int pos_enum) {
   uint16 dsto = kDoor_BlastWallUp_Dsts[pos_enum] / 2;
   int i = dung_cur_door_idx >> 1;
   dung_door_tilemap_address[i] = 2 * (dsto + 10);
@@ -3110,15 +3110,15 @@ void RoomDraw_Door_ExplodingWall(int pos_enum) {
   dung_hdr_tag[slot] = 0;
   quadrant_fullsize_y = 2;
   dung_blastwall_flag_y = 1;
-  RoomDraw_ExplodingWallSegment(SrcPtr(kDoorTypeSrcData2[42]), dsto);
+  Door_BlastWallUp_Helper(SrcPtr(kDoorTypeSrcData2[42]), dsto);
   dung_cur_door_idx += 2;
   dung_unk2 |= 0x200;
-  RoomDraw_ExplodingWallSegment(SrcPtr(kDoorTypeSrcData[42]), dsto + XY(0, 6));
+  Door_BlastWallUp_Helper(SrcPtr(kDoorTypeSrcData[42]), dsto + XY(0, 6));
 }
 
 
 // returns 0x100 on inverse carry
-int RoomDraw_FlagDoorsAndGetFinalType(uint8 direction, uint8 door_type, uint16 dsto) {
+int Door_Register(uint8 direction, uint8 door_type, uint16 dsto) {
   int slot = dung_cur_door_idx >> 1;
   dung_door_direction[slot] = direction;
   dung_door_tilemap_address[slot] = dsto * 2;
@@ -3151,46 +3151,46 @@ dont_mark_opened:
   return kDoorType_Regular;
 }
 
-void RoomDraw_NorthCurtainDoor(uint16 dsto) {
-  int rv = RoomDraw_FlagDoorsAndGetFinalType(0, kDoorType_Slashable, dsto);
+void Door_Up_SwordActivated(uint16 dsto) {
+  int rv = Door_Register(0, kDoorType_Slashable, dsto);
   if (rv & 0x100) {
-    RoomDraw_4x4(SrcPtr(0x78a), DstoPtr(dsto));
+    Object_Draw4x4(SrcPtr(0x78a), DstoPtr(dsto));
   } else {
-    RoomDraw_4x4(SrcPtr(kDoorTypeSrcData[rv >> 1]), DstoPtr(dsto));
+    Object_Draw4x4(SrcPtr(kDoorTypeSrcData[rv >> 1]), DstoPtr(dsto));
   }
 }
 
 void Door_Up_EntranceDoor(uint16 dsto) {
-  // NOTE: This don't pass the right value to RoomDraw_FlagDoorsAndGetFinalType
+  // NOTE: This don't pass the right value to Door_Register
   assert(0);
 }
 
 void Door_Down_EntranceDoor(uint16 dsto) {
-  // NOTE: This don't pass the right value to RoomDraw_FlagDoorsAndGetFinalType
+  // NOTE: This don't pass the right value to Door_Register
   assert(0);
 }
 
 void Door_Left_EntranceDoor(uint16 dsto) {
-  // NOTE: This don't pass the right value to RoomDraw_FlagDoorsAndGetFinalType
+  // NOTE: This don't pass the right value to Door_Register
   assert(0);
 }
 
 void Door_Right_EntranceDoor(uint16 dsto) {
-  // NOTE: This don't pass the right value to RoomDraw_FlagDoorsAndGetFinalType
+  // NOTE: This don't pass the right value to Door_Register
   assert(0);
 }
 
-void RoomDraw_MarkLayerToggleDoor(uint16 dsto) {
+void Door_AddFloorToggleProperty(uint16 dsto) {
   dung_toggle_floor_pos[dung_num_toggle_floor >> 1] = dsto;
   dung_num_toggle_floor += 2;
 }
 
-void RoomDraw_MarkDungeonToggleDoor(uint16 dsto) {
+void Door_AddPalaceToggleProperty(uint16 dsto) {
   dung_toggle_palace_pos[dung_num_toggle_palace >> 1] = dsto;
   dung_num_toggle_palace += 2;
 }
 
-void RoomDraw_MakeDoorPartsHighPriority_Y(uint16 dsto) {
+void Door_Prioritize4x7(uint16 dsto) {
   uint16 *d = &dung_bg2[dsto];
   for (int i = 0; i < 7; i++) {
     d[XY(0, 0)] |= 0x2000;
@@ -3201,7 +3201,7 @@ void RoomDraw_MakeDoorPartsHighPriority_Y(uint16 dsto) {
   }
 }
 
-void RoomDraw_MakeDoorPartsHighPriority_X(uint16 dsto) {
+void Door_Prioritize5x4(uint16 dsto) {
   uint16 *d = &dung_bg2[dsto];
   for (int i = 0; i < 5; i++) {
     d[XY(0, 0)] |= 0x2000;
@@ -3212,7 +3212,7 @@ void RoomDraw_MakeDoorPartsHighPriority_X(uint16 dsto) {
   }
 }
 
-void RoomDraw_MakeDoorHighPriority_East(uint16 dsto) {
+void Door_PrioritizeAligned(uint16 dsto) {
   uint16 *d = &dung_bg2[dsto];
   do {
     d[XY(0, 0)] |= 0x2000;
@@ -3223,7 +3223,7 @@ void RoomDraw_MakeDoorHighPriority_East(uint16 dsto) {
   } while (dsto & 0x1f);
 }
 
-void RoomDraw_MakeDoorHighPriority_North(uint16 dsto) {
+void Door_Helper_SetPriority(uint16 dsto) {
   uint16 dsto_org = dsto;
   dsto &= 0xF07F >> 1;
   do {
@@ -3235,7 +3235,7 @@ void RoomDraw_MakeDoorHighPriority_North(uint16 dsto) {
   } while (dsto != dsto_org);
 }
 
-void RoomDraw_MakeDoorHighPriority_South(uint16 dsto) {
+void Door_Helper_SetPriority2(uint16 dsto) {
   do {
     dung_bg2[dsto + 0] |= 0x2000;
     dung_bg2[dsto + 1] |= 0x2000;
@@ -3245,7 +3245,7 @@ void RoomDraw_MakeDoorHighPriority_South(uint16 dsto) {
   } while (dsto & 0x7c0);
 }
 
-void RoomDraw_MakeDoorHighPriority_West(uint16 dsto) {
+void Door_Helper_SetPriority3(uint16 dsto) {
   uint16 dsto_org = dsto;
   dsto &= 0xffe0;
   do {
@@ -3264,7 +3264,7 @@ void Door_PrioritizeCurDoor() {
 }
 
 void Door_Draw_Helper4(uint8 door_type, uint16 dsto) {
-  int t = RoomDraw_FlagDoorsAndGetFinalType(1, door_type, dsto), new_type;
+  int t = Door_Register(1, door_type, dsto), new_type;
   if (t & 0x100)
     return;
 
@@ -3285,9 +3285,9 @@ void Door_Draw_Helper4(uint8 door_type, uint16 dsto) {
   }
 }
 
-void RoomDraw_CheckIfLowerLayerDoors_Y(uint8 door_type, uint16 dsto) {
+void Door_Down_Draw_Helper_2(uint8 door_type, uint16 dsto) {
   if (door_type == kDoorType_Regular2) {
-    RoomDraw_MakeDoorPartsHighPriority_Y(dsto + XY(0, 4));
+    Door_Prioritize4x7(dsto + XY(0, 4));
     Door_Draw_Helper4(door_type, dsto);
   } else if (door_type == kDoorType_WaterfallTunnel) {
     Door_Draw_Helper4(door_type, dsto);
@@ -3297,8 +3297,8 @@ void RoomDraw_CheckIfLowerLayerDoors_Y(uint8 door_type, uint16 dsto) {
   }
 }
 
-void RoomDraw_OneSidedLowerShutters_South(uint8 door_type, uint16 dsto) {
-  uint8 t = RoomDraw_FlagDoorsAndGetFinalType(1, door_type, dsto);
+void Door_Down_Draw_Types_Above_0x40(uint8 door_type, uint16 dsto) {
+  uint8 t = Door_Register(1, door_type, dsto);
   if (t == kDoorType_ShutterTrapUR || t == kDoorType_ShutterTrapDL) {
     int new_type = (t == kDoorType_ShutterTrapUR) ? kDoorType_Shutter : kDoorType_RegularDoor33;
     int i = (dung_cur_door_idx >> 1) - 1;
@@ -3313,12 +3313,12 @@ void RoomDraw_OneSidedLowerShutters_South(uint8 door_type, uint16 dsto) {
     dung_bg2[dsto + XY(0, 3)] = src[2];
     dsto++, src += 3;
   }
-  RoomDraw_MakeDoorHighPriority_South(dsto_org + XY(0, 4));
+  Door_Helper_SetPriority2(dsto_org + XY(0, 4));
   Door_PrioritizeCurDoor();
 }
 
-void RoomDraw_OneSidedShutters_North(uint8 door_type, uint16 dsto) {
-  int t = RoomDraw_FlagDoorsAndGetFinalType(0, door_type, dsto);
+void Door_Up_PositionLessThan6(uint8 door_type, uint16 dsto) {
+  int t = Door_Register(0, door_type, dsto);
   if (t & 0x100)
     return;
   // Remap type
@@ -3349,11 +3349,11 @@ void Door_Up_StairMaskLocked(uint8 door_type, uint16 dsto) {
   }
 
   if (door_type < kDoorType_StairMaskLocked2) {
-    RoomDraw_OneSidedShutters_North(door_type, dsto);
+    Door_Up_PositionLessThan6(door_type, dsto);
     return;
   }
 
-  uint8 t = RoomDraw_FlagDoorsAndGetFinalType(0, door_type, dsto);
+  uint8 t = Door_Register(0, door_type, dsto);
   const uint16 *src = SrcPtr(kDoorTypeSrcData[t >> 1]);
   for (int i = 0; i < 4; i++) {
     dung_bg1[dsto + XY(0, 0)] = src[0];
@@ -3364,24 +3364,24 @@ void Door_Up_StairMaskLocked(uint8 door_type, uint16 dsto) {
   Door_PrioritizeCurDoor();
 }
 
-void RoomDraw_NormalRangedDoors_North(uint8 door_type, uint16 dsto, int pos_enum) {
+void Door_Up_Draw_Types_Below_0x40(uint8 door_type, uint16 dsto, int pos_enum) {
   if (pos_enum >= 6) {
     uint16 bak = dung_cur_door_idx;
     dung_cur_door_idx |= 0x10;
-    RoomDraw_CheckIfLowerLayerDoors_Y(door_type, kDoorPositionToTilemapOffs_Down[pos_enum - 6] / 2);
+    Door_Down_Draw_Helper_2(door_type, kDoorPositionToTilemapOffs_Down[pos_enum - 6] / 2);
     dung_cur_door_idx = bak;
   }
-  RoomDraw_OneSidedShutters_North(door_type, dsto);
+  Door_Up_PositionLessThan6(door_type, dsto);
 }
 
-void RoomDraw_HighRangeDoor_North(uint8 door_type, uint16 dsto, int pos_enum) {
+void Door_Up_Draw_Types_Above_0x40(uint8 door_type, uint16 dsto, int pos_enum) {
   if (pos_enum >= 6 && door_type != kDoorType_WarpRoomDoor) {
     uint16 bak = dung_cur_door_idx;
     dung_cur_door_idx |= 0x10;
-    RoomDraw_OneSidedLowerShutters_South(door_type, kDoorPositionToTilemapOffs_Down[pos_enum - 6] / 2);
+    Door_Down_Draw_Types_Above_0x40(door_type, kDoorPositionToTilemapOffs_Down[pos_enum - 6] / 2);
     dung_cur_door_idx = bak;
   }
-  uint8 t = RoomDraw_FlagDoorsAndGetFinalType(0, door_type, dsto);
+  uint8 t = Door_Register(0, door_type, dsto);
   if (t == kDoorType_ShutterTrapUR || t == kDoorType_ShutterTrapDL) {
     int new_type = (t == kDoorType_ShutterTrapUR) ? kDoorType_RegularDoor33 : kDoorType_Shutter;
     int i = (dung_cur_door_idx >> 1) - 1;
@@ -3397,61 +3397,61 @@ void RoomDraw_HighRangeDoor_North(uint8 door_type, uint16 dsto, int pos_enum) {
     dsto++, src += 3;
   }
   if (door_type != kDoorType_WarpRoomDoor)
-    RoomDraw_MakeDoorHighPriority_North(dsto_org);
+    Door_Helper_SetPriority(dsto_org);
   Door_PrioritizeCurDoor();
 }
 
-void RoomDraw_Door_North(int type, int pos_enum) {
+void Door_Up(int type, int pos_enum) {
   uint16 dsto = kDoorPositionToTilemapOffs_Up[pos_enum] / 2;
   if (type == kDoorType_LgExplosion)
-    RoomDraw_Door_ExplodingWall(pos_enum);
+    Door_BlastWallUp(pos_enum);
   else if (type == kDoorType_PlayerBgChange)
-    RoomDraw_MarkLayerToggleDoor(dsto - 0xfe / 2);
+    Door_AddFloorToggleProperty(dsto - 0xfe / 2);
   else if (type == kDoorType_Slashable)
-    RoomDraw_NorthCurtainDoor(dsto);
+    Door_Up_SwordActivated(dsto);
   else if (type == kDoorType_EntranceDoor)
     Door_Up_EntranceDoor(dsto);
   else if (type == kDoorType_ThroneRoom)
-    RoomDraw_MarkDungeonToggleDoor(dsto - 0xfe / 2);
+    Door_AddPalaceToggleProperty(dsto - 0xfe / 2);
   else if (type == kDoorType_Regular2) {
-    RoomDraw_MakeDoorPartsHighPriority_Y(dsto & (0xF07F / 2));
-    RoomDraw_NormalRangedDoors_North(type, dsto, pos_enum);
+    Door_Prioritize4x7(dsto & (0xF07F / 2));
+    Door_Up_Draw_Types_Below_0x40(type, dsto, pos_enum);
   } else if (type == kDoorType_ExitToOw) {
     dung_exit_door_addresses[dung_exit_door_count >> 1] = dsto * 2;
     dung_exit_door_count += 2;
   } else if (type == kDoorType_WaterfallTunnel) {
-    RoomDraw_NormalRangedDoors_North(type, dsto, pos_enum);
+    Door_Up_Draw_Types_Below_0x40(type, dsto, pos_enum);
     Door_PrioritizeCurDoor();
   } else if (type >= kDoorType_StairMaskLocked0 && type <= kDoorType_StairMaskLocked3) {
     Door_Up_StairMaskLocked(type, dsto);
   } else if (type >= kDoorType_RegularDoor33)
-    RoomDraw_HighRangeDoor_North(type, dsto, pos_enum);
+    Door_Up_Draw_Types_Above_0x40(type, dsto, pos_enum);
   else
-    RoomDraw_NormalRangedDoors_North(type, dsto, pos_enum);
+    Door_Up_Draw_Types_Below_0x40(type, dsto, pos_enum);
 
 }
 
-void RoomDraw_Door_South(int type, int pos_enum) {
+void Door_Down(int type, int pos_enum) {
   uint16 dsto = kDoorPositionToTilemapOffs_Down[pos_enum] / 2;
   if (type == kDoorType_PlayerBgChange)
-    RoomDraw_MarkLayerToggleDoor(dsto + XY(1, 4));
+    Door_AddFloorToggleProperty(dsto + XY(1, 4));
   else if (type == kDoorType_EntranceDoor)
     Door_Down_EntranceDoor(dsto);
   else if (type == kDoorType_ThroneRoom)
-    RoomDraw_MarkDungeonToggleDoor(dsto + XY(1, 4));
+    Door_AddPalaceToggleProperty(dsto + XY(1, 4));
   else if (type == kDoorType_ExitToOw) {
     dung_exit_door_addresses[dung_exit_door_count >> 1] = dsto * 2;
     dung_exit_door_count += 2;
   } else if (type >= kDoorType_RegularDoor33) {
-    RoomDraw_OneSidedLowerShutters_South(type, dsto);
+    Door_Down_Draw_Types_Above_0x40(type, dsto);
   } else if (type == kDoorType_EntranceLarge) {
-    RoomDraw_FlagDoorsAndGetFinalType(1, type, dsto);
-    RoomDraw_SomeBigDecors(10, SrcPtr(0x2656), dsto + XY(-3, -4));
+    Door_Register(1, type, dsto);
+    Object_Draw8xN_BG2(10, SrcPtr(0x2656), dsto + XY(-3, -4));
   } else if (type == kDoorType_EntranceLarge2) {
     dsto |= 0x1000;
-    RoomDraw_FlagDoorsAndGetFinalType(1, type, dsto);
+    Door_Register(1, type, dsto);
     dsto += XY(-3, -4);
-    RoomDraw_SomeBigDecors(10, SrcPtr(0x2656), dsto);
+    Object_Draw8xN_BG2(10, SrcPtr(0x2656), dsto);
     dsto += -0x1000 + XY(0, 7);
     for (int i = 0; i < 10; i++) {
       dung_bg2[dsto] = dung_bg1[dsto] | 0x2000;
@@ -3459,27 +3459,27 @@ void RoomDraw_Door_South(int type, int pos_enum) {
     }
   } else if (type == kDoorType_EntranceCave || type == kDoorType_EntranceCave2) {
     if (type == kDoorType_EntranceCave2)
-      RoomDraw_MakeDoorPartsHighPriority_Y(dsto + XY(0, 4));
-    RoomDraw_FlagDoorsAndGetFinalType(1, type, dsto);
-    RoomDraw_4x4(SrcPtr(0x26f6), DstoPtr(dsto));
+      Door_Prioritize4x7(dsto + XY(0, 4));
+    Door_Register(1, type, dsto);
+    Object_Draw4x4(SrcPtr(0x26f6), DstoPtr(dsto));
   } else if (type == kDoorType_4) {
     uint16 dsto_org = dsto;
     dsto |= 0x1000;
-    RoomDraw_MakeDoorPartsHighPriority_Y(dsto + XY(0, 4));
-    RoomDraw_FlagDoorsAndGetFinalType(1, type, dsto);
-    RoomDraw_4x4(SrcPtr(0x26f6), DstoPtr(dsto));
+    Door_Prioritize4x7(dsto + XY(0, 4));
+    Door_Register(1, type, dsto);
+    Object_Draw4x4(SrcPtr(0x26f6), DstoPtr(dsto));
     for (int i = 0; i < 4; i++) {
       dung_bg2[dsto_org + XY(0, 3)] = dung_bg1[dsto_org + XY(0, 3)] | 0x2000;
       dsto_org += 1;
     }
   } else {
-    RoomDraw_CheckIfLowerLayerDoors_Y(type, dsto);
+    Door_Down_Draw_Helper_2(type, dsto);
   }
 }
 
 
-void RoomDraw_OneSidedShutters_East(uint8 door_type, uint16 dsto) {
-  int t = RoomDraw_FlagDoorsAndGetFinalType(3, door_type, dsto), new_type;
+void Door_Right_Helper1(uint8 door_type, uint16 dsto) {
+  int t = Door_Register(3, door_type, dsto), new_type;
   if (t & 0x100)
     return;
   if ((new_type = kDoorType_Regular, t == kDoorType_36) ||
@@ -3499,19 +3499,19 @@ void RoomDraw_OneSidedShutters_East(uint8 door_type, uint16 dsto) {
   }
 }
 
-void RoomDraw_NormalRangedDoors_East(uint8 door_type, uint16 dsto) {
+void Door_Right_AddNormalDoor(uint8 door_type, uint16 dsto) {
   if (door_type == kDoorType_Regular2)
-    RoomDraw_MakeDoorPartsHighPriority_X(dsto + XY(4, 0));
+    Door_Prioritize5x4(dsto + XY(4, 0));
   if (door_type == kDoorType_WaterfallTunnel) {
-    RoomDraw_OneSidedShutters_East(door_type, dsto);
+    Door_Right_Helper1(door_type, dsto);
     Door_PrioritizeCurDoor();
   } else {
-    RoomDraw_OneSidedShutters_East(door_type, dsto);
+    Door_Right_Helper1(door_type, dsto);
   }
 }
 
-void RoomDraw_OneSidedLowerShutters_East(uint8 door_type, uint16 dsto) {
-  uint8 t = RoomDraw_FlagDoorsAndGetFinalType(3, door_type, dsto), new_type;
+void Door_Right_AddDoorAbove0x40(uint8 door_type, uint16 dsto) {
+  uint8 t = Door_Register(3, door_type, dsto), new_type;
   if ((new_type = kDoorType_RegularDoor33, t == kDoorType_ShutterTrapUR) ||
       (new_type = kDoorType_Shutter, t == kDoorType_ShutterTrapDL)) {
     int i = (dung_cur_door_idx >> 1) - 1;
@@ -3532,19 +3532,19 @@ void RoomDraw_OneSidedLowerShutters_East(uint8 door_type, uint16 dsto) {
   dung_bg2[dsto + XY(1, 1)] = src[1];
   dung_bg2[dsto + XY(1, 2)] = src[2];
   dung_bg2[dsto + XY(1, 3)] = src[3];
-  RoomDraw_MakeDoorHighPriority_East(dst_org + XY(4, 0));
+  Door_PrioritizeAligned(dst_org + XY(4, 0));
   Door_PrioritizeCurDoor();
 }
 
-void RoomDraw_NormalRangedDoors_West(uint8 door_type, uint16 dsto, int pos_enum) {
+void Door_Left_AddNormalDoor(uint8 door_type, uint16 dsto, int pos_enum) {
   if (pos_enum >= 6) {
     uint16 bak = dung_cur_door_idx;
     dung_cur_door_idx |= 0x10;
-    RoomDraw_NormalRangedDoors_East(door_type, kDoorPositionToTilemapOffs_Right[pos_enum - 6] / 2);
+    Door_Right_AddNormalDoor(door_type, kDoorPositionToTilemapOffs_Right[pos_enum - 6] / 2);
     dung_cur_door_idx = bak;
   }
 
-  int t = RoomDraw_FlagDoorsAndGetFinalType(2, door_type, dsto), new_type;
+  int t = Door_Register(2, door_type, dsto), new_type;
   if (t & 0x100)
     return;
 
@@ -3567,15 +3567,15 @@ void RoomDraw_NormalRangedDoors_West(uint8 door_type, uint16 dsto, int pos_enum)
 
 }
 
-void RoomDraw_HighRangeDoor_West(uint8 door_type, uint16 dsto, int pos_enum) {
+void Door_Left_AddDoorAbove0x40(uint8 door_type, uint16 dsto, int pos_enum) {
   if (pos_enum >= 6) {
     uint16 bak = dung_cur_door_idx;
     dung_cur_door_idx |= 0x10;
-    RoomDraw_OneSidedLowerShutters_East(door_type, kDoorPositionToTilemapOffs_Right[pos_enum - 6] / 2);
+    Door_Right_AddDoorAbove0x40(door_type, kDoorPositionToTilemapOffs_Right[pos_enum - 6] / 2);
     dung_cur_door_idx = bak;
   }
 
-  uint8 t = RoomDraw_FlagDoorsAndGetFinalType(2, door_type, dsto), new_type;
+  uint8 t = Door_Register(2, door_type, dsto), new_type;
   if ((new_type = kDoorType_Shutter, t == kDoorType_ShutterTrapUR) ||
       (new_type = kDoorType_RegularDoor33, t == kDoorType_ShutterTrapDL)) {
     int i = (dung_cur_door_idx >> 1) - 1;
@@ -3597,60 +3597,60 @@ void RoomDraw_HighRangeDoor_West(uint8 door_type, uint16 dsto, int pos_enum) {
     dung_bg1[dsto + XY(0, 3)] = src[3];
     dsto++, src += 4;
   }
-  RoomDraw_MakeDoorHighPriority_West(dsto_org);
+  Door_Helper_SetPriority3(dsto_org);
   Door_PrioritizeCurDoor();
 }
 
 
-void RoomDraw_Door_West(int type, int pos_enum) {
+void Door_Left(int type, int pos_enum) {
   uint16 dsto = kDoorPositionToTilemapOffs_Left[pos_enum] / 2;
   if (type == kDoorType_PlayerBgChange)
-    RoomDraw_MarkLayerToggleDoor(dsto + XY(-2, 1));
+    Door_AddFloorToggleProperty(dsto + XY(-2, 1));
   else if (type == kDoorType_EntranceDoor)
     Door_Left_EntranceDoor(dsto);
   else if (type == kDoorType_ThroneRoom)
-    RoomDraw_MarkDungeonToggleDoor(dsto + XY(-2, 1));
+    Door_AddPalaceToggleProperty(dsto + XY(-2, 1));
   else if (type == kDoorType_Regular2) {
-    RoomDraw_MakeDoorPartsHighPriority_X(dsto & ~0x1f);
-    RoomDraw_NormalRangedDoors_West(type, dsto, pos_enum);
+    Door_Prioritize5x4(dsto & ~0x1f);
+    Door_Left_AddNormalDoor(type, dsto, pos_enum);
   } else if (type == kDoorType_WaterfallTunnel) {
-    RoomDraw_NormalRangedDoors_West(type, dsto, pos_enum);
+    Door_Left_AddNormalDoor(type, dsto, pos_enum);
     Door_PrioritizeCurDoor();
   } else if (type < kDoorType_RegularDoor33) {
-    RoomDraw_NormalRangedDoors_West(type, dsto, pos_enum);
+    Door_Left_AddNormalDoor(type, dsto, pos_enum);
   } else {
-    RoomDraw_HighRangeDoor_West(type, dsto, pos_enum);
+    Door_Left_AddDoorAbove0x40(type, dsto, pos_enum);
   }
 }
 
-void RoomDraw_Door_East(int type, int pos_enum) {
+void Door_Right(int type, int pos_enum) {
   uint16 dsto = kDoorPositionToTilemapOffs_Right[pos_enum] / 2;
   if (type == kDoorType_PlayerBgChange)
-    RoomDraw_MarkLayerToggleDoor(dsto + XY(4, 1));
+    Door_AddFloorToggleProperty(dsto + XY(4, 1));
   else if (type == kDoorType_EntranceDoor)
     Door_Right_EntranceDoor(dsto);
   else if (type == kDoorType_ThroneRoom)
-    RoomDraw_MarkDungeonToggleDoor(dsto + XY(4, 1));
+    Door_AddPalaceToggleProperty(dsto + XY(4, 1));
   else if (type < kDoorType_RegularDoor33) {
-    RoomDraw_NormalRangedDoors_East(type, dsto);
+    Door_Right_AddNormalDoor(type, dsto);
   } else {
-    RoomDraw_OneSidedLowerShutters_East(type, dsto);
+    Door_Right_AddDoorAbove0x40(type, dsto);
   }
 }
 
-void RoomData_DrawObject_Door(uint16 a) {
+void Dungeon_LoadDoor(uint16 a) {
   uint8 door_type = a >> 8;
   uint8 position = a >> 4 & 0xf;
 
   switch (a & 3) {
-  case 0: RoomDraw_Door_North(door_type, position); break;
-  case 1: RoomDraw_Door_South(door_type, position); break;
-  case 2: RoomDraw_Door_West(door_type, position); break;
-  case 3: RoomDraw_Door_East(door_type, position); break;
+  case 0: Door_Up(door_type, position); break;
+  case 1: Door_Down(door_type, position); break;
+  case 2: Door_Left(door_type, position); break;
+  case 3: Door_Right(door_type, position); break;
   }
 }
 
-void RoomDraw_DrawAllObjects(const uint8 *level_data) {
+void Dungeon_DrawObjects(const uint8 *level_data) {
   for (;;) {
     dung_draw_width_indicator = dung_draw_height_indicator = 0;
     uint16 d = WORD(level_data[dung_load_ptr_offs]);
@@ -3658,14 +3658,14 @@ void RoomDraw_DrawAllObjects(const uint8 *level_data) {
       return;
     if (d == 0xfff0)
       break;
-    RoomData_DrawObject(d, level_data);
+    Dungeon_LoadType1Object(d, level_data);
   }
   for (;;) {
     dung_load_ptr_offs += 2;
     uint16 d = WORD(level_data[dung_load_ptr_offs]);
     if (d == 0xffff)
       return;
-    RoomData_DrawObject_Door(d);
+    Dungeon_LoadDoor(d);
   }
 }
 
@@ -3701,7 +3701,7 @@ void Dungeon_LoadAdjacentRoomDoors(int room) {
   }
 }
 
-void Dungeon_CheckAdjacentRoomsForOpenDoors(int idx, int room) {
+void Dungeon_CheckAdjacentRoomOpenedDoors(int idx, int room) {
   static const uint16 kLookup[] = {
     0x00, 0x10, 0x20, 0x30, 0x40, 0x50,
     0x61, 0x71, 0x81, 0x91, 0xa1, 0xb1,
@@ -3856,21 +3856,21 @@ void Dungeon_LoadHeader() {
   dung_door_tilemap_address[i] = 0;
 
   if (((dungeon_room_index - 1) & 0xf) != 0xf)
-    Dungeon_CheckAdjacentRoomsForOpenDoors(18, dungeon_room_index - 1);
+    Dungeon_CheckAdjacentRoomOpenedDoors(18, dungeon_room_index - 1);
   if (((dungeon_room_index + 1) & 0xf) != 0)
-    Dungeon_CheckAdjacentRoomsForOpenDoors(12, dungeon_room_index + 1);
+    Dungeon_CheckAdjacentRoomOpenedDoors(12, dungeon_room_index + 1);
   if (dungeon_room_index - 16 >= 0)
-    Dungeon_CheckAdjacentRoomsForOpenDoors(6, dungeon_room_index - 16);
+    Dungeon_CheckAdjacentRoomOpenedDoors(6, dungeon_room_index - 16);
   if (dungeon_room_index + 16 < 0x140)
-    Dungeon_CheckAdjacentRoomsForOpenDoors(0, dungeon_room_index + 16);
+    Dungeon_CheckAdjacentRoomOpenedDoors(0, dungeon_room_index + 16);
 }
 
-void RoomDraw_FloorChunks(const uint16 *src) {
+void Dung_FillFloor(const uint16 *src) {
   static const uint16 kDungeon_QuadrantOffsets[] = { 0x0, 0x40, 0x1000, 0x1040 };
   for (int i = 0; i < 4; i++) {
     uint16 *dst = DstoPtr(kDungeon_QuadrantOffsets[i] / 2);
     for (int j = 0; j < 8; j++) {
-      RoomDraw_A_Many32x32Blocks(8, src, dst);
+      Object_Draw_N_4x4(8, src, dst);
       dst += XY(0, 4);
     }
   }
@@ -3888,17 +3888,17 @@ static const uint8 kDungeon_DrawObjectOffsets_BG2[33] = {
   0x7e,
 };
 
-void RoomDraw_DrawFloors(const uint8 *level_data) {
+void Dungeon_DrawFloors(const uint8 *level_data) {
   memcpy(&dung_line_ptrs_row0, kDungeon_DrawObjectOffsets_BG2, 33);
   uint8 ft = level_data[dung_load_ptr_offs++];
   dung_floor_1_filler_tiles = ft & 0xf0;
-  RoomDraw_FloorChunks(SrcPtr(dung_floor_1_filler_tiles));
+  Dung_FillFloor(SrcPtr(dung_floor_1_filler_tiles));
   memcpy(&dung_line_ptrs_row0, kDungeon_DrawObjectOffsets_BG1, 33);
   dung_floor_2_filler_tiles = (ft & 0xf) << 4;
-  RoomDraw_FloorChunks(SrcPtr(dung_floor_2_filler_tiles));
+  Dung_FillFloor(SrcPtr(dung_floor_2_filler_tiles));
 }
 
-void DrawObjects_PushableBlock(uint16 dsto_x2, uint16 slot) {
+void Dungeon_LoadBlock(uint16 dsto_x2, uint16 slot) {
   int x = dung_misc_objs_index >> 1;
   dung_misc_objs_index += 2;
   dung_replacement_tile_state[x] = 0;
@@ -3909,10 +3909,10 @@ void DrawObjects_PushableBlock(uint16 dsto_x2, uint16 slot) {
   replacement_tilemap_LL[x] = dst[XY(0, 1)];
   replacement_tilemap_UR[x] = dst[XY(1, 0)];
   replacement_tilemap_LR[x] = dst[XY(1, 1)];
-  RoomDraw_Rightwards2x2(SrcPtr(0xe52), dst);
+  Object_Draw_2x2(SrcPtr(0xe52), dst);
 }
 
-void DrawObjects_LightableTorch(uint16 dsto_x2, uint16 slot) {
+void Dungeon_LoadTorch(uint16 dsto_x2, uint16 slot) {
   int x = dung_index_of_torches >> 1;
   dung_index_of_torches += 2;
   dung_object_tilemap_pos[x] = dsto_x2;
@@ -3924,7 +3924,7 @@ void DrawObjects_LightableTorch(uint16 dsto_x2, uint16 slot) {
     if (dung_num_lit_torches < 3)
       dung_num_lit_torches++;
   }
-  RoomDraw_Rightwards2x2(SrcPtr(src_img), dst);
+  Object_Draw_2x2(SrcPtr(src_img), dst);
 }
 
 void Dungeon_LoadRoom() {
@@ -3994,7 +3994,7 @@ void Dungeon_LoadRoom() {
 
   const uint8 *cur_p0 = GetDungeonRoomLayout(dungeon_room_index);
   dung_load_ptr_offs = 0;
-  RoomDraw_DrawFloors(cur_p0);
+  Dungeon_DrawFloors(cur_p0);
 
   uint16 old_offs = dung_load_ptr_offs;
   dung_layout_and_starting_quadrant = cur_p0[dung_load_ptr_offs];
@@ -4002,24 +4002,24 @@ void Dungeon_LoadRoom() {
   const uint8 *cur_p1 = GetDefaultRoomLayout(dung_layout_and_starting_quadrant >> 2);
 
   dung_load_ptr_offs = 0;
-  RoomDraw_DrawAllObjects(cur_p1);
+  Dungeon_DrawObjects(cur_p1);
 
   dung_load_ptr_offs = old_offs + 1;
 
-  RoomDraw_DrawAllObjects(cur_p0);  // Draw Layer 1 objects to BG2
+  Dungeon_DrawObjects(cur_p0);  // Draw Layer 1 objects to BG2
   dung_load_ptr_offs += 2;
 
   memcpy(&dung_line_ptrs_row0, kDungeon_DrawObjectOffsets_BG2, 33);
-  RoomDraw_DrawAllObjects(cur_p0);  // Draw Layer 2 objects to BG2
+  Dungeon_DrawObjects(cur_p0);  // Draw Layer 2 objects to BG2
   dung_load_ptr_offs += 2;
 
   memcpy(&dung_line_ptrs_row0, kDungeon_DrawObjectOffsets_BG1, 33);
-  RoomDraw_DrawAllObjects(cur_p0);  // Draw Layer 3 objects to BG2
+  Dungeon_DrawObjects(cur_p0);  // Draw Layer 3 objects to BG2
 
   for (dung_load_ptr_offs = 0; dung_load_ptr_offs != 0x18C; dung_load_ptr_offs += 4) {
     MovableBlockData &m = movable_block_datas[dung_load_ptr_offs >> 2];
     if (m.room == dungeon_room_index)
-      DrawObjects_PushableBlock(m.tilemap, dung_load_ptr_offs);
+      Dungeon_LoadBlock(m.tilemap, dung_load_ptr_offs);
   }
 
   uint16 t;
@@ -4033,7 +4033,7 @@ void Dungeon_LoadRoom() {
       do {
         t = dung_torch_data[i >> 1];
         i += 2;
-        DrawObjects_LightableTorch(t, i - 2);
+        Dungeon_LoadTorch(t, i - 2);
       } while (dung_torch_data[i >> 1] != 0xffff);
       break;
     }
@@ -4050,7 +4050,7 @@ void Dungeon_LoadRoom() {
 static const uint16 kUploadBgSrcs[] = { 0x0, 0x1000, 0x0, 0x40, 0x40, 0x1040, 0x1000, 0x1040, 0x1000, 0x0, 0x40, 0x0, 0x1040, 0x40, 0x1040, 0x1000 };
 static const uint8 kUploadBgDsts[] = { 1, 5, 9, 13, 2, 6, 10, 14, 3, 7, 11, 15, 4, 8, 12, 16 };
 
-void TileMapPrep_NotWaterOnTag() {
+void Dungeon_Upload_BG1() {
   int ofs = (overworld_screen_transition & 0xf) + dung_cur_quadrant_upload;
   uint16 *src = &dung_bg1[kUploadBgSrcs[ofs] / 2];
   int p = 0;
@@ -4076,7 +4076,7 @@ void TileMapPrep_NotWaterOnTag() {
   nmi_disable_core_updates = 1;
 }
 
-void Dungeon_PrepareNextRoomQuadrantUpload() {
+void Dungeon_Upload_BG2() {
   int ofs = (overworld_screen_transition & 0xf) + dung_cur_quadrant_upload;
   uint16 *src = &dung_bg2[kUploadBgSrcs[ofs] / 2];
   int p = 0;
@@ -4103,15 +4103,15 @@ void Dungeon_PrepareNextRoomQuadrantUpload() {
   nmi_disable_core_updates = 1;
 }
 
-void WaterFlood_BuildOneQuadrantForVRAM() {
+void Dungeon_Upload_BG1_Outer() {
 
   // It never seems to be 25 here, so skip updating water stuff
   assert(dung_hdr_tag[0] != 25);
-  TileMapPrep_NotWaterOnTag();
+  Dungeon_Upload_BG1();
 }
 
 // This gets called when entering a dungeon from ow.
-void Dungeon_LoadAndDrawRoom() {
+void Dungeon_LoadAndUploadRoom() {
   int bak = HDMAEN_copy;
   zelda_snes_dummy_write(HDMAEN, 0);
   HDMAEN_copy = 0;
@@ -4119,9 +4119,9 @@ void Dungeon_LoadAndDrawRoom() {
   overworld_screen_transition = 0;
   overworld_map_state = 0;
   for (dung_cur_quadrant_upload = 0; dung_cur_quadrant_upload != 16; ) {
-    TileMapPrep_NotWaterOnTag();
+    Dungeon_Upload_BG1();
     NMI_UploadTilemap();
-    Dungeon_PrepareNextRoomQuadrantUpload();
+    Dungeon_Upload_BG2();
     NMI_UploadTilemap();
   }
   HDMAEN_copy = bak;
@@ -4130,7 +4130,7 @@ void Dungeon_LoadAndDrawRoom() {
   subsubmodule_index = 0;
 }
 
-void Dungeon_LoadBasicAttribute_full(uint16 loops) {
+void Dungeon_LoadBasicAttr_full(uint16 loops) {
   do {
     int i = dung_draw_width_indicator / 2;
     uint8 a0 = attributes_for_tile[dung_bg2[i] & 0x3ff];
@@ -4159,7 +4159,7 @@ static inline void WriteAttr2(int j, uint16 attr) {
   dung_bg2_attr_table[j + 1] = attr >> 8;
 }
 
-void Dungeon_LoadObjectAttribute() {
+void Dungeon_LoadObjAttr() {
   for (int i = 0; i != dung_num_star_shaped_switches; i += 2) {
     int j = star_shaped_switches_tile[i >> 1];
     WriteAttr2(j + XY(0, 0), 0x3b3b);
@@ -4426,7 +4426,7 @@ static const uint16 kTileAttrsByDoor[] = {
   0x8484, 0x8484, 0x8686, 0x8888, 0x8686, 0x8686, 0x8080, 0x8080,
 };
 
-void Dungeon_LoadSingleDoorAttribute(int k) {
+void Dungeon_LoadSingleDoorAttr(int k) {
   assert(k >= 0 && k < 16);
   uint8 t = door_type_and_slot[k] & 0xfe, dir;
   uint16 attr;
@@ -4564,7 +4564,7 @@ beta:
   }
 }
 
-void Dungeon_LoadSingleDoorTileAttribute() {
+void Dungeon_LoadDoorAttrInner() {
   for (int i = 0; i != dung_num_toggle_floor; i += 2) {
     int j = dung_toggle_floor_pos[i >> 1];
     if ((dung_bg2_attr_table[j] & 0xf0) == 0x80) {
@@ -4591,21 +4591,21 @@ void Dungeon_LoadSingleDoorTileAttribute() {
   }
 }
 
-void ChangeDoorToSwitch() {
+void someExperimentalCrap() {
   assert(dung_unk5 == 0);
 }
 
-void Dungeon_LoadDoorAttribute() {
+void Dungeon_LoadDoorAttr() {
   for (int i = 0; i != 16; i++) {
     if (dung_door_tilemap_address[i])
-      Dungeon_LoadSingleDoorAttribute(i);
+      Dungeon_LoadSingleDoorAttr(i);
   }
-  Dungeon_LoadSingleDoorTileAttribute();
-  ChangeDoorToSwitch();
+  Dungeon_LoadDoorAttrInner();
+  someExperimentalCrap();
   overworld_map_state += 1;
 }
 
-void Dungeon_FlipCrystalPegAttribute() {
+void Dungeon_ToggleBarrierAttr() {
   for (int i = 0xfff; i >= 0; i--) {
     if ((dung_bg2_attr_table[i] & ~1) == 0x66)
       dung_bg2_attr_table[i] ^= 1;
@@ -4615,34 +4615,34 @@ void Dungeon_FlipCrystalPegAttribute() {
 }
 
 
-void Dungeon_LoadAttributeTable() {
+void Dungeon_LoadAttrTable() {
   dung_draw_width_indicator = dung_draw_height_indicator = 0;
-  Dungeon_LoadBasicAttribute_full(0x1000);
-  Dungeon_LoadObjectAttribute();
-  Dungeon_LoadDoorAttribute();
+  Dungeon_LoadBasicAttr_full(0x1000);
+  Dungeon_LoadObjAttr();
+  Dungeon_LoadDoorAttr();
   if (orange_blue_barrier_state)
-    Dungeon_FlipCrystalPegAttribute();
+    Dungeon_ToggleBarrierAttr();
   overworld_map_state = 0;
 }
 
-void Dungeon_LoadAttribute_Selectable() {
+void Dungeon_LoadAttrIncremental() {
   switch (overworld_map_state) {
-  case 0:  // Dungeon_LoadBasicAttribute
+  case 0:  // Dungeon_LoadBasicAttr
     overworld_map_state = 1;
     dung_draw_width_indicator = dung_draw_height_indicator = 0;
   case 1:
-    Dungeon_LoadBasicAttribute_full(0x40);
+    Dungeon_LoadBasicAttr_full(0x40);
     break;
   case 2:
-    Dungeon_LoadObjectAttribute();
+    Dungeon_LoadObjAttr();
     break;
   case 3:
-    Dungeon_LoadDoorAttribute();
+    Dungeon_LoadDoorAttr();
     break;
   case 4:
     overworld_map_state = 5;
     if (orange_blue_barrier_state)
-      Dungeon_FlipCrystalPegAttribute();
+      Dungeon_ToggleBarrierAttr();
     break;
   case 5:
     break;
@@ -4660,7 +4660,7 @@ void Dungeon_ExtinguishTorch() {
   dung_torch_data[(dung_object_pos_in_objdata[y >> 1] & 0xff) >> 1] = r8;
 
   r8 &= 0x3fff;
-  RoomDraw_AdjustTorchLightingChange(r8, 0xec2, r8);
+  Dungeon_PrepOverlayDma(r8, 0xec2, r8);
   nmi_copy_packets_flag = 1;
 
   if (dung_want_lights_out && dung_num_lit_torches != 0 && --dung_num_lit_torches < 3) {
@@ -4675,24 +4675,24 @@ void Dungeon_ExtinguishTorch() {
   byte_7E0333 = 0;
 }
 
-void Ganon_ExtinguishTorch_adjust_translucency() {
+void Dungeon_ExtinguishFirstTorch() {
   Palette_AssertTranslucencySwap();
   byte_7E0333 = 0xc0;
   Dungeon_ExtinguishTorch();
 }
 
-void Ganon_ExtinguishTorch() {
+void Dungeon_ExtinguishSecondTorch() {
   byte_7E0333 = 193;
   Dungeon_ExtinguishTorch();
 }
 
 
 void Dungeon_LoadToggleDoorAttr_OtherEntry(int door) {
-  Dungeon_LoadSingleDoorAttribute(door);
-  Dungeon_LoadSingleDoorTileAttribute();
+  Dungeon_LoadSingleDoorAttr(door);
+  Dungeon_LoadDoorAttrInner();
 }
 
-void Dungeon_ProcessTorchesAndDoors() {
+void Dungeon_ProcessTorchAndDoorInteractives() {
   static const int16 kDungLinkOffs1X[] = { 0, 0, -1, 17 };
   static const int16 kDungLinkOffs1Y[] = { 7, 24, 8, 8 };
   static const uint16 kDungLinkOffs1Pos[] = { 0x2, 0x2, 0x80, 0x80 };
@@ -4725,7 +4725,7 @@ void Dungeon_ProcessTorchesAndDoors() {
         if (link_is_running && link_dash_ctr < 63) {
           dung_cur_door_pos = pos;
 
-          int db = AncillaAdd_DoorDebris();
+          int db = AddDoorDebris();
           if (db >= 0) {
             door_debris_direction[db] = dung_door_direction[k] & 3;
             door_debris_x[db] = dung_loade_bgoffs_h_copy + (dung_door_tilemap_address[k] & 0x7e) * 4;
@@ -4733,7 +4733,7 @@ void Dungeon_ProcessTorchesAndDoors() {
           }
           sound_effect_2 = 27;
           submodule_index = 9;
-          Sprite_RepelDash();
+          Player_RepelDashAttack();
           return;
         }
       } else if (door_type == kDoorType_1E) {
@@ -4801,7 +4801,7 @@ not_openable:
     WriteAttr2(pos + XY(0, 1), 0x202);
     static const uint16 kSrcTiles1[] = { 0x7ea, 0x80a, 0x80a, 0x82a };
     addr = (pos - XY(1, 1)) * 2;
-    RoomDraw_Object_Nx4(4, SrcPtr(kSrcTiles1[attr & 3]), &dung_bg2[addr >> 1]);
+    Object_Draw_Nx4(4, SrcPtr(kSrcTiles1[attr & 3]), &dung_bg2[addr >> 1]);
   } else {
     dung_cur_door_pos = pos;
     int k = attr & 0xf;
@@ -4816,18 +4816,18 @@ not_openable:
     door_open_closed_counter = 0;
     dung_cur_door_idx = k * 2;
     dung_which_key_x2 = k * 2;
-    RoomDraw_Object_Nx4(4, SrcPtr(kDoorTypeSrcData[0x56 / 2]), &dung_bg2[addr >> 1]);
+    Object_Draw_Nx4(4, SrcPtr(kDoorTypeSrcData[0x56 / 2]), &dung_bg2[addr >> 1]);
     Dungeon_LoadToggleDoorAttr_OtherEntry(k);
   }
 
   Dungeon_PrepOverlayDma_nextPrep(0, addr);
-  sound_effect_1 = 30 | CalculateSfxPan_Arbitrary((addr & 0x7f) * 2);
+  sound_effect_1 = 30 | LightTorch_GetSfxPan((addr & 0x7f) * 2);
   nmi_copy_packets_flag = 1;
 }
 
-void Bomb_CheckForDestructibles(uint16 x, uint16 y, uint8 r14) {
+void Bomb_CheckForVulnerableTileObjects(uint16 x, uint16 y, uint8 r14) {
   if (main_module_index != 7) {
-    Overworld_BombTiles32x32(x, y);
+    Overworld_ApplyBombToTiles(x, y);
     return;
   }
   int k = ((y & 0x1f8) << 3 | (x & 0x1f8) >> 3) - 0x82;
@@ -4840,7 +4840,7 @@ handle_62:
         dung_savegame_state_bits |= 0x1000;
       Point16U pt;
       printf("Wtf is R6\n");
-      ThievesAttic_DrawLightenedHole(0, 0, &pt);
+      Dungeon_CustomIndexedRevealCoveredTiles(0, 0, &pt);
       sound_effect_2 = 0x1b;
       return;
     }
@@ -4872,9 +4872,9 @@ handle_f0:
 
 }
 
-void LayerEffect_Nothing() {
+void Effect_DoNothing() {
 }
-void LayerEffect_Scroll() {
+void Effect_MovingFloor() {
   if (dung_savegame_state_bits & 0x8000) {
     dung_hdr_collision_2 = 0;
     return;
@@ -4898,19 +4898,19 @@ void LayerEffect_Scroll() {
     BG1VOFS_copy2 = BG2VOFS_copy2 + dung_floor_y_offs;
   }
 }
-void LayerEffect_WaterRapids() {
+void Effect_MovingWater() {
   int t;
   dung_some_subpixel[1] = t = dung_some_subpixel[1] + 0x80;
   dung_floor_x_vel = -(t >> 8);
 }
 
-void LayerEffect_Trinexx() {
+void Effect_MovingFloor2() {
   dung_floor_x_offs += dung_floor_x_vel;
   dung_floor_y_offs += dung_floor_y_vel;
   dung_floor_x_vel = 0;
   dung_floor_y_vel = 0;
 }
-void LayerEffect_Agahnim2() {
+void Effect_RedFlashes() {
   int j = frame_counter & 0x7f;
   if (j == 3 || j == 36) {
     main_palette_buffer[0x6d] = 0x1d59;
@@ -4925,7 +4925,7 @@ void LayerEffect_Agahnim2() {
   }
   TS_copy = 2;
 }
-void LayerEffect_InvisibleFloor() {
+void Effect_TorchHiddenTiles() {
   int count = 0;
   for (int i = 0; i < 16; i++)
     count += (dung_object_tilemap_pos[i] & 0x8000) != 0;
@@ -4941,7 +4941,7 @@ void LayerEffect_InvisibleFloor() {
   }
   TS_copy = 2;
 }
-void LayerEffect_Ganon() {
+void Effect_TorchGanonRoom() {
   int count = 0;
   for (int i = 0; i < 16; i++)
     count += (dung_object_tilemap_pos[i] & 0x8000) != 0;
@@ -4960,24 +4960,24 @@ void LayerEffect_Ganon() {
 }
 
 static PlayerHandlerFunc *const kDungeon_Effect_Handler[28] = {
-  &LayerEffect_Nothing,
-  &LayerEffect_Nothing,
-  &LayerEffect_Scroll,
-  &LayerEffect_WaterRapids,
-  &LayerEffect_Trinexx,
-  &LayerEffect_Agahnim2,
-  &LayerEffect_InvisibleFloor,
-  &LayerEffect_Ganon,
+  &Effect_DoNothing,
+  &Effect_DoNothing,
+  &Effect_MovingFloor,
+  &Effect_MovingWater,
+  &Effect_MovingFloor2,
+  &Effect_RedFlashes,
+  &Effect_TorchHiddenTiles,
+  &Effect_TorchGanonRoom,
 };
 
 
-void Dungeon_HandleLayerEffect() {
+void Dungeon_Effect_Handler() {
   kDungeon_Effect_Handler[dung_hdr_collision_2]();
 }
 
 static const int16 kPushBlockMoveDistances[] = { -0x100, 0x100, -0x4, 0x4 };
 
-void PushBlock_ApplyVelocity(uint8 i) {
+void ChangableDungeonObj_Func2C(uint8 i) {
   static const uint8 kPushedBlockDirMask[] = { 0x8, 0x4, 0x2, 0x1 };
   uint8 m = kPushedBlockDirMask[(uint8)pushedblock_facing[i] >> 1];
   uint32 o;
@@ -5022,7 +5022,7 @@ void PushBlock_ApplyVelocity(uint8 i) {
   }
 }
 
-void PushBlock_HandleCollision(uint8 i, uint16 x, uint16 y) {
+void ChangableDungeonObj_Func2B(uint8 i, uint16 x, uint16 y) {
   static const uint8 kPushBlock_A[] = { 0, 0, 8, 8 };
   static const uint8 kPushBlock_B[] = { 15, 15, 23, 23 };
   static const uint8 kPushBlock_D[] = { 15, 15, 15, 15 };
@@ -5062,22 +5062,22 @@ void PushBlock_HandleCollision(uint8 i, uint16 x, uint16 y) {
       (dir & 2 ? link_x_vel : link_y_vel) -= r8 - r10;
     }
   }
-  HandleIndoorCameraAndDoors();
+  Player_CheckDoorwayQuadrantMovement();
 }
 
-void PushBlock_Slide(uint8 j) {
+void ChangableDungeonObj_Func2(uint8 j) {
   if (submodule_index)
     return;
   int i = (index_of_changable_dungeon_objs[1] - 1) * 2 == j;
   pushedblocks_maybe_timeout = 9;
   pushedblocks_some_index = 0;
-  PushBlock_ApplyVelocity(i);
+  ChangableDungeonObj_Func2C(i);
   int y = (uint8)pushedblocks_y_lo[i] | (uint8)pushedblocks_y_hi[i] << 8;
   int x = (uint8)pushedblocks_x_lo[i] | (uint8)pushedblocks_x_hi[i] << 8;
-  PushBlock_HandleCollision(i, x, y);
+  ChangableDungeonObj_Func2B(i, x, y);
 }
 
-void PushBlock_CheckForPit(uint8 y) {
+void PushBlock_StoppedMoving(uint8 y) {
   y >>= 1;
   if (!(dung_object_tilemap_pos[y] & 0x4000))
     dung_flag_movable_block_was_pushed ^= 1;
@@ -5104,7 +5104,7 @@ void PushBlock_CheckForPit(uint8 y) {
   Dungeon_Store2x2(p, 0x922, 0x932, 0x923, 0x933, 0x27);
 }
 
-void PushBlock_HandleFalling(uint8 y) {
+void PushBlock_Handler_Step4(uint8 y) {
   y >>= 1;
 
   if (!sign8(--pushedblocks_maybe_timeout))
@@ -5126,25 +5126,25 @@ void Dungeon_PushBlock_Handler() {
     int k = dung_misc_objs_index >> 1;
     int st = dung_replacement_tile_state[k];
     if (st == 1) {
-      RoomDraw_16x16Single(k * 2);
+      Dungeon_EraseInteractive2x2(k * 2);
       dung_object_tilemap_pos[k] += kPushBlockMoveDistances[push_block_direction >> 1];
       dung_replacement_tile_state[k] = 2;
     } else if (st == 2) {
-      PushBlock_Slide(k * 2);
+      ChangableDungeonObj_Func2(k * 2);
 
       if (dung_replacement_tile_state[dung_misc_objs_index >> 1] == 3) {
-        PushBlock_CheckForPit(dung_misc_objs_index);
+        PushBlock_StoppedMoving(dung_misc_objs_index);
         dung_replacement_tile_state[dung_misc_objs_index >> 1]++;
       }
     } else if (st == 4) {
-      PushBlock_HandleFalling(k * 2);
+      PushBlock_Handler_Step4(k * 2);
     }
 
     dung_misc_objs_index += 2;
   }
 }
 
-void Dungeon_HandleCamera() {
+void Dungeon_HandleScreenScrolling() {
   if (link_y_vel) {
     int z = (allow_scroll_z && link_z_coord != 0xffff) ? link_z_coord : 0;
     int y = ((link_y_coord - z) & 0x1ff) + 12;
@@ -5219,7 +5219,7 @@ void UsedForStraightInterRoomStaircase() {
   link_timer_push_get_tired = 28;
   countdown_timer_for_staircases = 32;
   link_disable_sprite_damage = 1;
-  Ancilla_Sfx2_Near(which_staircase_index & 4 ? 0x18 : 0x16);
+  Player_DoSfx2(which_staircase_index & 4 ? 0x18 : 0x16);
 
   tiledetect_which_y_pos[1] = link_x_coord + (which_staircase_index & 4 ? -15 : 16);
   tiledetect_which_y_pos[0] = link_y_coord;
@@ -5251,7 +5251,7 @@ void Dungeon_DetectStaircase() {
   which_staircase_index = attr2;
   which_staircase_index_PADDING = pos >> 8; // residual
   dungeon_room_index_prev = dungeon_room_index;
-  Dungeon_FlagRoomData_Quadrants();
+  Dungeon_SaveRoomQuadrantData();
 
   if (at == 0x38 || at == 0x39) {
     staircase_var1 = 0x20;
@@ -5283,44 +5283,44 @@ void Dungeon_DetectStaircase() {
   }
 }
 
-void RoomTag_QuadrantTrigger(int k);
+void Dung_TagRoutine_0x31(int k);
 
 void Dung_TagRoutine_0x00(int k) {
 }
-void RoomTag_NorthWestTrigger(int k) {
+void Dung_TagRoutine_0x29(int k) {
   if (!(link_x_coord & 0x100) && !(link_y_coord & 0x100))
-    RoomTag_QuadrantTrigger(k);
+    Dung_TagRoutine_0x31(k);
 }
 void Dung_TagRoutine_0x2A(int k) {
   if ((link_x_coord & 0x100) && !(link_y_coord & 0x100))
-    RoomTag_QuadrantTrigger(k);
+    Dung_TagRoutine_0x31(k);
 }
 void Dung_TagRoutine_0x2B(int k) {
   if (!(link_x_coord & 0x100) && (link_y_coord & 0x100))
-    RoomTag_QuadrantTrigger(k);
+    Dung_TagRoutine_0x31(k);
 }
 void Dung_TagRoutine_0x2C(int k) {
   if ((link_x_coord & 0x100) && (link_y_coord & 0x100))
-    RoomTag_QuadrantTrigger(k);
+    Dung_TagRoutine_0x31(k);
 }
 void Dung_TagRoutine_0x2D(int k) {
   if (!(link_x_coord & 0x100))
-    RoomTag_QuadrantTrigger(k);
+    Dung_TagRoutine_0x31(k);
 }
 void Dung_TagRoutine_0x2E(int k) {
   if (link_x_coord & 0x100)
-    RoomTag_QuadrantTrigger(k);
+    Dung_TagRoutine_0x31(k);
 }
 void Dung_TagRoutine_0x2F(int k) {
   if (!(link_y_coord & 0x100))
-    RoomTag_QuadrantTrigger(k);
+    Dung_TagRoutine_0x31(k);
 }
 void Dung_TagRoutine_0x30(int k) {
   if (link_y_coord & 0x100)
-    RoomTag_QuadrantTrigger(k);
+    Dung_TagRoutine_0x31(k);
 }
 
-void RoomTag_OperateChestReveal(int k) {
+void Dung_TagRoutine_Helper(int k) {
   dung_hdr_tag[k] = 0;
   vram_upload_offset = 0;
   WORD(overworld_map_state) = 0;
@@ -5341,10 +5341,10 @@ void RoomTag_OperateChestReveal(int k) {
     uint16 yy = WORD(overworld_map_state);
 
     uint16 *dst = &vram_upload_data[vram_upload_offset >> 1];
-    dst[0] = RoomTag_BuildChestStripes(XY(0, 0) * 2, yy);
-    dst[3] = RoomTag_BuildChestStripes(XY(0, 1) * 2, yy);
-    dst[6] = RoomTag_BuildChestStripes(XY(1, 0) * 2, yy);
-    dst[9] = RoomTag_BuildChestStripes(XY(1, 1) * 2, yy);
+    dst[0] = Dungeon_GetKeyedObjectRelativeVramAddr(XY(0, 0) * 2, yy);
+    dst[3] = Dungeon_GetKeyedObjectRelativeVramAddr(XY(0, 1) * 2, yy);
+    dst[6] = Dungeon_GetKeyedObjectRelativeVramAddr(XY(1, 0) * 2, yy);
+    dst[9] = Dungeon_GetKeyedObjectRelativeVramAddr(XY(1, 1) * 2, yy);
 
     dst[2] = src[0];
     dst[5] = src[1];
@@ -5376,12 +5376,12 @@ void Dung_TagRoutine_TrapdoorsUp() {
   }
 }
 
-void RoomTag_QuadrantTrigger(int k) {
+void Dung_TagRoutine_0x31(int k) {
   uint8 tag = dung_hdr_tag[k];
   if (tag >= 0xb) {
     if (tag >= 0x29) {
-      if (Sprite_CheckIfScreenIsClear())
-        RoomTag_OperateChestReveal(k);
+      if (Sprite_VerifyAllOnScreenDefeated())
+        Dung_TagRoutine_Helper(k);
     } else {
       uint8 a = (dung_flag_movable_block_was_pushed ^ 1);
       if (a != BYTE(dung_flag_trapdoors_down)) {
@@ -5393,21 +5393,21 @@ void RoomTag_QuadrantTrigger(int k) {
       }
     }
   } else {
-    if (Sprite_CheckIfScreenIsClear())
+    if (Sprite_VerifyAllOnScreenDefeated())
       Dung_TagRoutine_TrapdoorsUp();
   }
 }
 
-void RoomTag_RoomTrigger(int k) {
+void Dung_TagRoutine_0x32(int k) {
   if (dung_hdr_tag[k] == 10) {
-    if (Sprite_CheckIfRoomIsClear())
+    if (Sprite_VerifyAllOnScreenDefeatedB())
       Dung_TagRoutine_TrapdoorsUp();
   } else {
-    if (Sprite_CheckIfRoomIsClear())
-      RoomTag_OperateChestReveal(k);
+    if (Sprite_VerifyAllOnScreenDefeatedB())
+      Dung_TagRoutine_Helper(k);
   }
 }
-void RoomTag_RoomTrigger_BlockDoor(int k) {
+void Dung_TagRoutine_0x14(int k) {
   if (dung_flag_statechange_waterpuzzle && dung_flag_trapdoors_down) {
     dung_flag_trapdoors_down = 0;
     dung_cur_door_pos = 0;
@@ -5415,7 +5415,7 @@ void RoomTag_RoomTrigger_BlockDoor(int k) {
     submodule_index = 5;
   }
 }
-void RoomTag_SwitchTrigger_HoldDoor(int k) {
+void Dung_TagRoutine_0x16(int k) {
   uint16 i = -2, v;
   uint8 tmp;
   for (;;) {
@@ -5429,7 +5429,7 @@ void RoomTag_SwitchTrigger_HoldDoor(int k) {
       break;
     }
   }
-  v = !dung_flag_somaria_block_switch && !dung_flag_statechange_waterpuzzle && !RoomTag_CheckForPressedSwitch(&tmp);
+  v = !dung_flag_somaria_block_switch && !dung_flag_statechange_waterpuzzle && !Dung_CheckStarTileSwitch(&tmp);
 shortcut:
   if (v != dung_flag_trapdoors_down) {
     dung_flag_trapdoors_down = v;
@@ -5441,18 +5441,18 @@ shortcut:
   }
 }
 
-int RoomTag_GetTilemapCoords() {
+int Dung_DoorSwitch_GetPos() {
   return ((link_x_coord - 1) & 0x1f8) >> 3 | ((link_y_coord + 14) & 0x1f8) << 3 | (link_is_on_lower_level ? 0x1000 : 0);
 
 }
 
 
-bool RoomTag_MaybeCheckShutters(uint8 *attr_out) {
+bool Dung_DoorSwitch_Func1(uint8 *attr_out) {
   int p, t;
   word_7E04B6 = 0;
   if (flag_is_link_immobilized || link_auxiliary_state)
     return false;
-  p = RoomTag_GetTilemapCoords();
+  p = Dung_DoorSwitch_GetPos();
   t = WORD(dung_bg2_attr_table[p]);
   if (t == 0x2323 || t == 0x2424)
     goto done;
@@ -5474,12 +5474,12 @@ done:
   return true;
 }
 
-bool RoomTag_CheckForPressedSwitch(uint8 *y_out) {
+bool Dung_CheckStarTileSwitch(uint8 *y_out) {
   int p, t;
   word_7E04B6 = 0;
   if (flag_is_link_immobilized || link_auxiliary_state)
     return false;
-  p = RoomTag_GetTilemapCoords();
+  p = Dung_DoorSwitch_GetPos();
   t = WORD(dung_bg2_attr_table[p]);
   if (t == 0x2323 || t == 0x3a3a || t == 0x3b3b)
     goto done;
@@ -5501,7 +5501,7 @@ done:
   return true;
 }
 
-void PushPressurePlate(uint8 attr) {
+void Dung_DoorSwitch_Func2(uint8 attr) {
   submodule_index = 5;
   if (attr == 0x23 || !word_7E04B6)
     return;
@@ -5511,35 +5511,35 @@ void PushPressurePlate(uint8 attr) {
   link_y_coord += 2;
   if ((WORD(dung_bg2_attr_table[word_7E04B6]) & 0xfe00) != 0x2400)
     word_7E04B6++;
-  Dungeon_UpdateTileMapWithCommonTile((word_7E04B6 & 0x3f) << 3, (word_7E04B6 >> 3) & 0x1f8, 0x10);
+  Dungeon_SpriteInducedTilemapUpdate((word_7E04B6 & 0x3f) << 3, (word_7E04B6 >> 3) & 0x1f8, 0x10);
 }
 
-void Module07_17_PressurePlate() {
+void Dungeon_Submodule_17() {
   if (--subsubmodule_index)
     return;
   link_y_coord -= 2;
-  Dungeon_UpdateTileMapWithCommonTile((word_7E04B6 & 0x3f) << 3, (word_7E04B6 >> 3) & 0x1f8, 0xe);
+  Dungeon_SpriteInducedTilemapUpdate((word_7E04B6 & 0x3f) << 3, (word_7E04B6 >> 3) & 0x1f8, 0xe);
   submodule_index = saved_module_for_menu;
 }
 
 
-void RoomTag_SwitchTrigger_ToggleDoor(int k) {
+void Dung_TagRoutine_0x17(int k) {
   uint8 attr;
   if (!dung_door_switch_triggered) {
-    if (RoomTag_MaybeCheckShutters(&attr)) {
+    if (Dung_DoorSwitch_Func1(&attr)) {
       dung_cur_door_pos = 0;
       door_animation_step_indicator = 0;
       sound_effect_2 = 0x25;
-      PushPressurePlate(attr);
+      Dung_DoorSwitch_Func2(attr);
       dung_flag_trapdoors_down ^= 1;
       dung_door_switch_triggered = 1;
     }
   } else {
-    if (!RoomTag_MaybeCheckShutters(&attr))
+    if (!Dung_DoorSwitch_Func1(&attr))
       dung_door_switch_triggered = 0;
   }
 }
-void RoomTag_WaterOff(int k) {
+void Dung_TagRoutine_0x18(int k) {
   if (dung_flag_statechange_waterpuzzle) {
     W12SEL_copy = 3;
     W34SEL_copy = 0;
@@ -5547,7 +5547,7 @@ void RoomTag_WaterOff(int k) {
     TMW_copy = 22;
     TSW_copy = 1;
     turn_on_off_water_ctr = 1;
-    AdjustWaterHDMAWindow();
+    Hdma_ConfigureWaterTable();
     submodule_index = 11;
     palette_filter_countdown = 0;
     darkening_or_lightening_screen = 0;
@@ -5565,7 +5565,7 @@ void RoomTag_WaterOff(int k) {
   }
 }
 
-void RoomTag_WaterOn(int k) {
+void Dung_TagRoutine_0x19(int k) {
   if (dung_flag_statechange_waterpuzzle) {
     sound_effect_2 = 0x1b;
     sound_effect_1 = 0x2f;
@@ -5578,7 +5578,7 @@ void RoomTag_WaterOn(int k) {
     dung_cur_quadrant_upload = 0;
   }
 }
-void RoomTag_WaterGate(int k) {
+void Dung_TagRoutine_0x1A_Watergate(int k) {
   if (dung_savegame_state_bits & 0x800 || !dung_flag_statechange_waterpuzzle)
     return;
   submodule_index = 13;
@@ -5598,7 +5598,7 @@ void RoomTag_WaterGate(int k) {
   save_ow_event_info[0x3b] |= 32;
   save_ow_event_info[0x7b] |= 32;
   save_dung_info[0x28] |= 0x100;
-  RoomTag_OperateWaterFlooring();
+  Object_WatergateChannelWater();
   water_hdma_var0 = ((watergate_pos & 0x7e) << 2) + (dung_draw_width_indicator * 16 + dung_loade_bgoffs_h_copy + 40);
   word_7E0678 = spotlight_y_upper = (watergate_pos & 0x1f80) >> 4;
   water_hdma_var1 = word_7E0678 + dung_loade_bgoffs_v_copy;
@@ -5610,7 +5610,7 @@ void Dung_TagRoutine_0x1B(int k) {
   // empty
 }
 
-void RoomTag_MovingWallTorchesCheck(int k) {
+void Dung_TagRoutine_0x1F(int k) {
   if (!dung_flag_statechange_waterpuzzle) {
     int count = 0;
     for (int i = 0; i < 16; i++)
@@ -5626,7 +5626,7 @@ void RoomTag_MovingWallTorchesCheck(int k) {
   flag_unk1 = 1;
 }
 
-void RoomTag_MovingWallShakeItUp(int k) {
+void MovingWall_Func1(int k) {
   int i = frame_counter & 1;
   bg1_x_offset = i ? -1 : 1;
   bg1_y_offset = -bg1_x_offset;
@@ -5634,13 +5634,13 @@ void RoomTag_MovingWallShakeItUp(int k) {
     bg1_x_offset = bg1_y_offset = 0;
 }
 
-int MovingWall_MoveALittle() {
+int MovingWall_Func2() {
   int t = dung_some_subpixel[1] + 0x22;
   dung_some_subpixel[1] = t;
   return t >> 8;
 }
 
-int RoomTag_AdvanceGiganticWall(int k) {
+int MovingWall_Func3(int k) {
   int i = moving_wall_var2;
   if (dung_hdr_tag[k] < 0x20) {
     dung_hdr_collision = 0;
@@ -5650,23 +5650,23 @@ int RoomTag_AdvanceGiganticWall(int k) {
   return i;
 }
 
-void RoomTag_MovingWall_East(int k) {
+void Dung_TagRoutine_0x1C(int k) {
   static const int16 kMovingWall_Tab1[8] = { -63, -127, -191, -255, -71, -135, -199, -263 };
 
   if (!dung_floor_move_flags) {
-    RoomTag_MovingWallTorchesCheck(k);
+    Dung_TagRoutine_0x1F(k);
     dung_floor_x_vel = 0;
   } else {
     flag_unk1 = 1;
-    RoomTag_MovingWallShakeItUp(k);
-    dung_floor_x_vel = MovingWall_MoveALittle();
+    MovingWall_Func1(k);
+    dung_floor_x_vel = MovingWall_Func2();
   }
   dung_floor_x_offs -= dung_floor_x_vel;
   BG1HOFS_copy2 = BG2HOFS_copy2 + dung_floor_x_offs;
 
   if (dung_floor_x_vel) {
     if (dung_floor_x_offs < (uint16)kMovingWall_Tab1[moving_wall_var2 >> 1] &&
-        dung_floor_x_offs < (uint16)kMovingWall_Tab1[RoomTag_AdvanceGiganticWall(k) >> 1]) {
+        dung_floor_x_offs < (uint16)kMovingWall_Tab1[MovingWall_Func3(k) >> 1]) {
       sound_effect_2 = 0x1b;
       sound_effect_ambient = 5;
       dung_hdr_tag[k] = 0;
@@ -5686,18 +5686,18 @@ void Dung_TagRoutine_0x1D_SecretWallLeft(int k) {
   static const uint16 kMovingWall_Tab0[8] = { 0x42, 0x82, 0xc2, 0x102, 0x4a, 0x8a, 0xca, 0x10a };
 
   if (!dung_floor_move_flags) {
-    RoomTag_MovingWallTorchesCheck(k);
+    Dung_TagRoutine_0x1F(k);
     dung_floor_x_vel = 0;
   } else {
     flag_unk1 = 1;
-    RoomTag_MovingWallShakeItUp(k);
-    dung_floor_x_vel = MovingWall_MoveALittle();
+    MovingWall_Func1(k);
+    dung_floor_x_vel = MovingWall_Func2();
   }
   dung_floor_x_offs += dung_floor_x_vel;
   BG1HOFS_copy2 = BG2HOFS_copy2 + dung_floor_x_offs;
   if (dung_floor_x_vel) {
     if (dung_floor_x_offs >= kMovingWall_Tab0[moving_wall_var2 >> 1] &&
-        dung_floor_x_offs >= kMovingWall_Tab0[RoomTag_AdvanceGiganticWall(k) >> 1]) {
+        dung_floor_x_offs >= kMovingWall_Tab0[MovingWall_Func3(k) >> 1]) {
       sound_effect_2 = 0x1b;
       sound_effect_ambient = 5;
       dung_hdr_tag[k] = 0;
@@ -5717,7 +5717,7 @@ void Dung_TagRoutine_Func2(uint8 av) {
   if (!dung_overlay_to_load)
     dung_overlay_to_load = av;
 
-  if (RoomTag_CheckForPressedSwitch(&yv) && (av += yv) != dung_overlay_to_load) {
+  if (Dung_CheckStarTileSwitch(&yv) && (av += yv) != dung_overlay_to_load) {
     dung_overlay_to_load = av;
     dung_load_ptr_offs = 0;
     subsubmodule_index = 0;
@@ -5727,7 +5727,7 @@ void Dung_TagRoutine_Func2(uint8 av) {
     Dungeon_RestoreStarTileChr();
   }
 }
-void RoomTag_Holes0(int k) {
+void Dung_TagRoutine_0x21(int k) {
   Dung_TagRoutine_Func2(1);
 }
 
@@ -5747,17 +5747,17 @@ void Dung_TagRoutine_0x3B(int k) {
   Dung_TagRoutine_0x22_0x3B(k, 0x12);
 }
 
-void RoomTag_ChestHoles0(int k) {
+void Dung_TagRoutine_0x22(int k) {
   Dung_TagRoutine_0x22_0x3B(k, 0x0);
 }
 
 void Dung_TagRoutine_0x23(int k) {
   Dung_TagRoutine_Func2(3);
 }
-void RoomTag_Holes2(int k) {
+void Dung_TagRoutine_0x24(int k) {
   uint8 yv;
 
-  if (!RoomTag_CheckForPressedSwitch(&yv))
+  if (!Dung_CheckStarTileSwitch(&yv))
     return;
 
   dung_hdr_tag[k] = 0;
@@ -5769,19 +5769,19 @@ void RoomTag_Holes2(int k) {
 }
 
 // Used for bosses
-void RoomTag_GetHeartForPrize(int k) {
+void Dung_TagRoutine_0x25(int k) {
   static const uint8 kBossFinishedFallingItem[13] = { 0, 0, 1, 2, 0, 6, 6, 6, 6, 6, 3, 6, 6 };
   if (!(dung_savegame_state_bits & 0x8000))
     return;
   int t = savegame_is_darkworld ? link_has_crystals : link_which_pendants;
   if (!(t & kDungeonCrystalPendantBit[BYTE(cur_palace_index_x2) >> 1])) {
     byte_7E04C2 = 128;
-    Ancilla_SpawnFallingPrize(kBossFinishedFallingItem[BYTE(cur_palace_index_x2) >> 1]);
+    Sprite_SpawnFallingItem(kBossFinishedFallingItem[BYTE(cur_palace_index_x2) >> 1]);
   }
   dung_hdr_tag[k] = 0;
 }
 // Used for bosses
-void RoomTag_PrizeTriggerDoorDoor(int k) {
+void Dung_TagRoutine_0x15(int k) {
   int t = savegame_is_darkworld ? link_has_crystals : link_which_pendants;
   if (t & kDungeonCrystalPendantBit[BYTE(cur_palace_index_x2) >> 1]) {
     dung_flag_trapdoors_down = 0;
@@ -5793,19 +5793,19 @@ void RoomTag_PrizeTriggerDoorDoor(int k) {
 }
 
 
-void RoomTag_KillRoomBlock(int k) {
+void Dung_TagRoutine_0x26(int k) {
   if (link_x_coord & 0x100 && link_y_coord & 0x100) {
-    if (Sprite_CheckIfScreenIsClear()) {
+    if (Sprite_VerifyAllOnScreenDefeated()) {
       sound_effect_2 = 0x1b;
       dung_hdr_tag[k] = 0;
     }
   }
 }
 
-void RoomTag_TriggerChest(int k) {
+void Dung_TagRoutine_0x27(int k) {
   uint8 attr;
-  if (!countdown_for_blink && RoomTag_MaybeCheckShutters(&attr))
-    RoomTag_OperateChestReveal(k);
+  if (!countdown_for_blink && Dung_DoorSwitch_Func1(&attr))
+    Dung_TagRoutine_Helper(k);
 }
 
 void Dung_TagRoutine_BlastWallStuff(int k) {
@@ -5831,23 +5831,23 @@ void Dung_TagRoutine_BlastWallStuff(int k) {
   messaging_buf[0x18 / 2] = ((j & 0x1f80) >> 4) + dung_loade_bgoffs_v_copy;
   sound_effect_2 = 27;
   BYTE(dung_unk_blast_walls_2) = 1;
-  AncillaAdd_BlastWall();
+  AddBlastWall();
 }
 
-void RoomTag_Switch_ExplodingWall(int k) {
+void Dung_TagRoutine_0x20(int k) {
   uint8 yv;
-  if (!RoomTag_MaybeCheckShutters(&yv))
+  if (!Dung_DoorSwitch_Func1(&yv))
     return;
 
   Dung_TagRoutine_BlastWallStuff(k);
 }
 
-void RoomTag_PullSwitchExplodingWall(int k) {
+void Dung_TagRoutine_0x28(int k) {
   if (!dung_flag_statechange_waterpuzzle)
     return;
   Dung_TagRoutine_BlastWallStuff(k);
 }
-void RoomTag_TorchPuzzleDoor(int k) {
+void Dung_TagRoutine_0x33(int k) {
   int j = 0;
   for (int i = 0; i < 16; i++)
     if (dung_object_tilemap_pos[i] & 0x8000)
@@ -5873,11 +5873,11 @@ void Dung_TagRoutine_0x36(int k) {
 void Dung_TagRoutine_0x37(int k) {
   Dung_TagRoutine_Func2(12);
 }
-void RoomTag_Agahnim(int k) {
+void Dung_TagRoutine_0x38(int k) {
   if (!(save_ow_event_info[0x5b] & 0x20) && dung_savegame_state_bits & 0x8000) {
     Palette_RevertTranslucencySwap();
     dung_hdr_tag[0] = 0;
-    PrepareDungeonExitFromBossFight();
+    PrepDungeonBossExit();
   }
 }
 void Dung_TagRoutine_0x39(int k) {
@@ -5886,11 +5886,11 @@ void Dung_TagRoutine_0x39(int k) {
 void Dung_TagRoutine_0x3A(int k) {
   Dung_TagRoutine_Func2(16);
 }
-void RoomTag_PushBlockForChest(int k) {
+void Dung_TagRoutine_0x3C(int k) {
   if (!nmi_load_bg_from_vram && dung_flag_movable_block_was_pushed)
-    RoomTag_OperateChestReveal(k);
+    Dung_TagRoutine_Helper(k);
 }
-void RoomTag_GanonDoor(int tagidx) {
+void Dung_TagRoutine_0x3D(int tagidx) {
   for (int k = 15; k >= 0; k--) {
     if (sprite_state[k] == 4 || !(sprite_flags4[k] & 64) && sprite_state[k])
       return;
@@ -5906,23 +5906,23 @@ void RoomTag_GanonDoor(int tagidx) {
     R16 = 0x364;
   }
 }
-void RoomTag_TorchPuzzleChest(int k) {
+void Dung_TagRoutine_0x3E(int k) {
   int j = 0;
   for (int i = 0; i < 16; i++)
     if (dung_object_tilemap_pos[i] & 0x8000)
       j++;
   if (j >= 4)
-    RoomTag_OperateChestReveal(k);
+    Dung_TagRoutine_Helper(k);
 }
-void RoomTag_RekillableBoss(int k) {
-  if (Sprite_CheckIfRoomIsClear()) {
+void Dung_TagRoutine_0x3F(int k) {
+  if (Sprite_VerifyAllOnScreenDefeatedB()) {
     flag_block_link_menu = 0;
     dung_hdr_tag[1] = 0;
   }
 }
 static HandlerFuncK *const kDungTagroutines[] = {
   &Dung_TagRoutine_0x00,
-  &RoomTag_NorthWestTrigger,
+  &Dung_TagRoutine_0x29,
   &Dung_TagRoutine_0x2A,
   &Dung_TagRoutine_0x2B,
   &Dung_TagRoutine_0x2C,
@@ -5930,9 +5930,9 @@ static HandlerFuncK *const kDungTagroutines[] = {
   &Dung_TagRoutine_0x2E,
   &Dung_TagRoutine_0x2F,
   &Dung_TagRoutine_0x30,
-  &RoomTag_QuadrantTrigger,
-  &RoomTag_RoomTrigger,
-  &RoomTag_NorthWestTrigger,
+  &Dung_TagRoutine_0x31,
+  &Dung_TagRoutine_0x32,
+  &Dung_TagRoutine_0x29,
   &Dung_TagRoutine_0x2A,
   &Dung_TagRoutine_0x2B,
   &Dung_TagRoutine_0x2C,
@@ -5940,29 +5940,29 @@ static HandlerFuncK *const kDungTagroutines[] = {
   &Dung_TagRoutine_0x2E,
   &Dung_TagRoutine_0x2F,
   &Dung_TagRoutine_0x30,
-  &RoomTag_QuadrantTrigger,
-  &RoomTag_RoomTrigger_BlockDoor,
-  &RoomTag_PrizeTriggerDoorDoor,
-  &RoomTag_SwitchTrigger_HoldDoor,
-  &RoomTag_SwitchTrigger_ToggleDoor,
-  &RoomTag_WaterOff,
-  &RoomTag_WaterOn,
-  &RoomTag_WaterGate,
+  &Dung_TagRoutine_0x31,
+  &Dung_TagRoutine_0x14,
+  &Dung_TagRoutine_0x15,
+  &Dung_TagRoutine_0x16,
+  &Dung_TagRoutine_0x17,
+  &Dung_TagRoutine_0x18,
+  &Dung_TagRoutine_0x19,
+  &Dung_TagRoutine_0x1A_Watergate,
   &Dung_TagRoutine_0x1B,
-  &RoomTag_MovingWall_East,
+  &Dung_TagRoutine_0x1C,
   &Dung_TagRoutine_0x1D_SecretWallLeft,
-  &RoomTag_MovingWallTorchesCheck,
-  &RoomTag_MovingWallTorchesCheck,
-  &RoomTag_Switch_ExplodingWall,
-  &RoomTag_Holes0,
-  &RoomTag_ChestHoles0,
+  &Dung_TagRoutine_0x1F,
+  &Dung_TagRoutine_0x1F,
+  &Dung_TagRoutine_0x20,
+  &Dung_TagRoutine_0x21,
+  &Dung_TagRoutine_0x22,
   &Dung_TagRoutine_0x23,
-  &RoomTag_Holes2,
-  &RoomTag_GetHeartForPrize,
-  &RoomTag_KillRoomBlock,
-  &RoomTag_TriggerChest,
-  &RoomTag_PullSwitchExplodingWall,
-  &RoomTag_NorthWestTrigger,
+  &Dung_TagRoutine_0x24,
+  &Dung_TagRoutine_0x25,
+  &Dung_TagRoutine_0x26,
+  &Dung_TagRoutine_0x27,
+  &Dung_TagRoutine_0x28,
+  &Dung_TagRoutine_0x29,
   &Dung_TagRoutine_0x2A,
   &Dung_TagRoutine_0x2B,
   &Dung_TagRoutine_0x2C,
@@ -5970,24 +5970,24 @@ static HandlerFuncK *const kDungTagroutines[] = {
   &Dung_TagRoutine_0x2E,
   &Dung_TagRoutine_0x2F,
   &Dung_TagRoutine_0x30,
-  &RoomTag_QuadrantTrigger,
-  &RoomTag_RoomTrigger,
-  &RoomTag_TorchPuzzleDoor,
+  &Dung_TagRoutine_0x31,
+  &Dung_TagRoutine_0x32,
+  &Dung_TagRoutine_0x33,
   &Dung_TagRoutine_0x34,
   &Dung_TagRoutine_0x35,
   &Dung_TagRoutine_0x36,
   &Dung_TagRoutine_0x37,
-  &RoomTag_Agahnim,
+  &Dung_TagRoutine_0x38,
   &Dung_TagRoutine_0x39,
   &Dung_TagRoutine_0x3A,
   &Dung_TagRoutine_0x3B,
-  &RoomTag_PushBlockForChest,
-  &RoomTag_GanonDoor,
-  &RoomTag_TorchPuzzleChest,
-  &RoomTag_RekillableBoss,
+  &Dung_TagRoutine_0x3C,
+  &Dung_TagRoutine_0x3D,
+  &Dung_TagRoutine_0x3E,
+  &Dung_TagRoutine_0x3F,
 };
 
-void Dungeon_HandleRoomTags() {
+void Dungeon_CheckStairsAndRunScripts() {
   if (!flag_skip_call_tag_routines) {
     Dungeon_DetectStaircase();
     g_ram[14] = 0;
@@ -5998,7 +5998,7 @@ void Dungeon_HandleRoomTags() {
   flag_skip_call_tag_routines = 0;
 }
 
-void ClearExplodingWallFromTileMap_ClearOnePair(uint16 *dst, const uint16 *src) {
+void Door_BlastWallExploding_Helper4(uint16 *dst, const uint16 *src) {
   for (int i = 2; i != 0; i--) {
     for (int j = 0; j < 12; j++)
       dst[XY(0, j)] = src[j];
@@ -6010,7 +6010,7 @@ void ClearExplodingWallFromTileMap_ClearOnePair(uint16 *dst, const uint16 *src) 
 void Door_BlastWallExploding_Draw(int dsto) {
   uint16 *dst = &dung_bg2[dsto];
   const uint16 *src = SrcPtr(0x31ea);
-  ClearExplodingWallFromTileMap_ClearOnePair(dst, src);
+  Door_BlastWallExploding_Helper4(dst, src);
   dst += 2;
   uint16 v = src[24];
   for (int n = dung_unk_blast_walls_2 - 1; n; n--) {
@@ -6018,10 +6018,10 @@ void Door_BlastWallExploding_Draw(int dsto) {
       dst[XY(0, j)] = v;
     dst++;
   }
-  ClearExplodingWallFromTileMap_ClearOnePair(dst, src + 25);
+  Door_BlastWallExploding_Helper4(dst, src + 25);
 }
 
-void ClearAndStripeExplodingWall(uint16 dsto) {
+void Door_BlastWallExploding_CopyToVram(uint16 dsto) {
   static const uint16 kBlastWall_Tab2[16] = { 4, 8, 0xc, 0x10, 0x14, 0x18, 0x1c, 0x20, 0x100, 0x200, 0x300, 0x400, 0x500, 0x600, 0x700, 0x800 };
 
   uint16 r6 = 0x80;
@@ -6070,7 +6070,7 @@ void ClearAndStripeExplodingWall(uint16 dsto) {
 }
 
 
-void Dungeon_ClearAwayExplodingWall() {
+void Door_BlastWallExploding() {
   flag_is_link_immobilized = 6;
   flag_unk1 = 6;
   if (BYTE(messaging_buf[0]) != 6)
@@ -6083,7 +6083,7 @@ void Dungeon_ClearAwayExplodingWall() {
   int dsto = (dung_door_tilemap_address[dung_unk_blast_walls_3 >> 1] -= 2) >> 1;
 
   Door_BlastWallExploding_Draw(dsto);
-  ClearAndStripeExplodingWall(dsto);
+  Door_BlastWallExploding_CopyToVram(dsto);
 
   WORD(nmi_disable_core_updates) = 0xffff;
   dung_unk_blast_walls_2 += 2;
@@ -6104,14 +6104,14 @@ void Dungeon_ClearAwayExplodingWall() {
     Door_LoadBlastWallAttr(dung_unk_blast_walls_3 >> 1);
     dung_unk_blast_walls_2 = 0;
     dung_unk_blast_walls_3 = 0;
-    Dungeon_FlagRoomData_Quadrants();
+    Dungeon_SaveRoomQuadrantData();
     flag_is_link_immobilized = 0;
     flag_unk1 = 0;
   }
   nmi_copy_packets_flag = 3;
 }
 
-void Dungeon_HandleEdgeTransitionMovement(int dir) {
+void Dungeon_StartInterRoomTrans(int dir) {
   static const uint8 kLimitDirectionOnOneAxis[] = { 0x3, 0x3, 0xc, 0xc };
   link_direction &= kLimitDirectionOnOneAxis[dir];
   switch (dir) {
@@ -6124,7 +6124,7 @@ void Dungeon_HandleEdgeTransitionMovement(int dir) {
   }
 }
 
-void Dungeon_TryScreenEdgeTransition() {
+void Dung_CheckTriggerInterRoomTrans() {
   int dir;
 
   if (link_y_vel != 0) {
@@ -6141,14 +6141,14 @@ void Dungeon_TryScreenEdgeTransition() {
   return;
 
 trigger_trans:
-  if (!Link_CheckForEdgeScreenTransition() && main_module_index == 7) {
-    Dungeon_HandleEdgeTransitionMovement(dir);
+  if (!Player_IsScreenTransitionBlocked() && main_module_index == 7) {
+    Dungeon_StartInterRoomTrans(dir);
     if (main_module_index == 7)
       submodule_index = 2;
   }
 }
 
-void OrientLampLightCone() {
+void OrientLampBg() {
   static const uint16 kOrientLampBgTab0[] = { 0, 256, 0, 256 };
   static const uint16 kOrientLampBgTab1[] = { 0, 0, 256, 256 };
   static const int16 kOrientLampBgTab2[] = { 52, -2, 56, 6 };
@@ -6190,7 +6190,7 @@ void OrientLampLightCone() {
 }
 
 void Sprite_HandlePushedBlocks_One(int i) {
-  Oam_AllocateFromRegionB(4);
+  OAM_AllocateFromRegionB(4);
 
   int y = (uint8)pushedblocks_y_lo[i] | (uint8)pushedblocks_y_hi[i] << 8;
   int x = (uint8)pushedblocks_x_lo[i] | (uint8)pushedblocks_x_hi[i] << 8;
@@ -6208,13 +6208,13 @@ void Sprite_HandlePushedBlocks_One(int i) {
   }
 }
 
-void Sprite_Dungeon_DrawAllPushBlocks() {
+void Sprite_HandlePushedBlocks() {
   for (int i = 1; i >= 0; i--)
     if (index_of_changable_dungeon_objs[i])
       Sprite_HandlePushedBlocks_One(i);
 }
 
-void Module07_00_PlayerControl() {
+void Dungeon_Normal() {
   if (!(flag_custom_spell_anim_active | flag_is_link_immobilized | flag_block_link_menu)) {
     if (filtered_joypad_H & 0x10) {
       overworld_map_state = 0;
@@ -6244,15 +6244,15 @@ void Module07_00_PlayerControl() {
       return;
     }
   }
-  Link_Main();
+  Player_Main();
 }
 
-void GetDoorDrawDataIndex_North(int door, int r4_door);
-void GetDoorDrawDataIndex_South(int door, int r4_door);
-void GetDoorDrawDataIndex_West(int door, int r4_door);
-void GetDoorDrawDataIndex_East(int door, int r4_door);
+void Dung_AnimDoor_Up_Inner(int door, int r4_door);
+void Dung_AnimDoor_Down_Inner(int door, int r4_door);
+void Dung_AnimDoor_Left_Inner(int door, int r4_door);
+void Dung_AnimDoor_Right_Inner(int door, int r4_door);
 
-uint8 GetDoorGraphicsIndex(int door, int r4_door) {
+uint8 Dung_AnimDoorB_Remap(int door, int r4_door) {
   uint8 door_type = door_type_and_slot[door] & 0xfe;
   if (dung_door_opened_incl_adjacent & kUpperBitmasks[r4_door])
     door_type = kDoorTypeRemap[door_type >> 1];
@@ -6308,17 +6308,17 @@ void Object_Draw_DoorRight_3x4(uint16 src, int door) {
 }
 
 
-void DrawDoorToTileMap_North(int door, int r4_door) {
-  Object_Draw_DoorUp_4x3(kDoorTypeSrcData[GetDoorGraphicsIndex(door, r4_door) >> 1], door);
+void Dung_AnimDoorB_Up(int door, int r4_door) {
+  Object_Draw_DoorUp_4x3(kDoorTypeSrcData[Dung_AnimDoorB_Remap(door, r4_door) >> 1], door);
 }
-void DrawDoorToTileMap_South(int door, int r4_door) {
-  Object_Draw_DoorDown_4x3(kDoorTypeSrcData2[GetDoorGraphicsIndex(door, r4_door) >> 1], door);
+void Dung_AnimDoorB_Down(int door, int r4_door) {
+  Object_Draw_DoorDown_4x3(kDoorTypeSrcData2[Dung_AnimDoorB_Remap(door, r4_door) >> 1], door);
 }
-void DrawDoorToTileMap_West(int door, int r4_door) {
-  Object_Draw_DoorLeft_3x4(kDoorTypeSrcData3[GetDoorGraphicsIndex(door, r4_door) >> 1], door);
+void Dung_AnimDoorB_Left(int door, int r4_door) {
+  Object_Draw_DoorLeft_3x4(kDoorTypeSrcData3[Dung_AnimDoorB_Remap(door, r4_door) >> 1], door);
 }
-void DrawDoorToTileMap_East(int door, int r4_door) {
-  Object_Draw_DoorRight_3x4(kDoorTypeSrcData4[GetDoorGraphicsIndex(door, r4_door) >> 1], door);
+void Dung_AnimDoorB_Right(int door, int r4_door) {
+  Object_Draw_DoorRight_3x4(kDoorTypeSrcData4[Dung_AnimDoorB_Remap(door, r4_door) >> 1], door);
 }
 
 static const uint16 kDoorAnimUpSrc[] = { 0x306a, 0x306a, 0x3082, 0x309a, 0x30b2 };
@@ -6326,11 +6326,11 @@ static const uint16 kDoorAnimDownSrc[] = { 0x30b2, 0x30ca, 0x30e2, 0x30fa, 0x311
 static const uint16 kDoorAnimLeftSrc[] = { 0x3112, 0x312a, 0x3142, 0x315a, 0x3172 };
 static const uint16 kDoorAnimRightSrc[] = { 0x3172, 0x318a, 0x31a2, 0x31ba, 0x31D2 };
 
-void GetDoorDrawDataIndex_North(int door, int r4_door) {
+void Dung_AnimDoor_Up_Inner(int door, int r4_door) {
   uint8 door_type = door_type_and_slot[door] & 0xfe;
   int x = door_open_closed_counter;
   if (x == 0 || x == 4) {
-    DrawDoorToTileMap_North(door, r4_door);
+    Dung_AnimDoorB_Up(door, r4_door);
     return;
   }
   x += (door_type == kDoorType_StairMaskLocked2 || door_type == kDoorType_StairMaskLocked3 || door_type >= 0x42) ? 4 : 0;
@@ -6339,11 +6339,11 @@ void GetDoorDrawDataIndex_North(int door, int r4_door) {
   Object_Draw_DoorUp_4x3(kDoorAnimUpSrc[x >> 1], door);
 }
 
-void GetDoorDrawDataIndex_South(int door, int r4_door) {
+void Dung_AnimDoor_Down_Inner(int door, int r4_door) {
   uint8 door_type = door_type_and_slot[door] & 0xfe;
   int x = door_open_closed_counter;
   if (x == 0 || x == 4) {
-    DrawDoorToTileMap_South(door, r4_door);
+    Dung_AnimDoorB_Down(door, r4_door);
     return;
   }
   x += (door_type >= 0x42) ? 4 : 0;
@@ -6352,11 +6352,11 @@ void GetDoorDrawDataIndex_South(int door, int r4_door) {
   Object_Draw_DoorDown_4x3(kDoorAnimDownSrc[x >> 1], door);
 }
 
-void GetDoorDrawDataIndex_West(int door, int r4_door) {
+void Dung_AnimDoor_Left_Inner(int door, int r4_door) {
   uint8 door_type = door_type_and_slot[door] & 0xfe;
   int x = door_open_closed_counter;
   if (x == 0 || x == 4) {
-    DrawDoorToTileMap_West(door, r4_door);
+    Dung_AnimDoorB_Left(door, r4_door);
     return;
   }
   x += (door_type >= 0x42) ? 4 : 0;
@@ -6364,11 +6364,11 @@ void GetDoorDrawDataIndex_West(int door, int r4_door) {
   Object_Draw_DoorLeft_3x4(kDoorAnimLeftSrc[x >> 1], door);
 }
 
-void GetDoorDrawDataIndex_East(int door, int r4_door) {
+void Dung_AnimDoor_Right_Inner(int door, int r4_door) {
   uint8 door_type = door_type_and_slot[door] & 0xfe;
   int x = door_open_closed_counter;
   if (x == 0 || x == 4) {
-    DrawDoorToTileMap_East(door, r4_door);
+    Dung_AnimDoorB_Right(door, r4_door);
     return;
   }
   x += (door_type >= 0x42) ? 4 : 0;
@@ -6376,109 +6376,109 @@ void GetDoorDrawDataIndex_East(int door, int r4_door) {
   Object_Draw_DoorRight_3x4(kDoorAnimRightSrc[x >> 1], door);
 }
 
-int DoorDoorStep1_North(int door, int dma_ptr) {
+int Dung_AnimDoor_Up(int door, int dma_ptr) {
   int pos = dung_door_tilemap_address[door];
   if ((pos & 0x1fff) >= kDoorPositionToTilemapOffs_Up[6]) {
     pos -= 0x500;
     if ((door_type_and_slot[door] & 0xfe) >= 0x42)
       pos -= 0x300;
-    GetDoorDrawDataIndex_South(door ^ 8, door & 7);
+    Dung_AnimDoor_Down_Inner(door ^ 8, door & 7);
     dma_ptr = Dungeon_PrepOverlayDma_nextPrep(dma_ptr, pos);
-    Dungeon_LoadSingleDoorAttribute(door ^ 8);
+    Dungeon_LoadSingleDoorAttr(door ^ 8);
   }
-  GetDoorDrawDataIndex_North(door, door & 7);
+  Dung_AnimDoor_Up_Inner(door, door & 7);
   return dma_ptr;
 }
-int DoorDoorStep1_South(int door, int dma_ptr) {
+int Dung_AnimDoor_Down(int door, int dma_ptr) {
   int pos = dung_door_tilemap_address[door];
   if ((pos & 0x1fff) < kDoorPositionToTilemapOffs_Down[9]) {
     pos += 0x500;
     if ((door_type_and_slot[door] & 0xfe) >= 0x42)
       pos += 0x300;
-    GetDoorDrawDataIndex_North(door ^ 8, door & 7);
+    Dung_AnimDoor_Up_Inner(door ^ 8, door & 7);
     dma_ptr = Dungeon_PrepOverlayDma_nextPrep(dma_ptr, pos);
-    Dungeon_LoadSingleDoorAttribute(door ^ 8);
+    Dungeon_LoadSingleDoorAttr(door ^ 8);
   }
-  GetDoorDrawDataIndex_South(door, door & 7);
+  Dung_AnimDoor_Down_Inner(door, door & 7);
   return dma_ptr;
 }
-int DoorDoorStep1_West(int door, int dma_ptr) {
+int Dung_AnimDoor_Left(int door, int dma_ptr) {
   int pos = dung_door_tilemap_address[door];
   if ((pos & 0x7ff) >= kDoorPositionToTilemapOffs_Left[6]) {
     pos -= 16;
     if ((door_type_and_slot[door] & 0xfe) >= 0x42)
       pos -= 12;
-    GetDoorDrawDataIndex_East(door ^ 8, door & 7);
+    Dung_AnimDoor_Right_Inner(door ^ 8, door & 7);
     dma_ptr = Dungeon_PrepOverlayDma_nextPrep(dma_ptr, pos);
-    Dungeon_LoadSingleDoorAttribute(door ^ 8);
+    Dungeon_LoadSingleDoorAttr(door ^ 8);
   }
-  GetDoorDrawDataIndex_West(door, door & 7);
+  Dung_AnimDoor_Left_Inner(door, door & 7);
   return dma_ptr;
 }
-int DoorDoorStep1_East(int door, int dma_ptr) {
+int Dung_AnimDoor_Right(int door, int dma_ptr) {
   int pos = dung_door_tilemap_address[door];
   if ((pos & 0x7ff) < kDoorPositionToTilemapOffs_Right[6]) {
     pos += 16;
     if ((door_type_and_slot[door] & 0xfe) >= 0x42)
       pos += 12;
-    GetDoorDrawDataIndex_West(door ^ 8, door & 7);
+    Dung_AnimDoor_Left_Inner(door ^ 8, door & 7);
     dma_ptr = Dungeon_PrepOverlayDma_nextPrep(dma_ptr, pos);
-    Dungeon_LoadSingleDoorAttribute(door ^ 8);
+    Dungeon_LoadSingleDoorAttr(door ^ 8);
   }
-  GetDoorDrawDataIndex_East(door, door & 7);
+  Dung_AnimDoor_Right_Inner(door, door & 7);
   return dma_ptr;
 }
 
-void GetDoorDrawDataIndex_North_clean_door_index(int door) {
-  GetDoorDrawDataIndex_North(door, door);
+void Dung_AnimTrapDoor_Up(int door) {
+  Dung_AnimDoor_Up_Inner(door, door);
 }
 
-void GetDoorDrawDataIndex_South_clean_door_index(int door) {
-  GetDoorDrawDataIndex_South(door, door);
+void Dung_AnimTrapDoor_Down(int door) {
+  Dung_AnimDoor_Down_Inner(door, door);
 }
 
-void GetDoorDrawDataIndex_West_clean_door_index(int door) {
-  GetDoorDrawDataIndex_West(door, door);
+void Dung_AnimTrapDoor_Left(int door) {
+  Dung_AnimDoor_Left_Inner(door, door);
 }
-void GetDoorDrawDataIndex_East_clean_door_index(int door) {
-  GetDoorDrawDataIndex_East(door, door);
+void Dung_AnimTrapDoor_Right(int door) {
+  Dung_AnimDoor_Right_Inner(door, door);
 }
 
-int DrawDoorOpening_Step1(int door, int dma_ptr) {
+int Dung_AnimDoor(int door, int dma_ptr) {
   dung_cur_door_idx = door * 2;
   dung_which_key_x2 = door * 2;
   switch (dung_door_direction[door] & 3) {
-  case 0: return DoorDoorStep1_North(door, dma_ptr);
-  case 1: return DoorDoorStep1_South(door, dma_ptr);
-  case 2: return DoorDoorStep1_West(door, dma_ptr);
-  case 3: return DoorDoorStep1_East(door, dma_ptr);
+  case 0: return Dung_AnimDoor_Up(door, dma_ptr);
+  case 1: return Dung_AnimDoor_Down(door, dma_ptr);
+  case 2: return Dung_AnimDoor_Left(door, dma_ptr);
+  case 3: return Dung_AnimDoor_Right(door, dma_ptr);
   }
   return 0;
 }
 
-void DrawShutterDoorSteps(int door) {
+void Dung_AnimTrapDoor(int door) {
   dung_cur_door_idx = door * 2;
   dung_which_key_x2 = door * 2;
   switch (dung_door_direction[door] & 3) {
-  case 0: GetDoorDrawDataIndex_North_clean_door_index(door); break;
-  case 1: GetDoorDrawDataIndex_South_clean_door_index(door); break;
-  case 2: GetDoorDrawDataIndex_West_clean_door_index(door); break;
-  case 3: GetDoorDrawDataIndex_East_clean_door_index(door); break;
+  case 0: Dung_AnimTrapDoor_Up(door); break;
+  case 1: Dung_AnimTrapDoor_Down(door); break;
+  case 2: Dung_AnimTrapDoor_Left(door); break;
+  case 3: Dung_AnimTrapDoor_Right(door); break;
   }
 }
 
-void DrawEyeWatchDoor(int door) {
+void Dung_AnimDoorB(int door) {
   dung_cur_door_idx = door * 2;
   dung_which_key_x2 = door * 2;
   switch (dung_door_direction[door] & 3) {
-  case 0: DrawDoorToTileMap_North(door, door); break;
-  case 1: DrawDoorToTileMap_South(door, door); break;
-  case 2: DrawDoorToTileMap_West(door, door); break;
-  case 3: DrawDoorToTileMap_East(door, door); break;
+  case 0: Dung_AnimDoorB_Up(door, door); break;
+  case 1: Dung_AnimDoorB_Down(door, door); break;
+  case 2: Dung_AnimDoorB_Left(door, door); break;
+  case 3: Dung_AnimDoorB_Right(door, door); break;
   }
 }
 
-void OperateShutterDoors() {
+void Dungeon_AnimateTrapDoors() {
   int anim_dst = 0;
   uint8 y = 2;
 
@@ -6511,7 +6511,7 @@ void OperateShutterDoors() {
         dung_door_opened_incl_adjacent ^= mask;
       }
     }
-    DrawShutterDoorSteps(j);
+    Dung_AnimTrapDoor(j);
     anim_dst = Dungeon_PrepOverlayDma_nextPrep(anim_dst, dung_door_tilemap_address[j]);
     if (door_animation_step_indicator == 8)
       Dungeon_LoadToggleDoorAttr_OtherEntry(j);
@@ -6528,7 +6528,7 @@ getout:
   nmi_copy_packets_flag = 0;
 }
 
-void DungeonTransition_Subtile_PrepTransition() {
+void Dungeon_IntraRoomTransInit() {
   darkening_or_lightening_screen = 0;
   palette_filter_countdown = 0;
   mosaic_target_level = 31;
@@ -6537,26 +6537,26 @@ void DungeonTransition_Subtile_PrepTransition() {
   dung_flag_statechange_waterpuzzle = 0;
   subsubmodule_index++;
 }
-void DungeonTransition_Subtile_ApplyFilter() {
+void Dungeon_IntraRoomTransFilter() {
   if (!dung_want_lights_out) {
     subsubmodule_index++;
     return;
   }
-  ApplyPaletteFilter_bounce();
+  PaletteFilter_doFiltering();
   if (BYTE(palette_filter_countdown))
-    ApplyPaletteFilter_bounce();
+    PaletteFilter_doFiltering();
 }
-void DungeonTransition_Subtile_ResetShutters() {
+void Dungeon_IntraRoomTransShutDoors() {
   BYTE(dung_flag_trapdoors_down) = 0;
   BYTE(door_animation_step_indicator) = 7;
   uint8 bak = submodule_index;
-  OperateShutterDoors();
+  Dungeon_AnimateTrapDoors();
   submodule_index = bak;
   BYTE(palette_filter_countdown) = 31;
   mosaic_target_level = 0;
   subsubmodule_index++;
 }
-void DungeonTransition_ScrollRoom() {
+void Dungeon_InterRoomTrans_State8() {
   transition_counter++;
   int i = overworld_screen_transition;
   bg1_y_offset = bg1_x_offset = 0;
@@ -6573,22 +6573,22 @@ void DungeonTransition_ScrollRoom() {
   }
 
   if ((t & 0x1fc) == (&up_down_scroll_target)[i]) {
-    SetAndSaveVisitedQuadrantFlags();
+    Player_UpdateQuadrantsVisited();
     subsubmodule_index++;
     transition_counter = 0;
     if (submodule_index == 2)
-      WaterFlood_BuildOneQuadrantForVRAM();
+      Dungeon_Upload_BG1_Outer();
   }
 
 }
-void DungeonTransition_FindSubtileLanding() {
+void Dungeon_IntraRoomTrans_State4() {
   Dungeon_ResetTorchBackgroundAndPlayerInner();
-  SubtileTransitionCalculateLanding();
+  Dungeon_Staircase_Func2();
   subsubmodule_index++;
   save_dung_info[dungeon_room_index] |= dung_quadrants_visited;
 }
 
-bool DungeonTransition_MoveLinkOutDoor() {
+bool Dungeon_Staircase_Func5() {
   uint8 x = kStaircaseTab2[byte_7E004E + overworld_screen_transition * 5];
   int r0 = overworld_screen_transition & 1 ? -2 : 2;
   if ((overworld_screen_transition & 2) == 0) {
@@ -6600,8 +6600,8 @@ bool DungeonTransition_MoveLinkOutDoor() {
   }
 }
 void Dungeon_IntraRoomTrans_State5() {
-  Link_HandleMovingAnimation_FullLongEntry();
-  if (!DungeonTransition_MoveLinkOutDoor())
+  Player_UpdateDirection();
+  if (!Dungeon_Staircase_Func5())
     return;
   if (byte_7E004E == 2 || byte_7E004E == 4)
     is_standing_in_doorway = 0;
@@ -6612,8 +6612,8 @@ void Dungeon_IntraRoomTrans_State5() {
   subsubmodule_index++;
 }
 
-void DungeonTransition_Subtile_TriggerShutters() {
-  ResetThenCacheRoomEntryProperties();
+void Dungeon_IntraRoomTransOpenDoors() {
+  Dungeon_InitAndCacheVars();
   if (!BYTE(dung_flag_trapdoors_down)) {
     BYTE(dung_flag_trapdoors_down)++;
     BYTE(dung_cur_door_pos) = 0;
@@ -6636,37 +6636,37 @@ void Dungeon_ResetTorchBackgroundAndPlayer() {
 
 
 static PlayerHandlerFunc *const kDungeon_IntraRoomTrans[8] = {
-  &DungeonTransition_Subtile_PrepTransition,
-  &DungeonTransition_Subtile_ApplyFilter,
-  &DungeonTransition_Subtile_ResetShutters,
-  &DungeonTransition_ScrollRoom,
-  &DungeonTransition_FindSubtileLanding,
+  &Dungeon_IntraRoomTransInit,
+  &Dungeon_IntraRoomTransFilter,
+  &Dungeon_IntraRoomTransShutDoors,
+  &Dungeon_InterRoomTrans_State8,
+  &Dungeon_IntraRoomTrans_State4,
   &Dungeon_IntraRoomTrans_State5,
-  &DungeonTransition_Subtile_ApplyFilter,
-  &DungeonTransition_Subtile_TriggerShutters,
+  &Dungeon_IntraRoomTransFilter,
+  &Dungeon_IntraRoomTransOpenDoors,
 };
 
 
-void Module07_01_SubtileTransition() {
+void Dungeon_IntraRoomTrans() {
   link_y_coord_prev = link_y_coord;
   link_x_coord_prev = link_x_coord;
-  Link_HandleMovingAnimation_FullLongEntry();
+  Player_UpdateDirection();
   kDungeon_IntraRoomTrans[subsubmodule_index]();
 }
 
-void Module07_02_00_InitializeTransition() {
+void Dungeon_InterRoomTrans_State0() {
   uint8 bak = hdr_dungeon_dark_with_lantern;
-  ResetTransitionPropsAndAdvanceSubmodule();
+  Dungeon_Staircase_Func1();
   hdr_dungeon_dark_with_lantern = bak;
 }
 void MirrorBg1Bg2Offs() {
   BG1HOFS_copy2 = BG2HOFS_copy2;
   BG1VOFS_copy2 = BG2VOFS_copy2;
 }
-void Module07_02_01_LoadNextRoom() {
+void Dungeon_InterRoomTrans_State1() {
   Dungeon_LoadRoom();
-  ResetStarTileGraphics();
-  LoadTransAuxGFX_sprite();
+  Dungeon_InitStarTileChr();
+  Dungeon_LoadSpriteSets();
   subsubmodule_index++;
   overworld_map_state = 0;
   BYTE(dungeon_room_index2) = BYTE(dungeon_room_index);
@@ -6675,11 +6675,11 @@ void Module07_02_01_LoadNextRoom() {
     MirrorBg1Bg2Offs();
   hdr_dungeon_dark_with_lantern = 0;
 }
-void Module07_02_FadedFilter() {
+void Dungeon_InterRoomTrans_State2() {
   if (dung_want_lights_out | dung_want_lights_out_copy) {
-    ApplyPaletteFilter_bounce();
+    PaletteFilter_doFiltering();
     if (BYTE(palette_filter_countdown))
-      ApplyPaletteFilter_bounce();
+      PaletteFilter_doFiltering();
   } else {
     subsubmodule_index++;
   }
@@ -6687,14 +6687,14 @@ void Module07_02_FadedFilter() {
 void Dungeon_InterRoomTrans_State3() {
   if (dung_want_lights_out | dung_want_lights_out_copy)
     TS_copy = 0;
-  Dungeon_AdjustForRoomLayout();
-  LoadNewSpriteGFXSet();
+  Dungeon_SpiralStaircase7_Inner3();
+  LoadGfxFunc1();
   MirrorBg1Bg2Offs();
-  WaterFlood_BuildOneQuadrantForVRAM();
+  Dungeon_Upload_BG1_Outer();
   subsubmodule_index++;
 }
 void Dungeon_InterRoomTrans_State4() {
-  Dungeon_PrepareNextRoomQuadrantUpload();
+  Dungeon_Upload_BG2();
   subsubmodule_index++;
 }
 void Dungeon_InterRoomTrans_State7() {
@@ -6706,36 +6706,36 @@ void Dungeon_InterRoomTrans_State7() {
     if (y != (TM_copy | TS_copy << 8) && (TM_copy == 0x17 || (TM_copy | TS_copy) != 0x17))
       TM_copy = y, TS_copy = y >> 8;
   }
-  DungeonTransition_RunFiltering();
+  Dung_UpdateLightsOutColor();
 }
 void Dungeon_InterRoomTrans_State10() {
   if (dung_want_lights_out | dung_want_lights_out_copy)
-    ApplyPaletteFilter_bounce();
+    PaletteFilter_doFiltering();
   Dungeon_InterRoomTrans_notDarkRoom();
 }
 void Dungeon_InterRoomTrans_State9() {
   if (dung_want_lights_out | dung_want_lights_out_copy)
-    ApplyPaletteFilter_bounce();
+    PaletteFilter_doFiltering();
   Dungeon_InterRoomTrans_State4();
 }
 void Dungeon_InterRoomTrans_State12() {
   if (submodule_index == 2) {
     if (overworld_map_state != 5)
       return;
-    SubtileTransitionCalculateLanding();
+    Dungeon_Staircase_Func2();
     if (dung_want_lights_out | dung_want_lights_out_copy)
-      ApplyPaletteFilter_bounce();
+      PaletteFilter_doFiltering();
   }
   subsubmodule_index++;
   Dungeon_ResetTorchBackgroundAndPlayer();
 }
 void Dungeon_InterRoomTrans_State13() {
   if (dung_want_lights_out | dung_want_lights_out_copy)
-    ApplyPaletteFilter_bounce();
+    PaletteFilter_doFiltering();
   Dungeon_IntraRoomTrans_State5();
 }
 void Dungeon_InterRoomTrans_State15() {
-  ResetThenCacheRoomEntryProperties();
+  Dungeon_InitAndCacheVars();
   if (!BYTE(dung_flag_trapdoors_down) && (BYTE(dungeon_room_index) != 172 || dung_savegame_state_bits & 0x3000)) {
     BYTE(dung_flag_trapdoors_down) = 1;
     BYTE(dung_cur_door_pos) = 0;
@@ -6745,37 +6745,37 @@ void Dungeon_InterRoomTrans_State15() {
   Dungeon_PlayMusicIfDefeated();
 }
 static PlayerHandlerFunc *const kDungeon_InterRoomTrans[16] = {
-  &Module07_02_00_InitializeTransition,
-  &Module07_02_01_LoadNextRoom,
-  &Module07_02_FadedFilter,
+  &Dungeon_InterRoomTrans_State0,
+  &Dungeon_InterRoomTrans_State1,
+  &Dungeon_InterRoomTrans_State2,
   &Dungeon_InterRoomTrans_State3,
   &Dungeon_InterRoomTrans_State4,
   &Dungeon_InterRoomTrans_notDarkRoom,
   &Dungeon_InterRoomTrans_State4,
   &Dungeon_InterRoomTrans_State7,
-  &DungeonTransition_ScrollRoom,
+  &Dungeon_InterRoomTrans_State8,
   &Dungeon_InterRoomTrans_State9,
   &Dungeon_InterRoomTrans_State10,
   &Dungeon_InterRoomTrans_State9,
   &Dungeon_InterRoomTrans_State12,
   &Dungeon_InterRoomTrans_State13,
-  &Module07_02_FadedFilter,
+  &Dungeon_InterRoomTrans_State2,
   &Dungeon_InterRoomTrans_State15,
 };
 
-void Module07_02_SupertileTransition() {
+void Dungeon_InterRoomTrans() {
   link_y_coord_prev = link_y_coord;
   link_x_coord_prev = link_x_coord;
   if (subsubmodule_index != 0) {
     if (subsubmodule_index >= 7)
-      Graphics_IncrementalVRAMUpload();
-    Dungeon_LoadAttribute_Selectable();
+      Graphics_IncrementalVramUpload();
+    Dungeon_LoadAttrIncremental();
   }
-  Link_HandleMovingAnimation_FullLongEntry();
+  Player_UpdateDirection();
   kDungeon_InterRoomTrans[subsubmodule_index]();
 }
 
-void Dungeon_DrawRoomOverlay(const uint8 *src) {
+void Dungeon_DrawOverlay(const uint8 *src) {
   for (;;) {
     dung_draw_width_indicator = 0;
     dung_draw_height_indicator = 0;
@@ -6800,7 +6800,7 @@ void Dungeon_DrawRoomOverlay(const uint8 *src) {
   }
 }
 
-void Dungeon_DrawRoomOverlay_Apply(int p) {
+void Dungeon_ApplyOverlayAttr(int p) {
   for (int j = 0; j < 4; j++, p += 64) {
     for (int i = 0; i < 4; i++) {
       uint16 t = dung_bg2[p + i] & 0x3fe;
@@ -6809,9 +6809,9 @@ void Dungeon_DrawRoomOverlay_Apply(int p) {
   }
 }
 
-void Module07_03_OverlayChange() {
+void Dungeon_ApplyOverlay() {
   const uint8 *overlay_p = kDungeonRoomOverlay + kDungeonRoomOverlayOffs[dung_overlay_to_load];
-  Dungeon_DrawRoomOverlay(overlay_p);
+  Dungeon_DrawOverlay(overlay_p);
   int dst_pos = 0;
   for (;;) {
     uint16 a = WORD(*overlay_p);
@@ -6819,14 +6819,14 @@ void Module07_03_OverlayChange() {
       break;
     int p = (overlay_p[0] >> 2) | (overlay_p[1] >> 2) << 6;
     dst_pos = Dungeon_PrepOverlayDma_nextPrep(dst_pos, p * 2);
-    Dungeon_DrawRoomOverlay_Apply(p);
+    Dungeon_ApplyOverlayAttr(p);
     overlay_p += 3;
   }
   nmi_copy_packets_flag = 1;
   submodule_index = 0;
 }
 
-void DrawCompletelyOpenDoor() {
+void Dungeon_OpeningLockedDoor_StairMaskLocked() {
   uint16 t;
   int i;
 
@@ -6894,7 +6894,7 @@ step12:
   door_open_closed_counter = ctr;
 
   k = dung_bg2_attr_table[dung_cur_door_pos] & 0xf;
-  dma_ptr = DrawDoorOpening_Step1(k, 0);
+  dma_ptr = Dung_AnimDoor(k, 0);
   Dungeon_PrepOverlayDma_nextPrep(dma_ptr, dung_door_tilemap_address[k]);
   sound_effect_2 = 21;
   nmi_copy_packets_flag = 1;
@@ -6906,53 +6906,53 @@ middle:
       k = dung_bg2_attr_table[dung_cur_door_pos] & 0xf;
       uint8 door_type = door_type_and_slot[k];
       if (door_type >= kDoorType_StairMaskLocked0 && door_type <= kDoorType_StairMaskLocked3)
-        DrawCompletelyOpenDoor();
+        Dungeon_OpeningLockedDoor_StairMaskLocked();
     }
     submodule_index = 0;
   }
 }
 
-void Module07_04_UnlockDoor() {
+void Dungeon_OpeningLockedDoor() {
   Dungeon_OpeningLockedDoor_Combined(false);
 }
 
-void OpenCrackedDoor() {
+void Dungeon_AnimateDestroyingWeakDoor() {
   Dungeon_OpeningLockedDoor_Combined(true);
 }
 
-void Module07_05_ControlShutters() {
-  OperateShutterDoors();
+void Dungeon_Submodule_5_TriggerAnim() {
+  Dungeon_AnimateTrapDoors();
 }
 
 
-void Module07_07_00_HandleMusicAndResetRoom() {
+void Dungeon_StraightStaircase0() {
   if (dungeon_room_index == 0x10 || dungeon_room_index == 7 || dungeon_room_index == 0x17)
     music_control = 0xf1;
-  ResetTransitionPropsAndAdvance_ResetInterface();
+  Dungeon_Teleport0();
 }
 
-void Module07_07_06_SyncBG1and2() {
+void Dungeon_StraightStaircase6() {
   MirrorBg1Bg2Offs();
-  Dungeon_AdjustForRoomLayout();
+  Dungeon_SpiralStaircase7_Inner3();
   uint8 ts = kSpiralTab1[dung_hdr_bg2_properties];
   uint8 tm = 0x16;
   if (sign8(ts))
     tm = 0x17, ts = 0;
   TM_copy = tm;
   TS_copy = ts;
-  WaterFlood_BuildOneQuadrantForVRAM();
+  Dungeon_Upload_BG1_Outer();
   subsubmodule_index++;
 }
 void Dungeon_Staircase14() {
   subsubmodule_index++;
   Dungeon_ResetTorchBackgroundAndPlayer();
 }
-void Module07_07_0F_FallingFadeIn() {
-  ApplyPaletteFilter_bounce();
+void Dungeon_StraightStaircase15() {
+  PaletteFilter_doFiltering();
   if (BYTE(darkening_or_lightening_screen))
     return;
   HIBYTE(tiledetect_which_y_pos[0]) = HIBYTE(link_y_coord) + (BYTE(link_y_coord) >= BYTE(tiledetect_which_y_pos[0]));
-  Dungeon_SetBossMusicUnorthodox();
+  Dungeon_Staircase_MusicFunc1();
   if (BYTE(dungeon_room_index) == 0x89 || BYTE(dungeon_room_index) == 0x4f)
     return;
   if (BYTE(dungeon_room_index) == 0xA7) {
@@ -6961,35 +6961,35 @@ void Module07_07_0F_FallingFadeIn() {
     return;
   }
   dung_cur_floor--;
-  Dungeon_PlayBlipAndCacheQuadrantVisits();
+  Dungeon_SpiralStaircase7_Inner4();
 }
-void Module07_07_10_LandLinkFromFalling() {
-  HandleDungeonLandingFromPit();
+void Dungeon_StraightStaircase16() {
+  HoleToDungeon_Helper1();
   if (submodule_index)
     return;
   submodule_index = 7;
   subsubmodule_index = 17;
   load_chr_halfslot_even_odd = 1;
-  Graphics_LoadChrHalfSlot();
+  Graphics_MaybeLoadChrHalfSlot();
 }
-void Module07_07_11_CacheRoomAndSetMusic() {
+void Dungeon_StraightStaircase17() {
   if (overworld_map_state == 5) {
-    ResetThenCacheRoomEntryProperties();
+    Dungeon_InitAndCacheVars();
     Dungeon_PlayMusicIfDefeated();
-    Graphics_LoadChrHalfSlot();
+    Graphics_MaybeLoadChrHalfSlot();
   }
 }
 
-void Dungeon_InitializeRoomFromSpecial();
-void DungeonTransition_TriggerBGC34UpdateAndAdvance();
-void DungeonTransition_TriggerBGC56UpdateAndAdvance();
+void Dungeon_Staircase3();
+void Dungeon_Staircase4();
+void Dungeon_Staircase5();
 void Dungeon_SpiralStaircase11();
 void Dungeon_SpiralStaircase12();
-void Dungeon_DoubleApplyAndIncrementGrayscale();
+void Dungeon_SpiralStaircase15();
 
-void DungeonTransition_AdjustForFatStairScroll() {
+void Dungeon_HoleStaircase() {
   MirrorBg1Bg2Offs();
-  Dungeon_AdjustForRoomLayout();
+  Dungeon_SpiralStaircase7_Inner3();
   uint8 ts = kSpiralTab1[dung_hdr_bg2_properties];
   uint8 tm = 0x16;
   if (sign8(ts))
@@ -7008,40 +7008,40 @@ void DungeonTransition_AdjustForFatStairScroll() {
     sound_effect_1 = 0x17;
   }
   sound_effect_2 = 0x24;
-  Dungeon_PlayBlipAndCacheQuadrantVisits();
+  Dungeon_SpiralStaircase7_Inner4();
   Dungeon_InterRoomTrans_notDarkRoom();
 }
 
-void Module07_06_FatInterRoomStairs() {
+void Dungeon_Submodule_6_UpFloorTrans() {
   int j;
 
   if (subsubmodule_index >= 3)
-    Dungeon_LoadAttribute_Selectable();
+    Dungeon_LoadAttrIncremental();
 
   if (subsubmodule_index >= 13) {
-    Graphics_IncrementalVRAMUpload();
+    Graphics_IncrementalVramUpload();
     if (!staircase_var1)
       goto table;
     if (staircase_var1-- == 0x10)
       link_speed_modifier = 2;
     link_direction = which_staircase_index & 4 ? 4 : 8;
-    Link_HandleVelocity();
-    Dungeon_HandleCamera();
+    Player_SomethingWithVelocity();
+    Dungeon_HandleScreenScrolling();
   }
-  Link_HandleMovingAnimation_FullLongEntry();
+  Player_UpdateDirection();
 table:
   switch (subsubmodule_index) {
-  case 0: ResetTransitionPropsAndAdvance_ResetInterface(); break;
+  case 0: Dungeon_Teleport0(); break;
   case 1:
-    ApplyPaletteFilter_bounce();
+    PaletteFilter_doFiltering();
     if (BYTE(palette_filter_countdown))
-      ApplyPaletteFilter_bounce();
+      PaletteFilter_doFiltering();
     break;
-  case 2: Dungeon_InitializeRoomFromSpecial(); break;
-  case 3: DungeonTransition_TriggerBGC34UpdateAndAdvance(); break;
-  case 4: DungeonTransition_TriggerBGC56UpdateAndAdvance(); break;
-  case 5: DungeonTransition_LoadSpriteGFX(); break;
-  case 6: DungeonTransition_AdjustForFatStairScroll(); break;
+  case 2: Dungeon_Staircase3(); break;
+  case 3: Dungeon_Staircase4(); break;
+  case 4: Dungeon_Staircase5(); break;
+  case 5: Dungeon_Staircase6(); break;
+  case 6: Dungeon_HoleStaircase(); break;
   case 7: Dungeon_InterRoomTrans_State4(); break;
   case 8: Dungeon_InterRoomTrans_notDarkRoom(); break;
   case 9: Dungeon_InterRoomTrans_State4(); break;
@@ -7049,24 +7049,24 @@ table:
   case 11: Dungeon_SpiralStaircase12(); break;
   case 12: Dungeon_SpiralStaircase11(); break;
   case 13: Dungeon_SpiralStaircase12(); break;
-  case 14: Dungeon_DoubleApplyAndIncrementGrayscale(); break;
+  case 14: Dungeon_SpiralStaircase15(); break;
   case 15: Dungeon_Staircase14(); break;
   case 16:
     if (!(BYTE(darkening_or_lightening_screen) | BYTE(palette_filter_countdown)) && overworld_map_state == 5)
-      ResetThenCacheRoomEntryProperties();
+      Dungeon_InitAndCacheVars();
     break;
   }
 }
 
 
 static PlayerHandlerFunc *const kDungeon_Submodule_7_DownFloorTrans[18] = {
-  &Module07_07_00_HandleMusicAndResetRoom,
-  &ApplyPaletteFilter_bounce,
-  &Dungeon_InitializeRoomFromSpecial,
-  &DungeonTransition_TriggerBGC34UpdateAndAdvance,
-  &DungeonTransition_TriggerBGC56UpdateAndAdvance,
-  &DungeonTransition_LoadSpriteGFX,
-  &Module07_07_06_SyncBG1and2,
+  &Dungeon_StraightStaircase0,
+  &PaletteFilter_doFiltering,
+  &Dungeon_Staircase3,
+  &Dungeon_Staircase4,
+  &Dungeon_Staircase5,
+  &Dungeon_Staircase6,
+  &Dungeon_StraightStaircase6,
   &Dungeon_InterRoomTrans_State4,
   &Dungeon_InterRoomTrans_notDarkRoom,
   &Dungeon_InterRoomTrans_State4,
@@ -7075,36 +7075,36 @@ static PlayerHandlerFunc *const kDungeon_Submodule_7_DownFloorTrans[18] = {
   &Dungeon_InterRoomTrans_notDarkRoom,
   &Dungeon_InterRoomTrans_State4,
   &Dungeon_Staircase14,
-  &Module07_07_0F_FallingFadeIn,
-  &Module07_07_10_LandLinkFromFalling,
-  &Module07_07_11_CacheRoomAndSetMusic,
+  &Dungeon_StraightStaircase15,
+  &Dungeon_StraightStaircase16,
+  &Dungeon_StraightStaircase17,
 };
 
-void Module07_07_FallingTransition() {
+void Dungeon_Submodule_7_DownFloorTrans() {
   if (subsubmodule_index >= 6) {
-    Graphics_IncrementalVRAMUpload();
-    Dungeon_LoadAttribute_Selectable();
-    ApplyGrayscaleFixed_Incremental();
+    Graphics_IncrementalVramUpload();
+    Dungeon_LoadAttrIncremental();
+    Dungeon_ApproachFixedColor();
   }
   kDungeon_Submodule_7_DownFloorTrans[subsubmodule_index]();
 }
 
-void Module07_09_OpenCrackedDoor() {
-  OpenCrackedDoor();
+void Dungeon_DestroyingWeakDoor() {
+  Dungeon_AnimateDestroyingWeakDoor();
 }
 
 // Used when lighting a lamp
-void Module07_0A_ChangeBrightness() {
-  OrientLampLightCone();
-  ApplyGrayscaleFixed_Incremental();
+void Dungeon_Submodule_A() {
+  OrientLampBg();
+  Dungeon_ApproachFixedColor();
   if ((COLDATA_copy0 & 0x1f) != overworld_fixed_color_plusminus)
     return;
   submodule_index = 0;
   subsubmodule_index = 0;
 }
 
-void Dungeon_FloodSwampWater_PrepTileMap() {
-  WaterFlood_BuildOneQuadrantForVRAM();
+void Dungeon_TurnOnOffWater_Func0() {
+  Dungeon_Upload_BG1_Outer();
   dung_cur_quadrant_upload += 4;
   if (++subsubmodule_index == 6) {
     dung_cur_quadrant_upload = 0;
@@ -7174,7 +7174,7 @@ void Dungeon_SetAttrForActivatedWaterOff() {
   subsubmodule_index++;
 }
 
-void Module07_0B_DrainSwampPool() {
+void Dungeon_TurnOffWater() {
   static const int8 kTurnOffWater_Tab0[16] = { -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, 1, -1, -1, -1, 1 };
   switch (subsubmodule_index) {
   case 0: {
@@ -7188,7 +7188,7 @@ void Module07_0B_DrainSwampPool() {
       water_hdma_var3 += kTurnOffWater_Tab0[k];
     }
     turn_on_off_water_ctr++;
-    AdjustWaterHDMAWindow();
+    Hdma_ConfigureWaterTable();
     break;
   }
   case 1: {
@@ -7200,12 +7200,12 @@ void Module07_0B_DrainSwampPool() {
     break;
   }
   case 2: case 3: case 4: case 5:
-    Dungeon_FloodSwampWater_PrepTileMap();
+    Dungeon_TurnOnOffWater_Func0();
     break;
   }
 }
 
-void Dungeon_AdjustWaterVomit(const uint16 *src, int depth) {
+void Dungeon_OnOffWater_Helper(const uint16 *src, int depth) {
   int dsto = (word_7E047C >> 1) + XY(0, 2);
   uint16 *dst = &dung_bg2[dsto];
   do {
@@ -7233,7 +7233,7 @@ void Dungeon_AdjustWaterVomit(const uint16 *src, int depth) {
 
 void Dungeon_SetAttrForActivatedWater();
 
-void Module07_0C_FloodSwampWater() {
+void Dungeon_TurnOnWater() {
   int k;
   static const int8 kTurnOnWater_Tab2[4] = { 1, 1, 1, -1 };
   static const int8 kTurnOnWater_Tab1[4] = { 1, 2, 1, -1 };
@@ -7241,7 +7241,7 @@ void Module07_0C_FloodSwampWater() {
 
   switch (subsubmodule_index) {
   case 0: case 1: case 2: case 3:
-    Dungeon_FloodSwampWater_PrepTileMap();
+    Dungeon_TurnOnOffWater_Func0();
     break;
   case 4: case 5: case 6: case 7: case 8:
     if (!--turn_on_off_water_ctr) {
@@ -7250,7 +7250,7 @@ void Module07_0C_FloodSwampWater() {
       water_hdma_var3 = 8;
       water_hdma_var5 = 0;
       water_hdma_var2 = 0x30;
-      Dungeon_AdjustWaterVomit(SrcPtr(0x1654 + 0x10), depth);
+      Dungeon_OnOffWater_Helper(SrcPtr(0x1654 + 0x10), depth);
     }
     break;
   case 9:
@@ -7277,7 +7277,7 @@ void Module07_0C_FloodSwampWater() {
     turn_on_off_water_ctr++;
     spotlight_y_lower = 0x688 - BG2VOFS_copy2 - water_hdma_var2;
     spotlight_y_upper = spotlight_y_lower + water_hdma_var5;
-    AdjustWaterHDMAWindow_X(spotlight_y_upper);
+    Hdma_ConfigureWaterTable_Inner(spotlight_y_upper);
     break;
   }
   case 11: {
@@ -7292,32 +7292,32 @@ void Module07_0C_FloodSwampWater() {
 
       uint16 a = water_hdma_var4 - water_hdma_var2;
       if (a == 0 || a == 8)
-        Dungeon_AdjustWaterVomit(SrcPtr(a == 0 ? 0x16b4 : 0x168c), 5);
+        Dungeon_OnOffWater_Helper(SrcPtr(a == 0 ? 0x16b4 : 0x168c), 5);
     }
     turn_on_off_water_ctr++;
-    AdjustWaterHDMAWindow();
+    Hdma_ConfigureWaterTable();
     break;
   }
   }
 }
 
 
-void FloodDam_PrepTiles_init() {
+void Watergate_Main_State0() {
   dung_cur_quadrant_upload = 0;
   overworld_screen_transition = 0;
-  WaterFlood_BuildOneQuadrantForVRAM();
+  Dungeon_Upload_BG1_Outer();
   dung_cur_quadrant_upload += 4;
   subsubmodule_index++;
 }
 
 void Watergate_Main_State1() {
   overworld_screen_transition = 0;
-  WaterFlood_BuildOneQuadrantForVRAM();
+  Dungeon_Upload_BG1_Outer();
   dung_cur_quadrant_upload += 4;
   subsubmodule_index++;
 }
 
-void FloodDam_Expand() {
+void Watergate_Main_State4() {
   watergate_var1++;
   water_hdma_var3 = watergate_var1 >> 1;
   uint8 r0 = water_hdma_var3 - 8;
@@ -7332,7 +7332,7 @@ void FloodDam_Expand() {
     subsubmodule_index++;
 
   static const uint16 kWatergateSrcs1[] = { 0x12f8, 0x1348, 0x1398, 0x13e8 };
-  RoomDraw_Object_Nx4(10, SrcPtr(kWatergateSrcs1[(watergate_var1 >> 4) - 1]), &dung_bg2[watergate_pos >> 1]);
+  Object_Draw_Nx4(10, SrcPtr(kWatergateSrcs1[(watergate_var1 >> 4) - 1]), &dung_bg2[watergate_pos >> 1]);
   int pos = watergate_pos;
   int n = 3;
   int dma_ptr = 0;
@@ -7343,7 +7343,7 @@ void FloodDam_Expand() {
   nmi_copy_packets_flag = 1;
 }
 
-void FloodDam_Fill() {
+void Watergate_Main_State5() {
   BYTE(water_hdma_var2)++;
   uint8 t = water_hdma_var2 + spotlight_y_upper;
   if (t >= 225) {
@@ -7352,25 +7352,25 @@ void FloodDam_Fill() {
     subsubmodule_index = 0;
     TMW_copy = 0;
     TSW_copy = 0;
-    IrisSpotlight_ResetTable();
+    ResetSpotlightTable();
   }
 }
 
 static PlayerHandlerFunc *const kWatergateFuncs[6] = {
-  &FloodDam_PrepTiles_init,
+  &Watergate_Main_State0,
   &Watergate_Main_State1,
   &Watergate_Main_State1,
   &Watergate_Main_State1,
-  &FloodDam_Expand,
-  &FloodDam_Fill,
+  &Watergate_Main_State4,
+  &Watergate_Main_State5,
 };
 
-void Module07_0D_FloodDam() {
-  FloodDam_PrepFloodHDMA();
+void Dungeon_Watergate() {
+  Watergate_Helper();
   kWatergateFuncs[subsubmodule_index]();
 }
 
-void SpiralStairs_MakeNearbyWallsHighPriority_Entering() {
+void Dungeon_ElevateStaircasePriority() {
   int pos = dung_inter_starcases[which_staircase_index & 3] - 4;
   word_7E048C = pos * 2;
   uint16 *dst = &dung_bg2[pos];
@@ -7386,7 +7386,7 @@ void SpiralStairs_MakeNearbyWallsHighPriority_Entering() {
   nmi_copy_packets_flag = 1;
 }
 
-void SpiralStairs_MakeNearbyWallsLowPriority() {
+void Dungeon_DecreaseStaircasePriority() {
   int pos = word_7E048C >> 1;
   uint16 *dst = &dung_bg2[pos];
   for (int i = 0; i < 5; i++) {
@@ -7405,17 +7405,17 @@ void Dungeon_LoadCustomTileAttr() {
   memcpy(&attributes_for_tile[0x140], &kDungAttrsForTile[kDungAttrsForTile_Offs[aux_tile_theme_index]], 0x80);
 }
 
-void DungeonTransition_RunFiltering() {
+void Dung_UpdateLightsOutColor() {
   if (dung_want_lights_out | dung_want_lights_out_copy) {
     overworld_fixed_color_plusminus = kLitTorchesColorPlus[dung_want_lights_out ? dung_num_lit_torches : 3];
     Dungeon_ApproachFixedColor_variable(overworld_fixed_color_plusminus);
     mosaic_target_level = 0;
   }
-  Dungeon_HandleTranslucencyAndPalette();
+  Palette_Func1();
 }
 
-void Module07_0E_00_InitPriorityAndScreens() {
-  SpiralStairs_MakeNearbyWallsHighPriority_Entering();
+void Dungeon_SpiralStaircase0() {
+  Dungeon_ElevateStaircasePriority();
   if (link_is_on_lower_level) {
     TM_copy &= 0xf;
     TS_copy |= 0x10;
@@ -7423,7 +7423,7 @@ void Module07_0E_00_InitPriorityAndScreens() {
   }
   subsubmodule_index++;
 }
-void ResetTransitionPropsAndAdvanceSubmodule() {
+void Dungeon_Staircase_Func1() {
   WORD(mosaic_level) = 0;
   darkening_or_lightening_screen = 0;
   palette_filter_countdown = 0;
@@ -7436,21 +7436,21 @@ void ResetTransitionPropsAndAdvanceSubmodule() {
   }
   hdr_dungeon_dark_with_lantern = 0;
   Dungeon_ResetTorchBackgroundAndPlayerInner();
-  Overworld_CopyPalettesToCache();
+  Overworld_CgramAuxToMain();
   subsubmodule_index += 1;
 }
-void Module07_0E_01_HandleMusicAndResetProps() {
+void Dungeon_SpiralStaircase1() {
   if ((dungeon_room_index == 7 || dungeon_room_index == 23 && music_unk1 != 17) && !(link_which_pendants & 1))
     music_control = 0xf1;
   staircase_var1 = (which_staircase_index & 4) ? 106 : 88;
   overworld_map_state = 0;
-  ResetTransitionPropsAndAdvanceSubmodule();
+  Dungeon_Staircase_Func1();
 }
-void Module07_0E_02_ApplyFilterIf() {
+void Dungeon_SpiralStaircase2() {
   if (staircase_var1 < 9) {
-    ApplyPaletteFilter_bounce();
+    PaletteFilter_doFiltering();
     if (palette_filter_countdown)
-      ApplyPaletteFilter_bounce();
+      PaletteFilter_doFiltering();
   }
   if (staircase_var1 != 0) {
     staircase_var1--;
@@ -7458,32 +7458,32 @@ void Module07_0E_02_ApplyFilterIf() {
   }
   tagalong_var5 = link_visibility_status = 12;
 }
-void Dungeon_InitializeRoomFromSpecial() {
-  Dungeon_AdjustAfterSpiralStairs();
+void Dungeon_Staircase3() {
+  Dung_AdjustCoordsForNewRoom();
   Dungeon_LoadRoom();
-  ResetStarTileGraphics();
-  LoadTransAuxGFX();
+  Dungeon_InitStarTileChr();
+  LoadTransAuxGfx();
   Dungeon_LoadCustomTileAttr();
   BYTE(dungeon_room_index2) = BYTE(dungeon_room_index);
-  Follower_Initialize();
+  Tagalong_Init();
   subsubmodule_index += 1;
 }
-void DungeonTransition_TriggerBGC34UpdateAndAdvance() {
+void Dungeon_Staircase4() {
   PrepTransAuxGfx();
   nmi_subroutine_index = nmi_disable_core_updates = 9;
   subsubmodule_index += 1;
 }
-void DungeonTransition_TriggerBGC56UpdateAndAdvance() {
+void Dungeon_Staircase5() {
   nmi_subroutine_index = nmi_disable_core_updates = 10;
   subsubmodule_index += 1;
 }
-void DungeonTransition_LoadSpriteGFX() {
-  LoadNewSpriteGFXSet();
+void Dungeon_Staircase6() {
+  LoadGfxFunc1();
   Dungeon_ResetSprites();
-  DungeonTransition_RunFiltering();
+  Dung_UpdateLightsOutColor();
 }
 
-void SpiralStairs_MakeNearbyWallsHighPriority_Exiting() {
+void Dungeon_SpiralStaircase7_Inner() {
   if (which_staircase_index & 4)
     return;
   int lf = (word_7E048C + 8) & 0x7f;
@@ -7501,8 +7501,8 @@ void SpiralStairs_MakeNearbyWallsHighPriority_Exiting() {
     dst += 1;
   }
 }
-void Dungeon_AdjustForRoomLayout() {
-  Dungeon_AdjustQuadrant();
+void Dungeon_SpiralStaircase7_Inner3() {
+  UpdateCompositeOfLayoutAndQuadrant();
   quadrant_fullsize_x = (dung_blastwall_flag_x || (kLayoutQuadrantFlags[composite_of_layout_and_quadrant] & (link_quadrant_x ? 2 : 1)) == 0) ? 2 : 0;
   quadrant_fullsize_y = (dung_blastwall_flag_y || (kLayoutQuadrantFlags[composite_of_layout_and_quadrant] & (link_quadrant_y ? 8 : 4)) == 0) ? 2 : 0;
   if ((uint8)dung_unk2)
@@ -7510,10 +7510,10 @@ void Dungeon_AdjustForRoomLayout() {
   if ((uint8)(dung_unk2 >> 8))
     quadrant_fullsize_y = (uint8)(dung_unk2 >> 8);
 }
-void Dungeon_PlayBlipAndCacheQuadrantVisits() {
+void Dungeon_SpiralStaircase7_Inner4() {
   hud_floor_changed_timer = 1;
   sound_effect_2 = 36;
-  SetAndSaveVisitedQuadrantFlags();
+  Player_UpdateQuadrantsVisited();
 }
 
 void Dungeon_ApproachFixedColor_variable(uint8 a) {
@@ -7522,7 +7522,7 @@ void Dungeon_ApproachFixedColor_variable(uint8 a) {
   COLDATA_copy2 = a | 0x80;
 }
 
-void ApplyGrayscaleFixed_Incremental() {
+void Dungeon_ApproachFixedColor() {
   uint8 a = COLDATA_copy0 & 0x1f;
   if (a == overworld_fixed_color_plusminus)
     return;
@@ -7530,18 +7530,18 @@ void ApplyGrayscaleFixed_Incremental() {
   Dungeon_ApproachFixedColor_variable(a);
 }
 
-void Dungeon_SyncBackgroundsFromSpiralStairs() {
+void Dungeon_SpiralStaircase7() {
   if (savegame_tagalong == 6 && BYTE(dungeon_room_index) == 100)
     savegame_tagalong = 0;
   uint8 bak = link_is_on_lower_level;
   link_y_coord += which_staircase_index & 4 ? 48 : -48;
   link_is_on_lower_level = kTeleportPitLevel2[cur_staircase_plane];
-  SpiralStairs_MakeNearbyWallsHighPriority_Exiting();
+  Dungeon_SpiralStaircase7_Inner();
   link_is_on_lower_level = bak;
   link_y_coord += which_staircase_index & 4 ? -48 : 48;
   BG1HOFS_copy2 = BG2HOFS_copy2;
   BG1VOFS_copy2 = BG2VOFS_copy2;
-  Dungeon_AdjustForRoomLayout();
+  Dungeon_SpiralStaircase7_Inner3();
   uint8 ts = kSpiralTab1[dung_hdr_bg2_properties], tm = 0x16;
   if (sign8(ts))
     tm = 0x17, ts = 0;
@@ -7551,21 +7551,21 @@ void Dungeon_SyncBackgroundsFromSpiralStairs() {
   TS_copy = ts;
   dung_cur_floor += (which_staircase_index & 4) ? -1 : 1;
   staircase_var1 = 24;
-  Dungeon_PlayBlipAndCacheQuadrantVisits();
+  Dungeon_SpiralStaircase7_Inner4();
   Hud_RestoreTorchBackground();
   Dungeon_InterRoomTrans_notDarkRoom();
 }
 void Dungeon_InterRoomTrans_notDarkRoom() {
-  WaterFlood_BuildOneQuadrantForVRAM();
+  Dungeon_Upload_BG1_Outer();
   subsubmodule_index++;
 }
 void Dungeon_SpiralStaircase11() {
-  ApplyPaletteFilter_bounce();
-  WaterFlood_BuildOneQuadrantForVRAM();
+  PaletteFilter_doFiltering();
+  Dungeon_Upload_BG1_Outer();
   subsubmodule_index++;
 }
 
-uint8 CalculateTransitionLanding() {
+uint8 Dungeon_Staircase_Func3() {
   int pos = ((link_y_coord + 12) & 0x1f8) << 3;
   pos |= ((link_x_coord + 8) & 0x1f8) >> 3;
   pos |= (link_is_on_lower_level ? 0x1000 : 0);
@@ -7578,9 +7578,9 @@ uint8 CalculateTransitionLanding() {
   return byte_7E004E = r;
 }
 
-void SubtileTransitionCalculateLanding() {
+void Dungeon_Staircase_Func2() {
   int st = overworld_screen_transition;
-  int a = CalculateTransitionLanding();
+  int a = Dungeon_Staircase_Func3();
   if (a == 2)
     a = 1;
   else if (a == 4)
@@ -7595,7 +7595,7 @@ void SubtileTransitionCalculateLanding() {
     BYTE(link_y_coord) = v;
   link_visibility_status = 0;
 }
-void Dungeon_SetBossMusicUnorthodox() {
+void Dungeon_Staircase_MusicFunc1() {
   uint8 x = 0x1c;
   if (dungeon_room_index != 16) {
     x = 0x15;
@@ -7619,7 +7619,7 @@ void Dungeon_PlayMusicIfDefeated() {
     if (dungeon_room_index != 2) {
       if (FindInWordArray(kBossRooms, dungeon_room_index, countof(kBossRooms)) < 0)
         return;
-      if (Sprite_CheckIfScreenIsClear())
+      if (Sprite_VerifyAllOnScreenDefeated())
         return;
       x = 0x15;
     }
@@ -7627,34 +7627,34 @@ void Dungeon_PlayMusicIfDefeated() {
   music_control = x;
 }
 
-void ResetThenCacheRoomEntryProperties() {
+void Dungeon_InitAndCacheVars() {
   overworld_map_state = 0;
   subsubmodule_index = 0;
   overworld_screen_transition = 0;
   submodule_index = 0;
   dung_flag_statechange_waterpuzzle = 0;
   dung_flag_movable_block_was_pushed = 0;
-  CacheCameraProperties();
+  Player_CacheStatePriorToHandler();
 }
 
 void Dungeon_SpiralStaircase12() {
-  ApplyPaletteFilter_bounce();
-  Dungeon_PrepareNextRoomQuadrantUpload();
+  PaletteFilter_doFiltering();
+  Dungeon_Upload_BG2();
   subsubmodule_index++;
 }
 
-void Dungeon_DoubleApplyAndIncrementGrayscale() {
-  ApplyPaletteFilter_bounce();
-  ApplyPaletteFilter_bounce();
-  ApplyGrayscaleFixed_Incremental();
+void Dungeon_SpiralStaircase15() {
+  PaletteFilter_doFiltering();
+  PaletteFilter_doFiltering();
+  Dungeon_ApproachFixedColor();
 }
-void Dungeon_AdvanceThenSetBossMusicUnorthodox() {
+void Dungeon_SpiralStaircase16() {
   Dungeon_ResetTorchBackgroundAndPlayerInner();
   staircase_var1 = 0x38;
   subsubmodule_index++;
-  Dungeon_SetBossMusicUnorthodox();
+  Dungeon_Staircase_MusicFunc1();
 }
-void SpiralStairs_FindLandingSpot() {
+void UsedForSpiralStaircase2() {
   link_give_damage = 0;
   link_incapacitated_timer = 0;
   link_auxiliary_state = 0;
@@ -7670,40 +7670,40 @@ void SpiralStairs_FindLandingSpot() {
     link_actual_vel_x = -4, link_actual_vel_y = 2;
   if (some_animation_timer_steps == 2)
     link_actual_vel_x = 0, link_actual_vel_y = 16;
-  LinkHop_FindArbitraryLandingSpot();
-  Link_HandleMovingAnimation_StartWithDash();
+  Player_MovePosition1();
+  Player_UpdateDirection_Part2();
   if ((uint8)link_x_coord == (uint8)tiledetect_which_y_pos[1])
     some_animation_timer_steps = 2;
 }
 void Dungeon_SpiralStaircase17() {
-  SpiralStairs_FindLandingSpot();
+  UsedForSpiralStaircase2();
   if (!--staircase_var1) {
     staircase_var1 = which_staircase_index & 4 ? 10 : 24;
     subsubmodule_index++;
   }
 }
 void Dungeon_SpiralStaircase18() {
-  SpiralStairs_FindLandingSpot();
+  UsedForSpiralStaircase2();
   if (!--staircase_var1) {
     subsubmodule_index++;
     overworld_map_state = 0;
   }
 }
-void Module07_0E_13_SetRoomAndLayerAndCache() {
+void Dungeon_SpiralStaircase19() {
   link_is_on_lower_level_mirror = kTeleportPitLevel1[cur_staircase_plane];
   link_is_on_lower_level = kTeleportPitLevel2[cur_staircase_plane];
   TM_copy |= 0x10;
   TS_copy &= 0xf;
   if (!(which_staircase_index & 4))
-    SpiralStairs_MakeNearbyWallsLowPriority();
+    Dungeon_DecreaseStaircasePriority();
   BYTE(dungeon_room_index2) = BYTE(dungeon_room_index);
-  ResetThenCacheRoomEntryProperties();
+  Dungeon_InitAndCacheVars();
 }
 
 static const int8 kSpiralStaircaseX[] = { -28, -28, 24, 24 };
 static const int8 kSpiralStaircaseY[] = { 16, -10, -10, -32 };
 
-void RepositionLinkAfterSpiralStairs() {
+void UsedForSpiralStaircase_Helper3() {
   link_visibility_status = 0;
   tagalong_var5 = 0;
 
@@ -7721,7 +7721,7 @@ void RepositionLinkAfterSpiralStairs() {
       if (byte_7E0492 != 2)
         link_y_coord += 24;
     }
-    Follower_Initialize();
+    Tagalong_Init();
   } else {
     if (cur_staircase_plane != 2) {
       TM_copy |= 0x10;
@@ -7729,12 +7729,12 @@ void RepositionLinkAfterSpiralStairs() {
       if (byte_7E0492 != 2)
         link_y_coord -= 24;
     }
-    Follower_Initialize();
+    Tagalong_Init();
   }
 }
 
 
-void HandleLinkOnSpiralStairs() {
+void Player_UsedForSpiralStaircase() {
   link_x_coord_prev = link_x_coord;
   link_y_coord_prev = link_y_coord;
   if (some_animation_timer_steps)
@@ -7759,8 +7759,8 @@ void HandleLinkOnSpiralStairs() {
       link_actual_vel_x = 2;
     }
   }
-  LinkHop_FindArbitraryLandingSpot();
-  Link_HandleMovingAnimation_StartWithDash();
+  Player_MovePosition1();
+  Player_UpdateDirection_Part2();
   if (!link_timer_push_get_tired && sign8(--countdown_timer_for_staircases)) {
     countdown_timer_for_staircases = 0;
     link_direction_facing = (which_staircase_index & 4) ? 4 : 6;
@@ -7772,25 +7772,25 @@ void HandleLinkOnSpiralStairs() {
   if (xd)
     return;
 
-  RepositionLinkAfterSpiralStairs();
+  UsedForSpiralStaircase_Helper3();
   if (savegame_tagalong)
-    Follower_Initialize();
+    Tagalong_Init();
 
   tiledetect_which_y_pos[1] = link_x_coord + ((which_staircase_index & 4) ? -8 : 12);
   some_animation_timer_steps = 1;
   countdown_timer_for_staircases = 6;
-  Ancilla_Sfx2_Near(which_staircase_index & 4 ? 25 : 23);
+  Player_DoSfx2(which_staircase_index & 4 ? 25 : 23);
 }
 
 static PlayerHandlerFunc *const kDungeon_SpiralStaircase[20] = {
-  &Module07_0E_00_InitPriorityAndScreens,
-  &Module07_0E_01_HandleMusicAndResetProps,
-  &Module07_0E_02_ApplyFilterIf,
-  &Dungeon_InitializeRoomFromSpecial,
-  &DungeonTransition_TriggerBGC34UpdateAndAdvance,
-  &DungeonTransition_TriggerBGC56UpdateAndAdvance,
-  &DungeonTransition_LoadSpriteGFX,
-  &Dungeon_SyncBackgroundsFromSpiralStairs,
+  &Dungeon_SpiralStaircase0,
+  &Dungeon_SpiralStaircase1,
+  &Dungeon_SpiralStaircase2,
+  &Dungeon_Staircase3,
+  &Dungeon_Staircase4,
+  &Dungeon_Staircase5,
+  &Dungeon_Staircase6,
+  &Dungeon_SpiralStaircase7,
   &Dungeon_InterRoomTrans_State4,
   &Dungeon_InterRoomTrans_notDarkRoom,
   &Dungeon_InterRoomTrans_State4,
@@ -7798,30 +7798,30 @@ static PlayerHandlerFunc *const kDungeon_SpiralStaircase[20] = {
   &Dungeon_SpiralStaircase12,
   &Dungeon_SpiralStaircase11,
   &Dungeon_SpiralStaircase12,
-  &Dungeon_DoubleApplyAndIncrementGrayscale,
-  &Dungeon_AdvanceThenSetBossMusicUnorthodox,
+  &Dungeon_SpiralStaircase15,
+  &Dungeon_SpiralStaircase16,
   &Dungeon_SpiralStaircase17,
   &Dungeon_SpiralStaircase18,
-  &Module07_0E_13_SetRoomAndLayerAndCache,
+  &Dungeon_SpiralStaircase19,
 };
 
-void Module07_0E_SpiralStairs() {
+void Dungeon_SpiralStaircase() {
   if (subsubmodule_index >= 7) {
-    Graphics_IncrementalVRAMUpload();
-    Dungeon_LoadAttribute_Selectable();
+    Graphics_IncrementalVramUpload();
+    Dungeon_LoadAttrIncremental();
   }
-  HandleLinkOnSpiralStairs();
+  Player_UsedForSpiralStaircase();
   kDungeon_SpiralStaircase[subsubmodule_index]();
 }
 
-void Module07_0F_00_InitSpotlight() {
+void Dungeon_Submodule_F_State0() {
   Spotlight_open();
   subsubmodule_index++;
 }
 
-void Module07_0F_01_OperateSpotlight() {
+void Dungeon_Submodule_F_State1() {
   Sprite_Main();
-  IrisSpotlight_ConfigureTable();
+  ConfigureSpotlightTable();
   if (!submodule_index) {
     W12SEL_copy = 0;
     W34SEL_copy = 0;
@@ -7835,17 +7835,17 @@ void Module07_0F_01_OperateSpotlight() {
 }
 
 static PlayerHandlerFunc *const kDungeon_Submodule_F[2] = {
-  &Module07_0F_00_InitSpotlight,
-  &Module07_0F_01_OperateSpotlight,
+  &Dungeon_Submodule_F_State0,
+  &Dungeon_Submodule_F_State1,
 };
 
-void Module07_0F_LandingWipe() {
+void Dungeon_Submodule_F() {
   kDungeon_Submodule_F[subsubmodule_index]();
-  Link_HandleMovingAnimation_FullLongEntry();
-  LinkOam_Main();
+  Player_UpdateDirection();
+  PlayerOam_Main();
 }
 
-void Module07_10_00_InitStairs() {
+void Dungeon_Straight_StaircaseUp_State0() {
   uint8 v1 = 0x3c, sfx = 25;
   if (link_direction & 4) {
     v1 = 0x38, sfx = 23;
@@ -7859,7 +7859,7 @@ void Module07_10_00_InitStairs() {
   subsubmodule_index++;
 }
 
-void Module07_10_01_ClimbStairs() {
+void Dungeon_Straight_StaircaseUp_State1() {
   if (staircase_var1)
     return;
   if (link_direction & 8) {
@@ -7870,31 +7870,31 @@ void Module07_10_01_ClimbStairs() {
   subsubmodule_index = 0;
   overworld_screen_transition = 0;
   submodule_index = 0;
-  SetAndSaveVisitedQuadrantFlags();
+  Player_UpdateQuadrantsVisited();
 }
 
 static PlayerHandlerFunc *const kDungeon_StraightStaircase[2] = {
-  &Module07_10_00_InitStairs,
-  &Module07_10_01_ClimbStairs,
+  &Dungeon_Straight_StaircaseUp_State0,
+  &Dungeon_Straight_StaircaseUp_State1,
 };
 
 
 // straight staircase going up when walking south
-void Module07_10_SouthIntraRoomStairs() {
+void Dungeon_Straight_Staircase() {
   uint8 t = staircase_var1;
   if (t) {
     staircase_var1--;
     if (t == 20)
       link_speed_modifier = 2;
-    Link_HandleVelocity();
-    ApplyLinksMovementToCamera();
-    Dungeon_HandleCamera();
-    Link_HandleMovingAnimation_FullLongEntry();
+    Player_SomethingWithVelocity();
+    Player_CheckCrossQuadrantBoundary();
+    Dungeon_HandleScreenScrolling();
+    Player_UpdateDirection();
   }
   kDungeon_StraightStaircase[subsubmodule_index]();
 }
 
-void Module07_08_00_InitStairs() {
+void Dungeon_Straight_StaircaseDown_State0() {
   draw_water_ripples_or_grass = 0;
 
   uint8 v1 = 0x3c, sfx = 25;
@@ -7910,7 +7910,7 @@ void Module07_08_00_InitStairs() {
   subsubmodule_index++;
 }
 
-void Module07_08_01_ClimbStairs() {
+void Dungeon_Straight_StaircaseDown_State1() {
   if (staircase_var1)
     return;
   if (link_direction & 4) {
@@ -7921,36 +7921,36 @@ void Module07_08_01_ClimbStairs() {
   subsubmodule_index = 0;
   overworld_screen_transition = 0;
   submodule_index = 0;
-  SetAndSaveVisitedQuadrantFlags();
+  Player_UpdateQuadrantsVisited();
 }
 
 static PlayerHandlerFunc *const kDungeon_StraightStaircaseDown[2] = {
-  &Module07_08_00_InitStairs,
-  &Module07_08_01_ClimbStairs,
+  &Dungeon_Straight_StaircaseDown_State0,
+  &Dungeon_Straight_StaircaseDown_State1,
 };
 
 
 // straight staircase going down when walking south
-void Module07_08_NorthIntraRoomStairs() {
+void Dungeon_Straight_StaircaseDown() {
   uint8 t = staircase_var1;
   if (t) {
     staircase_var1--;
     if (t == 20)
       link_speed_modifier = 2;
-    Link_HandleVelocity();
-    ApplyLinksMovementToCamera();
-    Dungeon_HandleCamera();
-    Link_HandleMovingAnimation_FullLongEntry();
+    Player_SomethingWithVelocity();
+    Player_CheckCrossQuadrantBoundary();
+    Dungeon_HandleScreenScrolling();
+    Player_UpdateDirection();
   }
   kDungeon_StraightStaircaseDown[subsubmodule_index]();
 }
 
-void ResetTransitionPropsAndAdvance_ResetInterface() {
+void Dungeon_Teleport0() {
   overworld_map_state = 0;
-  ResetTransitionPropsAndAdvanceSubmodule();
+  Dungeon_Staircase_Func1();
 }
 
-void Module07_11_00_PrepAndReset() {
+void StraightStairs_0() {
   if (link_is_running) {
     link_is_running = 0;
     link_speed_setting = 2;
@@ -7958,42 +7958,42 @@ void Module07_11_00_PrepAndReset() {
   sound_effect_1 = (which_staircase_index & 4) ? 24 : 22;
   if (dungeon_room_index == 48 || dungeon_room_index == 64)
     music_control = 0xf1;
-  ResetTransitionPropsAndAdvance_ResetInterface();
+  Dungeon_Teleport0();
 }
-void Module07_11_01_FadeOut() {
+void StraightStairs_1() {
   if (staircase_var1 < 9) {
-    ApplyPaletteFilter_bounce();
+    PaletteFilter_doFiltering();
     if (BYTE(palette_filter_countdown) == 23)
       subsubmodule_index++;
   }
 }
-void Module07_11_02_LoadAndPrepRoom() {
-  ApplyPaletteFilter_bounce();
+void StraightStairs_2() {
+  PaletteFilter_doFiltering();
   Dungeon_LoadRoom();
   Dungeon_RestoreStarTileChr();
-  LoadTransAuxGFX();
+  LoadTransAuxGfx();
   Dungeon_LoadCustomTileAttr();
-  Dungeon_AdjustForRoomLayout();
-  Follower_Initialize();
+  Dungeon_SpiralStaircase7_Inner3();
+  Tagalong_Init();
   subsubmodule_index++;
 }
-void Module07_11_03_FilterAndLoadBGChars() {
-  ApplyPaletteFilter_bounce();
-  DungeonTransition_TriggerBGC34UpdateAndAdvance();
+void StraightStairs_3() {
+  PaletteFilter_doFiltering();
+  Dungeon_Staircase4();
 }
-void Module07_11_04_FilterDoBGAndResetSprites() {
-  ApplyPaletteFilter_bounce();
-  DungeonTransition_TriggerBGC56UpdateAndAdvance();
+void StraightStairs_4() {
+  PaletteFilter_doFiltering();
+  Dungeon_Staircase5();
   BYTE(dungeon_room_index2) = BYTE(dungeon_room_index);
   Dungeon_ResetSprites();
 }
-void Module07_11_09_LoadSpriteGraphics() {
-  ApplyPaletteFilter_bounce();
+void StraightStairs_9() {
+  PaletteFilter_doFiltering();
   subsubmodule_index--;
-  LoadNewSpriteGFXSet();
-  Dungeon_HandleTranslucencyAndPalette();
+  LoadGfxFunc1();
+  Palette_Func1();
 }
-void Module07_11_0A_ScrollCamera() {
+void StraightStairs_10() {
   link_visibility_status = tagalong_var5 = 12;
   int i = overworld_screen_transition;
   BG1VOFS_copy2 = BG2VOFS_copy2 = (BG2VOFS_copy2 + kStaircaseTab3[i]) & ~3;
@@ -8005,7 +8005,7 @@ void Module07_11_0A_ScrollCamera() {
     subsubmodule_index++;
   }
 }
-void Module07_11_0B_PrepDestination() {
+void StraightStairs_11() {
   uint8 ts = kSpiralTab1[dung_hdr_bg2_properties], tm = 0x16;
   if (sign8(ts))
     tm = 0x17, ts = 0;
@@ -8037,12 +8037,12 @@ void Module07_11_0B_PrepDestination() {
     }
   }
 
-  Dungeon_PlayBlipAndCacheQuadrantVisits();
+  Dungeon_SpiralStaircase7_Inner4();
   Hud_RestoreTorchBackground();
   Dungeon_InterRoomTrans_notDarkRoom();
 }
 
-void Module07_11_19_SetSongAndFilter() {
+void StraightStairs_16() {
   if (overworld_map_state == 5 && !BYTE(darkening_or_lightening_screen)) {
     subsubmodule_index++;
     if (dungeon_room_index == 48)
@@ -8050,68 +8050,68 @@ void Module07_11_19_SetSongAndFilter() {
     else if (dungeon_room_index == 64)
       music_control = 0x10;
   }
-  ApplyGrayscaleFixed_Incremental();
+  Dungeon_ApproachFixedColor();
 }
-void Module07_11_11_KeepSliding() {
+void StraightStairs_17() {
   if (staircase_var1 == 0)
     subsubmodule_index++;
   else
-    ApplyGrayscaleFixed_Incremental();
+    Dungeon_ApproachFixedColor();
 }
 
 static PlayerHandlerFunc *const kDungeon_StraightStairs[19] = {
-  &Module07_11_00_PrepAndReset,
-  &Module07_11_01_FadeOut,
-  &Module07_11_02_LoadAndPrepRoom,
-  &Module07_11_03_FilterAndLoadBGChars,
-  &Module07_11_04_FilterDoBGAndResetSprites,
+  &StraightStairs_0,
+  &StraightStairs_1,
+  &StraightStairs_2,
+  &StraightStairs_3,
+  &StraightStairs_4,
   &Dungeon_SpiralStaircase11,
   &Dungeon_SpiralStaircase12,
   &Dungeon_SpiralStaircase11,
   &Dungeon_SpiralStaircase12,
-  &Module07_11_09_LoadSpriteGraphics,
-  &Module07_11_0A_ScrollCamera,
-  &Module07_11_0B_PrepDestination,
+  &StraightStairs_9,
+  &StraightStairs_10,
+  &StraightStairs_11,
   &Dungeon_InterRoomTrans_State4,
   &Dungeon_InterRoomTrans_notDarkRoom,
   &Dungeon_InterRoomTrans_State4,
-  &Dungeon_DoubleApplyAndIncrementGrayscale,
-  &Module07_11_19_SetSongAndFilter,
-  &Module07_11_11_KeepSliding,
-  &ResetThenCacheRoomEntryProperties,
+  &Dungeon_SpiralStaircase15,
+  &StraightStairs_16,
+  &StraightStairs_17,
+  &Dungeon_InitAndCacheVars,
 };
 
 // This is used for straight inter room stairs for example stairs to throne room in first dung
-void Module07_11_StraightInterroomStairs() {
+void Dungeon_StraightStairs() {
   if (subsubmodule_index >= 3)
-    Dungeon_LoadAttribute_Selectable();
+    Dungeon_LoadAttrIncremental();
   if (subsubmodule_index >= 13)
-    Graphics_IncrementalVRAMUpload();
+    Graphics_IncrementalVramUpload();
   if (staircase_var1) {
     if (staircase_var1-- == 16)
       link_speed_modifier = 2;
     link_direction = (submodule_index == 18) ? 8 : 4;
-    Link_HandleVelocity();
+    Player_SomethingWithVelocity();
   }
-  Link_HandleMovingAnimation_FullLongEntry();
+  Player_UpdateDirection();
   kDungeon_StraightStairs[subsubmodule_index]();
 }
 
-void Module07_14_00_ScrollCamera();
-void RecoverPositionAfterDrowning();
+void Dungeon_Submodule_14_FallGap_0();
+void Overworld_Func2A_State1();
 
-void Module07_14_RecoverFromFall() {
+void Dungeon_Submodule_14_FallGap() {
   switch (subsubmodule_index) {
   case 0:
-    Module07_14_00_ScrollCamera();
+    Dungeon_Submodule_14_FallGap_0();
     break;
   case 1:
-    RecoverPositionAfterDrowning();
+    Overworld_Func2A_State1();
     break;
   }
 }
 
-void Module07_14_00_ScrollCamera() {
+void Dungeon_Submodule_14_FallGap_0() {
   for (int i = 0; i < 2; i++) {
     if (BG2HOFS_copy2 != BG2HOFS_copy2_cached)
       BG2HOFS_copy2 += BG2HOFS_copy2 < BG2HOFS_copy2_cached ? 1 : -1;
@@ -8124,45 +8124,45 @@ void Module07_14_00_ScrollCamera() {
     MirrorBg1Bg2Offs();
 }
 
-void Module07_15_01_ApplyMosaicAndFilter() {
-  ConditionalMosaicControl();
+void Dungeon_Teleport1() {
+  Overworld_ResetMosaic();
   MOSAIC_copy = mosaic_level | 3;
-  ApplyPaletteFilter_bounce();
+  PaletteFilter_doFiltering();
 }
-void Module07_15_04_SyncRoomPropsAndBuildOverlay() {
-  ApplyGrayscaleFixed_Incremental();
+void Dungeon_Teleport4() {
+  Dungeon_ApproachFixedColor();
   if (dungeon_room_index == 0x17)
     dung_cur_floor = 4;
   MirrorBg1Bg2Offs();
-  Dungeon_AdjustForRoomLayout();
+  Dungeon_SpiralStaircase7_Inner3();
   uint8 ts = kSpiralTab1[dung_hdr_bg2_properties], tm = 0x16;
   if (sign8(ts))
     tm = 0x17, ts = 0;
   TM_copy = tm;
   TS_copy = ts;
-  WaterFlood_BuildOneQuadrantForVRAM();
+  Dungeon_Upload_BG1_Outer();
   subsubmodule_index++;
 }
-void Module07_15_0E_FadeInFromWarp() {
+void Dungeon_Teleport13() {
   if (palette_filter_countdown & 1 && mosaic_level != 0)
     mosaic_level -= 0x10;
   BGMODE_copy = 9;
   MOSAIC_copy = mosaic_level | 3;
-  ApplyPaletteFilter_bounce();
+  PaletteFilter_doFiltering();
 }
-void Module07_15_0F_FinalizeAndCacheEntry() {
+void Dungeon_Teleport14() {
   if (overworld_map_state == 5) {
-    SetAndSaveVisitedQuadrantFlags();
+    Player_UpdateQuadrantsVisited();
     submodule_index = 0;
-    ResetThenCacheRoomEntryProperties();
+    Dungeon_InitAndCacheVars();
   }
 }
 static PlayerHandlerFunc *const kDungeon_Teleport[15] = {
-  &ResetTransitionPropsAndAdvance_ResetInterface,
-  &Module07_15_01_ApplyMosaicAndFilter,
-  &Dungeon_InitializeRoomFromSpecial,
-  &DungeonTransition_LoadSpriteGFX,
-  &Module07_15_04_SyncRoomPropsAndBuildOverlay,
+  &Dungeon_Teleport0,
+  &Dungeon_Teleport1,
+  &Dungeon_Staircase3,
+  &Dungeon_Staircase6,
+  &Dungeon_Teleport4,
   &Dungeon_InterRoomTrans_State4,
   &Dungeon_InterRoomTrans_notDarkRoom,
   &Dungeon_InterRoomTrans_State4,
@@ -8171,34 +8171,34 @@ static PlayerHandlerFunc *const kDungeon_Teleport[15] = {
   &Dungeon_InterRoomTrans_notDarkRoom,
   &Dungeon_InterRoomTrans_State4,
   &Dungeon_Staircase14,
-  &Module07_15_0E_FadeInFromWarp,
-  &Module07_15_0F_FinalizeAndCacheEntry,
+  &Dungeon_Teleport13,
+  &Dungeon_Teleport14,
 };
 
-void Module07_15_WarpPad() {
+void Dungeon_Teleport() {
   if (subsubmodule_index >= 3) {
-    Graphics_IncrementalVRAMUpload();
-    Dungeon_LoadAttribute_Selectable();
+    Graphics_IncrementalVramUpload();
+    Dungeon_LoadAttrIncremental();
   }
   kDungeon_Teleport[subsubmodule_index]();
 }
-void Module07_16_UpdatePegs() {
+void Dungeon_Submodule_16() {
   if (++subsubmodule_index & 3)
     return;
   switch (subsubmodule_index >> 2) {
   case 0:
-  case 1: Module07_16_UpdatePegs_Step1(); break;
-  case 2: Module07_16_UpdatePegs_Step2(); break;
-  case 3: RecoverPegGFXFromMapping(); break;
+  case 1: Dungeon_OrangeBlueBarrierUpload_A(); break;
+  case 2: Dungeon_OrangeBlueBarrierUpload_B(); break;
+  case 3: Dungeon_OrangeBlueBarrierUpload_C(); break;
   case 4:
-    Dungeon_FlipCrystalPegAttribute();
+    Dungeon_ToggleBarrierAttr();
     subsubmodule_index = 0;
     submodule_index = 0;
     break;
   }
 }
 
-void CrystalCutscene_SpawnMaiden() {
+void CrystalMaiden_SpawnAndConfigMaiden() {
   memset(sprite_state, 0, 16);
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(0, 0xab, &info);
@@ -8218,14 +8218,14 @@ void CrystalCutscene_SpawnMaiden() {
   } else {
     savegame_tagalong = 6;
   }
-  LoadFollowerGraphics();
+  Tagalong_LoadGfx();
   savegame_tagalong = 0;
   dung_floor_x_offs = BG2HOFS_copy2 - link_x_coord + 0x79;
   dung_floor_y_offs = 0x30 - (uint8)BG1VOFS_copy2;
   dung_hdr_collision_2_mirror = 1;
 }
 
-void CrystalCutscene_Initialize() {
+void CrystalMaiden_Configure() {
   static const uint16 kCrystalMaiden_Pal[8] = { 0, 0x3821, 0x4463, 0x54a5, 0x5ce7, 0x6d29, 0x79ad, 0x7e10 };
 
   CGADSUB_copy = 0x33;
@@ -8236,14 +8236,14 @@ void CrystalCutscene_Initialize() {
   for (int i = 0; i < 8; i++)
     main_palette_buffer[112 + i] = kCrystalMaiden_Pal[i];
   flag_update_cgram_in_nmi++;
-  CrystalCutscene_SpawnMaiden();
-  CrystalCutscene_InitializePolyhedral();
+  CrystalMaiden_SpawnAndConfigMaiden();
+  CrystalMaiden_InitPolyhedral();
 }
 
-void Module07_18_RescuedMaiden() {
+void Dungeon_Crystal() {
   switch (subsubmodule_index) {
   case 0:
-    PaletteFilter_RestoreBGSubstractiveStrict();
+    PaletteFilter_Restore_Strictly_Bg_Subtractive();
     main_palette_buffer[0] = main_palette_buffer[32];
     if (BYTE(darkening_or_lightening_screen) != 255)
       return;
@@ -8282,14 +8282,14 @@ void Module07_18_RescuedMaiden() {
     break;
   case 10:
     is_nmi_thread_active++;
-    Polyhedral_InitializeThread();
-    CrystalCutscene_Initialize();
+    Polyhedral_InitThread();
+    CrystalMaiden_Configure();
     submodule_index = 0;
     subsubmodule_index = 0;
     break;
   }
 }
-void Module07_19_MirrorFade() {
+void Dungeon_Submodule_19() {
   // When using mirror
   Overworld_ResetMosaic_alwaysIncrease();
   if (!--INIDISP_copy) {
@@ -8302,7 +8302,7 @@ void Module07_19_MirrorFade() {
   }
 }
 
-void Module07_1A_RoomDraw_OpenTriforceDoor_bounce() {
+void Dungeon_OpenGanonDoor() {
   static const uint16 kOpenGanonDoor_Tab[4] = { 0x2556, 0x2596, 0x25d6, 0x2616 };
 
   flag_is_link_immobilized = 1;
@@ -8350,53 +8350,53 @@ void Module07_1A_RoomDraw_OpenTriforceDoor_bounce() {
 }
 
 static PlayerHandlerFunc *const kDungeonSubmodules[31] = {
-  &Module07_00_PlayerControl,
-  &Module07_01_SubtileTransition,
-  &Module07_02_SupertileTransition,
-  &Module07_03_OverlayChange,
-  &Module07_04_UnlockDoor,
-  &Module07_05_ControlShutters,
-  &Module07_06_FatInterRoomStairs,
-  &Module07_07_FallingTransition,
-  &Module07_08_NorthIntraRoomStairs,
-  &Module07_09_OpenCrackedDoor,
-  &Module07_0A_ChangeBrightness,
-  &Module07_0B_DrainSwampPool,
-  &Module07_0C_FloodSwampWater,
-  &Module07_0D_FloodDam,
-  &Module07_0E_SpiralStairs,
-  &Module07_0F_LandingWipe,
-  &Module07_10_SouthIntraRoomStairs,
-  &Module07_11_StraightInterroomStairs,
-  &Module07_11_StraightInterroomStairs,
-  &Module07_11_StraightInterroomStairs,
-  &Module07_14_RecoverFromFall,
-  &Module07_15_WarpPad,
-  &Module07_16_UpdatePegs,
-  &Module07_17_PressurePlate,
-  &Module07_18_RescuedMaiden,
-  &Module07_19_MirrorFade,
-  &Module07_1A_RoomDraw_OpenTriforceDoor_bounce,
+  &Dungeon_Normal,
+  &Dungeon_IntraRoomTrans,
+  &Dungeon_InterRoomTrans,
+  &Dungeon_ApplyOverlay,
+  &Dungeon_OpeningLockedDoor,
+  &Dungeon_Submodule_5_TriggerAnim,
+  &Dungeon_Submodule_6_UpFloorTrans,
+  &Dungeon_Submodule_7_DownFloorTrans,
+  &Dungeon_Straight_StaircaseDown,
+  &Dungeon_DestroyingWeakDoor,
+  &Dungeon_Submodule_A,
+  &Dungeon_TurnOffWater,
+  &Dungeon_TurnOnWater,
+  &Dungeon_Watergate,
+  &Dungeon_SpiralStaircase,
+  &Dungeon_Submodule_F,
+  &Dungeon_Straight_Staircase,
+  &Dungeon_StraightStairs,
+  &Dungeon_StraightStairs,
+  &Dungeon_StraightStairs,
+  &Dungeon_Submodule_14_FallGap,
+  &Dungeon_Teleport,
+  &Dungeon_Submodule_16,
+  &Dungeon_Submodule_17,
+  &Dungeon_Crystal,
+  &Dungeon_Submodule_19,
+  &Dungeon_OpenGanonDoor,
 };
 
-void Module07_Dungeon() {
-  Dungeon_HandleLayerEffect();
+void Module_Dungeon() {
+  Dungeon_Effect_Handler();
   kDungeonSubmodules[submodule_index]();
   dung_misc_objs_index = 0;
   Dungeon_PushBlock_Handler();
   if (submodule_index) goto skip;
-  Graphics_LoadChrHalfSlot();
-  Dungeon_HandleCamera();
+  Graphics_MaybeLoadChrHalfSlot();
+  Dungeon_HandleScreenScrolling();
   if (submodule_index) goto skip;
-  Dungeon_HandleRoomTags();
+  Dungeon_CheckStairsAndRunScripts();
   if (submodule_index) goto skip;
-  Dungeon_ProcessTorchesAndDoors();
+  Dungeon_ProcessTorchAndDoorInteractives();
   if (dung_unk_blast_walls_2)
-    Dungeon_ClearAwayExplodingWall();
+    Door_BlastWallExploding();
   if (!is_standing_in_doorway)
-    Dungeon_TryScreenEdgeTransition();
+    Dung_CheckTriggerInterRoomTrans();
 skip:
-  OrientLampLightCone();
+  OrientLampBg();
 
   int bg2x = BG2HOFS_copy2;
   int bg2y = BG2VOFS_copy2;
@@ -8413,7 +8413,7 @@ skip:
     BG1VOFS_copy2 = BG1VOFS_copy = bg1y = BG2VOFS_copy2 + dung_floor_y_offs;
   }
 
-  Sprite_Dungeon_DrawAllPushBlocks();
+  Sprite_HandlePushedBlocks();
   Sprite_Main();
 
   BG2HOFS_copy2 = bg2x;
@@ -8421,7 +8421,7 @@ skip:
   BG1HOFS_copy2 = bg1x;
   BG1VOFS_copy2 = bg1y;
 
-  LinkOam_Main();
+  PlayerOam_Main();
   Hud_RefillLogic();
   Hud_FloorIndicator();
 }
@@ -8455,13 +8455,13 @@ void Module_PreDungeon() {
   Hud_Rebuild();
   dung_num_lit_torches = 0;
   hdr_dungeon_dark_with_lantern = 0;
-  Dungeon_LoadAndDrawRoom();
+  Dungeon_LoadAndUploadRoom();
   Dungeon_LoadCustomTileAttr();
 
-  DecompressAnimatedDungeonTiles(kDungAnimatedTiles[main_tile_theme_index]);
-  Dungeon_LoadAttributeTable();
+  DecompDungAnimatedTiles(kDungAnimatedTiles[main_tile_theme_index]);
+  Dungeon_LoadAttrTable();
   misc_sprites_graphics_index = 10;
-  InitializeTilesets();
+  InitTilesets();
   palette_sp6 = 10;
   Dungeon_LoadPalettes();
   if (link_is_bunny_mirror | link_is_bunny)
@@ -8473,7 +8473,7 @@ void Module_PreDungeon() {
   if (dungeon_room_index == 0x104 && sram_progress_flags & 0x10)
     WORD(dung_want_lights_out) = 0;
 
-  SetAndSaveVisitedQuadrantFlags();
+  Player_UpdateQuadrantsVisited();
   CGWSEL_copy = 2;
   CGADSUB_copy = 0xb3;
 
@@ -8494,14 +8494,14 @@ void Module_PreDungeon() {
   button_b_frames = 0;
   Dungeon_ResetTorchBackgroundAndPlayer();
   Link_CheckBunnyStatus();
-  ResetThenCacheRoomEntryProperties();
+  Dungeon_InitAndCacheVars();
   if (savegame_tagalong == 13) {
     savegame_tagalong = 0;
     super_bomb_indicator_unk2 = 0;
     Hud_RemoveSuperBombIndicator();
   }
   BGMODE_copy = 9;
-  Follower_Initialize();
+  Tagalong_Init();
   Sprite_ResetAll();
   Dungeon_ResetSprites();
   byte_7E02F0 = 0;
@@ -8511,7 +8511,7 @@ void Module_PreDungeon() {
     COLDATA_copy1 = 0x50;
     COLDATA_copy2 = 0x80;
     dung_want_lights_out = dung_want_lights_out_copy = 0;
-    Link_TuckIntoBed();
+    Link_SetInBed();
   }
   saved_module_for_menu = 7;
   main_module_index = 7;
@@ -8533,25 +8533,25 @@ void Dungeon_LoadSongBankIfNeeded() {
     return;
 
   if (buffer_for_playing_songs == 3 || buffer_for_playing_songs == 7 || buffer_for_playing_songs == 14) {
-    LoadOWMusicIfNeeded();
+    Overworld_LoadMusicIfNeeded();
   } else {
     if (flag_which_music_type)
       return;
     zelda_snes_dummy_write(NMITIMEN, 0);
     zelda_snes_dummy_write(HDMAEN, 0);
     flag_which_music_type = 1;
-    LoadDungeonSongs();
+    Sound_LoadIndoorSongBank();
     zelda_snes_dummy_write(NMITIMEN, 0x81);
   }
 }
 
-void LoadOWMusicIfNeeded() {
+void Overworld_LoadMusicIfNeeded() {
   if (!flag_which_music_type)
     return;
   zelda_snes_dummy_write(NMITIMEN, 0);
   zelda_snes_dummy_write(HDMAEN, 0);
   flag_which_music_type = 0;
-  LoadOverworldSongs();
+  Sound_LoadLightWorldSongBank();
   zelda_snes_dummy_write(NMITIMEN, 0x81);
 }
 
@@ -8698,7 +8698,7 @@ void Dungeon_LoadEntrance() {
   byte_7E04BC = 0;
 }
 
-void Module11_02_LoadEntrance() {
+void HoleToDungeon_LoadDungeon() {
   EnableForceBlank();
   CGWSEL_copy = 2;
   Dungeon_LoadEntrance();
@@ -8722,14 +8722,14 @@ void Module11_02_LoadEntrance() {
   uint8 bak = subsubmodule_index;
   dung_num_lit_torches = 0;
   hdr_dungeon_dark_with_lantern = 0;
-  Dungeon_LoadAndDrawRoom();
+  Dungeon_LoadAndUploadRoom();
   Dungeon_LoadCustomTileAttr();
-  DecompressAnimatedDungeonTiles(kDungAnimatedTiles[main_tile_theme_index]);
-  Dungeon_LoadAttributeTable();
+  DecompDungAnimatedTiles(kDungAnimatedTiles[main_tile_theme_index]);
+  Dungeon_LoadAttrTable();
   subsubmodule_index = bak + 1;
   misc_sprites_graphics_index = 10;
   zelda_ppu_write(OBSEL, 2);
-  InitializeTilesets();
+  InitTilesets();
   palette_sp6 = 10;
   Dungeon_LoadPalettes();
   Hud_RestoreTorchBackground();
@@ -8746,42 +8746,42 @@ void Module11_02_LoadEntrance() {
 }
 
 
-void Module11_DungeonFallingEntrance() {
+void Module_HoleToDungeon() {
   switch (subsubmodule_index) {
-  case 0:  // Module_11_00_SetSongAndInit
+  case 0:  // HoleToDungeon_FadeMusic
     if (kEntranceData_musicTrack[which_entrance] != 3 || sram_progress_indicator >= 2)
       music_control = 0xf1;
-    ResetTransitionPropsAndAdvance_ResetInterface();
+    Dungeon_Teleport0();
     break;
   case 1:
     if (!(frame_counter & 1))
-      ApplyPaletteFilter_bounce();
+      PaletteFilter_doFiltering();
     break;
   case 2:
-    Module11_02_LoadEntrance();
+    HoleToDungeon_LoadDungeon();
     break;
   case 3:
-    DungeonTransition_LoadSpriteGFX();
+    Dungeon_Staircase6();
     break;
   case 4:
     INIDISP_copy = (INIDISP_copy + 1) & 0xf;
     if (INIDISP_copy == 15)
       subsubmodule_index++;
   case 5:
-    HandleDungeonLandingFromPit();
+    HoleToDungeon_Helper1();
     if (submodule_index)
       return;
     main_module_index = 7;
     flag_skip_call_tag_routines++;
-    Dungeon_PlayBlipAndCacheQuadrantVisits();
-    ResetThenCacheRoomEntryProperties();
+    Dungeon_SpiralStaircase7_Inner4();
+    Dungeon_InitAndCacheVars();
     music_control = buffer_for_playing_songs;
     last_music_control = music_unk1;
     break;
   }
 }
 
-void Dungeon_AdjustQuadrant() {
+void UpdateCompositeOfLayoutAndQuadrant() {
   composite_of_layout_and_quadrant = dung_layout_and_starting_quadrant | link_quadrant_y | link_quadrant_x;
 }
 

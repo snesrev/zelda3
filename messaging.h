@@ -1,15 +1,15 @@
 #pragma once
 
-void Module0E_Interface();
-void Module12_GameOver();
-void Module1B_SpawnSelect();
-void Overworld_LoadOverlayAndMap();
-void FluteMenu_LoadSelectedScreen();
+void Module_Messaging();
+void Module_Death();
+void Module_LocationMenu();
+void BirdTravel_LoadAmbientOverlay();
+void BirdTravel_LoadTargetArea();
 void BirdTravel_Finish_Doit();
-void RenderText();
-void SaveGameFile();
+void Messaging_Text();
+void Main_SaveGameFile();
 void Text_GenerateMessagePointers();
-void CopySaveToWRAM();
-void WorldMap_LoadLightWorldMap();
-void Attract_SetUpConclusionHDMA();
+void Death_RestoreFromSrm();
+void OverworldMap_InitGfx();
+void OverworldMap_SetRegsForExit();
 void Death_Func15();

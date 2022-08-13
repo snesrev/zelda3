@@ -12,138 +12,138 @@ enum {
 
 
 
-void Graphics_IncrementalVRAMUpload();
-void LoadNewSpriteGFXSet();
+void Graphics_IncrementalVramUpload();
+void LoadGfxFunc1();
 void PrepTransAuxGfx();
-void LoadTransAuxGFX();
-void Graphics_LoadChrHalfSlot();
-void Dungeon_HandleTranslucencyAndPalette();
+void LoadTransAuxGfx();
+void Graphics_MaybeLoadChrHalfSlot();
+void Palette_Func1();
 void Spotlight_open();
-void IrisSpotlight_close();
-void IrisSpotlight_ConfigureTable();
-void IrisSpotlight_ResetTable();
+void Spotlight_close();
+void ConfigureSpotlightTable();
+void ResetSpotlightTable();
 
-void EraseTileMaps_dungeonmap();
-void EraseTileMaps_normal();
-void EraseTileMaps_triforce();
-void InitializeTilesets();
-void Palette_Load_DungeonMapBG();
-void Palette_Load_DungeonMapSprite();
-void Palette_Load_HUD();
+void Vram_EraseTilemaps_PalaceMap();
+void Vram_EraseTilemaps_normal();
+void Vram_EraseTilemaps_Triforce();
+void InitTilesets();
+void Palette_PalaceMapBg();
+void Palette_PalaceMapSpr();
+void Palette_Hud();
 void PaletteFilterHistory();
-void Palette_Load_OWBG1();
-void Palette_Load_OWBG2();
-void Palette_Load_OWBG3();
-void Palette_Load_SpriteAux1();
-void Palette_Load_SpriteAux2();
-void Palette_Load_SpritePal0Left();
-void Palette_Load_DungeonSet();
-void Palette_Load_LinkArmorAndGloves();
+void Palette_OverworldBgAux1();
+void Palette_OverworldBgAux2();
+void Palette_OverworldBgAux3();
+void Palette_SpriteAux1();
+void Palette_SpriteAux2();
+void Palette_SpriteAux3();
+void Palette_DungBgMain();
+void Palette_ArmorAndGloves();
 
 void Palette_ElectroThemedGear();
 void Palette_SpecialOw();
 void Palette_SetOwBgColor();
-void Palette_Load_SpriteEnvironment_Dungeon();
-void Overworld_LoadAllPalettes();
+void Palette_MiscSprite_Indoors();
+void Intro_LoadPalettes();
 void Dungeon_LoadPalettes();
-void Palette_Load_SpriteMain();
+void Palette_MainSpr();
 void LoadGearPalettes_bunny();
-void SpecialOverworld_CopyPalettesToCache();
-void Palette_Load_SpriteEnvironment();
-void Palette_Load_OWBGMain();
-void Palette_Load_Shield();
-void Palette_Load_Sword();
+void Palette_ZeroPalettesAndCopyFirst();
+void Palette_MiscSprite();
+void Palette_OverworldBgMain();
+void Palette_Shield();
+void Palette_Sword();
 void Palette_UpdateGlovesColor();
 void Palette_AnimGetMasterSword();
 void Palette_AnimGetMasterSword2();
 void Palette_AnimGetMasterSword3();
-void PaletteFilter_BlindingWhite();
+void Palette_DarkenOrLighten_Step();
 void Palette_BgAndFixedColor_Black();
-void Palette_LoadForFileSelect();
+void Palette_SelectScreen();
 
 void Palette_AssertTranslucencySwap();
-void PaletteFilter_SP5F();
-void PaletteFilter_RestoreSP5F();
+void Palette_Filter_SP5F();
+void Palette_Restore_SP5F();
 void Palette_RevertTranslucencySwap();
 
 void Palette_Restore_BG_And_HUD();
 void PaletteFilter_WishPonds();
 void PaletteFilter_WishPonds_Inner();
 void PaletteFilter_Crystal();
-void AgahnimWarpShadowFilter(int k);
+void PaletteFilter_Agahnim(int k);
 void KholdstareShell_PaletteFiltering();
 void Filter_Majorly_Whiten_Bg();
-void HandleScreenFlash();
+void Filter_MajorWhitenMain();
 void Palette_Restore_BG_From_Flash();
 
-void Dungeon_UpdatePegGFXBuffer(int x, int y);
-void Module07_16_UpdatePegs_Step1();
-void Module07_16_UpdatePegs_Step2();
-void RecoverPegGFXFromMapping();
+void Dungeon_OrangeBlueBarrierUpload(int x, int y);
+void Dungeon_OrangeBlueBarrierUpload_A();
+void Dungeon_OrangeBlueBarrierUpload_B();
+void Dungeon_OrangeBlueBarrierUpload_C();
 
 void NMI_UploadTilemap();
-void Attract_DecompressStoryGFX();
-void ResetHUDPalettes4and5();
+void Text_DecompressStoryGfx();
+void Palette_ResetHud45ForText();
 
-void WriteTo4BPPBuffer_at_7F4000(uint8 a);
+void DecodeAnimatedSpriteTile(uint8 a);
 void DecodeAnimatedSpriteTile_variable(uint8 a);
-void DecompressAnimatedOverworldTiles(uint8 a);
-void DecompressAnimatedDungeonTiles(uint8 a);
+void DecompOwAnimatedTiles(uint8 a);
+void DecompDungAnimatedTiles(uint8 a);
 
-void ReloadPreviouslyLoadedSheets();
+void DecompAuxAndSprites();
 
-void PaletteFilter_InitializeWhiteFilter();
-void MirrorWarp_RunAnimationSubmodules();
-void LoadFollowerGraphics();
+void Palette_InitWhiteFilter();
+void Palette_MirrorWarp_Step();
+void Tagalong_LoadGfx();
 void Sprite_ResetAll();
-void OverworldLoadScreensPaletteSet();
+void Overworld_LoadAreaPalettes();
 void Overworld_LoadAreaPalettesEx(uint8 x);
 void Overworld_LoadPalettesInner();
 void Overworld_LoadPalettes(uint8 bg, uint8 spr);
-void Overworld_CopyPalettesToCache();
+void Overworld_CgramAuxToMain();
 void SetBackdropcolorBlack();
 
-void PaletteFilter_RestoreAdditive(int from, int to);
-void PaletteFilter_RestoreSubtractive(uint16 from, uint16 to);
+void RestorePaletteAdditive_FadeIn(int from, int to);
+void RestorePaletteSubtractive(uint16 from, uint16 to);
 
 void EnableForceBlank();
-void PaletteFilter_RestoreBGSubstractiveStrict();
-void PaletteFilter_RestoreBGAdditiveStrict();
+void PaletteFilter_Restore_Strictly_Bg_Subtractive();
+void PaletteFilter_Restore_Strictly_Bg_Additive();
 
-void LoadDefaultGraphics();
-void DecompressSwordGraphics();
-void DecompressShieldGraphics();
+void LoadDefaultGfx();
+void DecompSwordGfx();
+void DecompShieldGfx();
 
-void LoadCommonSprites_2();
-void PaletteFilter_BlindingWhiteTriforce();
+void Graphics_LoadCommonSpr();
+void TriforceRoom_AnimPalette();
 
-void PaletteFilter_WhirlpoolBlue();
-void PaletteFilter_IsolateWhirlpoolBlue();
-void PaletteFilter_WhirlpoolRestoreRedGreen();
-void PaletteFilter_WhirlpoolRestoreBlue();
+void WhirlpoolSaturateBlue();
+void WhirlpoolIsolateBlue();
+void WhirlpoolRestoreRedGreen();
+void WhirlpoolRestoreBlue();
 
-void Trinexx_FlashShellPalette_Red();
-void Trinexx_UnflashShellPalette_Red();
-void Trinexx_FlashShellPalette_Blue();
-void Trinexx_UnflashShellPalette_Blue();
+void PaletteFilter_IncreaseTrinexxRed();
+void PaletteFilter_RestoreTrinexxRed();
+void PaletteFilter_IncreaseTrinexxBlue();
+void PaletteFilter_RestoreTrinexxBlue();
 
-void AdjustWaterHDMAWindow();
-void AdjustWaterHDMAWindow_X(uint16 r10);
-void FloodDam_PrepFloodHDMA();
+void Hdma_ConfigureWaterTable();
+void Hdma_ConfigureWaterTable_Inner(uint16 r10);
+void Watergate_Helper();
 
-void Palette_LoadAgahnim();
-void LoadItemGFXIntoWRAM4BPPBuffer();
+void Palette_AgahnimClones();
+void LoadItemAnimationGfx();
 
 void Palette_FadeIntroOneStep();
 void Palette_FadeIntro2();
-void Attract_LoadBG3GFX();
+void Attract_InitGraphics_Helper1();
 
 int Decomp_spr(uint8 *dst, int gfx);
-void Do3To4High(const uint8 *decomp_addr);
-void TransferFontToVRAM();
+void Upload3To4High(const uint8 *decomp_addr);
+void CopyFontToVram();
 
-void LinkZap_HandleMosaic();
+void Player_SetElectrocutionMosaicLevel();
 void Player_SetCustomMosaicLevel(uint8 a);
-void IrisSpotlight_ResetTable();
+void ResetSpotlightTable();
 void LoadActualGearPalettes();
 void LoadOverworldMapPalette();

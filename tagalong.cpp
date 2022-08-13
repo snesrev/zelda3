@@ -9,23 +9,23 @@
 #include "player.h"
 #include "misc.h"
 
-void Follower_CheckGameMode();
-void Follower_NotFollowing();
-void Follower_OldMan();
-void Follower_OldManUnused();
+void Tagalong_Func1();
+void Tagalong_Func2();
+void Tagalong_Type_2_4();
+void Tagalong_Type_3_11();
 void Tagalong_Draw();
-void Follower_BasicMover();
-void Follower_AnimateMovement_preserved(uint8 a, uint16 x, uint16 y);
-void Follower_HandleTrigger();
-bool Follower_CheckProximityToLink();
-void Follower_DoLayers();
-void Kiki_SpawnHandler_B(int k);
+void Tagalong_Type_Other();
+void Tagalong_DrawInner(uint8 a, uint16 x, uint16 y);
+void Tagalong_HandleMessages();
+bool Tagalong_CheckPlayerProximity();
+void Tagalong_Draw3();
+void Kiki_AbandonDamagedPlayer(int k);
 
 static const uint8 kTagalongFlags[4] = {0x20, 0x10, 0x30, 0x20};
 static const uint8 kTagalong_Tab5[15] = {0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 static const uint8 kTagalong_Tab4[15] = {0, 0, 3, 3, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 
-void Follower_Initialize() {
+void Tagalong_Init() {
   tagalong_y_lo[0] = link_y_coord;
   tagalong_y_hi[0] = link_y_coord >> 8;
 
@@ -41,7 +41,7 @@ void Follower_Initialize() {
   link_speed_setting = 0;
 }
 
-void Sprite_BecomeFollower(int k) {
+void Tagalong_SpawnFromSprite(int k) {
   tagalong_var5 = 0;
   int y = Sprite_GetY(k) - 6;
   tagalong_y_lo[0] = y, tagalong_y_hi[0] = (y >> 8);
@@ -56,10 +56,10 @@ void Sprite_BecomeFollower(int k) {
   link_speed_setting = 0;
   tagalong_var5 = 0;
   super_bomb_going_off = 0;
-  Follower_MoveTowardsLink();
+  Tagalong_GetCloseToPlayer();
 }
 
-bool Follower_ValidateMessageFreedom() {
+bool Tagalong_CanWeDisplayMessage() {
   uint8 ps = link_player_handler_state;
   if (ps != kPlayerState_Ground && ps != kPlayerState_Swimming && ps != kPlayerState_StartDash)
     return false;
@@ -73,18 +73,18 @@ static const uint8 kTagalong_Tab0[3] = {5, 9, 0xa};
 static const uint16 kTagalong_Tab1[3] = {0xdf3, 0x6f9, 0xdf3};
 static const uint16 kTagalong_Msg[3] = {0x20, 0x108, 0x11d};
 
-void Follower_NoTimedMessage();
+void Tagalong_MainB();
 
-void Follower_Main() {
+void Tagalong_Main() {
   if (!savegame_tagalong)
     return;
   if (savegame_tagalong == 0xe) {
-    Follower_HandleTrigger();
+    Tagalong_HandleMessages();
     return;
   }
   int j = FindInByteArray(kTagalong_Tab0, savegame_tagalong, 3);
   if (j >= 0 && submodule_index == 0 && !(j == 2 && overworld_screen_index & 0x40) && sign16(--word_7E02CD)) {
-    if (!Follower_ValidateMessageFreedom()) {
+    if (!Tagalong_CanWeDisplayMessage()) {
       word_7E02CD = 0;
     } else {
       word_7E02CD = kTagalong_Tab1[j];
@@ -93,7 +93,7 @@ void Follower_Main() {
     }
   }
   if (j != 0)
-    Follower_NoTimedMessage();
+    Tagalong_MainB();
 }
 
 bool Tagalong_IsFollowing() {
@@ -102,11 +102,11 @@ bool Tagalong_IsFollowing() {
   return !flag_is_link_immobilized && sub != 10 && !(main == 9 && sub == 0x23) && !(main == 14 && (sub == 1 || sub == 2));
 }
 
-void Follower_NoTimedMessage() {
+void Tagalong_MainB() {
   int k;
 
   if (super_bomb_going_off) {
-    Follower_NotFollowing();
+    Tagalong_Func2();
     return;
   }
 
@@ -144,14 +144,14 @@ label_c:
   saved_tagalong_x = tagalong_x_lo[k] | tagalong_x_hi[k] << 8;
   saved_tagalong_floor = link_is_on_lower_level;
   saved_tagalong_indoors = player_is_indoors;
-  Follower_NotFollowing();
+  Tagalong_Func2();
   return;
 
 label_a:
-  Follower_CheckGameMode();
+  Tagalong_Func1();
 }
 
-void Follower_CheckGameMode() {
+void Tagalong_Func1() {
   if (Tagalong_IsFollowing() && (link_x_vel | link_y_vel)) {
     int k = tagalong_var1 + 1;
     if (k == 20)
@@ -181,28 +181,28 @@ void Follower_CheckGameMode() {
 
   switch (savegame_tagalong) {
   case 2: case 4:
-    Follower_OldMan();
+    Tagalong_Type_2_4();
     return;
   case 3: case 11:
-    Follower_OldManUnused();
+    Tagalong_Type_3_11();
     return;
   case 5: case 14:
     assert(0); // Y is unknown here...
     return;
   default:
-    Follower_BasicMover();
+    Tagalong_Type_Other();
     return;
   }
 }
 
 
-void Blind_SpawnFromMaiden(uint16 x, uint16 y) {
+void Blind_SpawnFromMaidenTagalong(uint16 x, uint16 y) {
   int k = 0;
   sprite_state[k] = 9;
   sprite_type[k] = 206;
   Sprite_SetX(k, x);
   Sprite_SetY(k, y - 16);
-  SpritePrep_LoadProperties(k);
+  Sprite_LoadProperties(k);
   sprite_delay_aux2[k] = 192;
   sprite_graphics[k] = 21;
   sprite_D[k] = 2;
@@ -211,7 +211,7 @@ void Blind_SpawnFromMaiden(uint16 x, uint16 y) {
   byte_7E0B69 = 0;
 }
 
-bool Follower_CheckBlindTrigger() {
+bool Tagalong_CheckBlindTriggerRegion() {
   int k = tagalong_var2;
   uint16 x = tagalong_x_hi[k] << 8 | tagalong_x_lo[k];
   uint16 y = tagalong_y_hi[k] << 8 | tagalong_y_lo[k];
@@ -222,28 +222,28 @@ bool Follower_CheckBlindTrigger() {
 }
 
 
-void Follower_BasicMover() {
+void Tagalong_Type_Other() {
   int k;
   if (!Tagalong_IsFollowing()) {
     Tagalong_Draw();
     return;
   }
 
-  Follower_HandleTrigger();
+  Tagalong_HandleMessages();
 
   if (savegame_tagalong == 10 && link_auxiliary_state && countdown_for_blink) {
     int k = tagalong_var2 + 1 == 20 ? 0 : tagalong_var2 + 1;
-    Kiki_SpawnHandler_B(k);
+    Kiki_AbandonDamagedPlayer(k);
     savegame_tagalong = 0;
     return;
   }
 
-  if (savegame_tagalong == 6 && dungeon_room_index == 0xac && (save_dung_info[101] & 0x100) && Follower_CheckBlindTrigger()) {
+  if (savegame_tagalong == 6 && dungeon_room_index == 0xac && (save_dung_info[101] & 0x100) && Tagalong_CheckBlindTriggerRegion()) {
     int k = tagalong_var2;
     uint16 x = tagalong_x_lo[k] | tagalong_x_hi[k] << 8;
     uint16 y = tagalong_y_lo[k] | tagalong_y_hi[k] << 8;
     savegame_tagalong = 0;
-    Blind_SpawnFromMaiden(x, y);
+    Blind_SpawnFromMaidenTagalong(x, y);
     BYTE(dung_flag_trapdoors_down)++;
     BYTE(dung_cur_door_pos) = 0;
     BYTE(door_animation_step_indicator) = 0;
@@ -293,7 +293,7 @@ label_d:
 
 
 
-void Follower_MoveTowardsLink() {
+void Tagalong_GetCloseToPlayer() {
   for(;;) {
     int k = 9;
     int j = tagalong_var1;
@@ -324,11 +324,11 @@ void Follower_MoveTowardsLink() {
   }
 }
 
-void Follower_NotFollowing() {
+void Tagalong_Func2() {
   if (saved_tagalong_indoors != player_is_indoors)
     return;
-  if (!link_is_running && !Follower_CheckProximityToLink()) {
-    Follower_Initialize();
+  if (!link_is_running && !Tagalong_CheckPlayerProximity()) {
+    Tagalong_Init();
     saved_tagalong_indoors = player_is_indoors;
     if (savegame_tagalong == 13) {
       super_bomb_indicator_unk2 = 254;
@@ -338,14 +338,14 @@ void Follower_NotFollowing() {
     Tagalong_Draw();
   } else {
     if (savegame_tagalong == 13 && !player_is_indoors && !super_bomb_indicator_unk2) {
-      AncillaAdd_SuperBombExplosion(0x3a, 0);
+      AddSuperBombExplosion(0x3a, 0);
       super_bomb_going_off = 0;
     }
-    Follower_DoLayers();
+    Tagalong_Draw3();
   }
 }
 
-void Follower_OldMan() {
+void Tagalong_Type_2_4() {
   uint8 t;
 
   if (!Tagalong_IsFollowing()) {
@@ -356,7 +356,7 @@ void Follower_OldMan() {
   if (link_speed_setting != 4)
     link_speed_setting = 12;
 
-  Follower_HandleTrigger();
+  Tagalong_HandleMessages();
 
   if (savegame_tagalong == 0) {
     return;
@@ -382,7 +382,7 @@ transform:
       saved_tagalong_y = tagalong_y_lo[k] | tagalong_y_hi[k] << 8;
       saved_tagalong_x = tagalong_x_lo[k] | tagalong_x_hi[k] << 8;
       saved_tagalong_floor = link_is_on_lower_level;
-      Follower_OldManUnused();
+      Tagalong_Type_3_11();
       return;
     }
   }
@@ -405,26 +405,26 @@ transform:
   Tagalong_Draw();
 }
 
-void Follower_OldManUnused() {
+void Tagalong_Type_3_11() {
   link_speed_setting = 16;
   if (!link_is_running && !link_auxiliary_state && link_player_handler_state != kPlayerState_Swimming) {
     link_speed_setting = 0;
-    if (link_player_handler_state != kPlayerState_Hookshot && !Follower_CheckProximityToLink()) {
-      Follower_Initialize();
+    if (link_player_handler_state != kPlayerState_Hookshot && !Tagalong_CheckPlayerProximity()) {
+      Tagalong_Init();
       savegame_tagalong = kTagalong_Tab5[savegame_tagalong];
       return;
     }
   }
-  Follower_DoLayers();
+  Tagalong_Draw3();
 }
 
-void Follower_DoLayers() {
+void Tagalong_Draw3() {
   oam_priority_value = kTagalongFlags[saved_tagalong_floor] << 8;
   uint8 a = (savegame_tagalong == 12 || savegame_tagalong == 13) ? 2 : 1;
-  Follower_AnimateMovement_preserved(a, saved_tagalong_x, saved_tagalong_y);
+  Tagalong_DrawInner(a, saved_tagalong_x, saved_tagalong_y);
 }
 
-bool Follower_CheckProximityToLink() {
+bool Tagalong_CheckPlayerProximity() {
   if (!sign8(--timer_tagalong_reacquire))
     return true;
   timer_tagalong_reacquire = 0;
@@ -468,7 +468,7 @@ static const uint8 kTagalong_OutdoorOffsets[4] = {0, 1, 4, 5};
 static const uint16 kTagalong_IndoorRooms[7] = {0xf1, 0x61, 0x51, 2, 0xdb, 0xab, 0x22};
 static const uint16 kTagalong_OutdoorRooms[3] = {3, 0x5e, 0};
 
-bool Follower_CheckForTrigger(const TagalongMessageInfo *info) {
+bool Tagalong_CheckTextTriggerProximity(const TagalongMessageInfo *info) {
   uint16 x = link_x_coord + 12 - (info->x + 8);
   uint16 y = link_y_coord + 12 - (info->y + 8);
   if (sign16(x))
@@ -479,7 +479,7 @@ bool Follower_CheckForTrigger(const TagalongMessageInfo *info) {
 }
 
 
-int Kiki_SpawnHandlerMonke(int k) {
+int Kiki_TransitionFromTagalong(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xb6, &info);
   if (j >= 0) {
@@ -498,19 +498,19 @@ int Kiki_SpawnHandlerMonke(int k) {
 }
 
 
-void Kiki_RevertToSprite(int k) {
-  int j = Kiki_SpawnHandlerMonke(k);
+void Kiki_InitiatePalaceOpeningProposal(int k) {
+  int j = Kiki_TransitionFromTagalong(k);
   sprite_subtype2[j] = 1;
   savegame_tagalong = 0;
 }
 
-void Kiki_SpawnHandler_A(int k) {
-  int j = Kiki_SpawnHandlerMonke(k);
+void Kiki_InitiateFirstBeggingSequence(int k) {
+  int j = Kiki_TransitionFromTagalong(k);
   sprite_subtype2[j] = 2;
 }
 
-void Kiki_SpawnHandler_B(int k) {
-  int j = Kiki_SpawnHandlerMonke(k);
+void Kiki_AbandonDamagedPlayer(int k) {
+  int j = Kiki_TransitionFromTagalong(k);
   sprite_z[j] = 1;
   sprite_z_vel[j] = 16;
   sprite_subtype2[j] = 3;
@@ -519,7 +519,7 @@ void Kiki_SpawnHandler_B(int k) {
 
 
 
-void Follower_HandleTrigger() {
+void Tagalong_HandleMessages() {
   if (submodule_index)
     return;
 
@@ -539,20 +539,20 @@ void Follower_HandleTrigger() {
   }
   int st = (tagalong_var2 + 1 >= 20) ? 0 : tagalong_var2 + 1;
   do {
-    if (tmi->tagalong == savegame_tagalong && Follower_CheckForTrigger(tmi)) {
+    if (tmi->tagalong == savegame_tagalong && Tagalong_CheckTextTriggerProximity(tmi)) {
       if (tmi->bit & tagalong_event_flags)
         return;
       tagalong_event_flags |= tmi->bit;
       dialogue_message_index = tmi->msg;
       if (tmi->msg == 0xffff) {
         if (!(tmi->bit & 3))
-          Kiki_RevertToSprite(st);
+          Kiki_InitiatePalaceOpeningProposal(st);
         else if (!(save_ow_event_info[BYTE(overworld_screen_index)] & 1))
-          Kiki_SpawnHandler_A(st);
+          Kiki_InitiateFirstBeggingSequence(st);
         return;
       }
       if (tmi->msg == 0x9d) {
-        OldMan_RevertToSprite(st);
+        OldMountainMan_TransitionFromTagalong(st);
       } else if (tmi->msg == 0x28) {
         savegame_tagalong = 0;
       }
@@ -576,7 +576,7 @@ void Tagalong_Draw() {
   uint16 x = tagalong_x_lo[k] | tagalong_x_hi[k] << 8;
   uint16 y = tagalong_y_lo[k] | tagalong_y_hi[k] << 8;
   uint8 a = tagalong_layerbits[k];
-  Follower_AnimateMovement_preserved(a, x, y);
+  Tagalong_DrawInner(a, x, y);
 }
 
 struct TagalongSprXY {
@@ -674,7 +674,7 @@ static const uint8 kTagalongDraw_SprInfo0[24] = {
 };
 static const uint16 kTagalongDraw_SprOffs0[2] = {0x170, 0xc0};
 static const uint16 kTagalongDraw_SprOffs1[2] = {0x1c0, 0x110};
-void Follower_AnimateMovement_preserved(uint8 ain, uint16 xin, uint16 yin) {
+void Tagalong_DrawInner(uint8 ain, uint16 xin, uint16 yin) {
 
   uint8 yt = 0, av = 0;
   uint8 sc = 0;
@@ -773,7 +773,7 @@ skip_first_sprites:
   }
 }
 
-void Follower_Disable() {
+void Tagalong_Disable() {
   if (savegame_tagalong == 9 || savegame_tagalong == 10)
     savegame_tagalong = 0;
 }
