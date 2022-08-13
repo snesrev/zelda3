@@ -2,17 +2,17 @@
 #include "zelda_rtl.h"
 #include "variables.h"
 
-void Poly_ClearBuf();
-void Poly_LoadFromLut();
-void Poly_GetSinCos();
-void Poly_ComputeXY();
-void Poly_DrawAll();
-void Poly_ComputeF();
-void Poly_DivideF2();
-void Poly_Rasterize_Polygon();
-void Poly_Rasterize_Line();
-bool Poly_Raster_NextX0();
-bool Poly_Raster_NextX1();
+void Polyhedral_EmptyBitMapBuffer();
+void Polyhedral_SetShapePointer();
+void Polyhedral_SetRotationMatrix();
+void Polyhedral_OperateRotation();
+void Polyhedral_DrawPolyhedron();
+void Polyhedral_RotatePoint();
+void Polyhedral_ProjectPoint();
+void Polyhedral_DrawFace();
+void Polyhedral_FillLine();
+bool Polyhedral_SetLeft();
+bool Polyhedral_SetRight();
 
 static const int8 kPolySinCos[320] = {
   0,   2,   3,   5,   6,   8,   9,  11,  12,  14,  16,  17,  19,  20,  22,  23, 
@@ -37,7 +37,7 @@ static const int8 kPolySinCos[320] = {
   59,  60,  60,  61,  61,  62,  62,  62,  63,  63,  63,  64,  64,  64,  64,  64, 
 };
 
-void Poly_ClearBuf() {
+void Polyhedral_EmptyBitMapBuffer() {
   memset(polyhedral_buffer, 0, 0x800);
 }
 
@@ -94,7 +94,7 @@ static const PolyConfig kPolyConfigs[2] = {
   {6, 5, 0xffd2, 0xffe4, kPoly1_Vtx, kPoly1_Polys},
 };
 
-void Poly_LoadFromLut() {
+void Polyhedral_SetShapePointer() {
   poly_var1 = poly_config1 * 2 + 0x80;
   poly_tmp0 = poly_which_model * 2;
 
@@ -105,7 +105,7 @@ void Poly_LoadFromLut() {
   poly_fromlut_ptr4 = poly_config->polys_val;
 }
 
-void Poly_GetSinCos() {
+void Polyhedral_SetRotationMatrix() {
   poly_sin_a = kPolySinCos[poly_a];
   poly_cos_a = kPolySinCos[poly_a + 64];
   poly_sin_b = kPolySinCos[poly_b];
@@ -116,7 +116,7 @@ void Poly_GetSinCos() {
   poly_e3 = (int16)poly_sin_b * (int8)poly_cos_a >> 8 << 2;
 }
 
-void Poly_ComputeF() {
+void Polyhedral_RotatePoint() {
   int x = (int8)poly_fromlut_x;
   int y = (int8)poly_fromlut_y;
   int z = (int8)poly_fromlut_z;
@@ -135,12 +135,12 @@ uint16 Poly_Divide(uint16 a, uint16 b) {
   return sign16(a) ? -q : q;
 }
 
-void Poly_DivideF2() {
+void Polyhedral_ProjectPoint() {
   poly_f0 = Poly_Divide(poly_f0, poly_f2);
   poly_f1 = Poly_Divide(poly_f1, poly_f2);
 }
 
-void Poly_ComputeXY() {
+void Polyhedral_OperateRotation() {
   const PolyConfig *poly_config = &kPolyConfigs[poly_which_model];
   const int8 *src = &poly_config->vertex[0].x;
   int i = poly_config_num_vertex;
@@ -150,14 +150,14 @@ void Poly_ComputeXY() {
     poly_fromlut_x = src[2];
     poly_fromlut_y = src[1];
     poly_fromlut_z = src[0];
-    Poly_ComputeF();
-    Poly_DivideF2();
+    Polyhedral_RotatePoint();
+    Polyhedral_ProjectPoint();
     poly_arr_x[i] = poly_base_x + poly_f0;
     poly_arr_y[i] = poly_base_y - poly_f1;
   } while (i);
 }
 
-int16 Poly_Check_Ordering() {
+int16 Polyhedral_CalculateCrossProduct() {
   int16 a = poly_xy_coords[3] - poly_xy_coords[1];
   poly_tmp0 = a * (int8)(poly_xy_coords[6] - poly_xy_coords[4]);
   a = poly_xy_coords[5] - poly_xy_coords[3];
@@ -172,21 +172,21 @@ static const uint32 kPoly_RasterColors[16] = {
   0xffff0000, 0xffff00ff, 0xffffff00, 0xffffffff,
 };
 
-void Poly_SetRasterColor(int c) {
+void Polyhedral_SetColorMask(int c) {
   uint32 v = kPoly_RasterColors[c];
   poly_raster_color0 = v;
   poly_raster_color1 = v >> 16;
 }
 
-void Poly_SetColor_Front() {
+void Polyhedral_SetForegroundColor() {
   uint8 t = poly_which_model ? (poly_config1 >> 5) : 0;
   uint8 a = (poly_tmp0 << (t + 1)) >> 8;
-  Poly_SetRasterColor(a <= 1 ? 1 : a >= 7 ? 7 : a);
+  Polyhedral_SetColorMask(a <= 1 ? 1 : a >= 7 ? 7 : a);
 }
 
-void Poly_Rasterize_Polygon();
+void Polyhedral_DrawFace();
 
-void Poly_DrawAll() {
+void Polyhedral_DrawPolyhedron() {
   const PolyConfig *poly_config = &kPolyConfigs[poly_which_model];
   const uint8 *src = poly_config->poly;
   do {
@@ -203,15 +203,15 @@ void Poly_DrawAll() {
     } while (--BYTE(poly_tmp0));
 
     poly_raster_color_config = *src++;
-    int order = Poly_Check_Ordering();
+    int order = Polyhedral_CalculateCrossProduct();
     if (order > 0) {
-      Poly_SetColor_Front();
-      Poly_Rasterize_Polygon();
+      Polyhedral_SetForegroundColor();
+      Polyhedral_DrawFace();
     }
   } while (--poly_config_num_polys);
 }
 
-bool Poly_Raster_NextX0() {
+bool Polyhedral_SetLeft() {
   int i;
   for (;;) {
     if (sign8(--poly_total_num_steps))
@@ -238,7 +238,7 @@ bool Poly_Raster_NextX0() {
   return false;
 }
 
-bool Poly_Raster_NextX1() {
+bool Polyhedral_SetRight() {
   int i;
   for (;;) {
     if (sign8(--poly_total_num_steps))
@@ -269,7 +269,7 @@ bool Poly_Raster_NextX1() {
 static const uint16 kPoly_LeftSideMask[8] = {0xffff, 0x7f7f, 0x3f3f, 0x1f1f, 0xf0f, 0x707, 0x303, 0x101};
 static const uint16 kPoly_RightSideMask[8] = {0x8080, 0xc0c0, 0xe0e0, 0xf0f0, 0xf8f8, 0xfcfc, 0xfefe, 0xffff};
 
-void Poly_Rasterize_Line() {
+void Polyhedral_FillLine() {
   uint16 left = kPoly_LeftSideMask[(poly_x0_frac >> 8) & 7];
   uint16 right = kPoly_RightSideMask[(poly_x1_frac >> 8) & 7];
   poly_tmp2 = (poly_x0_frac >> 8) & 0x38;
@@ -297,7 +297,7 @@ void Poly_Rasterize_Line() {
   poly_tmp1 = left, poly_raster_numfull = 0;
 }
 
-void Poly_Rasterize_Polygon() {
+void Polyhedral_DrawFace() {
   int n = poly_xy_coords[0];
   uint8 min_y = poly_xy_coords[n];
   int min_idx = n;
@@ -310,10 +310,10 @@ void Poly_Rasterize_Polygon() {
   poly_total_num_steps = poly_xy_coords[0] >> 1;
   poly_y0_cur = poly_y1_cur = poly_xy_coords[min_idx];
   poly_x0_cur = poly_x1_cur = poly_xy_coords[min_idx - 1];
-  if (Poly_Raster_NextX0() || Poly_Raster_NextX1())
+  if (Polyhedral_SetLeft() || Polyhedral_SetRight())
     return;
   for (;;) {
-    Poly_Rasterize_Line();
+    Polyhedral_FillLine();
     if (BYTE(poly_raster_dst_ptr) != 0xe) {
       poly_raster_dst_ptr += 2;
     } else {
@@ -322,13 +322,13 @@ void Poly_Rasterize_Polygon() {
     }
     if (poly_y0_cur == poly_y0_trig) {
       poly_x0_cur = poly_x0_target;
-      if (Poly_Raster_NextX0())
+      if (Polyhedral_SetLeft())
         return;
     }
     poly_y0_cur++;
     if (poly_y1_cur == poly_y1_trig) {
       poly_x1_cur = poly_x1_target;
-      if (Poly_Raster_NextX1())
+      if (Polyhedral_SetRight())
         return;
     }
     poly_y1_cur++;
@@ -338,9 +338,9 @@ void Poly_Rasterize_Polygon() {
 }
 
 void Poly_RunFrame() {
-  Poly_ClearBuf();
-  Poly_LoadFromLut();
-  Poly_GetSinCos();
-  Poly_ComputeXY();
-  Poly_DrawAll();
+  Polyhedral_EmptyBitMapBuffer();
+  Polyhedral_SetShapePointer();
+  Polyhedral_SetRotationMatrix();
+  Polyhedral_OperateRotation();
+  Polyhedral_DrawPolyhedron();
 }

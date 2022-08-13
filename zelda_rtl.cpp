@@ -48,7 +48,7 @@ void zelda_ppu_write_word(uint32_t adr, uint16_t val) {
   zelda_ppu_write(adr + 1, val >> 8);
 }
 
-void Sound_LoadSongBank(const uint8 *p) {
+void LoadSongBank(const uint8 *p) {
   SpcPlayer_Upload(g_zenv.player, p);
 }
 
@@ -250,7 +250,7 @@ void ZeldaRunGameLoop() {
   frame_counter++;
   ClearOamBuffer();
   Module_MainRouting();
-  Main_PrepSpritesForNmi();
+  NMI_PrepareSprites();
   nmi_boolean = 0;
 }
 
@@ -281,6 +281,6 @@ void ZeldaRunFrame(uint16 input) {
     ZeldaRunGameLoop();
   }
 
-  Vector_NMI(input);
+  Interrupt_NMI(input);
 }
 

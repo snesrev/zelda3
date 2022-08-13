@@ -1,3 +1,3 @@
 #pragma once
 
-void Vector_NMI(uint16 joypad_input);
+void Interrupt_NMI(uint16 joypad_input);

@@ -22,12 +22,12 @@ void NMI_UploadTilemap() {
 
 void NMI_UploadTilemap_doNothing() {
 }
-void NMI_UploadBg3Text() {
+void NMI_UploadBG3Text() {
   memcpy(&g_zenv.vram[0x7c00], &g_ram[0x10000], 0x7e0);
   nmi_disable_core_updates = 0;
 }
 
-void NMI_UpdateScrollingOwMap() {
+void NMI_UpdateOWScroll() {
   uint8 *src = (uint8 *)uvram.t3.data, *src_org = src;
   int f = WORD(src[0]);
   int step = (f & 0x8000) ? 32 : 1;
@@ -42,7 +42,7 @@ void NMI_UpdateScrollingOwMap() {
   nmi_disable_core_updates = 0;
 }
 
-void NMI_UploadSubscreenOverlay_StartTransfers(const uint8 *src, int i, int i_end) {
+void NMI_HandleArbitraryTileMap(const uint8 *src, int i, int i_end) {
   uint16 *r10 = &word_7F4000;
   do {
     memcpy(&g_zenv.vram[r10[i >> 1]], src, 0x80);
@@ -51,14 +51,14 @@ void NMI_UploadSubscreenOverlay_StartTransfers(const uint8 *src, int i, int i_en
   nmi_disable_core_updates = 0;
 }
 
-void NMI_UploadSubscreenOverlay() {
-  NMI_UploadSubscreenOverlay_StartTransfers(&g_ram[0x12000], 0, 0x80);
+void NMI_UpdateSubscreenOverlay() {
+  NMI_HandleArbitraryTileMap(&g_ram[0x12000], 0, 0x80);
 }
-void NMI_UploadSubscreenOverlay_firstHalf() {
-  NMI_UploadSubscreenOverlay_StartTransfers(&g_ram[0x12000], 0, 0x40);
+void NMI_UploadSubscreenOverlayFormer() {
+  NMI_HandleArbitraryTileMap(&g_ram[0x12000], 0, 0x40);
 }
-void NMI_UploadSubscreenOverlay_secondHalf() {
-  NMI_UploadSubscreenOverlay_StartTransfers(&g_ram[0x13000], 0x40, 0x80);
+void NMI_UploadSubscreenOverlayLatter() {
+  NMI_HandleArbitraryTileMap(&g_ram[0x13000], 0x40, 0x80);
 }
 
 void CopyToVram(uint32 dstv, const uint8 *src, int len) {
@@ -79,18 +79,18 @@ void CopyToVramLow(const uint8 *src, uint32 addr, int num) {
   }
 }
 
-void NMI_UploadBg3Unknown() {
+void NMI_UpdateBG1Wall() {
   // Secret Wall Right
   CopyToVramVertical(nmi_load_target_addr, &g_ram[0xc880], 0x40);
   CopyToVramVertical(nmi_load_target_addr + 0x800, &g_ram[0xc8c0], 0x40);
 }
-void NMI_UploadBg3Unknown_doNothing() {
+void NMI_TileMapNothing() {
 }
 
 
 const uint8 *GetLightOverworldTilemap();
 
-void NMI_LightWorldMode7Tilemap() {
+void NMI_UpdateLoadLightWorldMap() {
   static const uint16 kLightWorldTileMapDsts[4] = { 0, 0x20, 0x1000, 0x1020 };
   const uint8 *src = GetLightOverworldTilemap();
   for (int j = 0; j != 4; j++) {
@@ -103,7 +103,7 @@ void NMI_LightWorldMode7Tilemap() {
   }
 }
 
-void NMI_DarkWorldMode7Tilemap() {
+void NMI_UploadDarkWorldMap() {
   static const uint16 kLightWorldTileMapSrcs[4] = { 0, 0x20, 0x1000, 0x1020 };
   const uint8 *src = g_ram + 0x1000;
   int t = 0x810;
@@ -114,54 +114,54 @@ void NMI_DarkWorldMode7Tilemap() {
   }
 }
 
-void NMI_UpdateLeftBg2Tilemaps() {
+void NMI_UpdateBG2Left() {
   CopyToVram(0, &g_ram[0x10000], 0x800);
   CopyToVram(0x800, &g_ram[0x10800], 0x800);
 }
-void NMI_UpdateBgChrSlots_3_to_4() {
+void NMI_UpdateBGChar3and4() {
   memcpy(&g_zenv.vram[0x2c00], &g_ram[0x10000], 0x1000);
   nmi_disable_core_updates = 0;
 }
-void NMI_UpdateBgChrSlots_5_to_6() {
+void NMI_UpdateBGChar5and6() {
   memcpy(&g_zenv.vram[0x3400], &g_ram[0x11000], 0x1000);
   nmi_disable_core_updates = 0;
 }
-void NMI_UpdateChrHalfSlot() {
+void NMI_UpdateBGCharHalf() {
   memcpy(&g_zenv.vram[BYTE(nmi_load_target_addr) * 256], &g_ram[0x11000], 0x400);
 }
 
-void NMI_UpdateAny(int dst) {
+void NMI_RunTileMapUpdateDMA(int dst) {
   CopyToVram(dst, &g_ram[0x10000], 0x1000);
   nmi_disable_core_updates = 0;
 }
-void NMI_UpdateChr_Bg0() {
-  NMI_UpdateAny(0x2000);
+void NMI_UpdateBGChar0() {
+  NMI_RunTileMapUpdateDMA(0x2000);
 }
-void NMI_UpdateChr_Bg1() {
-  NMI_UpdateAny(0x2800);
+void NMI_UpdateBGChar1() {
+  NMI_RunTileMapUpdateDMA(0x2800);
 }
-void NMI_UpdateChr_Bg2() {
-  NMI_UpdateAny(0x3000);
+void NMI_UpdateBGChar2() {
+  NMI_RunTileMapUpdateDMA(0x3000);
 }
-void NMI_UpdateChr_Bg3() {
-  NMI_UpdateAny(0x3800);
+void NMI_UpdateBGChar3() {
+  NMI_RunTileMapUpdateDMA(0x3800);
 }
-void NMI_UpdateChr_Spr0() {
+void NMI_UpdateObjChar0() {
   CopyToVram(0x4400, &g_ram[0x10000], 0x800);
   nmi_disable_core_updates = 0;
 }
-void NMI_UpdateChr_Spr2() {
-  NMI_UpdateAny(0x5000);
+void NMI_UpdateObjChar2() {
+  NMI_RunTileMapUpdateDMA(0x5000);
 }
-void NMI_UpdateChr_Spr3() {
-  NMI_UpdateAny(0x5800);
+void NMI_UpdateObjChar3() {
+  NMI_RunTileMapUpdateDMA(0x5800);
 }
 
-void NMI_UpdateBg3ChrForDeathMode() {
+void NMI_UploadGameOverText() {
   CopyToVram(0x7800, &g_ram[0x2000], 0x800);
   CopyToVram(0x7d00, &g_ram[0x3400], 0x600);
 }
-void NMI_UpdateBarrierTileChr() {
+void NMI_UpdatePegTiles() {
   CopyToVram(0x3d00, &g_ram[0x10000], 0x100);
 }
 void NMI_UpdateStarTiles() {
@@ -170,32 +170,32 @@ void NMI_UpdateStarTiles() {
 static PlayerHandlerFunc *const kNmiSubroutines[25] = {
   &NMI_UploadTilemap_doNothing,
   &NMI_UploadTilemap,
-  &NMI_UploadBg3Text,
-  &NMI_UpdateScrollingOwMap,
-  &NMI_UploadSubscreenOverlay,
-  &NMI_UploadBg3Unknown,
-  &NMI_UploadBg3Unknown_doNothing,
-  &NMI_LightWorldMode7Tilemap,
-  &NMI_UpdateLeftBg2Tilemaps,
-  &NMI_UpdateBgChrSlots_3_to_4,
-  &NMI_UpdateBgChrSlots_5_to_6,
-  &NMI_UpdateChrHalfSlot,
-  &NMI_UploadSubscreenOverlay_secondHalf,
-  &NMI_UploadSubscreenOverlay_firstHalf,
-  &NMI_UpdateChr_Bg0,
-  &NMI_UpdateChr_Bg1,
-  &NMI_UpdateChr_Bg2,
-  &NMI_UpdateChr_Bg3,
-  &NMI_UpdateChr_Spr0,
-  &NMI_UpdateChr_Spr2,
-  &NMI_UpdateChr_Spr3,
-  &NMI_DarkWorldMode7Tilemap,
-  &NMI_UpdateBg3ChrForDeathMode,
-  &NMI_UpdateBarrierTileChr,
+  &NMI_UploadBG3Text,
+  &NMI_UpdateOWScroll,
+  &NMI_UpdateSubscreenOverlay,
+  &NMI_UpdateBG1Wall,
+  &NMI_TileMapNothing,
+  &NMI_UpdateLoadLightWorldMap,
+  &NMI_UpdateBG2Left,
+  &NMI_UpdateBGChar3and4,
+  &NMI_UpdateBGChar5and6,
+  &NMI_UpdateBGCharHalf,
+  &NMI_UploadSubscreenOverlayLatter,
+  &NMI_UploadSubscreenOverlayFormer,
+  &NMI_UpdateBGChar0,
+  &NMI_UpdateBGChar1,
+  &NMI_UpdateBGChar2,
+  &NMI_UpdateBGChar3,
+  &NMI_UpdateObjChar0,
+  &NMI_UpdateObjChar2,
+  &NMI_UpdateObjChar3,
+  &NMI_UploadDarkWorldMap,
+  &NMI_UploadGameOverText,
+  &NMI_UpdatePegTiles,
   &NMI_UpdateStarTiles,
 };
 
-void NMI_LoadTilemapToVram(const uint8 *p) {
+void HandleStripes14(const uint8 *p) {
   while (!(p[0] & 0x80)) {
     uint16 vmem_addr = swap16(WORD(p[0]));
     uint8 vram_incr_amount = (p[2] & 0x80) >> 7;
@@ -314,7 +314,7 @@ void NMI_DoUpdates() {
     case 9: p = kBgTilemap_5; break;
     default: assert(0);
     }
-    NMI_LoadTilemapToVram(p);
+    HandleStripes14(p);
     if (nmi_load_bg_from_vram == 1)
       vram_upload_offset = 0;
     nmi_load_bg_from_vram = 0;
@@ -355,7 +355,7 @@ void NMI_DoUpdates() {
   kNmiSubroutines[idx]();
 }
 
-void UpdatePolyhedralDma() {
+void NMI_UpdateIRQGFX() {
   if (nmi_flag_update_polyhedral) {
     memcpy(&g_zenv.vram[0x5800], &g_ram[0xe800], 0x800);
     nmi_flag_update_polyhedral = 0;
@@ -363,7 +363,7 @@ void UpdatePolyhedralDma() {
 }
 
 void NMI_SwitchThread() {
-  UpdatePolyhedralDma();
+  NMI_UpdateIRQGFX();
   //zelda_snes_dummy_write(VTIMEL, virq_trigger);
   //zelda_snes_dummy_write(VTIMEH, 0);
   //zelda_snes_dummy_write(NMITIMEN, 0xa1);
@@ -395,7 +395,7 @@ void NMI_SwitchThread() {
   zelda_snes_dummy_write(HDMAEN, HDMAEN_copy);
 }
 
-void Vector_NMI(uint16 joypad_input) {
+void Interrupt_NMI(uint16 joypad_input) {
   if (music_control == 0) {
     if (zelda_apu_read(APUI00) == last_music_control)
       zelda_apu_write(APUI00, 0);

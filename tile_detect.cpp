@@ -10,7 +10,7 @@
 
 
 
-uint8 Overworld_GetTileAttrAtLocation(uint16 x, uint16 y) {
+uint8 Overworld_GetTileAttributeAtLocation(uint16 x, uint16 y) {
   uint16 t;
 
   t = ((y - overworld_offset_base_y) & overworld_offset_mask_y) * 8;
@@ -33,11 +33,11 @@ void TileDetect_ExecuteInner(uint8 tile, uint16 offs, uint16 bits, bool is_indoo
     tile = 0;
 
   switch (tile) {
-  case 0x00: case 0x05: case 0x06: case 0x07: case 0x14: case 0x15: case 0x16: case 0x17: case 0x21: case 0x23: case 0x24: case 0x25: case 0x38: case 0x39: case 0x3a: case 0x3b: case 0x3c: case 0x41: case 0x45: case 0x47: case 0x49: case 0x5e: case 0x5f: case 0x61: case 0x62: case 0x64: case 0x65: case 0x66: case 0xa6: case 0xa7: case 0xbe: case 0xbf: case 0xd0: case 0xd1: case 0xd2: case 0xd3: case 0xd4: case 0xd5: case 0xd6: case 0xd7: case 0xd8: case 0xd9: case 0xda: case 0xdb: case 0xdc: case 0xdd: case 0xde: case 0xdf: case 0xe0: case 0xe1: case 0xe2: case 0xe3: case 0xe4: case 0xe5: case 0xe6: case 0xe7: case 0xe8: case 0xe9: case 0xea: case 0xeb: case 0xec: case 0xed: case 0xee: case 0xef:  // TileHandlerOutdoors_00
+  case 0x00: case 0x05: case 0x06: case 0x07: case 0x14: case 0x15: case 0x16: case 0x17: case 0x21: case 0x23: case 0x24: case 0x25: case 0x38: case 0x39: case 0x3a: case 0x3b: case 0x3c: case 0x41: case 0x45: case 0x47: case 0x49: case 0x5e: case 0x5f: case 0x61: case 0x62: case 0x64: case 0x65: case 0x66: case 0xa6: case 0xa7: case 0xbe: case 0xbf: case 0xd0: case 0xd1: case 0xd2: case 0xd3: case 0xd4: case 0xd5: case 0xd6: case 0xd7: case 0xd8: case 0xd9: case 0xda: case 0xdb: case 0xdc: case 0xdd: case 0xde: case 0xdf: case 0xe0: case 0xe1: case 0xe2: case 0xe3: case 0xe4: case 0xe5: case 0xe6: case 0xe7: case 0xe8: case 0xe9: case 0xea: case 0xeb: case 0xec: case 0xed: case 0xee: case 0xef:  // TileBehavior_NothingOW
     if (!is_indoors)
       tiledetect_normal_tiles |= bits;
     break;
-  case 0x01: case 0x02: case 0x03:  // TileHandlerIndoor_01
+  case 0x01: case 0x02: case 0x03:  // TileBehavior_StandardCollision
   case 0x26: case 0x43:
     R14 |= bits;
     break;
@@ -62,78 +62,78 @@ void TileDetect_ExecuteInner(uint8 tile, uint16 offs, uint16 bits, bool is_indoo
       tiledetect_deepwater |= bits << 4;
     }
     break;
-  case 0x08:  // TileHandlerIndoor_08
+  case 0x08:  // TileBehavior_DeepWater
     tiledetect_deepwater |= bits;
     break;
-  case 0x09:  // TileHandlerIndoor_09
+  case 0x09:  // TileBehavior_ShallowWater
     tiledetect_shallow_water |= bits;
     break;
-  case 0x0a:  // TileHandlerIndoor_0A
+  case 0x0a:  // TileBehavior_ShortWaterLadder
     tiledetect_normal_tiles |= bits;
     break;
-  case 0x0c:  // TileHandlerIndoor_0C
+  case 0x0c:  // TileBehavior_OverlayMask_0C
     tiledetect_moving_floor_tiles |= bits;
     break;
-  case 0x0d:  // TileHandlerIndoor_0D
+  case 0x0d:  // TileBehavior_SpikeFloor
     if (!flag_block_link_menu && !(dung_savegame_state_bits & 0x8000))
       tiledetect_spike_floor_and_tile_triggers |= bits << 4;
     break;
-  case 0x0e:  // TileHandlerIndoor_0E
+  case 0x0e:  // TileBehavior_GanonIce
     tiledetect_icy_floor |= bits;
     break;
-  case 0x0f:  // TileHandlerIndoor_0F
+  case 0x0f:  // TileBehavior_PalaceIce
     tiledetect_icy_floor |= bits << 4;
     break;
-  case 0x10: case 0x11: case 0x12: case 0x13:  // TileHandlerIndoor_10
+  case 0x10: case 0x11: case 0x12: case 0x13:  // TileBehavior_Slope
     R12 |= bits;
     tiledetect_diag_state = word_87DC55[tile & 3];
     break;
-  case 0x18: case 0x19: case 0x1a: case 0x1b:  // TileHandlerIndoor_18
+  case 0x18: case 0x19: case 0x1a: case 0x1b:  // TileBehavior_SlopeOuter
     tiledetect_diagonal_tile |= bits;
     R12 |= bits;
     tiledetect_diag_state = word_87DC55[tile & 3];
     break;
-  case 0x1c:  // TileHandlerIndoor_1C
+  case 0x1c:  // TileBehavior_OverlayMask_1C
     tiledetect_water_staircase |= bits;
     break;
-  case 0x1d:  // TileHandlerIndoor_1D
+  case 0x1d:  // TileBehavior_NorthSingleLayerStairs
     index_of_interacting_tile = tile;
     tiledetect_inroom_staircase |= bits;
     tiledetect_stair_tile |= bits;
     break;
-  case 0x1e: case 0x1f:  // TileHandlerIndoor_1E
+  case 0x1e: case 0x1f:  // TileBehavior_NorthSwapLayerStairs
     index_of_interacting_tile = tile;
     tiledetect_inroom_staircase |= bits;
     tiledetect_stair_tile |= bits;
     break;
-  case 0x20: case 0xb0: case 0xb1: case 0xb2: case 0xb3: case 0xb4: case 0xb5: case 0xb6: case 0xb7: case 0xb8: case 0xb9: case 0xba: case 0xbb: case 0xbc: case 0xbd:  // TileHandlerIndoor_20
+  case 0x20: case 0xb0: case 0xb1: case 0xb2: case 0xb3: case 0xb4: case 0xb5: case 0xb6: case 0xb7: case 0xb8: case 0xb9: case 0xba: case 0xbb: case 0xbc: case 0xbd:  // TileBehavior_Pit
     if (!player_on_somaria_platform)
       tiledetect_pit_tile |= bits;
     break;
   case 0x22: case 0x30: case 0x31: case 0x32: case 0x33: case 0x34: case 0x35: case 0x36: case 0x37:  // TileHandlerIndoor_22
     tiledetect_stair_tile |= bits;
     break;
-  case 0x27:  // TileHandlerIndoor_27
+  case 0x27:  // TileBehavior_Hookshottables
     R14 |= bits;
     tiledetect_misc_tiles |= bits;
     break;
-  case 0x28:  // TileHandlerIndoor_28
+  case 0x28:  // TileBehavior_Ledge_North
     index_of_interacting_tile = tile;
     tiledetect_vertical_ledge |= bits;
     break;
-  case 0x29:  // TileHandlerIndoor_29
+  case 0x29:  // TileBehavior_Ledge_South
     index_of_interacting_tile = tile;
     tiledetect_vertical_ledge |= bits << 4;
     break;
-  case 0x2a: case 0x2b:  // TileHandlerIndoor_2A
+  case 0x2a: case 0x2b:  // TileBehavior_Ledge_EastWest
     index_of_interacting_tile = tile;
     detection_of_ledge_tiles_horiz_uphoriz |= bits;
     break;
-  case 0x2c: case 0x2e:  // TileHandlerIndoor_2C
+  case 0x2c: case 0x2e:  // TileBehavior_Ledge_NorthDiagonal
     index_of_interacting_tile = tile;
     detection_of_ledge_tiles_horiz_uphoriz |= bits << 4;
     break;
-  case 0x2d: case 0x2f:  // TileHandlerIndoor_2D
+  case 0x2d: case 0x2f:  // TileBehavior_Ledge_SouthDiagonal
     index_of_interacting_tile = tile;
     tiledetect_ledges_down_leftright |= bits;
     break;
@@ -142,27 +142,27 @@ void TileDetect_ExecuteInner(uint8 tile, uint16 offs, uint16 bits, bool is_indoo
     tiledetect_inroom_staircase |= bits << 4;
     tiledetect_stair_tile |= bits;
     break;
-  case 0x40:  // TileHandlerIndoor_40
+  case 0x40:  // TileBehavior_ThickGrass
     tiledetect_thick_grass |= bits;
     break;
-  case 0x44:  // TileHandlerIndoor_44
+  case 0x44:  // TileBehavior_Spike
     if (!flag_block_link_menu && !(dung_savegame_state_bits & 0x8000))
       bitfield_spike_cactus_tiles |= bits;
     else
       R14 |= bits;
     break;
-  case 0x46:  // TileHandlerIndoor_46
+  case 0x46:  // TileBehavior_HylianPlaque
     tiledetect_spike_floor_and_tile_triggers |= bits;
     R14 |= bits;
     break;
-  case 0x48: case 0x4a:  // TileHandlerIndoor_48
+  case 0x48: case 0x4a:  // TileBehavior_DiggableGround
     tiledetect_destruction_aftermath |= bits;
     tiledetect_normal_tiles |= bits;
     break;
-  case 0x4b:  // TileHandlerIndoor_4B
+  case 0x4b:  // TileBehavior_Warp
     tiledetect_thick_grass |= bits << 4;
     break;
-  case 0x50: case 0x51: case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: { // TileHandlerIndoor_50
+  case 0x50: case 0x51: case 0x52: case 0x53: case 0x54: case 0x55: case 0x56: { // TileBehavior_Liftable
     static const uint8 kTile50data[] = { 0x54, 0x52, 0x50, 0x51, 0x53, 0x55, 0x56 };
     for (int i = 6; i >= 0; i--) {
       if (kTile50data[i] == tile) {
@@ -177,11 +177,11 @@ void TileDetect_ExecuteInner(uint8 tile, uint16 offs, uint16 bits, bool is_indoo
     }
     break;
   }
-  case 0x57:  // TileHandlerIndoor_57
+  case 0x57:  // TileBehavior_BonkRocks
     R14 |= bits;
     bitmask_for_dashable_tiles |= bits << 4;
     break;
-  case 0x58: case 0x59: case 0x5a: case 0x5b: case 0x5c: case 0x5d:  // TileHandlerIndoor_58
+  case 0x58: case 0x59: case 0x5a: case 0x5b: case 0x5c: case 0x5d:  // TileBehavior_Chest
     tiledetect_misc_tiles |= bits;
     index_of_interacting_tile = tile;
     if (dung_chest_locations[tile - 0x58] >= 0x8000) {
@@ -194,7 +194,7 @@ void TileDetect_ExecuteInner(uint8 tile, uint16 offs, uint16 bits, bool is_indoo
       R14 |= bits;
     }
     break;
-  case 0x60:  // TileHandlerIndoor_60
+  case 0x60:  // TileBehavior_RupeeTile
     if (is_indoors) {
       if (dung_bg2_attr_table[offs + 64] == 0x60) {
         tiledetect_misc_tiles |= bits << 8;
@@ -205,30 +205,30 @@ void TileDetect_ExecuteInner(uint8 tile, uint16 offs, uint16 bits, bool is_indoo
       tiledetect_normal_tiles |= bits;
     }
     break;
-  case 0x63:  // TileHandlerIndoor_63
+  case 0x63:  // TileBehavior_MinigameChest
     tiledetect_misc_tiles |= bits;
     index_of_interacting_tile = tile;
     tiledetect_chest |= bits;  // small key lock
     R14 |= bits;
     break;
-  case 0x67:  // TileHandlerIndoor_67
+  case 0x67:  // TileBehavior_CrystalPeg_Up
     R14 |= bits;
     tiledetect_misc_tiles |= bits;
     bitfield_spike_cactus_tiles |= bits << 4;
     break;
-  case 0x68:  // TileHandlerIndoor_68
+  case 0x68:  // TileBehavior_Conveyor_Upwards
     tiledetect_var4 |= bits;
     break;
-  case 0x69:  // TileHandlerIndoor_69
+  case 0x69:  // TileBehavior_Conveyor_Downwards
     tiledetect_var4 |= bits << 4;
     break;
-  case 0x6a:  // TileHandlerIndoor_6A
+  case 0x6a:  // TileBehavior_Conveyor_Leftwards
     tiledetect_var4 |= bits << 8;
     break;
-  case 0x6b:  // TileHandlerIndoor_6B
+  case 0x6b:  // TileBehavior_Conveyor_Rightwards
     tiledetect_var4 |= bits << 12;
     break;
-  case 0x70: case 0x71: case 0x72: case 0x73: case 0x74: case 0x75: case 0x76: case 0x77: case 0x78: case 0x79: case 0x7a: case 0x7b: case 0x7c: case 0x7d: case 0x7e: case 0x7f:  // TileHandlerIndoor_70
+  case 0x70: case 0x71: case 0x72: case 0x73: case 0x74: case 0x75: case 0x76: case 0x77: case 0x78: case 0x79: case 0x7a: case 0x7b: case 0x7c: case 0x7d: case 0x7e: case 0x7f:  // TileBehavior_ManipulablyReplaced
     if (bits & 2)
       tiledetect_var2 |= 1 << (tile & 0xf);
     R14 |= bits;
@@ -242,53 +242,53 @@ void TileDetect_ExecuteInner(uint8 tile, uint16 offs, uint16 bits, bool is_indoo
     R14 |= (bits << 4) | (bits << 8);
     tiledetect_var1 = 2 * (tile & 1);
     break;
-  case 0x8e: case 0x8f:  // TileHandlerIndoor_8E
+  case 0x8e: case 0x8f:  // TileBehavior_Entrance
     R14 |= bits << 4;
     bitmask_for_dashable_tiles |= bits;
     tiledetect_var1 = 0;
     break;
-  case 0x90: case 0x91: case 0x92: case 0x93: case 0x94: case 0x95: case 0x96: case 0x97:  // TileHandlerIndoor_90
+  case 0x90: case 0x91: case 0x92: case 0x93: case 0x94: case 0x95: case 0x96: case 0x97:  // TileBehavior_LayerToggleShutterDoor
     room_transitioning_flags = 1;
     R14 |= (bits << 4) | (bits << 8);
     tiledetect_var1 = 2 * (tile & 1);
     break;
-  case 0x98: case 0x99: case 0x9a: case 0x9b: case 0x9c: case 0x9d: case 0x9e: case 0x9f: case 0xa8: case 0xa9: case 0xaa: case 0xab: case 0xac: case 0xad: case 0xae: case 0xaf:  // TileHandlerIndoor_98
+  case 0x98: case 0x99: case 0x9a: case 0x9b: case 0x9c: case 0x9d: case 0x9e: case 0x9f: case 0xa8: case 0xa9: case 0xaa: case 0xab: case 0xac: case 0xad: case 0xae: case 0xaf:  // TileBehavior_LayerAndDungeonToggleShutterDoor
     room_transitioning_flags = 3;
     R14 |= (bits << 4) | (bits << 8);
     tiledetect_var1 = 2 * (tile & 1);
     break;
-  case 0xa0: case 0xa1: case 0xa4: case 0xa5:  // TileHandlerIndoor_A0
+  case 0xa0: case 0xa1: case 0xa4: case 0xa5:  // TileBehavior_DungeonToggleManualDoor
     room_transitioning_flags = 2;
     R14 |= bits << 4;
     tiledetect_var1 = 2 * (tile & 1);
     break;
-  case 0xa2: case 0xa3:  // TileHandlerIndoor_A2
+  case 0xa2: case 0xa3:  // TileBehavior_DungeonToggleShutterDoor
     room_transitioning_flags = 2;
     R14 |= (bits << 4) | (bits << 8);
     tiledetect_var1 = 2 * (tile & 1);
     break;
-  case 0xc0: case 0xc1: case 0xc2: case 0xc3: case 0xc4: case 0xc5: case 0xc6: case 0xc7: case 0xc8: case 0xc9: case 0xca: case 0xcb: case 0xcc: case 0xcd: case 0xce: case 0xcf:  // TileHandlerIndoor_C0
+  case 0xc0: case 0xc1: case 0xc2: case 0xc3: case 0xc4: case 0xc5: case 0xc6: case 0xc7: case 0xc8: case 0xc9: case 0xca: case 0xcb: case 0xcc: case 0xcd: case 0xce: case 0xcf:  // TileBehavior_LightableTorch
     R14 |= bits;
     tiledetect_misc_tiles |= bits;
     break;
-  case 0xf0: case 0xf1: case 0xf2: case 0xf3: case 0xf4: case 0xf5: case 0xf6: case 0xf7: case 0xf8: case 0xf9: case 0xfa: case 0xfb: case 0xfc: case 0xfd: case 0xfe: case 0xff:  // TileHandlerIndoor_F0
+  case 0xf0: case 0xf1: case 0xf2: case 0xf3: case 0xf4: case 0xf5: case 0xf6: case 0xf7: case 0xf8: case 0xf9: case 0xfa: case 0xfb: case 0xfc: case 0xfd: case 0xfe: case 0xff:  // TileBehavior_FlaggableDoor
     R14 |= bits;
     tiledetect_misc_tiles |= bits << 4;
     break;
 
-  case 0x42:  // TileHandlerOutdoors_42
+  case 0x42:  // TileBehavior_GraveStone
     if (!is_indoors) {
       tiledetect_key_lock_gravestones |= bits;
       R14 |= bits;
     }
     break;
-  case 0x4c: case 0x4d:  // TileHandlerOutdoors_4C
+  case 0x4c: case 0x4d:  // TileBehavior_UnusedCornerType
     if (!is_indoors) {
       index_of_interacting_tile = tile;
       detection_of_unknown_tile_types |= bits;
     }
     break;
-  case 0x4e: case 0x4f:  // TileHandlerOutdoors_4E
+  case 0x4e: case 0x4f:  // TileBehavior_EasternRuinsCorner
     if (!is_indoors) {
       index_of_interacting_tile = tile;
       detection_of_unknown_tile_types |= bits << 4;
@@ -299,7 +299,7 @@ void TileDetect_ExecuteInner(uint8 tile, uint16 offs, uint16 bits, bool is_indoo
   }
 }
 
-void TileDetect_Execute(uint16 x, uint16 y, uint16 bits) {
+void TileDetection_Execute(uint16 x, uint16 y, uint16 bits) {
   uint8 tile;
   uint16 offs = 0;
   if (player_is_indoors) {
@@ -310,7 +310,7 @@ void TileDetect_Execute(uint16 x, uint16 y, uint16 bits) {
       tile = 0;
     link_tile_below = tile;
   } else {
-    tile = Overworld_GetTileAttrAtLocation(x, y);
+    tile = Overworld_GetTileAttributeAtLocation(x, y);
   }
   TileDetect_ExecuteInner(tile, offs, bits, player_is_indoors);
 }
@@ -351,7 +351,7 @@ static const uint8 kDetectTiles_tab1[] = { 0, 0, 8, 8 };
 static const uint8 kDetectTiles_tab2[] = { 8, 8, 16, 16 };
 static const uint8 kDetectTiles_tab3[] = { 15, 15, 23, 23 };
 
-void DetectTiles_MoveX(uint16 direction) {
+void TileDetect_Movement_X(uint16 direction) {
   assert(direction < 4);
   TileDetect_ResetState();
   tiledetect_pit_tile = 0;
@@ -362,12 +362,12 @@ void DetectTiles_MoveX(uint16 direction) {
   uint16 y1 = tiledetect_which_y_pos[0] & tilemap_location_calc_mask;
   tiledetect_which_y_pos[1] = link_y_coord + kDetectTiles_tab3[direction];
   uint16 y2 = tiledetect_which_y_pos[1] & tilemap_location_calc_mask;
-  TileDetect_Execute(x, y0, 1);
-  TileDetect_Execute(x, y1, 2);
-  TileDetect_Execute(x, y2, 4);
+  TileDetection_Execute(x, y0, 1);
+  TileDetection_Execute(x, y1, 2);
+  TileDetection_Execute(x, y2, 4);
 }
 
-void DetectTiles_MoveY(uint16 direction) {
+void TileDetect_Movement_Y(uint16 direction) {
   assert(direction < 4);
   TileDetect_ResetState();
   tiledetect_pit_tile = 0;
@@ -378,16 +378,16 @@ void DetectTiles_MoveY(uint16 direction) {
   uint16 x1 = ((link_x_coord + kDetectTiles_tab2[direction]) & tilemap_location_calc_mask) >> 3;
   uint16 x2 = ((link_x_coord + kDetectTiles_tab3[direction]) & tilemap_location_calc_mask) >> 3;
   scratch_1 = x2;
-  TileDetect_Execute(x0, y, 1);
-  TileDetect_Execute(x1, y, 2);
-  TileDetect_Execute(x2, y, 4);
+  TileDetection_Execute(x0, y, 1);
+  TileDetection_Execute(x1, y, 2);
+  TileDetection_Execute(x2, y, 4);
 }
 
 static const int8 kDetectTiles_tab4[] = { 7, 24, -1, 16 };
 static const uint8 kDetectTiles_tab5[] = { 0, 0, 8, 8 };
 static const uint8 kDetectTiles_tab6[] = { 15, 15, 23, 23 };
 
-void DetectTiles_3_UpDown(uint16_t direction) {
+void TileDetect_Movement_VerticalSlopes(uint16_t direction) {
   assert(direction < 4);
   TileDetect_ResetState();
   tiledetect_pit_tile = 0;
@@ -395,11 +395,11 @@ void DetectTiles_3_UpDown(uint16_t direction) {
   uint16 y = (link_y_coord + kDetectTiles_tab4[direction]) & tilemap_location_calc_mask;
   uint16 x0 = ((link_x_coord + kDetectTiles_tab5[direction]) & tilemap_location_calc_mask) >> 3;
   uint16 x1 = ((link_x_coord + kDetectTiles_tab6[direction]) & tilemap_location_calc_mask) >> 3;
-  TileDetect_Execute(x0, y, 1);
-  TileDetect_Execute(x1, y, 2);
+  TileDetection_Execute(x0, y, 1);
+  TileDetection_Execute(x1, y, 2);
 }
 
-void DetectTiles_4_LeftRight(uint16_t direction) {
+void TileDetect_Movement_HorizontalSlopes(uint16_t direction) {
   assert(direction < 4);
   TileDetect_ResetState();
   tiledetect_pit_tile = 0;
@@ -407,8 +407,8 @@ void DetectTiles_4_LeftRight(uint16_t direction) {
   uint16 x = ((link_x_coord + kDetectTiles_tab4[direction]) & tilemap_location_calc_mask) >> 3;
   uint16 y0 = ((link_y_coord + kDetectTiles_tab5[direction]) & tilemap_location_calc_mask);
   uint16 y1 = ((link_y_coord + kDetectTiles_tab6[direction]) & tilemap_location_calc_mask);
-  TileDetect_Execute(x, y0, 1);
-  TileDetect_Execute(x, y1, 2);
+  TileDetection_Execute(x, y0, 1);
+  TileDetection_Execute(x, y1, 2);
 }
 
 void Player_TileDetectNearby() {
@@ -423,10 +423,10 @@ void Player_TileDetectNearby() {
 
   scratch_1 = y0;
 
-  TileDetect_Execute(x0, y0, 8);
-  TileDetect_Execute(x0, y1, 2);
-  TileDetect_Execute(x1, y0, 4);
-  TileDetect_Execute(x1, y1, 1);
+  TileDetection_Execute(x0, y0, 8);
+  TileDetection_Execute(x0, y1, 2);
+  TileDetection_Execute(x1, y0, 4);
+  TileDetection_Execute(x1, y1, 1);
 }
 
 void Hookshot_CheckSingleLayerTileCollision(uint16 x, uint16 y, int dir) {
@@ -436,11 +436,11 @@ void Hookshot_CheckSingleLayerTileCollision(uint16 x, uint16 y, int dir) {
   uint16 y1 = (y + kHookShot_CheckColl_Y[dir * 2 + 1]) & tilemap_location_calc_mask;
   uint16 x0 = ((x + kHookShot_CheckColl_X[dir * 2 + 0]) & tilemap_location_calc_mask) >> 3;
   uint16 x1 = ((x + kHookShot_CheckColl_X[dir * 2 + 1]) & tilemap_location_calc_mask) >> 3;
-  TileDetect_Execute(x0, y0, 1);
-  TileDetect_Execute(x1, y1, 2);
+  TileDetection_Execute(x0, y0, 1);
+  TileDetection_Execute(x1, y1, 2);
 }
 
-void Hookshot_CheckTileCollison(int k) {
+void Hookshot_CheckTileCollision(int k) {
   uint8 bak0 = BYTE(dungeon_room_index);
   uint8 bak1 = link_is_on_lower_level;
 
@@ -466,7 +466,7 @@ void Hookshot_CheckTileCollison(int k) {
   BYTE(dungeon_room_index) = bak0;
 }
 
-void DetectTiles_7(int8 speed) {
+void HandleNudgingInADoor(int8 speed) {
   uint8 y;
 
   if (link_last_direction_moved_towards & 2) {
@@ -483,7 +483,7 @@ void DetectTiles_7(int8 speed) {
   uint16 x0 = ((link_x_coord + kDetectTiles_7_X[y]) & tilemap_location_calc_mask) >> 3;
   uint16 y0 = ((link_y_coord + kDetectTiles_7_Y[y]) & tilemap_location_calc_mask);
 
-  TileDetect_Execute(x0, y0, 1);
+  TileDetection_Execute(x0, y0, 1);
 
   if (((R14 | detection_of_ledge_tiles_horiz_uphoriz) & 3) == 0) {
     if (((tiledetect_vertical_ledge | detection_of_unknown_tile_types) & 0x33) == 0)
@@ -496,7 +496,7 @@ void DetectTiles_7(int8 speed) {
     link_x_coord -= speed;
 }
 
-void DetectTiles_8() {
+void TileCheckForMirrorBonk() {
   tiledetect_pit_tile = 0;
   TileDetect_ResetState();
 
@@ -508,15 +508,15 @@ void DetectTiles_8() {
 
   scratch_1 = y0;
 
-  TileDetect_Execute(x0, y0, 8);
-  TileDetect_Execute(x0, y1, 2);
-  TileDetect_Execute(x1, y0, 4);
-  TileDetect_Execute(x1, y1, 1);
+  TileDetection_Execute(x0, y0, 8);
+  TileDetection_Execute(x0, y1, 2);
+  TileDetection_Execute(x1, y0, 4);
+  TileDetection_Execute(x1, y1, 1);
 
 }
 
 // Used when holding sword in doorway
-void DetectTiles_9(uint8 dw) {
+void TileDetect_SwordSwingDeepInDoor(uint8 dw) {
   tiledetect_pit_tile = 0;
   TileDetect_ResetState();
 
@@ -529,7 +529,7 @@ void DetectTiles_9(uint8 dw) {
   uint16 y0 = ((link_y_coord + kDoorwayDetectY[o + 0]) & tilemap_location_calc_mask);
   uint16 y1 = ((link_y_coord + kDoorwayDetectY[o + 1]) & tilemap_location_calc_mask);
 
-  TileDetect_Execute(x0, y0, 1);
-  TileDetect_Execute(x1, y1, 2);
+  TileDetection_Execute(x0, y0, 1);
+  TileDetection_Execute(x1, y1, 2);
 }
 

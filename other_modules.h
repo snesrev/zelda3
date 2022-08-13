@@ -1,4 +1,4 @@
 #pragma once
 #include "types.h"
 
-void Module_GanonEmerges();
+void Module18_GanonEmerges();

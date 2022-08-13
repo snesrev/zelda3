@@ -4,35 +4,35 @@
 
 #pragma once
 
-void Main_PrepSpritesForNmi();
+void NMI_PrepareSprites();
 void Module_MainRouting();
 
 
-void Sound_LoadLightWorldSongBank();
+void LoadOverworldSongs();
 void Sound_LoadIntroSongBank();
-void Sound_LoadIndoorSongBank();
-void Sound_LoadEndingSongBank();
+void LoadDungeonSongs();
+void LoadCreditsSongs();
 
-uint8 Sound_GetPanForPlayer();
-void Sound_SetSfx3Pan(int k, uint8 sfx);
-void Sound_SetSfx2Pan(int k, uint8 sfx);
-void Sound_SetSfx1Pan(int k, uint8 sfx);
-uint8 Sound_GetPanForX(uint16 x);
+uint8 Link_CalculateSfxPan();
+void SpriteSfx_QueueSfx3WithPan(int k, uint8 sfx);
+void SpriteSfx_QueueSfx2WithPan(int k, uint8 sfx);
+void SpriteSfx_QueueSfx1WithPan(int k, uint8 sfx);
+uint8 CalculateSfxPan(uint16 x);
 
 
-void AddReceivedItem(uint8 ain, uint8 yin, int chest_pos);
+void AncillaAdd_ItemReceipt(uint8 ain, uint8 yin, int chest_pos);
 
-uint8 ToolAndTileInteraction(uint16 x, uint16 y);
-uint8 Player_DoSfx2(uint8 a);
-void Player_DoSfx3(uint8 a);
+uint8 HandleItemTileAction_Overworld(uint16 x, uint16 y);
+uint8 PlaySfx_Set2(uint8 a);
+void PlaySfx_Set3(uint8 a);
 
 void Main_ShowTextMessage();
-uint8 LightTorch_GetSfxPan(uint8 a);
-void Dungeon_PrepOverlayDma(uint16 x, uint16 y, uint16 r8);
+uint8 CalculateSfxPan_Arbitrary(uint8 a);
+void RoomDraw_AdjustTorchLightingChange(uint16 x, uint16 y, uint16 r8);
 int Dungeon_PrepOverlayDma_nextPrep(int dst, uint16 r8);
 int Dungeon_PrepOverlayDma_watergate(int dst, uint16 r8, uint16 r6, int loops);
 void WallMaster_SendPlayerToLastEntrance();
-void Module_LoadGame_indoors();
+void LoadDungeonRoomRebuildHUD();
 
 static inline OamEnt *GetOamCurPtr() {
   return (OamEnt *)&g_ram[oam_cur_ptr];

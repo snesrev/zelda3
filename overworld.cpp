@@ -73,8 +73,8 @@ static const uint8 kSpExit_PalBg[16] = { 0xa, 0xa, 0xa, 0xa, 2, 2, 2, 0xa, 2, 2,
 static const uint8 kSpExit_PalSpr[16] = { 1, 8, 8, 8, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 2 };
 #endif
 
-void Overworld_TransMapData2_justScroll();
-void Overworld_LoadMapData_justOverlays();
+void Overworld_StartScrollTransition();
+void Overworld_HandleOverlaysAndBombDoors();
 
 const uint8 *GetMap8toTileAttr() {
   return kMap8DataToTileAttr;
@@ -84,14 +84,14 @@ const uint16 *GetMap16toMap8Table() {
   return kMap16ToMap8;
 }
 
-void EntranceSequence_Reset() {
+void OverworldEntrance_AdvanceAndBoom() {
   subsubmodule_index++;
   overworld_entrance_sequence_counter = 0;
   sound_effect_1 = 12;
   sound_effect_2 = 7;
 }
 
-void EntranceSequence_Finish() {
+void OverworldEntrance_PlayJingle() {
   sound_effect_2 = 27;
   trigger_special_entrance = 0;
   subsubmodule_index = 0;
@@ -102,63 +102,63 @@ void EntranceSequence_Finish() {
   bg1_y_offset = 0;
 }
 
-void DarkPalaceEntrance_Main() {
+void Overworld_AnimateEntrance_PoD() {
   switch (subsubmodule_index) {
   case 0:
     if (++overworld_entrance_sequence_counter != 0x40)
       return;
-    EntranceSequence_Reset();
+    OverworldEntrance_AdvanceAndBoom();
     save_ow_event_info[0x5e] |= 0x20;
-    Overworld_DrawPersistentMap16(0x1e6, 0xe31);
-    Overworld_DrawPersistentMap16(0x2ea, 0xe30);
-    Overworld_DrawPersistentMap16(0x26a, 0xe26);
-    Overworld_DrawPersistentMap16(0x2ea, 0xe27);
+    Overworld_DrawMap16_Persist(0x1e6, 0xe31);
+    Overworld_DrawMap16_Persist(0x2ea, 0xe30);
+    Overworld_DrawMap16_Persist(0x26a, 0xe26);
+    Overworld_DrawMap16_Persist(0x2ea, 0xe27);
     nmi_load_bg_from_vram = 1;
     break;
   case 1:
     if (++overworld_entrance_sequence_counter != 0x20)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x26a, 0xe28);
-    Overworld_DrawPersistentMap16(0x2ea, 0xe29);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x26a, 0xe28);
+    Overworld_DrawMap16_Persist(0x2ea, 0xe29);
     nmi_load_bg_from_vram = 1;
     break;
   case 2:
     if (++overworld_entrance_sequence_counter != 0x20)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x26a, 0xe2a);
-    Overworld_DrawPersistentMap16(0x2ea, 0xe2b);
-    Overworld_DrawPersistentMap16(0x36a, 0xe2c);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x26a, 0xe2a);
+    Overworld_DrawMap16_Persist(0x2ea, 0xe2b);
+    Overworld_DrawMap16_Persist(0x36a, 0xe2c);
     nmi_load_bg_from_vram = 1;
     break;
   case 3:
     if (++overworld_entrance_sequence_counter != 0x20)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x26a, 0xe2d);
-    Overworld_DrawPersistentMap16(0x2ea, 0xe2e);
-    Overworld_DrawPersistentMap16(0x36a, 0xe2f);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x26a, 0xe2d);
+    Overworld_DrawMap16_Persist(0x2ea, 0xe2e);
+    Overworld_DrawMap16_Persist(0x36a, 0xe2f);
     nmi_load_bg_from_vram = 1;
     break;
   case 4:
     if (++overworld_entrance_sequence_counter != 0x20)
       return;
-    EntranceSequence_Finish();
+    OverworldEntrance_PlayJingle();
     break;
   }
 }
 
 // Dark Forest Palace
-void Overworld_EntranceSequence_Func1() {
+void Overworld_AnimateEntrance_Skull() {
   switch (subsubmodule_index) {
   case 0:
     if (++overworld_entrance_sequence_counter != 4)
       return;
     overworld_entrance_sequence_counter = 0;
     subsubmodule_index++;
-    Overworld_DrawPersistentMap16(0x409 * 2, 0xe06);
-    Overworld_DrawPersistentMap16(0x40a * 2, 0xe06);
+    Overworld_DrawMap16_Persist(0x409 * 2, 0xe06);
+    Overworld_DrawMap16_Persist(0x40a * 2, 0xe06);
     save_ow_event_info[BYTE(overworld_screen_index)] |= 0x20;
     nmi_load_bg_from_vram = 1;
     sound_effect_2 = 0x16;
@@ -168,10 +168,10 @@ void Overworld_EntranceSequence_Func1() {
       return;
     overworld_entrance_sequence_counter = 0;
     subsubmodule_index++;
-    Overworld_DrawPersistentMap16(0x3c8 * 2, 0xe07);
-    Overworld_DrawPersistentMap16(0x3c9 * 2, 0xe08);
-    Overworld_DrawPersistentMap16(0x3ca * 2, 0xe09);
-    Overworld_DrawPersistentMap16(0x3cb * 2, 0xe0a);
+    Overworld_DrawMap16_Persist(0x3c8 * 2, 0xe07);
+    Overworld_DrawMap16_Persist(0x3c9 * 2, 0xe08);
+    Overworld_DrawMap16_Persist(0x3ca * 2, 0xe09);
+    Overworld_DrawMap16_Persist(0x3cb * 2, 0xe0a);
     nmi_load_bg_from_vram = 1;
     sound_effect_2 = 0x16;
     break;
@@ -180,10 +180,10 @@ void Overworld_EntranceSequence_Func1() {
       return;
     overworld_entrance_sequence_counter = 0;
     subsubmodule_index++;
-    Overworld_DrawPersistentMap16(0x388 * 2, 0xe07);
-    Overworld_DrawPersistentMap16(0x389 * 2, 0xe08);
-    Overworld_DrawPersistentMap16(0x38a * 2, 0xe09);
-    Overworld_DrawPersistentMap16(0x38b * 2, 0xe0a);
+    Overworld_DrawMap16_Persist(0x388 * 2, 0xe07);
+    Overworld_DrawMap16_Persist(0x389 * 2, 0xe08);
+    Overworld_DrawMap16_Persist(0x38a * 2, 0xe09);
+    Overworld_DrawMap16_Persist(0x38b * 2, 0xe0a);
     nmi_load_bg_from_vram = 1;
     sound_effect_2 = 0x16;
     break;
@@ -192,14 +192,14 @@ void Overworld_EntranceSequence_Func1() {
       return;
     overworld_entrance_sequence_counter = 0;
     subsubmodule_index++;
-    Overworld_DrawPersistentMap16(0x2c8 * 2, 0xe11);
-    Overworld_DrawPersistentMap16(0x2cb * 2, 0xe12);
-    Overworld_DrawPersistentMap16(0x308 * 2, 0xe0d);
-    Overworld_DrawPersistentMap16(0x309 * 2, 0xe0e);
-    Overworld_DrawPersistentMap16(0x30a * 2, 0xe0f);
-    Overworld_DrawPersistentMap16(0x30b * 2, 0xe10);
-    Overworld_DrawPersistentMap16(0x349 * 2, 0xe0b);
-    Overworld_DrawPersistentMap16(0x34a * 2, 0xe0c);
+    Overworld_DrawMap16_Persist(0x2c8 * 2, 0xe11);
+    Overworld_DrawMap16_Persist(0x2cb * 2, 0xe12);
+    Overworld_DrawMap16_Persist(0x308 * 2, 0xe0d);
+    Overworld_DrawMap16_Persist(0x309 * 2, 0xe0e);
+    Overworld_DrawMap16_Persist(0x30a * 2, 0xe0f);
+    Overworld_DrawMap16_Persist(0x30b * 2, 0xe10);
+    Overworld_DrawMap16_Persist(0x349 * 2, 0xe0b);
+    Overworld_DrawMap16_Persist(0x34a * 2, 0xe0c);
     nmi_load_bg_from_vram = 1;
     sound_effect_2 = 0x16;
     break;
@@ -208,21 +208,21 @@ void Overworld_EntranceSequence_Func1() {
       return;
     overworld_entrance_sequence_counter = 0;
     subsubmodule_index++;
-    Overworld_DrawPersistentMap16(0x2c8 * 2, 0xe13);
-    Overworld_DrawPersistentMap16(0x2cb * 2, 0xe14);
-    Overworld_DrawPersistentMap16(0x308 * 2, 0xe15);
-    Overworld_DrawPersistentMap16(0x309 * 2, 0xe16);
-    Overworld_DrawPersistentMap16(0x30a * 2, 0xe17);
-    Overworld_DrawPersistentMap16(0x30b * 2, 0xe18);
-    Overworld_DrawPersistentMap16(0x349 * 2, 0xe19);
-    Overworld_DrawPersistentMap16(0x34a * 2, 0xe1a);
+    Overworld_DrawMap16_Persist(0x2c8 * 2, 0xe13);
+    Overworld_DrawMap16_Persist(0x2cb * 2, 0xe14);
+    Overworld_DrawMap16_Persist(0x308 * 2, 0xe15);
+    Overworld_DrawMap16_Persist(0x309 * 2, 0xe16);
+    Overworld_DrawMap16_Persist(0x30a * 2, 0xe17);
+    Overworld_DrawMap16_Persist(0x30b * 2, 0xe18);
+    Overworld_DrawMap16_Persist(0x349 * 2, 0xe19);
+    Overworld_DrawMap16_Persist(0x34a * 2, 0xe1a);
     nmi_load_bg_from_vram = 1;
     sound_effect_2 = 0x16;
-    EntranceSequence_Finish();
+    OverworldEntrance_PlayJingle();
     break;
   }
 }
-void MiseryMireEntrance_Main() {
+void Overworld_AnimateEntrance_Mire() {
   static const uint8 kMiseryMireEntranceBits[26] = {
     0xff, 0xf7, 0xf7, 0xfb, 0xee, 0xee, 0xee, 0xee, 0xee, 0xee, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa, 0xaa,
     0xaa, 0x88, 0x88, 0x88, 0x88, 0x80, 0x80, 0x80, 0x80, 0x80,
@@ -249,82 +249,82 @@ void MiseryMireEntrance_Main() {
     }
     if (j != 72)
       break;
-    EntranceSequence_Reset();
+    OverworldEntrance_AdvanceAndBoom();
     save_ow_event_info[BYTE(overworld_screen_index)] |= 0x20;
     j = 0xe48;
 draw_misery_2:
-    Overworld_DrawPersistentMap16(0x622, j++);
-    Overworld_DrawPersistentMap16(0x624, j++);
-    Overworld_DrawPersistentMap16(0x626, j++);
-    Overworld_DrawPersistentMap16(0x628, j++);
-    Overworld_DrawPersistentMap16(0x6a2, j++);
-    Overworld_DrawPersistentMap16(0x6a4, j++);
-    Overworld_DrawPersistentMap16(0x6a6, j++);
-    Overworld_DrawPersistentMap16(0x6a8, j++);
-    Overworld_DrawPersistentMap16(0x722, j++);
-    Overworld_DrawPersistentMap16(0x724, j++);
-    Overworld_DrawPersistentMap16(0x726, j++);
-    Overworld_DrawPersistentMap16(0x728, j++);
+    Overworld_DrawMap16_Persist(0x622, j++);
+    Overworld_DrawMap16_Persist(0x624, j++);
+    Overworld_DrawMap16_Persist(0x626, j++);
+    Overworld_DrawMap16_Persist(0x628, j++);
+    Overworld_DrawMap16_Persist(0x6a2, j++);
+    Overworld_DrawMap16_Persist(0x6a4, j++);
+    Overworld_DrawMap16_Persist(0x6a6, j++);
+    Overworld_DrawMap16_Persist(0x6a8, j++);
+    Overworld_DrawMap16_Persist(0x722, j++);
+    Overworld_DrawMap16_Persist(0x724, j++);
+    Overworld_DrawMap16_Persist(0x726, j++);
+    Overworld_DrawMap16_Persist(0x728, j++);
     nmi_load_bg_from_vram = 1;
     break;
   case 3:
     if ((j = ++overworld_entrance_sequence_counter) != 72)
       break;
-    EntranceSequence_Reset();
+    OverworldEntrance_AdvanceAndBoom();
     j = 0xe54;
 draw_misery_3:
-    Overworld_DrawPersistentMap16(0x5a2, j++);
-    Overworld_DrawPersistentMap16(0x5a4, j++);
-    Overworld_DrawPersistentMap16(0x5a6, j++);
-    Overworld_DrawPersistentMap16(0x5a8, j++);
+    Overworld_DrawMap16_Persist(0x5a2, j++);
+    Overworld_DrawMap16_Persist(0x5a4, j++);
+    Overworld_DrawMap16_Persist(0x5a6, j++);
+    Overworld_DrawMap16_Persist(0x5a8, j++);
     goto draw_misery_2;
   case 4:
     if ((j = ++overworld_entrance_sequence_counter) != 80)
       break;
-    EntranceSequence_Reset();
+    OverworldEntrance_AdvanceAndBoom();
     j = 0xe64;
-    Overworld_DrawPersistentMap16(0x522, j++);
-    Overworld_DrawPersistentMap16(0x524, j++);
-    Overworld_DrawPersistentMap16(0x526, j++);
-    Overworld_DrawPersistentMap16(0x528, j++);
+    Overworld_DrawMap16_Persist(0x522, j++);
+    Overworld_DrawMap16_Persist(0x524, j++);
+    Overworld_DrawMap16_Persist(0x526, j++);
+    Overworld_DrawMap16_Persist(0x528, j++);
     goto draw_misery_3;
   case 5:
     if ((j = ++overworld_entrance_sequence_counter) != 128)
       break;
-    EntranceSequence_Finish();
+    OverworldEntrance_PlayJingle();
     sound_effect_ambient = 5;
     break;
   }
 }
 
-void TurtleRockEntrance_Draw1() {
+void OverworldEntrance_DrawManyTR() {
   int j = 0xe78;
-  Overworld_DrawPersistentMap16(0x99e, j++);
-  Overworld_DrawPersistentMap16(0x9a0, j++);
-  Overworld_DrawPersistentMap16(0x9a2, j++);
-  Overworld_DrawPersistentMap16(0x9a4, j++);
+  Overworld_DrawMap16_Persist(0x99e, j++);
+  Overworld_DrawMap16_Persist(0x9a0, j++);
+  Overworld_DrawMap16_Persist(0x9a2, j++);
+  Overworld_DrawMap16_Persist(0x9a4, j++);
 
-  Overworld_DrawPersistentMap16(0xa1e, j++);
-  Overworld_DrawPersistentMap16(0xa20, j++);
-  Overworld_DrawPersistentMap16(0xa22, j++);
-  Overworld_DrawPersistentMap16(0xa24, j++);
+  Overworld_DrawMap16_Persist(0xa1e, j++);
+  Overworld_DrawMap16_Persist(0xa20, j++);
+  Overworld_DrawMap16_Persist(0xa22, j++);
+  Overworld_DrawMap16_Persist(0xa24, j++);
 
-  Overworld_DrawPersistentMap16(0xa9e, j++);
-  Overworld_DrawPersistentMap16(0xaa0, j++);
-  Overworld_DrawPersistentMap16(0xaa2, j++);
-  Overworld_DrawPersistentMap16(0xaa4, j++);
+  Overworld_DrawMap16_Persist(0xa9e, j++);
+  Overworld_DrawMap16_Persist(0xaa0, j++);
+  Overworld_DrawMap16_Persist(0xaa2, j++);
+  Overworld_DrawMap16_Persist(0xaa4, j++);
 
-  Overworld_DrawPersistentMap16(0xb1e, j++);
-  Overworld_DrawPersistentMap16(0xb20, j++);
-  Overworld_DrawPersistentMap16(0xb22, j++);
-  Overworld_DrawPersistentMap16(0xb24, j++);
+  Overworld_DrawMap16_Persist(0xb1e, j++);
+  Overworld_DrawMap16_Persist(0xb20, j++);
+  Overworld_DrawMap16_Persist(0xb22, j++);
+  Overworld_DrawMap16_Persist(0xb24, j++);
   nmi_load_bg_from_vram = 1;
   nmi_disable_core_updates = 1;
 }
 
 #define turtlerock_ctr (g_ram[0xc8])
 
-void TurtleRockEntrance_Main() {
+void Overworld_AnimateEntrance_TurtleRock() {
   bg1_x_offset = frame_counter & 1 ? -1 : 1;
   bg1_y_offset = -bg1_x_offset;
 
@@ -358,7 +358,7 @@ common:
     flag_update_cgram_in_nmi++;
     break;
   case 5: {
-    TurtleRockEntrance_Draw1();
+    OverworldEntrance_DrawManyTR();
     TS_copy = 1;
     CGWSEL_copy = 2;
     CGADSUB_copy = 0x22;
@@ -377,8 +377,8 @@ common:
   case 6:
     if (!(frame_counter & 1)) {
       if (!(turtlerock_ctr & 7)) {
-        RestorePaletteAdditive_FadeIn(0xb0, 0xc0);
-        RestorePaletteSubtractive(0xd0, 0xe0);
+        PaletteFilter_RestoreAdditive(0xb0, 0xc0);
+        PaletteFilter_RestoreSubtractive(0xd0, 0xe0);
         flag_update_cgram_in_nmi++;
         sound_effect_2 = 2;
       }
@@ -392,7 +392,7 @@ common:
     if (!(frame_counter & 1) && !(turtlerock_ctr & 7))
       sound_effect_2 = 2;
     if (!--turtlerock_ctr) {
-      TurtleRockEntrance_Draw1();
+      OverworldEntrance_DrawManyTR();
       TS_copy = 0;
       CGWSEL_copy = 0x82;
       CGADSUB_copy = 0x20;
@@ -401,7 +401,7 @@ common:
     }
     break;
   case 8:
-    EntranceSequence_Finish();
+    OverworldEntrance_PlayJingle();
     break;
   }
 }
@@ -414,7 +414,7 @@ void GanonTowerEntrance_Func1() {
     sound_effect_1 = 0x2e;
     Palette_AnimGetMasterSword2();
   } else {
-    Palette_DarkenOrLighten_Step();
+    PaletteFilter_BlindingWhite();
     if (darkening_or_lightening_screen == 255) {
       palette_filter_countdown = 255;
       subsubmodule_index++;
@@ -424,7 +424,7 @@ void GanonTowerEntrance_Func1() {
   }
 }
 
-void GanonTowerEntrance_Main() {
+void Overworld_AnimateEntrance_GanonsTower() {
   switch (subsubmodule_index) {
   case 0:
   case 1:
@@ -446,98 +446,98 @@ void GanonTowerEntrance_Main() {
   case 3:
     if (++ganonentrance_ctr != 48)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x45e, 0xe88);
-    Overworld_DrawPersistentMap16(0x460, 0xe89);
-    Overworld_DrawPersistentMap16(0x4de, 0xea2);
-    Overworld_DrawPersistentMap16(0x4e0, 0xea3);
-    Overworld_DrawPersistentMap16(0x55e, 0xe8a);
-    Overworld_DrawPersistentMap16(0x560, 0xe8b);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x45e, 0xe88);
+    Overworld_DrawMap16_Persist(0x460, 0xe89);
+    Overworld_DrawMap16_Persist(0x4de, 0xea2);
+    Overworld_DrawMap16_Persist(0x4e0, 0xea3);
+    Overworld_DrawMap16_Persist(0x55e, 0xe8a);
+    Overworld_DrawMap16_Persist(0x560, 0xe8b);
     nmi_load_bg_from_vram = 1;
     break;
   case 4:
     if (++ganonentrance_ctr != 48)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x45e, 0xe8c);
-    Overworld_DrawPersistentMap16(0x460, 0xe8d);
-    Overworld_DrawPersistentMap16(0x4de, 0xe8e);
-    Overworld_DrawPersistentMap16(0x4e0, 0xe8f);
-    Overworld_DrawPersistentMap16(0x55e, 0xe90);
-    Overworld_DrawPersistentMap16(0x560, 0xe91);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x45e, 0xe8c);
+    Overworld_DrawMap16_Persist(0x460, 0xe8d);
+    Overworld_DrawMap16_Persist(0x4de, 0xe8e);
+    Overworld_DrawMap16_Persist(0x4e0, 0xe8f);
+    Overworld_DrawMap16_Persist(0x55e, 0xe90);
+    Overworld_DrawMap16_Persist(0x560, 0xe91);
     nmi_load_bg_from_vram = 1;
     break;
   case 5:
     if (++ganonentrance_ctr != 52)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x45e, 0xe92);
-    Overworld_DrawPersistentMap16(0x460, 0xe93);
-    Overworld_DrawPersistentMap16(0x4de, 0xe94);
-    Overworld_DrawPersistentMap16(0x4e0, 0xe94);
-    Overworld_DrawPersistentMap16(0x55e, 0xe95);
-    Overworld_DrawPersistentMap16(0x560, 0xe95);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x45e, 0xe92);
+    Overworld_DrawMap16_Persist(0x460, 0xe93);
+    Overworld_DrawMap16_Persist(0x4de, 0xe94);
+    Overworld_DrawMap16_Persist(0x4e0, 0xe94);
+    Overworld_DrawMap16_Persist(0x55e, 0xe95);
+    Overworld_DrawMap16_Persist(0x560, 0xe95);
     nmi_load_bg_from_vram = 1;
     break;
   case 6:
     if (++ganonentrance_ctr != 32)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x45e, 0xe96);
-    Overworld_DrawPersistentMap16(0x460, 0xe97);
-    Overworld_DrawPersistentMap16(0x4de, 0xe98);
-    Overworld_DrawPersistentMap16(0x4e0, 0xe99);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x45e, 0xe96);
+    Overworld_DrawMap16_Persist(0x460, 0xe97);
+    Overworld_DrawMap16_Persist(0x4de, 0xe98);
+    Overworld_DrawMap16_Persist(0x4e0, 0xe99);
     nmi_load_bg_from_vram = 1;
     break;
   case 7:
     if (++ganonentrance_ctr != 32)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x4de, 0xe9a);
-    Overworld_DrawPersistentMap16(0x4e0, 0xe9b);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x4de, 0xe9a);
+    Overworld_DrawMap16_Persist(0x4e0, 0xe9b);
     nmi_load_bg_from_vram = 1;
     break;
   case 8:
     if (++ganonentrance_ctr != 32)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x4de, 0xe9c);
-    Overworld_DrawPersistentMap16(0x4e0, 0xe9d);
-    Overworld_DrawPersistentMap16(0x55e, 0xe9e);
-    Overworld_DrawPersistentMap16(0x560, 0xe9f);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x4de, 0xe9c);
+    Overworld_DrawMap16_Persist(0x4e0, 0xe9d);
+    Overworld_DrawMap16_Persist(0x55e, 0xe9e);
+    Overworld_DrawMap16_Persist(0x560, 0xe9f);
     nmi_load_bg_from_vram = 1;
     break;
   case 9:
     if (++ganonentrance_ctr != 32)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x55e, 0xe9a);
-    Overworld_DrawPersistentMap16(0x560, 0xe9b);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x55e, 0xe9a);
+    Overworld_DrawMap16_Persist(0x560, 0xe9b);
     nmi_load_bg_from_vram = 1;
     break;
   case 10:
     if (++ganonentrance_ctr != 32)
       return;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x55e, 0xe9c);
-    Overworld_DrawPersistentMap16(0x560, 0xe9d);
-    Overworld_DrawPersistentMap16(0x5de, 0xea0);
-    Overworld_DrawPersistentMap16(0x5e0, 0xea1);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x55e, 0xe9c);
+    Overworld_DrawMap16_Persist(0x560, 0xe9d);
+    Overworld_DrawMap16_Persist(0x5de, 0xea0);
+    Overworld_DrawMap16_Persist(0x5e0, 0xea1);
     nmi_load_bg_from_vram = 1;
     break;
   case 11:
     if (++ganonentrance_ctr != 32)
       return;
     sound_effect_ambient = 5;
-    EntranceSequence_Reset();
-    Overworld_DrawPersistentMap16(0x5de, 0xe9a);
-    Overworld_DrawPersistentMap16(0x5e0, 0xe9b);
+    OverworldEntrance_AdvanceAndBoom();
+    Overworld_DrawMap16_Persist(0x5de, 0xe9a);
+    Overworld_DrawMap16_Persist(0x5e0, 0xe9b);
     nmi_load_bg_from_vram = 1;
     break;
   case 12:
     if (++ganonentrance_ctr != 72)
       return;
-    EntranceSequence_Finish();
+    OverworldEntrance_PlayJingle();
     ganonentrance_ctr = 0;
     music_control = 13;
     sound_effect_ambient = 9;
@@ -546,14 +546,14 @@ void GanonTowerEntrance_Main() {
 }
 
 static PlayerHandlerFunc *const kOverworld_EntranceSequence[5] = {
-  &DarkPalaceEntrance_Main,
-  &Overworld_EntranceSequence_Func1,
-  &MiseryMireEntrance_Main,
-  &TurtleRockEntrance_Main,
-  &GanonTowerEntrance_Main,
+  &Overworld_AnimateEntrance_PoD,
+  &Overworld_AnimateEntrance_Skull,
+  &Overworld_AnimateEntrance_Mire,
+  &Overworld_AnimateEntrance_TurtleRock,
+  &Overworld_AnimateEntrance_GanonsTower,
 };
 
-void Overworld_PlayEntranceSequence() {
+void Overworld_AnimateEntrance() {
   uint8 j = trigger_special_entrance;
   flag_is_link_immobilized = j;
   flag_unk1 = j;
@@ -561,7 +561,7 @@ void Overworld_PlayEntranceSequence() {
   kOverworld_EntranceSequence[j - 1]();
 }
 
-int Overworld_Decomp(uint8 *dst, const uint8 *src) {
+int Decompress_bank02(uint8 *dst, const uint8 *src) {
   uint8 *dst_org = dst;
   int len;
   for (;;) {
@@ -620,7 +620,7 @@ int Overworld_Decomp(uint8 *dst, const uint8 *src) {
 #define map16_decode_tmp (*(uint16*)(g_ram+0x14442))
 #endif
 
-void Map32ToMap16(uint16 *dst, uint16 input) {
+void Overworld_ParseMap32Definition(uint16 *dst, uint16 input) {
   uint16 a = input & ~7;
   if (a != map16_decode_last) {
     map16_decode_last = a;
@@ -670,13 +670,13 @@ void Map32ToMap16(uint16 *dst, uint16 input) {
   dst[65] = WORD(map16_decode_3[input & 7]);
 }
 
-void Overworld_LoadQuadrant16x16(uint16 *dst, int screen) {
+void Overworld_DecompressAndDrawOneQuadrant(uint16 *dst, int screen) {
   int rv;
-  rv = Overworld_Decomp(&g_ram[0x14400], kOverworld_Hibytes_Comp[screen]);
+  rv = Decompress_bank02(&g_ram[0x14400], kOverworld_Hibytes_Comp[screen]);
   for (int i = 0; i < 256; i++)
     g_ram[0x14001 + i * 2] = g_ram[0x14400 + i];
 
-  rv = Overworld_Decomp(&g_ram[0x14400], kOverworld_Lobytes_Comp[screen]);
+  rv = Decompress_bank02(&g_ram[0x14400], kOverworld_Lobytes_Comp[screen]);
   for (int i = 0; i < 256; i++)
     g_ram[0x14000 + i * 2] = g_ram[0x14400 + i];
 
@@ -685,27 +685,27 @@ void Overworld_LoadQuadrant16x16(uint16 *dst, int screen) {
   uint16 *src = (uint16 *)&g_ram[0x14000];
   for (int j = 0; j < 16; j++) {
     for (int i = 0; i < 16; i++) {
-      Map32ToMap16(dst, *src++ * 2);
+      Overworld_ParseMap32Definition(dst, *src++ * 2);
       dst += 2;
     }
     dst += 96;
   }
 }
 
-void LoadSubOverlayMap32() {
+void OverworldLoad_LoadSubOverlayMap32() {
   int si = overworld_screen_index;
-  Overworld_LoadQuadrant16x16((uint16 *)&g_ram[0x4000], si);
+  Overworld_DecompressAndDrawOneQuadrant((uint16 *)&g_ram[0x4000], si);
 }
 
-void Overworld_LoadMap32() {
+void Overworld_DecompressAndDrawAllQuadrants() {
   int si = overworld_screen_index;
-  Overworld_LoadQuadrant16x16((uint16 *)&g_ram[0x2000], si + 0);
-  Overworld_LoadQuadrant16x16((uint16 *)&g_ram[0x2040], si + 1);
-  Overworld_LoadQuadrant16x16((uint16 *)&g_ram[0x3000], si + 8);
-  Overworld_LoadQuadrant16x16((uint16 *)&g_ram[0x3040], si + 9);
+  Overworld_DecompressAndDrawOneQuadrant((uint16 *)&g_ram[0x2000], si + 0);
+  Overworld_DecompressAndDrawOneQuadrant((uint16 *)&g_ram[0x2040], si + 1);
+  Overworld_DecompressAndDrawOneQuadrant((uint16 *)&g_ram[0x3000], si + 8);
+  Overworld_DecompressAndDrawOneQuadrant((uint16 *)&g_ram[0x3040], si + 9);
 }
 
-void Map16ChunkToMap8(const uint8 *src, uint16 r20, int r14, uint16 *r10) {
+void OverworldCopyMap16ToBuffer(const uint8 *src, uint16 r20, int r14, uint16 *r10) {
   const uint16 *map8 = GetMap16toMap8Table();
 
   int yr = map16_load_src_off - 0x410 & 0x1fff;
@@ -742,15 +742,15 @@ void Map16ToMap8(const uint8 *src, int r20) {
   int r14 = 0;
   uint16 *r10 = &word_7F4000;
   do {
-    Map16ChunkToMap8(src, r20, r14, r10);
+    OverworldCopyMap16ToBuffer(src, r20, r14, r10);
     r14 += 0x100, r10 += 2;
     map16_load_src_off -= 0x80;
     map16_load_var2 = (map16_load_var2 - 1) & 0x1f;
   } while (--n);
 }
 
-void LoadSubscreenOverlay() {
-  LoadSubOverlayMap32();
+void LoadOverworldOverlay() {
+  OverworldLoad_LoadSubOverlayMap32();
   Map16ToMap8(&g_ram[0x4000], 0x1000);
   nmi_subroutine_index = nmi_disable_core_updates = 4;
   submodule_index++;
@@ -1074,7 +1074,7 @@ loc_8EF7B4:
   }
 }
 
-void Whirlpool_LookUpAndLoadTargetArea() {
+void FindPartnerWhirlpoolExit() {
   int j = FindInWordArray(kWhirlpoolAreas, overworld_screen_index, countof(kWhirlpoolAreas));
   if (j >= 0) {
     num_memorized_tiles = 0;
@@ -1094,7 +1094,7 @@ void Overworld_LoadAmbientOverlay(bool load_map_data) {
   }
 
   if (load_map_data)
-    Overworld_LoadMapData();
+    Overworld_DrawQuadrantsAndOverlays();
 
   Map16ToMap8(&g_ram[0x2000], 0);
   map16_load_var2 = bak3;
@@ -1115,15 +1115,15 @@ void Overworld_LoadAmbientOverlayAndMapData() {
   Overworld_LoadAmbientOverlay(true);
 }
 
-void PreOverworld_LoadLevelData() {
+void Module08_02_LoadAndAdvance() {
   Overworld_LoadAmbientOverlayAndMapData();
   main_module_index = 16;
   submodule_index = 0;
   subsubmodule_index = 0;
 }
 
-void Overworld_LoadMapData() {
-  Overworld_LoadMap32();
+void Overworld_DrawQuadrantsAndOverlays() {
+  Overworld_DecompressAndDrawAllQuadrants();
   for (int i = 0; i < 16 * 4; i++)
     dung_bg1[i] = 0xdc4;
   uint16 pos = ow_entrance_value;
@@ -1142,14 +1142,14 @@ void Overworld_LoadMapData() {
     }
     ow_entrance_value = 0;
   }
-  Overworld_LoadMapData_justOverlays();
+  Overworld_HandleOverlaysAndBombDoors();
 }
 
 // this alternate entry point is for scrolling OW area loads
 // b/c drawing a door only applies to when you transition from a dungeon to the OW
 // the exceptioon is OW areas 0x80 and above which are handled similar to entrances
 
-void Overworld_LoadMapData_justOverlays() {
+void Overworld_HandleOverlaysAndBombDoors() {
   if (overworld_screen_index == 0x33)
     dung_bg2[340] = 0x20f;
   else if (overworld_screen_index == 0x2f)
@@ -1163,17 +1163,17 @@ void Overworld_LoadMapData_justOverlays() {
   }
 }
 
-void Overworld_LoadTransMapData() {
-  Overworld_LoadMap32();
+void SomeTileMapChange() {
+  Overworld_DecompressAndDrawAllQuadrants();
   for (int i = 0; i < 64; i++)
     dung_bg1[i] = 0xdc4;
-  Overworld_LoadMapData_justOverlays();
+  Overworld_HandleOverlaysAndBombDoors();
   submodule_index++;
 }
 
 static const uint16 kOverworld_DrawStrip_Tab[3] = { 0x3d0, 0x410, 0xf410 };
 
-uint16 *Overworld_DrawHorizontalStrip(uint16 *dst) {
+uint16 *BufferAndBuildMap16Stripes_X(uint16 *dst) {
   uint16 pos = map16_load_src_off - kOverworld_DrawStrip_Tab[overworld_screen_trans_dir_bits2 >> 1 & 1];
   int d = map16_load_var2;
   uint16 *tmp = dung_replacement_tile_state;
@@ -1205,7 +1205,7 @@ uint16 *Overworld_DrawHorizontalStrip(uint16 *dst) {
   return dst;
 }
 
-uint16 *Overworld_DrawVerticalStrip(uint16 *dst) {
+uint16 *BufferAndBuildMap16Stripes_Y(uint16 *dst) {
   uint16 pos = map16_load_src_off - kOverworld_DrawStrip_Tab[1 + (overworld_screen_trans_dir_bits2 >> 2 & 1)];
   int d = map16_load_dst_off;
   uint16 *tmp = dung_replacement_tile_state;
@@ -1237,124 +1237,124 @@ uint16 *Overworld_DrawVerticalStrip(uint16 *dst) {
 }
 
 
-void Overworld_TransHorizontal(int n) {
+void TriggerAndFinishMapLoadStripe_X(int n) {
   BYTE(overworld_screen_trans_dir_bits2) = 2;
   nmi_subroutine_index = 3;
   uint16 *dst = uvram.t3.data;
   *dst++ = 0x8040;
   do {
-    dst = Overworld_DrawHorizontalStrip(dst);
+    dst = BufferAndBuildMap16Stripes_X(dst);
     map16_load_src_off -= 2;
     map16_load_dst_off = (map16_load_dst_off - 1) & 0x1f;
   } while (--n);
   *dst = 0xffff;
 }
 
-void Overworld_TransVertical(int n) {
+void TriggerAndFinishMapLoadStripe_Y(int n) {
   BYTE(overworld_screen_trans_dir_bits2) = 8;
   nmi_subroutine_index = 3;
   uint16 *dst = uvram.t3.data;
   *dst++ = 0x80;
   do {
-    dst = Overworld_DrawVerticalStrip(dst);
+    dst = BufferAndBuildMap16Stripes_Y(dst);
     map16_load_src_off -= 0x80;
     map16_load_var2 = (map16_load_var2 - 1) & 0x1f;
   } while (--n);
   *dst = 0xffff;
 }
 
-void Overworld_LargeTransRight() {
+void CreateInitialOWScreenView_Big_East() {
   map16_load_src_off = map16_load_src_off - 0x60 + 0x1e;
   map16_load_dst_off = 7;
-  Overworld_TransHorizontal(8);
+  TriggerAndFinishMapLoadStripe_X(8);
   map16_load_dst_off = (map16_load_dst_off + 9) & 0x1f;
   map16_load_src_off -= 0x2e;
 }
 
-void Overworld_LargeTransLeft() {
+void CreateInitialOWScreenView_Big_West() {
   map16_load_src_off += 14;
   map16_load_dst_off = 31;
-  Overworld_TransHorizontal(7);
+  TriggerAndFinishMapLoadStripe_X(7);
 }
 
-void Overworld_LargeTransDown() {
+void CreateInitialOWScreenView_Big_South() {
   uint16 pos = map16_load_src_off;
   while (pos >= 0x80)
     pos -= 0x80;
   map16_load_src_off = pos + 0x780;
   map16_load_var2 = 7;
-  Overworld_TransVertical(8);
+  TriggerAndFinishMapLoadStripe_Y(8);
   map16_load_var2 = (map16_load_var2 + 9) & 0x1f;
   map16_load_src_off -= 0xB80;
 }
 
-void Overworld_LargeTransUp() {
+void CreateInitialOWScreenView_Big_North() {
   map16_load_src_off += 0x380;
   map16_load_var2 = 31;
-  Overworld_TransVertical(7);
+  TriggerAndFinishMapLoadStripe_Y(7);
 }
 
-void Overworld_SmallTransRight() {
+void CreateInitialOWScreenView_Small_East() {
   orange_blue_barrier_state = map16_load_src_off - 0x60;
   word_7EC174 = 0x18;
   word_7EC176 = map16_load_var2;
   map16_load_src_off = 0x41e;
   map16_load_var2 = 0;
   map16_load_dst_off = 7;
-  Overworld_TransHorizontal(8);
+  TriggerAndFinishMapLoadStripe_X(8);
   map16_load_dst_off = (map16_load_dst_off + 9) & 0x1f;
   map16_load_src_off -= 0x2e;
 }
 
-void Overworld_SmallTransLeft() {
+void CreateInitialOWScreenView_Small_West() {
   orange_blue_barrier_state = map16_load_src_off - 0x20;
   word_7EC174 = 8;
   word_7EC176 = map16_load_var2;
   map16_load_src_off = 0x44e;
   map16_load_var2 = 0;
   map16_load_dst_off = 31;
-  Overworld_TransHorizontal(7);
+  TriggerAndFinishMapLoadStripe_X(7);
 }
 
-void Overworld_SmallTransDown() {
+void CreateInitialOWScreenView_Small_South() {
   orange_blue_barrier_state = BYTE(map16_load_src_off);
   word_7EC174 = map16_load_dst_off;
   word_7EC176 = 24;
   map16_load_src_off = 0x790;
   map16_load_dst_off = 0;
   map16_load_var2 = 7;
-  Overworld_TransVertical(8);
+  TriggerAndFinishMapLoadStripe_Y(8);
   map16_load_var2 = (map16_load_var2 + 9) & 0x1f;
   map16_load_src_off -= 0xB80;
 }
 
-void Overworld_SmallTransUp() {
+void CreateInitialOWScreenView_Small_North() {
   orange_blue_barrier_state = map16_load_src_off - 0x700;
   word_7EC174 = map16_load_dst_off;
   word_7EC176 = 10;
   map16_load_src_off = 0x1390;
   map16_load_dst_off = 0;
   map16_load_var2 = 31;
-  Overworld_TransVertical(7);
+  TriggerAndFinishMapLoadStripe_Y(7);
 }
 
-void Overworld_StartTransMapUpdate() {
+void CreateInitialNewScreenMapToScroll() {
   if (!kOverworldMapIsSmall[BYTE(overworld_screen_index)]) {
     switch (BYTE(overworld_screen_trans_dir_bits2)) {
-    case 1: Overworld_LargeTransRight(); break;
-    case 2: Overworld_LargeTransLeft(); break;
-    case 4: Overworld_LargeTransDown(); break;
-    case 8: Overworld_LargeTransUp(); break;
+    case 1: CreateInitialOWScreenView_Big_East(); break;
+    case 2: CreateInitialOWScreenView_Big_West(); break;
+    case 4: CreateInitialOWScreenView_Big_South(); break;
+    case 8: CreateInitialOWScreenView_Big_North(); break;
     default:
       assert(0);
       submodule_index = 0;
     }
   } else {
     switch (BYTE(overworld_screen_trans_dir_bits2)) {
-    case 1: Overworld_SmallTransRight(); break;
-    case 2: Overworld_SmallTransLeft(); break;
-    case 4: Overworld_SmallTransDown(); break;
-    case 8: Overworld_SmallTransUp(); break;
+    case 1: CreateInitialOWScreenView_Small_East(); break;
+    case 2: CreateInitialOWScreenView_Small_West(); break;
+    case 4: CreateInitialOWScreenView_Small_South(); break;
+    case 8: CreateInitialOWScreenView_Small_North(); break;
     default:
       assert(0);
       submodule_index = 0;
@@ -1363,12 +1363,12 @@ void Overworld_StartTransMapUpdate() {
 }
 
 
-uint16 RemapTileAddrToVram(uint16 addr) {
+uint16 Overworld_FindMap16VRAMAddress(uint16 addr) {
   return (((addr & 0x3f) >= 0x20) ? 0x400 : 0) + (((addr & 0xfff) >= 0x800) ? 0x800 : 0) + (addr & 0x1f) + ((addr & 0x780) >> 1);
 }
 
 void Overworld_DrawMap16(uint16 pos, uint16 value) {
-  pos = RemapTileAddrToVram(pos);
+  pos = Overworld_FindMap16VRAMAddress(pos);
   uint16 *dst = &vram_upload_data[vram_upload_offset >> 1];
   const uint16 *src = GetMap16toMap8Table() + value * 4;
   dst[0] = swap16(pos);
@@ -1384,9 +1384,9 @@ void Overworld_DrawMap16(uint16 pos, uint16 value) {
 }
 
 
-void Overworld_DrawMap16_Alt(uint16 pos, uint16 value) {
+void Overworld_AlterTileHardcore(uint16 pos, uint16 value) {
   dung_bg2[pos >> 1] = value;
-  pos = RemapTileAddrToVram(pos);
+  pos = Overworld_FindMap16VRAMAddress(pos);
   uint16 *dst = &vram_upload_data[vram_upload_offset >> 1];
   const uint16 *src = GetMap16toMap8Table() + value * 4;
   dst[0] = swap16(pos);
@@ -1402,14 +1402,14 @@ void Overworld_DrawMap16_Alt(uint16 pos, uint16 value) {
 }
 
 
-void Overworld_DrawPersistentMap16(uint16 pos, uint16 value) {
+void Overworld_DrawMap16_Persist(uint16 pos, uint16 value) {
   dung_bg2[pos >> 1] = value;
   Overworld_DrawMap16(pos, value);
 }
 
 static const uint16 kOverworld_Func2_Tab[4] = { 8, 4, 2, 1 };
 
-int Overworld_Func2(int xa, int ya, int vd, int r8) {
+int OverworldCameraBoundaryCheck(int xa, int ya, int vd, int r8) {
   ya >>= 1, r8 >>= 1;
 
   uint16 *xp = (xa ? &BG2VOFS_copy2 : &BG2HOFS_copy2);
@@ -1433,7 +1433,7 @@ int Overworld_Func2(int xa, int ya, int vd, int r8) {
   return vd;
 }
 
-void Overworld_Func1() {
+void Overworld_OperateCameraScroll() {
   int z = (allow_scroll_z && link_z_coord != 0xffff) ? link_z_coord : 0;
   uint16 y = link_y_coord - z + 12;
 
@@ -1444,10 +1444,10 @@ void Overworld_Func1() {
     do {
       if (sign8(link_y_vel)) {
         if (y <= camera_y_coord_scroll_low)
-          r4 += Overworld_Func2(6, 0, vy, 0);
+          r4 += OverworldCameraBoundaryCheck(6, 0, vy, 0);
       } else {
         if (y >= camera_y_coord_scroll_hi)
-          r4 += Overworld_Func2(6, 2, vy, 0);
+          r4 += OverworldCameraBoundaryCheck(6, 2, vy, 0);
       }
     } while (--av);
     WORD(byte_7E069E[0]) = r4;
@@ -1485,10 +1485,10 @@ void Overworld_Func1() {
     do {
       if (sign8(link_x_vel)) {
         if (x <= camera_x_coord_scroll_low)
-          r4 += Overworld_Func2(0, 4, vx, 4);
+          r4 += OverworldCameraBoundaryCheck(0, 4, vx, 4);
       } else {
         if (x >= camera_x_coord_scroll_hi)
-          r4 += Overworld_Func2(0, 6, vx, 4);
+          r4 += OverworldCameraBoundaryCheck(0, 6, vx, 4);
       }
     } while (--ax);
     WORD(byte_7E069E[1]) = r4;
@@ -1563,7 +1563,7 @@ bool CanEnterWithTagalong(int e) {
 }
 
 
-void Overworld_Entrance() {
+void Overworld_UseEntrance() {
   uint16 xc = link_x_coord >> 3, yc = link_y_coord + 7;
   uint16 pos = ((yc - overworld_offset_base_y) & overworld_offset_mask_y) * 8 +
     ((xc - overworld_offset_base_x) & overworld_offset_mask_x);
@@ -1584,8 +1584,8 @@ void Overworld_Entrance() {
     if (a == 0x40e9) {
       pos -= 2;
 do_draw:
-      Overworld_DrawPersistentMap16(pos + 0, 0xDA4);
-      Overworld_DrawPersistentMap16(pos + 2, 0xDA6);
+      Overworld_DrawMap16_Persist(pos + 0, 0xDA4);
+      Overworld_DrawMap16_Persist(pos + 2, 0xDA6);
       sound_effect_2 = 21;
       nmi_load_bg_from_vram = 1;
       return;
@@ -1656,7 +1656,7 @@ void Palette_AnimGetMasterSword() {
   if (subsubmodule_index == 0) {
     Palette_AnimGetMasterSword2();
   } else {
-    Palette_DarkenOrLighten_Step();
+    PaletteFilter_BlindingWhite();
     if (darkening_or_lightening_screen == 0xff) {
       for (int i = 0; i < 8; i++)
         main_palette_buffer[0x58 + i] = aux_palette_buffer[0x58 + i] = 0;
@@ -1723,7 +1723,7 @@ void Overworld_DwDeathMountainPaletteAnimation() {
     main_palette_buffer[0x68 + i] = kDwPaletteAnim2[yy + i];
 }
 
-uint16 *Overworld_DoScrollRight(uint16 *dst) {
+uint16 *CheckForNewlyLoadedMapAreas_East(uint16 *dst) {
   uint16 pos = map16_load_src_off;
   while (pos >= 0x80)
     pos -= 0x80;
@@ -1731,14 +1731,14 @@ uint16 *Overworld_DoScrollRight(uint16 *dst) {
     return dst;
   if (!kOverworldMapIsSmall[overworld_screen_index]) {
     *dst++ = 0x8040;
-    dst = Overworld_DrawHorizontalStrip(dst);
+    dst = BufferAndBuildMap16Stripes_X(dst);
   }
   map16_load_src_off += 2;
   map16_load_dst_off = (map16_load_dst_off + 1) & 0x1f;
   return dst;
 }
 
-uint16 *Overworld_DoScrollLeft(uint16 *dst) {
+uint16 *CheckForNewlyLoadedMapAreas_West(uint16 *dst) {
   uint16 pos = map16_load_src_off;
   while (pos >= 0x80)
     pos -= 0x80;
@@ -1746,64 +1746,64 @@ uint16 *Overworld_DoScrollLeft(uint16 *dst) {
     return dst;
   if (!kOverworldMapIsSmall[overworld_screen_index]) {
     *dst++ = 0x8040;
-    dst = Overworld_DrawHorizontalStrip(dst);
+    dst = BufferAndBuildMap16Stripes_X(dst);
   }
   map16_load_src_off -= 2;
   map16_load_dst_off = (map16_load_dst_off - 1) & 0x1f;
   return dst;
 }
 
-uint16 *Overworld_DoScrollUp(uint16 *dst) {
+uint16 *CheckForNewlyLoadedMapAreas_South(uint16 *dst) {
   if (map16_load_src_off >= 0x1800)
     return dst;
   if (!kOverworldMapIsSmall[overworld_screen_index]) {
     *dst++ = 0x80;
-    dst = Overworld_DrawVerticalStrip(dst);
+    dst = BufferAndBuildMap16Stripes_Y(dst);
   }
   map16_load_src_off += 0x80;
   map16_load_var2 = (map16_load_var2 + 1) & 0x1f;
   return dst;
 }
 
-uint16 *Overworld_DoScrollDown(uint16 *dst) {
+uint16 *CheckForNewlyLoadedMapAreas_North(uint16 *dst) {
   if (sign16(map16_load_src_off - 0x80))
     return dst;
   if (!kOverworldMapIsSmall[overworld_screen_index]) {
     *dst++ = 0x80;
-    dst = Overworld_DrawVerticalStrip(dst);
+    dst = BufferAndBuildMap16Stripes_Y(dst);
   }
   map16_load_src_off -= 0x80;
   map16_load_var2 = (map16_load_var2 - 1) & 0x1f;
   return dst;
 }
 
-void Overworld_ScrollMap() {
+void OverworldHandleMapScroll() {
   uint16 *dst = uvram.t3.data;
   switch (BYTE(overworld_screen_trans_dir_bits2)) {
   case 1:
-    dst = Overworld_DoScrollRight(dst);
+    dst = CheckForNewlyLoadedMapAreas_East(dst);
     BYTE(overworld_screen_trans_dir_bits2) = 0;
     break;
   case 2:
-    dst = Overworld_DoScrollLeft(dst);
+    dst = CheckForNewlyLoadedMapAreas_West(dst);
     BYTE(overworld_screen_trans_dir_bits2) = 0;
     break;
   case 4:
-    dst = Overworld_DoScrollUp(dst);
+    dst = CheckForNewlyLoadedMapAreas_South(dst);
     BYTE(overworld_screen_trans_dir_bits2) = 0;
     break;
   case 5:
   case 6:
-    dst = Overworld_DoScrollUp(dst);
+    dst = CheckForNewlyLoadedMapAreas_South(dst);
     BYTE(overworld_screen_trans_dir_bits2) &= 3;
     break;
   case 8:
-    dst = Overworld_DoScrollDown(dst);
+    dst = CheckForNewlyLoadedMapAreas_North(dst);
     BYTE(overworld_screen_trans_dir_bits2) = 0;
     break;
   case 9:
   case 10:
-    dst = Overworld_DoScrollDown(dst);
+    dst = CheckForNewlyLoadedMapAreas_North(dst);
     BYTE(overworld_screen_trans_dir_bits2) &= 3;
     break;
   default:
@@ -1816,45 +1816,45 @@ void Overworld_ScrollMap() {
   overworld_screen_transition = overworld_screen_trans_dir_bits2;
 }
 
-uint16 *ScrollType2_Right(uint16 *dst) {
+uint16 *BuildFullStripeDuringTransition_East(uint16 *dst) {
   *dst++ = 0x8040;
-  dst = Overworld_DrawHorizontalStrip(dst);
+  dst = BufferAndBuildMap16Stripes_X(dst);
   map16_load_src_off += 2;
   map16_load_dst_off = (map16_load_dst_off + 1) & 0x1f;
   return dst;
 }
 
-uint16 *ScrollType2_Left(uint16 *dst) {
+uint16 *BuildFullStripeDuringTransition_West(uint16 *dst) {
   *dst++ = 0x8040;
-  dst = Overworld_DrawHorizontalStrip(dst);
+  dst = BufferAndBuildMap16Stripes_X(dst);
   map16_load_src_off -= 2;
   map16_load_dst_off = (map16_load_dst_off - 1) & 0x1f;
   return dst;
 }
 
-uint16 *ScrollType2_Up(uint16 *dst) {
+uint16 *BuildFullStripeDuringTransition_South(uint16 *dst) {
   *dst++ = 0x80;
-  dst = Overworld_DrawVerticalStrip(dst);
+  dst = BufferAndBuildMap16Stripes_Y(dst);
   map16_load_src_off += 0x80;
   map16_load_var2 = (map16_load_var2 + 1) & 0x1f;
   return dst;
 }
 
-uint16 *ScrollType2_Down(uint16 *dst) {
+uint16 *BuildFullStripeDuringTransition_North(uint16 *dst) {
   *dst++ = 0x80;
-  dst = Overworld_DrawVerticalStrip(dst);
+  dst = BufferAndBuildMap16Stripes_Y(dst);
   map16_load_src_off -= 0x80;
   map16_load_var2 = (map16_load_var2 - 1) & 0x1f;
   return dst;
 }
 
-void ScrollType2() {
+void OverworldTransitionScrollAndLoadMap() {
   uint16 *dst = uvram.t3.data;
   switch (BYTE(overworld_screen_trans_dir_bits2)) {
-  case 1: dst = ScrollType2_Right(dst); break;
-  case 2: dst = ScrollType2_Left(dst); break;
-  case 4: dst = ScrollType2_Up(dst); break;
-  case 8: dst = ScrollType2_Down(dst); break;
+  case 1: dst = BuildFullStripeDuringTransition_East(dst); break;
+  case 2: dst = BuildFullStripeDuringTransition_West(dst); break;
+  case 4: dst = BuildFullStripeDuringTransition_South(dst); break;
+  case 8: dst = BuildFullStripeDuringTransition_North(dst); break;
   default:
     assert(0);
     submodule_index = 0;
@@ -1906,7 +1906,7 @@ const uint8 kVariousPacks[16] = {
 };
 
 
-void Overworld_LoadMapProperties() {
+void Overworld_LoadGFXAndScreenSize() {
   int i = BYTE(overworld_screen_index);
   incremental_counter_for_vram = 0;
   sprite_graphics_index = overworld_sprite_gfx[i];
@@ -1932,9 +1932,9 @@ static const uint16 kSpecialSwitchAreaB_Map8[3] = { 0x17c, 0x1e4, 0xad };
 static const uint16 kSpecialSwitchAreaB_Screen[3] = { 0x80, 0x80, 0x81 };
 static const uint16 kSpecialSwitchAreaB_Direction[3] = { 4, 1, 4 };
 
-void Overworld_Func0_Main_SpecialOverworld() {
+void ScrollAndCheckForSOWExit() {
   if (BYTE(overworld_screen_trans_dir_bits2))
-    Overworld_ScrollMap();
+    OverworldHandleMapScroll();
 
   const uint16 *map8 = Overworld_GetMap16OfLink_Mult8();
   int a = map8[0] & 0x1ff;
@@ -1983,9 +1983,9 @@ static const uint8 kOverworldAreaHeads[64] = {
   48, 48, 58, 59, 60, 53, 53, 63, 
 };
 
-void Overworld_CheckSwitchArea() {
+void OverworldHandleTransitions() {
   if (BYTE(overworld_screen_trans_dir_bits2))
-    Overworld_ScrollMap();
+    OverworldHandleMapScroll();
   int dir;
   uint16 x, y, t;
   if (link_y_vel != 0) {
@@ -1999,7 +1999,7 @@ void Overworld_CheckSwitchArea() {
     t = link_x_coord - kOverworld_OffsetBaseX[BYTE(current_area_of_player) >> 1];
     if ((y = 2, x = 2, t < 6) || (y = 0, x = 1, t >= (uint16)(overworld_right_bottom_bound_for_scroll + 4))) {
 compare:
-      if (x == dir && !Player_IsScreenTransitionBlocked())
+      if (x == dir && !Link_CheckForEdgeScreenTransition())
         goto after;
     }
   }
@@ -2026,7 +2026,7 @@ after:
     if ((music & 0xf) != music_unk1)
       music_control = 0xf1;
   }
-  Overworld_LoadMapProperties();
+  Overworld_LoadGFXAndScreenSize();
   submodule_index = 1;
   BYTE(overworld_screen_trans_dir_bits) = dir;
   BYTE(overworld_screen_trans_dir_bits2) = dir;
@@ -2043,12 +2043,12 @@ after:
   } else {
     uint8 sc = overworld_screen_index;
     Overworld_LoadPalettes(kOverworldBgPalettes[sc], overworld_sprite_palettes[sc]);
-    Overworld_CgramAuxToMain();
+    Overworld_CopyPalettesToCache();
   }
 }
 
 
-void Overworld_Func0_Main() {
+void Module09_00_PlayerControl() {
   if (!(flag_custom_spell_anim_active | flag_is_link_immobilized | flag_block_link_menu | trigger_special_entrance)) {
     if (filtered_joypad_H & 0x10) {
       overworld_map_state = 0;
@@ -2078,28 +2078,28 @@ void Overworld_Func0_Main() {
     }
   }
   if (trigger_special_entrance)
-    Overworld_PlayEntranceSequence();
-  Player_Main();
+    Overworld_AnimateEntrance();
+  Link_Main();
   if (super_bomb_indicator_unk2 != 0xff)
     Hud_SuperBombIndicator();
   current_area_of_player = (link_y_coord & 0x1e00) >> 5 | (link_x_coord & 0x1e00) >> 8;
-  Graphics_MaybeLoadChrHalfSlot();
-  Overworld_Func1();
+  Graphics_LoadChrHalfSlot();
+  Overworld_OperateCameraScroll();
   if (main_module_index != 11) {
-    Overworld_Entrance();
+    Overworld_UseEntrance();
     Overworld_DwDeathMountainPaletteAnimation();
-    Overworld_CheckSwitchArea();
+    OverworldHandleTransitions();
   } else {
-    Overworld_Func0_Main_SpecialOverworld();
+    ScrollAndCheckForSOWExit();
   }
 }
 
-void Overworld_LoadTransGfx() {
+void Module09_LoadAuxGFX() {
   save_ow_event_info[0x3b] &= ~0x20;
   save_ow_event_info[0x7b] &= ~0x20;
   save_dung_info[267] &= ~0x80;
   save_dung_info[40] &= ~0x100;
-  LoadTransAuxGfx();
+  LoadTransAuxGFX();
   PrepTransAuxGfx();
   nmi_disable_core_updates = nmi_subroutine_index = 9;
   submodule_index++;
@@ -2108,15 +2108,15 @@ void Overworld_FinishTransGfx() {
   nmi_disable_core_updates = nmi_subroutine_index = 10;
   submodule_index++;
 }
-void Overworld_TransMapData() {
+void Module09_LoadNewMapAndGFX() {
   word_7E04C8 = 0;
-  Overworld_LoadTransMapData();
+  SomeTileMapChange();
   nmi_disable_core_updates++;
-  Overworld_StartTransMapUpdate();
-  LoadGfxFunc1();
+  CreateInitialNewScreenMapToScroll();
+  LoadNewSpriteGFXSet();
 }
 
-void Overworld_SetFixedColorsAndScroll() {
+void Overworld_SetFixedColAndScroll() {
   TS_copy = 0;
   uint16 p = 0x19C6;
   uint16 si = overworld_screen_index;
@@ -2182,7 +2182,7 @@ getout:
   flag_update_cgram_in_nmi++;
 }
 
-void Overworld_TransMapData2() {
+void Module09_LoadNewSprites() {
   if (overworld_screen_transition == 1) {
     BG2VOFS_copy2 += 2;
     link_y_coord += 2;
@@ -2190,15 +2190,15 @@ void Overworld_TransMapData2() {
   Sprite_OverworldReloadAll_justLoad();
   num_memorized_tiles = 0;
   if (sram_progress_indicator >= 2 && submodule_index != 18)
-    Overworld_SetFixedColorsAndScroll();
-  Overworld_TransMapData2_justScroll();
+    Overworld_SetFixedColAndScroll();
+  Overworld_StartScrollTransition();
 }
 
-void Overworld_TransMapData2_justScroll() {
+void Overworld_StartScrollTransition() {
   submodule_index++;
   if (BYTE(overworld_screen_trans_dir_bits) >= 4) {
     BYTE(overworld_screen_trans_dir_bits2) = BYTE(overworld_screen_trans_dir_bits);
-    ScrollType2();
+    OverworldTransitionScrollAndLoadMap();
     BYTE(overworld_screen_trans_dir_bits2) = 0;
   }
 }
@@ -2208,7 +2208,7 @@ static const uint16 kOverworld_Size2[2] = { 0x100, 0x300 };
 static const uint16 kOverworld_UpDownScrollSize[2] = { 0x2e0, 0x4e0 };
 static const uint16 kOverworld_LeftRightScrollSize[2] = { 0x300, 0x500 };
 
-void Overworld_SetupSomeBounds(int big, int area) {
+void Overworld_SetCameraBoundaries(int big, int area) {
   ow_scroll_vars0.ystart = kOverworld_OffsetBaseY[area];
   ow_scroll_vars0.yend = ow_scroll_vars0.ystart + kOverworld_Size1[big];
   ow_scroll_vars0.xstart = kOverworld_OffsetBaseX[area];
@@ -2227,7 +2227,7 @@ static const int16 kOverworld_Func6B_Tab2[4] = { 27, 27, 30, 30 };
 static const int16 kOverworld_Func6B_Tab3[4] = { -0x70, 0x70, -0x70, 0x70 };
 static const int16 kOverworld_Func6B_AreaDelta[4] = { -8, 8, -1, 1 };
 
-int Overworld_Func6B() {
+int OverworldScrollTransition() {
   transition_counter++;
   int y = overworld_screen_transition;
   int d = kOverworld_Func6B_Tab1[y], rv;
@@ -2260,31 +2260,31 @@ int Overworld_Func6B() {
     camera_x_coord_scroll_low = camera_x_coord_scroll_hi + 2;
     overworld_unk3 = overworld_unk3_neg = 0;
   }
-  Overworld_SetupSomeBounds(overworld_area_is_big != 0, (current_area_of_player >> 1) + kOverworld_Func6B_AreaDelta[y]);
+  Overworld_SetCameraBoundaries(overworld_area_is_big != 0, (current_area_of_player >> 1) + kOverworld_Func6B_AreaDelta[y]);
 
   flag_overworld_area_did_change = 1;
   submodule_index += 1;
   subsubmodule_index = 0;
   transition_counter = 0;
-  InitSpriteSlots();
+  Sprite_InitializeSlots();
   return rv;
 }
 
-void Overworld_Func6() {
-  Player_UpdateDirection();
-  Graphics_IncrementalVramUpload();
-  uint8 rv = Overworld_Func6B();
+void Overworld_RunScrollTransition() {
+  Link_HandleMovingAnimation_FullLongEntry();
+  Graphics_IncrementalVRAMUpload();
+  uint8 rv = OverworldScrollTransition();
   if (!(rv & 0xf)) {
     BYTE(overworld_screen_trans_dir_bits2) = BYTE(overworld_screen_trans_dir_bits);
-    ScrollType2();
+    OverworldTransitionScrollAndLoadMap();
     BYTE(overworld_screen_trans_dir_bits2) = 0;
   }
 }
 
-void Overworld_Func7() {
+void Overworld_EaseOffScrollTransition() {
   if (kOverworldMapIsSmall[BYTE(overworld_screen_index)]) {
     BYTE(overworld_screen_trans_dir_bits2) = BYTE(overworld_screen_trans_dir_bits);
-    ScrollType2();
+    OverworldTransitionScrollAndLoadMap();
     BYTE(overworld_screen_trans_dir_bits2) = 0;
   }
   if (++subsubmodule_index < 8)
@@ -2301,13 +2301,13 @@ void Overworld_Func7() {
     map16_load_var2 = word_7EC176;
   }
   submodule_index++;
-  Tagalong_Disable();
+  Follower_Disable();
 }
 
 static const uint8 kOverworld_Func8_tab[4] = { 0xe0, 8, 0xe0, 0x10 };
 
-void Overworld_Func8() {
-  Player_UpdateDirection();
+void Overworld_FinalizeEntryOntoScreen() {
+  Link_HandleMovingAnimation_FullLongEntry();
   int d = (byte_7E069C & 1) ? 2 : -2;
   if (byte_7E069C & 2)
     link_x_coord = (d += link_x_coord);
@@ -2321,9 +2321,9 @@ void Overworld_Func8() {
     if (music_unk1 == 0xf1)
       music_control = m & 0xf;
   }
-  Overworld_Func1();
+  Overworld_OperateCameraScroll();
   if (BYTE(overworld_screen_trans_dir_bits2))
-    Overworld_ScrollMap();
+    OverworldHandleMapScroll();
 }
 
 static const uint16 kDoorAnimTiles[56] = {
@@ -2343,26 +2343,26 @@ static const uint16 kDoorAnimTiles[56] = {
   0xe21, 0xe22, 0xe23, 0xe24,
 };
 
-void DoorAnim_DoWork() {
+void Overworld_DoMapUpdate32x32() {
   int i = num_memorized_tiles >> 1;
   int j = door_open_closed_counter >> 1;
   uint16 pos, tile;
 
   memorized_tile_addr[i] = pos = big_rock_starting_address;
   memorized_tile_value[i] = tile = kDoorAnimTiles[j + 0];
-  Overworld_DrawPersistentMap16(pos, tile);
+  Overworld_DrawMap16_Persist(pos, tile);
 
   memorized_tile_addr[i + 1] = pos = big_rock_starting_address + 2;
   memorized_tile_value[i + 1] = tile = kDoorAnimTiles[j + 1];
-  Overworld_DrawPersistentMap16(pos, tile);
+  Overworld_DrawMap16_Persist(pos, tile);
 
   memorized_tile_addr[i + 2] = pos = big_rock_starting_address + 0x80;
   memorized_tile_value[i + 2] = tile = kDoorAnimTiles[j + 2];
-  Overworld_DrawPersistentMap16(pos, tile);
+  Overworld_DrawMap16_Persist(pos, tile);
 
   memorized_tile_addr[i + 3] = pos = big_rock_starting_address + 0x82;
   memorized_tile_value[i + 3] = tile = kDoorAnimTiles[j + 3];
-  Overworld_DrawPersistentMap16(pos, tile);
+  Overworld_DrawMap16_Persist(pos, tile);
   vram_upload_data[vram_upload_offset >> 1] = 0xffff;
   num_memorized_tiles += 8;
   door_animation_step_indicator += (door_open_closed_counter == 32) ? 2 : 1;
@@ -2370,21 +2370,21 @@ void DoorAnim_DoWork() {
   BYTE(door_open_closed_counter)++;
 }
 
-void DoorAnim_DoWork2() {
-  DoorAnim_DoWork();
+void Overworld_DoMapUpdate32x32_B() {
+  Overworld_DoMapUpdate32x32();
   BYTE(door_open_closed_counter) = 0;
 }
 
-void DoorAnim_Func1() {
+void Overworld_DoMapUpdate32x32_conditional() {
   if (door_open_closed_counter & 7)
     BYTE(door_open_closed_counter)++;
   else
-    DoorAnim_DoWork();
+    Overworld_DoMapUpdate32x32();
 }
 
-void Overworld_Func9_DoorStuff() {
+void Module09_09_OpenBigDoorFromExiting() {
   if (BYTE(door_animation_step_indicator) != 3) {
-    DoorAnim_Func1();
+    Overworld_DoMapUpdate32x32_conditional();
     return;
   }
   ow_countdown_transition = 36;
@@ -2392,29 +2392,29 @@ void Overworld_Func9_DoorStuff() {
   submodule_index++;
 }
 
-void Overworld_FuncA_StepOutOfDoor() {
+void Module09_0A_WalkFromExiting_FacingDown() {
   link_direction_last = 4;
-  Player_UpdateDirection();
+  Link_HandleMovingAnimation_FullLongEntry();
   link_y_coord += 1;
   if (--ow_countdown_transition)
     return;
   submodule_index = 0;
   link_y_coord += 3;
   link_y_vel = 3;
-  Overworld_Func1();
+  Overworld_OperateCameraScroll();
   if (BYTE(overworld_screen_trans_dir_bits2))
-    Overworld_ScrollMap();
+    OverworldHandleMapScroll();
 }
-void Overworld_FuncB() {
-  Player_UpdateDirection();
+void Module09_0B_WalkFromExiting_FacingUp() {
+  Link_HandleMovingAnimation_FullLongEntry();
   link_y_coord -= 1;
   if (--ow_countdown_transition)
     return;
   submodule_index = 0;
 }
-void Overworld_FuncC() {
+void Module09_0C_OpenBigDoor() {
   if (BYTE(door_animation_step_indicator) != 3) {
-    DoorAnim_Func1();
+    Overworld_DoMapUpdate32x32_conditional();
     return;
   }
   submodule_index = 0;
@@ -2428,7 +2428,7 @@ void Overworld_ResetMosaic_alwaysIncrease() {
   MOSAIC_copy = mosaic_level | 7;
 }
 
-void Overworld_ResetMosaic() {
+void ConditionalMosaicControl() {
   if (palette_filter_countdown & 1)
     mosaic_level += 0x10;
   BGMODE_copy = 9;
@@ -2442,7 +2442,7 @@ void Overworld_ResetMosaicDown() {
   MOSAIC_copy = mosaic_level | 7;
 }
 
-void Overworld_LoadExitData() {
+void LoadOverworldFromDungeon() {
   player_is_indoors = 0;
   hdr_dungeon_dark_with_lantern = 0;
   WORD(overworld_fixed_color_plusminus) = 0;
@@ -2450,7 +2450,7 @@ void Overworld_LoadExitData() {
   num_memorized_tiles = 0;
 
   if (dungeon_room_index != 0x104 && dungeon_room_index < 0x180 && dungeon_room_index >= 0x100) {
-    Overworld_SimpleExit();
+    LoadCachedEntranceProperties();
   } else {
 
     int k = 79;
@@ -2475,15 +2475,15 @@ void Overworld_LoadExitData() {
     overworld_unk1_neg = -overworld_unk1;
     overworld_unk3_neg = -overworld_unk3;
   }
-  Overworld_LoadExitData_alternate();
+  Overworld_LoadNewScreenProperties();
 }
 
-void Overworld_LoadExitData_alternate() {
+void Overworld_LoadNewScreenProperties() {
   tilemap_location_calc_mask = ~7;
-  Overworld_LoadMapProperties();
+  Overworld_LoadGFXAndScreenSize();
   BYTE(overworld_right_bottom_bound_for_scroll) = 0xe4;
   overworld_area_is_big &= 0xff;
-  Overworld_SetupSomeBounds(overworld_area_is_big != 0, overworld_screen_index & 0x3f);
+  Overworld_SetCameraBoundaries(overworld_area_is_big != 0, overworld_screen_index & 0x3f);
   link_quadrant_x = 0;
   link_quadrant_y = 2;
   quadrant_fullsize_x = 2;
@@ -2494,7 +2494,7 @@ void Overworld_LoadExitData_alternate() {
   link_actual_vel_z = 0xff;
 }
 
-void Overworld_SimpleExit() {
+void LoadCachedEntranceProperties() {
   overworld_area_index = overworld_area_index_exit;
   WORD(TM_copy) = WORD(TM_copy_exit);
   BG2VOFS_copy2 = BG2VOFS_copy = BG1VOFS_copy2 = BG1VOFS_copy = BG2VOFS_copy2_exit;
@@ -2564,7 +2564,7 @@ void Overworld_EnterSpecialArea() {
   main_tile_theme_index_spexit = main_tile_theme_index;
   aux_tile_theme_index_spexit = aux_tile_theme_index;
   sprite_graphics_index_spexit = sprite_graphics_index;
-  Overworld_LoadExitData();
+  LoadOverworldFromDungeon();
   if (dungeon_room_index == 0x1010)
     dungeon_room_index = 0x182;
 
@@ -2639,8 +2639,8 @@ void Overworld_RestoreFromSpecialAreaExit() {
   link_direction_mask_a = link_direction_mask_b = 0xf;
   BYTE(link_z_coord) = 0xff;
   link_actual_vel_z = 0xff;
-  Player_ResetSwimState();
-  Overworld_LoadMapProperties();
+  Link_ResetSwimmingState();
+  Overworld_LoadGFXAndScreenSize();
   BYTE(overworld_right_bottom_bound_for_scroll) = 228;
   overworld_area_is_big &= 0xff;
 }
@@ -2665,21 +2665,21 @@ void Overworld_LoadBirdTravelPos(int k) {
   camera_x_coord_scroll_hi = camera_x_coord_scroll_low - 2;
   ow_entrance_value = 0;
   big_rock_starting_address = 0;
-  Overworld_LoadExitData_alternate();
+  Overworld_LoadNewScreenProperties();
   Sprite_ResetAll();
-  Sprite_OverworldReloadAll();
+  Sprite_ReloadAll_Overworld();
   is_standing_in_doorway = 0;
   Dungeon_ResetTorchBackgroundAndPlayerInner();
 }
 
-void BirdTravel_LoadTargetAreaData() {
+void FluteMenu_LoadTransport() {
   num_memorized_tiles = 0;
   int k = birdtravel_var1[0];
   WORD(birdtravel_var1[0]) <<= 1;
   Overworld_LoadBirdTravelPos(k);
 }
 
-void BirdTravel_LoadTargetAreaPalettes() {
+void FluteMenu_LoadSelectedScreenPalettes() {
   Overworld_LoadAreaPalettes();
   uint8 sc = overworld_screen_index;
   Overworld_LoadPalettes(kOverworldBgPalettes[sc], overworld_sprite_palettes[sc]);
@@ -2687,18 +2687,18 @@ void BirdTravel_LoadTargetAreaPalettes() {
   Overworld_LoadPalettesInner();
 }
 
-void Overworld_FuncD() {
-  Overworld_ResetMosaic();
+void Overworld_StartMosaicTransition() {
+  ConditionalMosaicControl();
   switch (subsubmodule_index) {
   case 0:
     if (BYTE(overworld_screen_index) != 0x80) {
       if ((overworld_music[BYTE(overworld_screen_index)] & 0xf) != music_unk1)
         music_control = 0xf1;
     }
-    Dungeon_Teleport0();
+    ResetTransitionPropsAndAdvance_ResetInterface();
     break;
   case 1:
-    PaletteFilter_doFiltering();
+    ApplyPaletteFilter();
     break;
   default:
     INIDISP_copy = 0x80;
@@ -2724,8 +2724,8 @@ void Overworld_FuncD() {
 }
 
 void Overworld_LoadOverlays() {
-  InitSpriteSlots();
-  Sprite_OverworldReloadAll();
+  Sprite_InitializeSlots();
+  Sprite_ReloadAll_Overworld();
   link_state_bits = 0;
   link_picking_throw_state = 0;
   sound_effect_ambient = 5;
@@ -2808,7 +2808,7 @@ load_overlay:
   else
     TS_copy = 0, CGADSUB_copy = 0x20;
 
-  LoadSubscreenOverlay();
+  LoadOverworldOverlay();
   if (BYTE(overlay_index) == 0x94)
     BG1VOFS_copy2 |= 0x100;
 
@@ -2821,8 +2821,8 @@ load_overlay:
   overworld_screen_trans_dir_bits2 = overworld_screen_trans_dir_bits2_prev;
 }
 
-void Overworld_State0_Helper() {
-  LoadGfxFunc1();
+void OverworldMosaicTransition_LoadSpriteGraphicsAndSetMosaic() {
+  LoadNewSpriteGFXSet();
   INIDISP_copy = 0xf;
   HDMAEN_copy = 0x80;
   BYTE(palette_filter_countdown) = mosaic_target_level - 1;
@@ -2837,12 +2837,12 @@ void Overworld_Func16() {
   case 0: {
     uint8 sc = overworld_screen_index;
     Overworld_LoadPalettes(kOverworldBgPalettes[sc], overworld_sprite_palettes[sc]);
-    Overworld_State0_Helper();
+    OverworldMosaicTransition_LoadSpriteGraphicsAndSetMosaic();
     break;
   }
   case 1:
-    Graphics_IncrementalVramUpload();
-    PaletteFilter_doFiltering();
+    Graphics_IncrementalVRAMUpload();
+    ApplyPaletteFilter();
     break;
   default:
     last_music_control = music_unk1;
@@ -2874,7 +2874,7 @@ void Overworld_Func18() {
 void Overworld_Func19() {
   uint8 m = main_module_index;
   uint8 sub = submodule_index;
-  PreOverworld_LoadLevelData();
+  Module08_02_LoadAndAdvance();
   submodule_index = sub + 1;
   main_module_index = m;
 }
@@ -2883,11 +2883,11 @@ void Overworld_Func1C() {
   Overworld_ResetMosaicDown();
   switch (subsubmodule_index) {
   case 0:
-    Overworld_State0_Helper();
+    OverworldMosaicTransition_LoadSpriteGraphicsAndSetMosaic();
     break;
   case 1:
-    Graphics_IncrementalVramUpload();
-    PaletteFilter_doFiltering();
+    Graphics_IncrementalVRAMUpload();
+    ApplyPaletteFilter();
     break;
   default:
     if (BYTE(overworld_screen_index) < 0x80)
@@ -2906,7 +2906,7 @@ void Overworld_Func1E() {
 }
 
 void Overworld_Func1F() {
-  Player_UpdateDirection();
+  Link_HandleMovingAnimation_FullLongEntry();
   int8 vel = byte_7E069C & 1 ? 1 : -1;
   if (byte_7E069C & 2) {
     link_x_coord += vel;
@@ -2919,7 +2919,7 @@ void Overworld_Func1F() {
     main_module_index = 9;
     subsubmodule_index = submodule_index = 0;
   }
-  Overworld_Func1();
+  Overworld_OperateCameraScroll();
 }
 void Overworld_Func22() {
   if (++INIDISP_copy == 15) {
@@ -2929,7 +2929,7 @@ void Overworld_Func22() {
 }
 
 
-void Mirror_InitHdmaSettings() {
+void InitializeMirrorHDMA() {
   HDMAEN_copy = 0;
 
   mirror_vars.var0 = 0;
@@ -2953,8 +2953,8 @@ void Mirror_InitHdmaSettings() {
   HDMAEN_copy = 0xc0;
 }
 
-void Overworld_MirrorWarp_State3() {
-  Palette_MirrorWarp_Step();
+void MirrorWarp_BuildWavingHDMATable() {
+  MirrorWarp_RunAnimationSubmodules();
   if (frame_counter & 1)
     return;
 
@@ -2989,8 +2989,8 @@ void Overworld_MirrorWarp_State3() {
   mode7_hdma_table[0] = mode7_hdma_table[2] = mode7_hdma_table[4] = mode7_hdma_table[6] = t + BG2HOFS_copy2;
 }
 
-void Overworld_MirrorWarp_State4() {
-  Palette_MirrorWarp_Step();
+void MirrorWarp_BuildDewavingHDMATable() {
+  MirrorWarp_RunAnimationSubmodules();
   if (frame_counter & 1)
     return;
   int x = 0x1a0 / 2, y = 0x1b0 / 2;
@@ -3003,7 +3003,7 @@ void Overworld_MirrorWarp_State4() {
   if (t == BG2HOFS_copy2) {
     HDMAEN_copy = 0;
     subsubmodule_index++;
-    Overworld_SetFixedColorsAndScroll();
+    Overworld_SetFixedColAndScroll();
     if ((overworld_screen_index & 0x3f) != 0x1b) {
       BG1HOFS_copy2 = BG1HOFS_copy = BG2HOFS_copy = BG2HOFS_copy2;
       BG1VOFS_copy2 = BG1VOFS_copy = BG2VOFS_copy = BG2VOFS_copy2;
@@ -3011,12 +3011,12 @@ void Overworld_MirrorWarp_State4() {
   }
 }
 
-void Overworld_FinishMirrorWarp() {
+void MirrorWarp_FinalizeAndLoadDestination() {
   HdmaSetup(0, 0xf2fb, 0x41, 0, (uint8)WH0, 0);
-  ResetSpotlightTable();
+  IrisSpotlight_ResetTable();
   palette_filter_countdown = 0;
   darkening_or_lightening_screen = 0;
-  DecompAuxAndSprites();
+  ReloadPreviouslyLoadedSheets();
   Overworld_SetSongList();
   HDMAEN_copy = 0x80;
   uint8 m = overworld_music[BYTE(overworld_screen_index)];
@@ -3032,7 +3032,7 @@ void Overworld_FinishMirrorWarp() {
   nmi_disable_core_updates = 0;
 }
 
-void Overworld_RestoreFailedWarpMap16() {
+void MirrorBonk_RecoverChangedTiles() {
   for (int i = 0, i_end = num_memorized_tiles >> 1; i != i_end; i++) {
     uint16 pos = memorized_tile_addr[i];
     dung_bg2[pos >> 1] = memorized_tile_value[i];
@@ -3049,7 +3049,7 @@ void LoadEnemyDamageData() {
   }
 }
 
-void MirrorWarp_LoadNext_7() {
+void Overworld_DrawScreenAtCurrentMirrorPosition() {
   uint16 bak1 = map16_load_src_off;
   uint16 bak2 = map16_load_dst_off;
   uint16 bak3 = map16_load_var2;
@@ -3058,15 +3058,15 @@ void MirrorWarp_LoadNext_7() {
     map16_load_var2 = (0x390 - 0x400 & 0xf80) >> 7;
     map16_load_dst_off = (0x390 - 0x10 & 0x3e) >> 1;
   }
-  Overworld_LoadMapData();
+  Overworld_DrawQuadrantsAndOverlays();
   if (submodule_index == 44)
-    Overworld_RestoreFailedWarpMap16();
+    MirrorBonk_RecoverChangedTiles();
   map16_load_var2 = bak3;
   map16_load_dst_off = bak2;
   map16_load_src_off = bak1;
 }
 
-void MirrorWarp_LoadNext_8() {
+void MirrorWarp_LoadSpritesAndColors() {
   countdown_for_blink = 0x90;
   uint16 bak1 = map16_load_src_off;
   uint16 bak2 = map16_load_dst_off;
@@ -3084,7 +3084,7 @@ void MirrorWarp_LoadNext_8() {
   uint8 sc = overworld_screen_index;
   Overworld_LoadPalettes(kOverworldBgPalettes[sc], overworld_sprite_palettes[sc]);
   Palette_SpecialOw();
-  Overworld_SetFixedColorsAndScroll();
+  Overworld_SetFixedColAndScroll();
   if (BYTE(overworld_screen_index) == 0x1b || BYTE(overworld_screen_index) == 0x5b)
     TS_copy = 1;
   for (int i = 0; i < 16 * 6; i++)
@@ -3095,15 +3095,15 @@ void MirrorWarp_LoadNext_8() {
     main_palette_buffer[32] = 0;
   }
   Sprite_ResetAll();
-  Sprite_OverworldReloadAll();
-  Player_ResetSomeCrap();
+  Sprite_ReloadAll_Overworld();
+  Link_ItemReset_FromOverworldThings();
   Dungeon_ResetTorchBackgroundAndPlayerInner();
   link_player_handler_state = kPlayerState_Mirror;
   if (!(overworld_screen_index & 0x40))
-    Sprite_ReinitWarpVortex();
+    Sprite_InitializeMirrorPortal();
 }
 
-void Overworld_MirrorWarp() {
+void Module09_MirrorWarp() {
   nmi_disable_core_updates++;
   switch (subsubmodule_index) {
   case 0:
@@ -3116,26 +3116,26 @@ void Overworld_MirrorWarp() {
     music_control = 8;
     flag_overworld_area_did_change = 8;
     countdown_for_blink = 0x90;
-    Mirror_InitHdmaSettings();
+    InitializeMirrorHDMA();
     savegame_is_darkworld ^= 0x40;
     word_7E04C8 = 0;
     BYTE(overworld_screen_index) = BYTE(overworld_area_index) = (overworld_screen_index & 0x3f) | savegame_is_darkworld;
     overworld_map_state = 0;
-    Palette_InitWhiteFilter();
-    Overworld_LoadMapProperties();
+    PaletteFilter_InitializeWhiteFilter();
+    Overworld_LoadGFXAndScreenSize();
     subsubmodule_index++;
     break;
   case 1:
     subsubmodule_index++;
     HDMAEN_copy = 0xc0;
   case 2:
-    Overworld_MirrorWarp_State3();
+    MirrorWarp_BuildWavingHDMATable();
     break;
   case 3:
-    Overworld_MirrorWarp_State4();
+    MirrorWarp_BuildDewavingHDMATable();
     break;
   default:
-    Overworld_FinishMirrorWarp();
+    MirrorWarp_FinalizeAndLoadDestination();
     break;
   }
 }
@@ -3156,7 +3156,7 @@ void Overworld_SetSongList() {
   overworld_music[128] = r0;
 }
 
-void Overworld_Func2A_State0() {
+void Module09_2A_00_ScrollToLand() {
   uint16 x = link_x_coord, xd = 0;
   if (x != link_x_coord_cached) {
     int16 d = (x > link_x_coord_cached) ? -1 : 1;
@@ -3178,12 +3178,12 @@ void Overworld_Func2A_State0() {
     link_incapacitated_timer = 0;
     set_when_damaging_enemies = 0;
   }
-  Overworld_Func1();
+  Overworld_OperateCameraScroll();
   if (BYTE(overworld_screen_trans_dir_bits2))
-    Overworld_ScrollMap();
+    OverworldHandleMapScroll();
 }
 
-void Overworld_Func2A_State1() {
+void RecoverPositionAfterDrowning() {
   link_x_coord = link_x_coord_cached;
   link_y_coord = link_y_coord_cached;
   ow_scroll_vars0.ystart = room_scroll_vars_y_vofs1_cached;
@@ -3216,11 +3216,11 @@ void Overworld_Func2A_State1() {
   dung_cur_floor = dung_cur_floor_cached;
   link_visibility_status = 0;
   countdown_for_blink = 0x90;
-  Dungeon_SpiralStaircase7_Inner4();
+  Dungeon_PlayBlipAndCacheQuadrantVisits();
   link_disable_sprite_damage = 0;
-  Link_ResetSomething1();
+  Link_ResetStateAfterDamagingPit();
   tagalong_var5 = 0;
-  Tagalong_Init();
+  Follower_Initialize();
   dung_flag_statechange_waterpuzzle = 0;
   overworld_map_state = 0;
   subsubmodule_index = 0;
@@ -3239,8 +3239,8 @@ void Overworld_Func2A_State1() {
 void Overworld_Func2A() {
   // this is called for example when entering water without swim capability
   switch (subsubmodule_index) {
-  case 0:  Overworld_Func2A_State0(); break;
-  default: Overworld_Func2A_State1(); break;
+  case 0:  Module09_2A_00_ScrollToLand(); break;
+  default: RecoverPositionAfterDrowning(); break;
   }
 }
 void Overworld_Func2B() {
@@ -3261,16 +3261,16 @@ void Overworld_Func2E() {
     subsubmodule_index++;
     break;
   case 1:
-    WhirlpoolSaturateBlue();
+    PaletteFilter_WhirlpoolBlue();
     break;
   case 2:
-    WhirlpoolIsolateBlue();
+    PaletteFilter_IsolateWhirlpoolBlue();
     break;
   case 3:
     COLDATA_copy2 = 0x9f;
     overworld_palette_aux_or_main = 0;
     hud_palette = 0;
-    Whirlpool_LookUpAndLoadTargetArea();
+    FindPartnerWhirlpoolExit();
     BYTE(dung_draw_width_indicator) = 0;
     Overworld_LoadOverlays2();
     submodule_index--;
@@ -3287,14 +3287,14 @@ void Overworld_Func2E() {
     subsubmodule_index++;
     break;
   case 5:
-    BirdTravel_LoadAmbientOverlay();
+    Overworld_LoadOverlayAndMap();
     nmi_subroutine_index = 12;
     INIDISP_copy = 0xf;
     nmi_disable_core_updates++;
     subsubmodule_index++;
     break;
   case 7:
-    Overworld_LoadTransGfx();
+    Module09_LoadAuxGFX();
     submodule_index--;
     subsubmodule_index++;
     break;
@@ -3307,16 +3307,16 @@ void Overworld_Func2E() {
     break;
   case 9: {
     overworld_palette_aux_or_main = 0;
-    Palette_MainSpr();
-    Palette_MiscSprite();
-    Palette_SpriteAux3();
-    Palette_Hud();
-    Palette_OverworldBgMain();
+    Palette_Load_SpriteMain();
+    Palette_Load_SpriteEnvironment();
+    Palette_Load_SpritePal0Left();
+    Palette_Load_HUD();
+    Palette_Load_OWBGMain();
     uint8 sc = overworld_screen_index;
     Overworld_LoadPalettes(kOverworldBgPalettes[sc], overworld_sprite_palettes[sc]);
     Palette_SetOwBgColor();
-    Overworld_SetFixedColorsAndScroll();
-    LoadGfxFunc1();
+    Overworld_SetFixedColAndScroll();
+    LoadNewSpriteGFXSet();
     COLDATA_copy2 = 0x80;
     INIDISP_copy = 0xf;
     nmi_disable_core_updates++;
@@ -3324,17 +3324,17 @@ void Overworld_Func2E() {
     break;
   }
   case 10:
-    WhirlpoolRestoreRedGreen();
+    PaletteFilter_WhirlpoolRestoreRedGreen();
     if (BYTE(palette_filter_countdown))
-      WhirlpoolRestoreRedGreen();
+      PaletteFilter_WhirlpoolRestoreRedGreen();
     break;
   case 11:
-    Graphics_IncrementalVramUpload();
-    WhirlpoolRestoreBlue();
+    Graphics_IncrementalVRAMUpload();
+    PaletteFilter_WhirlpoolRestoreBlue();
     break;
   case 12:
     countdown_for_blink = 144;
-    DecompAuxAndSprites();
+    ReloadPreviouslyLoadedSheets();
     HDMAEN_copy = 0x80;
     sound_effect_ambient = overworld_music[BYTE(overworld_screen_index)] >> 4;
     music_control = savegame_is_darkworld ? 9 : 2;
@@ -3355,34 +3355,34 @@ void Overworld_Func2F() {
 }
 
 static PlayerHandlerFunc *const kOverworldSubmodules[48] = {
-  &Overworld_Func0_Main,
-  &Overworld_LoadTransGfx,
+  &Module09_00_PlayerControl,
+  &Module09_LoadAuxGFX,
   &Overworld_FinishTransGfx,
-  &Overworld_TransMapData,
-  &Overworld_TransMapData2,
-  &Overworld_TransMapData2_justScroll,
-  &Overworld_Func6,
-  &Overworld_Func7,
-  &Overworld_Func8,
-  &Overworld_Func9_DoorStuff,
-  &Overworld_FuncA_StepOutOfDoor,
-  &Overworld_FuncB,
-  &Overworld_FuncC,
-  &Overworld_FuncD,
+  &Module09_LoadNewMapAndGFX,
+  &Module09_LoadNewSprites,
+  &Overworld_StartScrollTransition,
+  &Overworld_RunScrollTransition,
+  &Overworld_EaseOffScrollTransition,
+  &Overworld_FinalizeEntryOntoScreen,
+  &Module09_09_OpenBigDoorFromExiting,
+  &Module09_0A_WalkFromExiting_FacingDown,
+  &Module09_0B_WalkFromExiting_FacingUp,
+  &Module09_0C_OpenBigDoor,
+  &Overworld_StartMosaicTransition,
   &PreOverworld_LoadOverlays,
-  &Overworld_LoadTransGfx,
+  &Module09_LoadAuxGFX,
   &Overworld_FinishTransGfx,
-  &Overworld_TransMapData,
-  &Overworld_TransMapData2,
-  &Overworld_TransMapData2_justScroll,
-  &Overworld_Func6,
-  &Overworld_Func7,
+  &Module09_LoadNewMapAndGFX,
+  &Module09_LoadNewSprites,
+  &Overworld_StartScrollTransition,
+  &Overworld_RunScrollTransition,
+  &Overworld_EaseOffScrollTransition,
   &Overworld_Func16,
 
-  &Overworld_FuncD,
+  &Overworld_StartMosaicTransition,
   &Overworld_Func18,
   &Overworld_Func19,
-  &Overworld_LoadTransGfx,
+  &Module09_LoadAuxGFX,
   &Overworld_FinishTransGfx,
   &Overworld_Func1C,
   &Overworld_Func1D,
@@ -3392,16 +3392,16 @@ static PlayerHandlerFunc *const kOverworldSubmodules[48] = {
   &Overworld_LoadOverlays2,
   &Overworld_LoadAmbientOverlay,
   &Overworld_Func22,
-  &Overworld_MirrorWarp,
-  &Overworld_FuncD,
+  &Module09_MirrorWarp,
+  &Overworld_StartMosaicTransition,
   &Overworld_LoadOverlays,
-  &Overworld_LoadTransGfx,
+  &Module09_LoadAuxGFX,
   &Overworld_FinishTransGfx,
   &Overworld_LoadAmbientOverlayAndMapData,
   &Overworld_Func16,
   &Overworld_Func2A,
   &Overworld_Func2B,
-  &Overworld_MirrorWarp,
+  &Module09_MirrorWarp,
   &Overworld_WeathervaneExplosion,
   &Overworld_Func2E,
   &Overworld_Func2F,
@@ -3428,12 +3428,12 @@ void Module_Overworld() {
   BG1HOFS_copy2 = bg1x;
   BG1VOFS_copy2 = bg1y;
 
-  PlayerOam_Main();
+  LinkOam_Main();
   Hud_RefillLogic();
-  Overworld_DrawBadWeather();
+  OverworldOverlay_HandleRain();
 }
 
-void Overworld_DrawBadWeather() {
+void OverworldOverlay_HandleRain() {
   static const uint8 kOverworld_DrawBadWeather_X[4] = { 1, 0, 1, 0 };
   static const uint8 kOverworld_DrawBadWeather_Y[4] = { 0, 17, 0, 17 };
   if (BYTE(overworld_screen_index) != 0x70 && sram_progress_indicator >= 2 || (save_ow_event_info[0x70] & 0x20))
@@ -3454,7 +3454,7 @@ void Overworld_DrawBadWeather() {
   BG1VOFS_copy2 += kOverworld_DrawBadWeather_Y[i] << 8;
 }
 
-void Mirror_Func30() {
+void ResetAncillaAndCutscene() {
   Ancilla_TerminateSelectInteractives(0);
   link_disable_sprite_damage = 0;
   button_b_frames = 0;
@@ -3466,17 +3466,17 @@ void Mirror_Func30() {
 void MirrorWarp_Helper() {
   if (main_module_index != 21)
     return;
-  Overworld_LoadExitData();
-  DecompOwAnimatedTiles(0x5a);
-  Mirror_Func30();
+  LoadOverworldFromDungeon();
+  DecompressAnimatedOverworldTiles(0x5a);
+  ResetAncillaAndCutscene();
 }
 
 void PreOverworld_LoadProperties() {
   CGWSEL_copy = 0x82;
   dung_unk6 = 0;
-  PreOverworld_LoadBunnyStuff();
+  AdjustLinkBunnyStatus();
   if (main_module_index == 8)
-    Overworld_LoadExitData();
+    LoadOverworldFromDungeon();
   else
     Overworld_RestoreFromSpecialAreaExit();
   Overworld_SetSongList();
@@ -3512,26 +3512,26 @@ dark:
   }
 setsong:
   buffer_for_playing_songs = xt;
-  DecompOwAnimatedTiles(ow_anim_tiles);
-  InitTilesets();
+  DecompressAnimatedOverworldTiles(ow_anim_tiles);
+  InitializeTilesets();
   Overworld_LoadAreaPalettes();
   Overworld_LoadPalettes(kOverworldBgPalettes[sc], overworld_sprite_palettes[sc]);
   Palette_SetOwBgColor();
   if (main_module_index == 8) {
     Overworld_LoadPalettesInner();
   } else {
-    Palette_ZeroPalettesAndCopyFirst();
+    SpecialOverworld_CopyPalettesToCache();
   }
-  Overworld_SetFixedColorsAndScroll();
+  Overworld_SetFixedColAndScroll();
   overworld_fixed_color_plusminus = 0;
-  Tagalong_Init();
+  Follower_Initialize();
 
   if (!(BYTE(overworld_screen_index) & 0x3f))
     DecodeAnimatedSpriteTile_variable(0x1e);
   saved_module_for_menu = 9;
-  Sprite_OverworldReloadAll();
+  Sprite_ReloadAll_Overworld();
   if (!(overworld_screen_index & 0x40))
-    Sprite_ReinitWarpVortex();
+    Sprite_InitializeMirrorPortal();
   sound_effect_ambient = sram_progress_indicator < 2 ? 1 : 5;
   if (savegame_tagalong == 6)
     savegame_tagalong = 0;
@@ -3556,13 +3556,13 @@ setsong:
   submodule_index++;
   flag_update_hud_in_nmi++;
   dung_savegame_state_bits = 0;
-  Overworld_LoadMusicIfNeeded();
+  LoadOWMusicIfNeeded();
 }
 
 static PlayerHandlerFunc *const kModule_PreOverworld[3] = {
   &PreOverworld_LoadProperties,
   &PreOverworld_LoadOverlays,
-  &PreOverworld_LoadLevelData,
+  &Module08_02_LoadAndAdvance,
 };
 
 
@@ -3570,12 +3570,12 @@ void Module_PreOverworld() {
   kModule_PreOverworld[submodule_index]();
 }
 
-void PreOverworld_LoadBunnyStuff() {
+void AdjustLinkBunnyStatus() {
   if (link_item_moon_pearl)
-    Player_RemoveBunny();
+    ForceNonbunnyStatus();
 }
 
-void Player_RemoveBunny() {
+void ForceNonbunnyStatus() {
   link_player_handler_state = kPlayerState_Ground;
   link_timer_tempbunny = 0;
   link_need_for_poof_for_transform = 0;
@@ -3583,8 +3583,8 @@ void Player_RemoveBunny() {
   link_is_bunny_mirror = 0;
 }
 
-void OpenSpotlight_Next() {
-  ConfigureSpotlightTable();
+void Spotlight_ConfigureTableAndControl() {
+  IrisSpotlight_ConfigureTable();
   is_nmi_thread_active = 0;
   nmi_flag_update_polyhedral = 0;
   if (submodule_index)
@@ -3597,7 +3597,7 @@ void OpenSpotlight_Next() {
 void OpenSpotlight_Next2() {
   if (main_module_index != 9) {
     EnableForceBlank();
-    Player_ResetSomeCrap();
+    Link_ItemReset_FromOverworldThings();
   }
 
   if (main_module_index == 9) {
@@ -3633,7 +3633,7 @@ void OpenSpotlight_Next2() {
   }
 }
 
-void OpenSpotlight_Init() {
+void Module10_00_OpenIris() {
   Spotlight_open();
   submodule_index++;
 }
@@ -3648,7 +3648,7 @@ void Ancilla_TerminateWaterfallSplashes() {
   }
 }
 
-void CloseSpotlight_Init() {
+void Dungeon_PrepExitWithSpotlight() {
   is_nmi_thread_active = 0;
   nmi_flag_update_polyhedral = 0;
   if (!player_is_indoors) {
@@ -3666,23 +3666,23 @@ void CloseSpotlight_Init() {
   hud_floor_changed_timer = 0;
   Hud_FloorIndicator();
   flag_update_hud_in_nmi++;
-  Spotlight_close();
+  IrisSpotlight_close();
   submodule_index++;
 }
 
-void Module_CloseSpotlight() {
+void Module0F_SpotlightClose() {
   static const uint8 kTab[4] = { 8, 4, 2, 1 };
   Sprite_Main();
   if (submodule_index == 0)
-    CloseSpotlight_Init();
+    Dungeon_PrepExitWithSpotlight();
   else
-    OpenSpotlight_Next();
+    Spotlight_ConfigureTableAndControl();
 
   if (!player_is_indoors) {
     if (BYTE(overworld_screen_index) == 0xf)
       draw_water_ripples_or_grass = 1;
     link_speed_setting = 6;
-    Player_SomethingWithVelocity();
+    Link_HandleVelocity();
     link_x_vel = link_y_vel = 0;
   }
 
@@ -3691,49 +3691,49 @@ void Module_CloseSpotlight() {
     i = (which_entrance == 0x43) ? 1 : 0;
 
   link_direction = link_direction_last = kTab[i];
-  Player_UpdateDirection();
-  PlayerOam_Main();
+  Link_HandleMovingAnimation_FullLongEntry();
+  LinkOam_Main();
 }
 
 
-void Module_OpenSpotlight() {
+void Module10_SpotlightOpen() {
   Sprite_Main();
   if (submodule_index == 0)
-    OpenSpotlight_Init();
+    Module10_00_OpenIris();
   else
-    OpenSpotlight_Next();
-  PlayerOam_Main();
+    Spotlight_ConfigureTableAndControl();
+  LinkOam_Main();
 }
 
-void Overworld_AlterGargoyleEntrance() {
-  Overworld_DrawPersistentMap16(0xd3e, 0xe1b);
-  Overworld_DrawPersistentMap16(0xd40, 0xe1c);
-  Overworld_DrawPersistentMap16(0xdbe, 0xe1d);
-  Overworld_DrawPersistentMap16(0xdc0, 0xe1e);
-  Overworld_DrawPersistentMap16(0xe3e, 0xe1f);
-  Overworld_DrawPersistentMap16(0xe40, 0xe20);
+void OpenGargoylesDomain() {
+  Overworld_DrawMap16_Persist(0xd3e, 0xe1b);
+  Overworld_DrawMap16_Persist(0xd40, 0xe1c);
+  Overworld_DrawMap16_Persist(0xdbe, 0xe1d);
+  Overworld_DrawMap16_Persist(0xdc0, 0xe1e);
+  Overworld_DrawMap16_Persist(0xe3e, 0xe1f);
+  Overworld_DrawMap16_Persist(0xe40, 0xe20);
   save_ow_event_info[0x58] |= 0x20;
   sound_effect_2 = 0x1b;
   nmi_load_bg_from_vram = 1;
 }
 
-void Overworld_CreatePyramidHole() {
-  Overworld_DrawPersistentMap16(0x3bc, 0xe3f);
-  Overworld_DrawPersistentMap16(0x3be, 0xe40);
-  Overworld_DrawPersistentMap16(0x3c0, 0xe41);
-  Overworld_DrawPersistentMap16(0x43c, 0xe42);
-  Overworld_DrawPersistentMap16(0x43e, 0xe43);
-  Overworld_DrawPersistentMap16(0x440, 0xe44);
-  Overworld_DrawPersistentMap16(0x4bc, 0xe45);
-  Overworld_DrawPersistentMap16(0x4be, 0xe46);
-  Overworld_DrawPersistentMap16(0x4c0, 0xe47);
+void CreatePyramidHole() {
+  Overworld_DrawMap16_Persist(0x3bc, 0xe3f);
+  Overworld_DrawMap16_Persist(0x3be, 0xe40);
+  Overworld_DrawMap16_Persist(0x3c0, 0xe41);
+  Overworld_DrawMap16_Persist(0x43c, 0xe42);
+  Overworld_DrawMap16_Persist(0x43e, 0xe43);
+  Overworld_DrawMap16_Persist(0x440, 0xe44);
+  Overworld_DrawMap16_Persist(0x4bc, 0xe45);
+  Overworld_DrawMap16_Persist(0x4be, 0xe46);
+  Overworld_DrawMap16_Persist(0x4c0, 0xe47);
   WORD(sound_effect_ambient) = 0x3515;
   save_ow_event_info[0x5b] |= 0x20;
   sound_effect_2 = 3;
   nmi_load_bg_from_vram = 1;
 }
 
-void Overworld_HammerSfx(uint16 a) {
+void Overworld_PickHammerSfx(uint16 a) {
   uint16 attr = kMap8DataToTileAttr[GetMap16toMap8Table()[a * 4] & 0x1ff];
   uint8 y;
   if (attr < 0x50) {
@@ -3774,7 +3774,7 @@ void HandlePegPuzzles(uint16 pos) {
       sound_effect_2 = 27;
       door_open_closed_counter = 0x50;
       big_rock_starting_address = 0xd20;
-      DoorAnim_DoWork2();
+      Overworld_DoMapUpdate32x32_B();
     }
   }
   //assert(0);
@@ -3831,7 +3831,7 @@ memoize_getout:
       attr = kMap8DataToTileAttr[t & 0x1ff];
       if (index_of_interacting_tile) {
         Sprite_SpawnImmediatelySmashedTerrain(index_of_interacting_tile, scratch_0, scratch_1);
-        AddDisintegratingBushPoof(scratch_0, scratch_1);
+        AncillaAdd_BushPoof(scratch_0, scratch_1);
       }
       return attr;
     }
@@ -3843,7 +3843,7 @@ memoize_getout:
       yv = 0xdcb;
       goto memoize_getout;
     } else { // else_3
-      Overworld_HammerSfx(attr);
+      Overworld_PickHammerSfx(attr);
       return attr;
     }
   }
@@ -3860,7 +3860,7 @@ uint16 Overworld_GetLinkMap16Coords(Point16U *xy) {
   return rv + (((x >> 3) - overworld_offset_base_x) & overworld_offset_mask_x);
 }
 
-void Overworld_RevealSecret_CheckPowder() {
+void AdjustSecretForPowder() {
   if (link_item_in_hand & 0x40)
     dung_secrets_unk1 = 4;
 }
@@ -3871,7 +3871,7 @@ uint16 Overworld_RevealSecret(uint16 pos) {
 
   if (overworld_screen_index >= 0x80) {
 fail:
-    Overworld_RevealSecret_CheckPowder();
+    AdjustSecretForPowder();
     return 0;
   }
 
@@ -3888,7 +3888,7 @@ fail:
   if (data && data < 0x80)
     BYTE(dung_secrets_unk1) |= data;
   if (data < 0x80) {
-    Overworld_RevealSecret_CheckPowder();
+    AdjustSecretForPowder();
     return 0; // carry set
   }
 
@@ -3899,7 +3899,7 @@ fail:
     sound_effect_2 = 0x1b;
   }
   static const uint16 kTileBelow[4] = { 0xDCC, 0x212, 0xFFFF, 0xDB4 };
-  Overworld_RevealSecret_CheckPowder();
+  AdjustSecretForPowder();
   return kTileBelow[(data & 0xf) >> 1];
 
 }
@@ -3926,7 +3926,7 @@ uint8 Overworld_LiftingSmallObj(uint16 a, uint16 pos, uint16 y, Point16U pt) {
   return kMap8DataToTileAttr[GetMap16toMap8Table()[t] & 0x1ff];
 }
 
-uint8 Overworld_HandleBigRock(uint16 a, uint16 pos, uint16 y, Point16U pt) {
+uint8 SmashRockPile_fromLift(uint16 a, uint16 pos, uint16 y, Point16U pt) {
   static const int8 kBigRockTab1[] = { 0, -1, -64, -65 };
   static const int8 kBigRockTabY[] = { 0, 0, -64, -64 };
   static const int8 kBigRockTabX[] = { 0, -1, 0, -1 };
@@ -3949,13 +3949,13 @@ uint8 Overworld_HandleBigRock(uint16 a, uint16 pos, uint16 y, Point16U pt) {
   pt.x += kBigRockTabX[y] * 2;
   pt.y += kBigRockTabY[y] * 2;
 
-  DoorAnim_DoWork2(); // WARNING: The original destroys ram[0] and ram[2]
+  Overworld_DoMapUpdate32x32_B(); // WARNING: The original destroys ram[0] and ram[2]
 
   uint16 t = a * 4 + (pt.x & 8 ? 2 : 0) + (pt.y & 8 ? 1 : 0);
   return kMap8DataToTileAttr[GetMap16toMap8Table()[t] & 0x1ff];
 }
 
-void Overworld_ApplyBombToTile(int x, int y) {
+void Overworld_BombTile(int x, int y) {
   int a, j, k;
 
   int pos = ((y - overworld_offset_base_y & overworld_offset_mask_y) << 3) +
@@ -4001,13 +4001,13 @@ label_a:
   }
 }
 
-void Overworld_ApplyBombToTiles(uint16 x, uint16 y) {
+void Overworld_BombTiles32x32(uint16 x, uint16 y) {
   x = (x - 23) & ~7;
   y = (y - 20) & ~7;
 
   for (int yy = 3; yy != 0; yy--, y += 16) {
     for (int xx = 3, xt = x; xx != 0; xx--, xt += 16) {
-      Overworld_ApplyBombToTile(xt, y);
+      Overworld_BombTile(xt, y);
     }
   }
   word_7E0486 = x, word_7E0488 = y;
@@ -4021,7 +4021,7 @@ int Overworld_SmashRockPile(bool down_one_tile, Point16U *pt) {
   uint16 a = dung_bg2[pos >> 1];
   uint8 y = 0;
   if ((y = 0, a == 0x226) || (y = 1, a == 0x227) || (y = 2, a == 0x228) || (y = 3, a == 0x229)) {
-    return Overworld_HandleBigRock(a, pos, y, *pt);
+    return SmashRockPile_fromLift(a, pos, y, *pt);
   } else if (a == 0x36) {
     return Overworld_LiftingSmallObj(a, pos, 0xDC7, *pt);
   } else {
@@ -4032,9 +4032,9 @@ int Overworld_SmashRockPile(bool down_one_tile, Point16U *pt) {
 void Overworld_AlterWeathervane() {
   door_open_closed_counter = 0x68;
   big_rock_starting_address = 0xc3e;
-  DoorAnim_DoWork2();
-  Overworld_DrawPersistentMap16(0xc42, 0xe21);
-  Overworld_DrawPersistentMap16(0xcc2, 0xe25);
+  Overworld_DoMapUpdate32x32_B();
+  Overworld_DrawMap16_Persist(0xc42, 0xe21);
+  Overworld_DrawMap16_Persist(0xcc2, 0xe25);
 
   save_ow_event_info[0x18] |= 0x20;
   nmi_load_bg_from_vram = 1;
@@ -4047,7 +4047,7 @@ uint8 Overworld_LiftableTiles(Point16U *pt_arg) {
   uint16 a = overworld_tileattr[pos >> 1], y;
   if ((y = 0, a == 0x36d) || (y = 1, a == 0x36e) || (y = 2, a == 0x374) || (y = 3, a == 0x375) ||
       (y = 0, a == 0x23b) || (y = 1, a == 0x23c) || (y = 2, a == 0x23d) || (y = 3, a == 0x23e)) {
-    return Overworld_HandleBigRock(a, pos, y, pt);
+    return SmashRockPile_fromLift(a, pos, y, pt);
   } else if ((y = 0xdc7, a == 0x36) || (y = 0xdc8, a == 0x72a) || (y = 0xdca, a == 0x20f) || (y = 0xdca, a == 0x239) || (y = 0xdc6, a == 0x101)) {
     return Overworld_LiftingSmallObj(a, pos, y, pt);
   } else {
@@ -4056,7 +4056,7 @@ uint8 Overworld_LiftableTiles(Point16U *pt_arg) {
   }
 }
 
-void Overworld_PitDamage() {
+void TakeDamageFromPit() {
   link_visibility_status = 12;
   submodule_index = player_is_indoors ? 20 : 42;
   link_health_current -= 8;
@@ -4064,13 +4064,13 @@ void Overworld_PitDamage() {
     link_health_current = 0;
 }
 
-uint8 Overworld_ReadSomeTileAttr(uint16 x, uint16 y) {
+uint8 Overworld_ReadTileAttribute(uint16 x, uint16 y) {
   int t = ((x - overworld_offset_base_x) & overworld_offset_mask_x);
   t |= ((y - overworld_offset_base_y) & overworld_offset_mask_y) << 3;
   return kSomeTileAttr[dung_bg2[t >> 1]];
 }
 
-void Overworld_Hole() {
+void Overworld_GetPitDestination() {
   uint16 x = (link_x_coord & ~7);
   uint16 y = (link_y_coord & ~7);
   uint16 pos = ((y - overworld_offset_base_y) & overworld_offset_mask_y) << 3;
@@ -4092,13 +4092,13 @@ void Overworld_Hole() {
 }
 
 
-void Overworld_LoadGfxProperties() {
+void Sprite_LoadGraphicsProperties() {
   memcpy(overworld_sprite_gfx + 64, kOverworldSpriteGfx + 0xc0, 64);
   memcpy(overworld_sprite_palettes + 64, kOverworldSpritePalettes + 0xc0, 64);
-  Overworld_LoadGfxProperties_justLightWorld();
+  Sprite_LoadGraphicsProperties_light_world_only();
 }
 
-void Overworld_LoadGfxProperties_justLightWorld() {
+void Sprite_LoadGraphicsProperties_light_world_only() {
   int i = sram_progress_indicator < 2 ? 0 :
     sram_progress_indicator != 3 ? 1 : 2;
   memcpy(overworld_sprite_gfx, kOverworldSpriteGfx + i * 64, 64);

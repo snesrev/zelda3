@@ -3,11 +3,11 @@
 #include "misc.h"
 
 
-void Overlord_SpritePositionTarget(int k) {
+void Overlord01_PositionTarget(int k) {
   byte_7E0FDE = k;
 }
 
-void Overlord_SpawnMetalBall(int k, int xd) {
+void Overlord_SpawnCannonBall(int k, int xd) {
   static const int8 kOverlordSpawnBall_Xvel[4] = { 24, -24, 0, 0 };
   static const int8 kOverlordSpawnBall_Yvel[4] = { 0, 0, 24, -24 };
   SpriteSpawnInfo info;
@@ -28,10 +28,10 @@ void Overlord_SpawnMetalBall(int k, int xd) {
     sprite_flags4[j] = 9;
   }
   sprite_delay_aux2[j] = 64;
-  Sound_SetSfx3Pan(j, 0x7);
+  SpriteSfx_QueueSfx3WithPan(j, 0x7);
 }
 
-void Overlord_AllDirectionMetalBallFactory(int k) {
+void Overlord02_FullRoomCannons(int k) {
   static const uint8 kAllDirectionMetalBallFactory_Idx[16] = { 2, 2, 2, 2, 1, 1, 1, 1, 3, 3, 3, 3, 0, 0, 0, 0 };
   static const uint8 kAllDirectionMetalBallFactory_X[16] = { 64, 96, 144, 176, 240, 240, 240, 240, 176, 144, 96, 64, 0, 0, 0, 0 };
   static const uint8 kAllDirectionMetalBallFactory_Y[16] = { 16, 16, 16, 16, 64, 96, 160, 192, 240, 240, 240, 240, 192, 160, 96, 64 };
@@ -41,16 +41,16 @@ void Overlord_AllDirectionMetalBallFactory(int k) {
     return;
 
   byte_7E0FB6 = 0;
-  int j = GetRandomInt() & 15;
+  int j = GetRandomNumber() & 15;
   tmp_counter = kAllDirectionMetalBallFactory_Idx[j];
   overlord_x_lo[k] = kAllDirectionMetalBallFactory_X[j];
   overlord_x_hi[k] = byte_7E0FB0;
   overlord_y_lo[k] = kAllDirectionMetalBallFactory_Y[j];
   overlord_y_hi[k] = byte_7E0FB1 + 1;
-  Overlord_SpawnMetalBall(k, 0);
+  Overlord_SpawnCannonBall(k, 0);
 }
 
-void Overlord_CascadeMetalBallFactory(int k) {
+void Overlord03_VerticalCannon(int k) {
   uint16 x = (overlord_x_lo[k] | overlord_x_hi[k] << 8) - BG2HOFS_copy2;
   if (x & 0xff00) {
     overlord_gen2[k] = 255;
@@ -69,9 +69,9 @@ void Overlord_CascadeMetalBallFactory(int k) {
     byte_7E0FB6 = 160;
     xd = 8;
   } else {
-    xd = (GetRandomInt() & 2) * 8;
+    xd = (GetRandomNumber() & 2) * 8;
   }
-  Overlord_SpawnMetalBall(k, xd);
+  Overlord_SpawnCannonBall(k, xd);
 }
 
 void Overlord_StalfosFactory(int k) {
@@ -79,11 +79,11 @@ void Overlord_StalfosFactory(int k) {
   assert(0);
 }
 
-void Sprite_PlayDropSfx(int k) {
-  Sound_SetSfx2Pan(k, 0x20);
+void Sprite_Overlord_PlayFallingSfx(int k) {
+  SpriteSfx_QueueSfx2WithPan(k, 0x20);
 }
 
-void Overlord_StalfosTrap(int k) {
+void Overlord05_FallingStalfos(int k) {
   static const uint8 kStalfosTrap_Trigger[8] = { 255, 224, 192, 160, 128, 96, 64, 32 };
 
   uint16 x = (overlord_x_lo[k] | overlord_x_hi[k] << 8) - BG2HOFS_copy2;
@@ -106,11 +106,11 @@ void Overlord_StalfosTrap(int k) {
     sprite_z[j] = 224;
     sprite_floor[j] = overlord_floor[k];
     sprite_D[j] = 0; // zelda bug: unitialized
-    Sprite_PlayDropSfx(j);
+    Sprite_Overlord_PlayFallingSfx(j);
   }
 }
 
-void Overlord_RedStalfosTrap(int k) {
+void Overlord18_InvisibleStalfos(int k) {
   static const int8 kRedStalfosTrap_X[4] = { 0, 0, -48, 48 };
   static const int8 kRedStalfosTrap_Y[4] = { -40, 56, 8, 8 };
   static const uint8 kRedStalfosTrap_Delay[4] = { 0x30, 0x50, 0x70, 0x90 };
@@ -163,16 +163,16 @@ void Overlord_SnakeTrap(int k) {
 
   sprite_flags3[j] |= 0x10;
   sprite_floor[j] = overlord_floor[k];
-  Sound_SetSfx2Pan(j, 0x20);
+  SpriteSfx_QueueSfx2WithPan(j, 0x20);
   uint8 type = overlord_type[k];
   overlord_type[k] = 0;
   if (type == 26) {
     sprite_type[j] = 74;
-    Sprite_TransmuteToEnemyBomb(j);
+    Sprite_TransmuteToBomb(j);
     sprite_delay_aux1[j] = 112;
   }
 }
-void Overlord_MovingFloor(int k) {
+void Overlord07_MovingFloor(int k) {
   if (sprite_state[0] == 4) {
     overlord_type[k] = 0;
     BYTE(dung_floor_move_flags) = 1;
@@ -181,8 +181,8 @@ void Overlord_MovingFloor(int k) {
   if (!overlord_gen1[k]) {
     if (++overlord_gen2[k] == 32) {
       overlord_gen2[k] = 0;
-      BYTE(dung_floor_move_flags) = (GetRandomInt() & (overlord_x_lo[k] ? 3 : 1)) * 2;
-      overlord_gen2[k] = (GetRandomInt() & 127) + 128;
+      BYTE(dung_floor_move_flags) = (GetRandomNumber() & (overlord_x_lo[k] ? 3 : 1)) * 2;
+      overlord_gen2[k] = (GetRandomNumber() & 127) + 128;
       overlord_gen1[k]++;
     } else {
       BYTE(dung_floor_move_flags) = 1;
@@ -192,7 +192,7 @@ void Overlord_MovingFloor(int k) {
       overlord_gen1[k] = 0;
   }
 }
-void Overlord_ZolFactory(int k) {
+void Overlord08_BlobSpawner(int k) {
   if (overlord_gen2[k]) {
     overlord_gen2[k]--;
     return;
@@ -219,11 +219,11 @@ void Overlord_ZolFactory(int k) {
     sprite_ai_state[j] = 2;
     sprite_E[j] = 2;
     sprite_C[j] = 2;
-    sprite_head_dir[j] = GetRandomInt() & 31 | 16;
+    sprite_head_dir[j] = GetRandomNumber() & 31 | 16;
   }
 }
 
-void Overlord_WallMasterFactory(int k) {
+void Overlord09_WallmasterSpawner(int k) {
   if (overlord_gen2[k] != 128) {
     if (!(frame_counter & 1))
       overlord_gen2[k]--;
@@ -237,7 +237,7 @@ void Overlord_WallMasterFactory(int k) {
   Sprite_SetX(j, link_x_coord);
   Sprite_SetY(j, link_y_coord);
   sprite_z[j] = 208;
-  Sound_SetSfx2Pan(j, 0x20);
+  SpriteSfx_QueueSfx2WithPan(j, 0x20);
   sprite_floor[j] = link_is_on_lower_level;
 }
 
@@ -254,13 +254,13 @@ void Overlord_SetY(int k, uint16 v) {
   overlord_y_hi[k] = v >> 8;
 }
 
-void CrumbleTilePath_SpawnCrumbleTileGarnish(int k) {
+void SpawnFallingTile(int k) {
   int j = GarnishAlloc();
   if (j >= 0) {
     garnish_type[j] = 3;
     garnish_x_hi[j] = overlord_x_hi[k];
     garnish_x_lo[j] = overlord_x_lo[k];
-    sound_effect_1 = LightTorch_GetSfxPan(garnish_x_lo[j]) | 0x1f;
+    sound_effect_1 = CalculateSfxPan_Arbitrary(garnish_x_lo[j]) | 0x1f;
     int y = Overlord_GetY(k) + 16;
     garnish_y_lo[j] = y;
     garnish_y_hi[j] = y >> 8;
@@ -297,7 +297,7 @@ void Overlord_CrumbleTilePath(int k) {
   }
 
   overlord_gen2[k] = 16;
-  CrumbleTilePath_SpawnCrumbleTileGarnish(k);
+  SpawnFallingTile(k);
   int j = overlord_type[k] - 10;
   int i = overlord_gen1[k]++;
   if (i == kCrumbleTilePathOffs[j + 1] - kCrumbleTilePathOffs[j]) {
@@ -321,7 +321,7 @@ void Overlord_PirogusuFactory(int k) {
     overlord_gen2[k]--;
     return;
   }
-  overlord_gen2[k] = (GetRandomInt() & 31) + 96;
+  overlord_gen2[k] = (GetRandomNumber() & 31) + 96;
   int n = 0;
   for (int i = 0; i != 16; i++) {
     if (sprite_state[i] != 0 && sprite_type[i] == 0x10)
@@ -341,7 +341,7 @@ void Overlord_PirogusuFactory(int k) {
   }
 }
 
-int Overlord_SpawnFlyingTile(int k) {
+int TileRoom_SpawnTile(int k) {
   static const uint8 kSpawnFlyingTile_X[22] = {
     0x70, 0x80, 0x60, 0x90, 0x90, 0x60, 0x70, 0x80, 0x80, 0x70, 0x50, 0xa0, 0xa0, 0x50, 0x50, 0xa0,
     0xa0, 0x50, 0x70, 0x80, 0x80, 0x70,
@@ -371,14 +371,14 @@ int Overlord_SpawnFlyingTile(int k) {
   return j;
 }
 
-void Overlord_FlyingTileFactory(int k) {
+void Overlord14_TileRoom(int k) {
   uint16 x = (overlord_x_lo[k] | overlord_x_hi[k] << 8) - BG2HOFS_copy2;
   uint16 y = (overlord_y_lo[k] | overlord_y_hi[k] << 8) - BG2VOFS_copy2;
   if (x & 0xff00 || y & 0xff00)
     return;
   if (--overlord_gen2[k] != 0x80)
     return;
-  int j = Overlord_SpawnFlyingTile(k);
+  int j = TileRoom_SpawnTile(k);
   if (j < 0) {
     overlord_gen2[k] = 0x81;
     return;
@@ -389,7 +389,7 @@ void Overlord_FlyingTileFactory(int k) {
     overlord_type[k] = 0;
 }
 
-void Overlord_WizzrobeFactory(int k) {
+void Overlord15_WizzrobeSpawner(int k) {
   static const int8 kOverlordWizzrobe_X[4] = { 48, -48, 0, 0 };
   static const int8 kOverlordWizzrobe_Y[4] = { 16, 16, 64, -32 };
   static const uint8 kOverlordWizzrobe_Delay[4] = { 0, 16, 32, 48 };
@@ -413,19 +413,19 @@ void Overlord_WizzrobeFactory(int k) {
   tmp_counter = 0xff;
 }
 
-void Overlord_ZoroFactory(int k) {
+void Overlord16_ZoroSpawner(int k) {
   static const int8 kOverlordZoroFactory_X[8] = { -4, -2, 0, 2, 4, 6, 8, 12 };
   overlord_gen2[k]--;
   uint16 x = Overlord_GetX(k) + 8;
   uint16 y = Overlord_GetY(k) + 8;
-  if (Entity_GetTileAttr(overlord_floor[k], &x, y) != 0x82)
+  if (GetTileAttribute(overlord_floor[k], &x, y) != 0x82)
     return;
   if (overlord_gen2[k] >= 0x18 || (overlord_gen2[k] & 3) != 0)
     return;
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamicallyEx(k, 0x9c, &info, 12);
   if (j >= 0) {
-    Sprite_SetX(j, info.r5_overlord_x + kOverlordZoroFactory_X[GetRandomInt() & 7] + 8);
+    Sprite_SetX(j, info.r5_overlord_x + kOverlordZoroFactory_X[GetRandomNumber() & 7] + 8);
     sprite_y_lo[j] = info.r7_overlord_y + 8;
     sprite_y_hi[j] = info.r7_overlord_y >> 8;
     sprite_floor[j] = overlord_floor[k];
@@ -435,12 +435,12 @@ void Overlord_ZoroFactory(int k) {
     sprite_y_vel[j] = 16;
     sprite_flags2[j] = 32;
     sprite_oam_flags[j] = 13;
-    sprite_subtype2[j] = GetRandomInt();
+    sprite_subtype2[j] = GetRandomNumber();
     sprite_delay_main[j] = 48;
     sprite_bump_damage[j] = 3;
   }
 }
-void Overlord_StalfosTrapTriggerWindow(int k) {
+void Overlord17_PotTrap(int k) {
   uint16 x = (overlord_x_lo[k] | overlord_x_hi[k] << 8);
   uint16 y = (overlord_y_lo[k] | overlord_y_hi[k] << 8);
   if ((uint16)(x - link_x_coord + 32) < 64 &&
@@ -480,13 +480,13 @@ void ArmosCoordinator_Rotate(int k) {
 }
 
 
-void ArmosCoordinator_TimedRotateThenTransition(int k) {
+void ArmosCoordinator_RotateKnights(int k) {
   if (!overlord_gen2[k])
     overlord_gen1[k]++;
   ArmosCoordinator_Rotate(k);
 }
 
-bool ArmosCoordinator_AreAllActiveKnightsSubmissive() {
+bool ArmosCoordinator_CheckKnights() {
   for (int j = 5; j >= 0; j--) {
     if (sprite_state[j] && sprite_ai_state[j] == 0)
       return false;
@@ -494,14 +494,14 @@ bool ArmosCoordinator_AreAllActiveKnightsSubmissive() {
   return true;
 }
 
-void ArmosCoordinator_DisableKnights_XY_Coercion(int k) {
+void ArmosCoordinator_DisableCoercion(int k) {
   for (int j = 5; j >= 0; j--)
     sprite_ai_state[j] = 0;
 }
 
 
 
-void Overlord_ArmosCoordinator(int k) {
+void Overlord19_ArmosCoordinator_bounce(int k) {
   static const uint8 kArmosCoordinator_BackWallX[6] = { 49, 77, 105, 131, 159, 187 };
 
   if (overlord_gen2[k])
@@ -514,18 +514,18 @@ void Overlord_ArmosCoordinator(int k) {
       overlord_x_lo[2] = 64;
       overlord_x_lo[0] = 192;
       overlord_x_lo[1] = 1;
-      ArmosCoordinator_TimedRotateThenTransition(k);
+      ArmosCoordinator_RotateKnights(k);
     }
     break;
   case 1:  // wait knight under coercion
-    if (ArmosCoordinator_AreAllActiveKnightsSubmissive()) {
+    if (ArmosCoordinator_CheckKnights()) {
       overlord_gen1[k]++;
       overlord_gen2[k] = 0xff;
     }
     break;
   case 2:  // timed rotate then transition
   case 4:
-    ArmosCoordinator_TimedRotateThenTransition(k);
+    ArmosCoordinator_RotateKnights(k);
     break;
   case 3:  // radial contraction
     if (--overlord_x_lo[2] == 32) {
@@ -544,7 +544,7 @@ void Overlord_ArmosCoordinator(int k) {
   case 6:  // order knights to back wall
     if (overlord_gen2[k])
       return;
-    ArmosCoordinator_DisableKnights_XY_Coercion(k);
+    ArmosCoordinator_DisableCoercion(k);
     for (int j = 5; j >= 0; j--) {
       overlord_x_hi[j] = kArmosCoordinator_BackWallX[j];
       overlord_gen2[j] = 48;
@@ -559,7 +559,7 @@ void Overlord_ArmosCoordinator(int k) {
       if (++overlord_gen2[j] == 192) {
         overlord_gen1[k] = 1;
         overlord_floor[k] = -overlord_floor[k];
-        ArmosCoordinator_DisableKnights_XY_Coercion(k);
+        ArmosCoordinator_DisableCoercion(k);
         ArmosCoordinator_Rotate(k);
         return;
       }
@@ -569,15 +569,15 @@ void Overlord_ArmosCoordinator(int k) {
 }
 
 static HandlerFuncK *const kOverlordFuncs[26] = {
-  &Overlord_SpritePositionTarget,
-  &Overlord_AllDirectionMetalBallFactory,
-  &Overlord_CascadeMetalBallFactory,
+  &Overlord01_PositionTarget,
+  &Overlord02_FullRoomCannons,
+  &Overlord03_VerticalCannon,
   &Overlord_StalfosFactory,
-  &Overlord_StalfosTrap,
+  &Overlord05_FallingStalfos,
   &Overlord_SnakeTrap,
-  &Overlord_MovingFloor,
-  &Overlord_ZolFactory,
-  &Overlord_WallMasterFactory,
+  &Overlord07_MovingFloor,
+  &Overlord08_BlobSpawner,
+  &Overlord09_WallmasterSpawner,
   &Overlord_CrumbleTilePath,
   &Overlord_CrumbleTilePath,
   &Overlord_CrumbleTilePath,
@@ -588,16 +588,16 @@ static HandlerFuncK *const kOverlordFuncs[26] = {
   &Overlord_PirogusuFactory,
   &Overlord_PirogusuFactory,
   &Overlord_PirogusuFactory,
-  &Overlord_FlyingTileFactory,
-  &Overlord_WizzrobeFactory,
-  &Overlord_ZoroFactory,
-  &Overlord_StalfosTrapTriggerWindow,
-  &Overlord_RedStalfosTrap,
-  &Overlord_ArmosCoordinator,
+  &Overlord14_TileRoom,
+  &Overlord15_WizzrobeSpawner,
+  &Overlord16_ZoroSpawner,
+  &Overlord17_PotTrap,
+  &Overlord18_InvisibleStalfos,
+  &Overlord19_ArmosCoordinator_bounce,
   &Overlord_SnakeTrap,
 };
 
-void Overlord_CheckInRangeStatus(int k) {
+void Overlord_CheckIfActive(int k) {
   static const int16 kOverlordInRangeOffs[2] = { 0x130, -0x40 };
   if (player_is_indoors)
     return;
@@ -616,7 +616,7 @@ void Overlord_CheckInRangeStatus(int k) {
 
 void Overlord_ExecuteSingle(int k) {
   int j = overlord_type[k];
-  Overlord_CheckInRangeStatus(k);
+  Overlord_CheckIfActive(k);
   kOverlordFuncs[j - 1](k);
 }
 
@@ -639,7 +639,7 @@ void Overlord_SpawnBoulder() {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(0, 0xc2, &info);
   if (j >= 0) {
-    Sprite_SetX(j, BG2HOFS_copy2 + (GetRandomInt() & 127) + 64);
+    Sprite_SetX(j, BG2HOFS_copy2 + (GetRandomNumber() & 127) + 64);
     Sprite_SetY(j, BG2VOFS_copy2 - 0x30);
     sprite_floor[j] = 0;
     sprite_D[j] = 0;

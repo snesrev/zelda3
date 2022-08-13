@@ -5,57 +5,57 @@ extern const uint8 kSwimmingTab1[4];
 extern const uint8 kSwimmingTab2[2];
 
 
-bool Player_IsScreenTransitionBlocked();
-void Init_Player();
-void Player_HaltDashAttack();
+bool Link_CheckForEdgeScreenTransition();
+void Link_Initialize();
+void Link_CancelDash();
 
-void Player_Main();
-void Player_MovePosition1();
-void Player_UpdateDirection_Part2();
-void Player_UpdateDirection();
-void Player_CheckCrossQuadrantBoundary();
-void Player_SomethingWithVelocity();
-void Player_RepelDashAttack();
-void Player_AfterMirrorWarp();
-void Player_ResetSomeCrap();
-void Link_Move_Helper5();
-void Player_ResetSwimState();
-void Link_ResetSomething1();
-void Player_ResetSwimCollision();
+void Link_Main();
+void LinkHop_FindArbitraryLandingSpot();
+void Link_HandleMovingAnimation_StartWithDash();
+void Link_HandleMovingAnimation_FullLongEntry();
+void ApplyLinksMovementToCamera();
+void Link_HandleVelocity();
+void Sprite_RepelDash();
+void HandleFollowersAfterMirroring();
+void Link_ItemReset_FromOverworldThings();
+void RepelDash();
+void Link_ResetSwimmingState();
+void Link_ResetStateAfterDamagingPit();
+void ResetAllAcceleration();
 
-void LinkItem_RemoveFromHand();
-void Player_ResetState();
-void Player_ResetState2();
-void Player_ResetState3();
-void Player_ResetSomeStuff2(uint8 a);
-void Player_UpdateQuadrantsVisited();
-void Item_Cape_StopWithAnim();
-void Link_TempBunny_Func1();
+void Link_ResetBoomerangYStuff();
+void Link_ResetProperties_A();
+void Link_ResetProperties_B();
+void Link_ResetProperties_C();
+void ResetSomeThingsAfterDeath(uint8 a);
+void SetAndSaveVisitedQuadrantFlags();
+void Link_ForceUnequipCape();
+void LinkState_Bunny_recache();
 void Link_TempBunny_Func2();
 
-void Link_SetInBed();
-void Link_Swim_Helper1();
-void Link_Swim_Helper2();
-void Link_Swim_Helper3();
-void Link_Swim_Helper4();
-void Link_Swim_Helper5();
-void PlayerHandler_04_Swimming_Inner();
-void Player_ApplyFloorVel();
-void Link_MoveXY_Helper();
+void Link_TuckIntoBed();
+void Link_HandleSwimAccels();
+void Link_FlagMaxAccels();
+void Link_SetIceMaxAccel();
+void Link_SetMomentum();
+void Link_SetTheMaxAccel();
+void Link_HandleSwimMovements();
+void Link_ApplyMovingFloorVelocity();
+void LinkApplyTileRebound();
 void Link_ReceiveItem(uint8 item, int chest_position);
 
 void Link_ReceiveItem(uint8 item, int chest_position);
-void Player_CheckDoorwayQuadrantMovement();
-void DoSwordInteractionWithTiles(uint8 item);
-void Player_HandleIncapacitated(bool jump_into_middle);
-void HoleToDungeon_Helper1();
+void HandleIndoorCameraAndDoors();
+void TileDetect_MainHandler(uint8 item);
+void Link_HandleRecoilAndTimer(bool jump_into_middle);
+void HandleDungeonLandingFromPit();
 
-void Player_InitiateFirstBombosSpell();
-void Player_InitiateFirstEtherSpell();
-void Link_CheckSwimCapability();
+void BombosTablet_StartCutscene();
+void EtherTablet_StartCutscene();
+void CheckAbilityToSwim();
 void Link_SetSpinAttacking();
-void LinkItem_ReturnUnusedMagic(uint8 x);
-void Player_CacheStatePriorToHandler();
+void Refund_Magic(uint8 x);
+void CacheCameraProperties();
 
 enum {
   kPlayerState_Ground = 0,

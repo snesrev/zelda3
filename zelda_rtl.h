@@ -45,7 +45,7 @@ uint8_t zelda_read_apui00();
 void HdmaSetup(uint32 addr6, uint32 addr7, uint8 transfer_unit, uint8 reg6, uint8 reg7, uint8 indirect_bank);
 void ZeldaDrawPpuFrame();
 void ZeldaRunFrame(uint16 input);
-void Sound_LoadSongBank(const uint8 *p);
+void LoadSongBank(const uint8 *p);
 
 void RunEmulatedFunc(uint32 pc, uint16 a, uint16 x, uint16 y, bool mf, bool xf, int b, int whatflags);
 
@@ -109,7 +109,7 @@ extern const uint16 kOverworld_OffsetBaseY[64];
 extern const uint16 kOverworld_OffsetBaseX[64];
 
 // forwards
-void Player_ApproachTriforce();
+void TriforceRoom_LinkApproachTriforce();
 void Dungeon_LightTorch();
 
 

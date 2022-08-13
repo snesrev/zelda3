@@ -44,98 +44,98 @@ struct DungPalInfo {
 const DungPalInfo *GetDungPalInfo(int idx);
 
 void Dungeon_LoadRoom();
-void Dungeon_LoadAndUploadRoom();
-void Dungeon_Upload_BG1_Outer();
-void Dungeon_LoadAttrTable();
-void Dungeon_LoadAttrIncremental();
-void Dungeon_ProcessTorchAndDoorInteractives();
+void Dungeon_LoadAndDrawRoom();
+void WaterFlood_BuildOneQuadrantForVRAM();
+void Dungeon_LoadAttributeTable();
+void Dungeon_LoadAttribute_Selectable();
+void Dungeon_ProcessTorchesAndDoors();
 void Dungeon_InterRoomTrans_notDarkRoom();
-void PaletteFilter_doFiltering();
-void Dungeon_Staircase_Func1();
-void Dungeon_Staircase_Func2();
-void Dungeon_InitAndCacheVars();
+void ApplyPaletteFilter();
+void ResetTransitionPropsAndAdvanceSubmodule();
+void SubtileTransitionCalculateLanding();
+void ResetThenCacheRoomEntryProperties();
 
 void Dungeon_ResetSprites();
-void Dungeon_InitStarTileChr();
+void ResetStarTileGraphics();
 void Dungeon_RestoreStarTileChr();
 void Dungeon_ApproachFixedColor_variable(uint8 a);
-void Dungeon_ApproachFixedColor();
+void ApplyGrayscaleFixed_Incremental();
 
-void Dungeon_LoadSpriteSets();
-void Dungeon_SpiralStaircase7_Inner3();
-void Dung_UpdateLightsOutColor();
+void LoadTransAuxGFX_sprite();
+void Dungeon_AdjustForRoomLayout();
+void DungeonTransition_RunFiltering();
 void Dungeon_PlayMusicIfDefeated();
-void Dungeon_AnimateDestroyingWeakDoor();
+void OpenCrackedDoor();
 
-void OrientLampBg();
+void OrientLampLightCone();
 
 void Dungeon_PushBlock_Handler();
-void Dungeon_Upload_BG2();
-void Dungeon_Upload_BG1_Outer();
+void Dungeon_PrepareNextRoomQuadrantUpload();
+void WaterFlood_BuildOneQuadrantForVRAM();
 
-void Dungeon_Teleport0();
-void Tagalong_Init();
-void Dungeon_SpiralStaircase7_Inner4();
+void ResetTransitionPropsAndAdvance_ResetInterface();
+void Follower_Initialize();
+void Dungeon_PlayBlipAndCacheQuadrantVisits();
 
-void Module_Dungeon();
+void Module07_Dungeon();
 void Module_PreDungeon();
 void Module_PreDungeon_setAmbientSfx();
 
-void Module_LoadFile();
+void Module05_LoadFile();
 
 void Dungeon_LoadEntrance();
 void Dungeon_LoadSongBankIfNeeded();
-void Dungeon_Staircase6();
+void DungeonTransition_LoadSpriteGFX();
 void Dungeon_LoadCustomTileAttr();
 void Dungeon_ResetTorchBackgroundAndPlayer();
 
-void Dungeon_SpriteInducedTilemapUpdate(int x, int y, uint8 v);
+void Dungeon_UpdateTileMapWithCommonTile(int x, int y, uint8 v);
 
 void SavePalaceDeaths();
 
 void Door_LoadBlastWallAttr(int k);
 void Dungeon_Effect_Handler();
 
-void Dungeon_ExtinguishFirstTorch();
-void Dungeon_ExtinguishSecondTorch();
+void Ganon_ExtinguishTorch_adjust_translucency();
+void Ganon_ExtinguishTorch();
 
-void Module_HoleToDungeon();
-void Ending_CinemaSequencesIndoorsInit();
-void EndingSequenceCode_0();
+void Module11_DungeonFallingEntrance();
+void Credits_LoadScene_Dungeon();
+void Credits_LoadScene_Overworld_PrepGFX();
 
-void Player_CrossQuadrantBoundary_Left();
-void Player_CrossQuadrantBoundary_Right();
-void Player_CrossQuadrantBoundary_Up();
-void Player_CrossQuadrantBoundary_Down();
-void Dungeon_SaveRoomQuadrantData();
+void AdjustQuadrantAndCamera_left();
+void AdjustQuadrantAndCamera_right();
+void AdjustQuadrantAndCamera_up();
+void AdjustQuadrantAndCamera_down();
+void Dungeon_FlagRoomData_Quadrants();
 void Dungeon_ResetTorchBackgroundAndPlayerInner();
-void Dung_AdjustCoordsForNewRoom();
-void UpdateCompositeOfLayoutAndQuadrant();
-void Dungeon_SaveRoomQuadrantData();
-void Overworld_LoadMusicIfNeeded();
-void Dungeon_EraseInteractive2x2(uint8 index);
+void Dungeon_AdjustAfterSpiralStairs();
+void Dungeon_AdjustQuadrant();
+void Dungeon_FlagRoomData_Quadrants();
+void LoadOWMusicIfNeeded();
+void RoomDraw_16x16Single(uint8 index);
 void Dungeon_Store2x2(uint16 pos, uint16 t0, uint16 t1, uint16 t2, uint16 t3, uint8 attr);
-uint16 Dungeon_GetKeyedObjectRelativeVramAddr(uint16 pos, uint16 y);
-void Dungeon_ClearRupeeTile(uint16 x, uint16 y);
+uint16 RoomTag_BuildChestStripes(uint16 pos, uint16 y);
+void Dungeon_DeleteRupeeTile(uint16 x, uint16 y);
 void Dungeon_StartInterRoomTrans_Left();
 void Dung_StartInterRoomTrans_Left_Plus();
-void Dung_StartInterRoomTrans_RightPlus();
-void Dung_StartInterRoomTrans_DownPlus();
+void HandleEdgeTransitionMovementEast_RightBy8();
+void HandleEdgeTransitionMovementSouth_DownBy16();
 void Dungeon_StartInterRoomTrans_Right();
 void Dungeon_StartInterRoomTrans_Up();
 void Dungeon_StartInterRoomTrans_Down();
 
 uint16 Dungeon_MapVramAddr(uint16 pos);
 uint16 Dungeon_MapVramAddrNoSwap(uint16 pos);
-void Bomb_CheckForVulnerableTileObjects(uint16 x, uint16 y, uint8 r14);
-uint8 Dungeon_CustomIndexedRevealCoveredTiles(uint16 pos6, uint16 a, Point16U *pt);
-uint8 Dungeon_RevealCoveredTiles(Point16U *pt);
-uint8 Dungeon_OpenKeyedObject(uint8 tile, int *chest_position);
-uint16 Dungeon_QueryIfTileLiftable();
-void Dungeon_SaveRoomData();
-void Dungeon_SaveRoomData_justKeys();
+void Bomb_CheckForDestructibles(uint16 x, uint16 y, uint8 r14);
+uint8 ThievesAttic_DrawLightenedHole(uint16 pos6, uint16 a, Point16U *pt);
+uint8 Dungeon_LiftAndReplaceLiftable(Point16U *pt);
+uint8 OpenChestForItem(uint8 tile, int *chest_position);
+uint16 Dungeon_CheckForAndIDLiftableTile();
+void Mirror_SaveRoomData();
+void SaveDungeonKeys();
 void SaveQuadrantsToSram();
-uint8 Dungeon_ToolAndTileInteraction(uint16 x, uint16 y);
+uint8 HandleItemTileAction_Dungeon(uint16 x, uint16 y);
 
 uint16 Dungeon_GetTeleMsg(int room);
 uint8 GetEntranceMusicTrack(int entrance);

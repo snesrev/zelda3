@@ -19,7 +19,7 @@ static const uint8 *GetCompSpritePtr(int i) {
 static const uint8 kGraphics_IncrementalVramUpload_Dst[16] = {0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f};
 static const uint8 kGraphics_IncrementalVramUpload_Src[16] = {0x0, 0x2, 0x4, 0x6, 0x8, 0xa, 0xc, 0xe, 0x10, 0x12, 0x14, 0x16, 0x18, 0x1a, 0x1c, 0x1e};
 
-void Graphics_IncrementalVramUpload() {
+void Graphics_IncrementalVRAMUpload() {
   if (incremental_counter_for_vram == 16)
     return;
 
@@ -68,7 +68,7 @@ void PrepTransAuxGfx() {
   }
 }
 
-void LoadGfxFunc1() {
+void LoadNewSpriteGFXSet() {
   Do3To4Low16Bit(&g_ram[0x10000], &g_ram[0x7800], 0xC0);
   if (sprite_gfx_subset_3 == 0x52 || sprite_gfx_subset_3 == 0x53 || sprite_gfx_subset_3 == 0x5a || sprite_gfx_subset_3 == 0x5b)
     Do3To4High16Bit(&g_ram[0x11800], &g_ram[0x8a00], 0x40);
@@ -83,7 +83,7 @@ static const uint16 kPaletteFilteringBits[64] = {
   0x1111, 0x1111,  0x844, 0x2211,  0x421,  0x421,  0x208, 0x1041,  0x101,  0x101,   0x20,  0x401,      1,      1,      0,      1,
 };
 
-void PaletteFilter_doFiltering() {
+void ApplyPaletteFilter() {
 
   const uint16 *load_ptr = kPaletteFilteringBits + (palette_filter_countdown >= 0x10);
 
@@ -151,7 +151,7 @@ void PaletteFilterHistory() {
   PaletteFilter_IncrCountdown();
 }
 
-void Palette_Restore_SP5F() {
+void PaletteFilter_RestoreSP5F() {
   for (int i = 7; i >= 0; i--)
     main_palette_buffer[208 + i] = aux_palette_buffer[208 + i];
   TS_copy = 0;
@@ -159,7 +159,7 @@ void Palette_Restore_SP5F() {
   flag_update_cgram_in_nmi++;
 }
 
-void Palette_Filter_SP5F() {
+void PaletteFilter_SP5F() {
   for (int i = 0; i != 2; i++) {
     PaletteFilter_Range(208, 216);
     PaletteFilter_IncrCountdown();
@@ -189,7 +189,7 @@ void KholdstareShell_PaletteFiltering() {
 
 static const uint16 kPaletteFilter_Agahnim_Tab[3] = {0x160, 0x180, 0x1a0};
 
-void PaletteFilter_Agahnim(int k) {
+void AgahnimWarpShadowFilter(int k) {
   palette_filter_countdown = agahnim_pal_setting[k];
   darkening_or_lightening_screen = agahnim_pal_setting[k + 3];
   int t = kPaletteFilter_Agahnim_Tab[k] >> 1;
@@ -207,20 +207,20 @@ void PaletteFilter_Agahnim(int k) {
 }
 
 void Palette_FadeIntroOneStep() {
-  RestorePaletteAdditive_FadeIn(0x100, 0x1a0);
-  RestorePaletteAdditive_FadeIn(0xc0, 0x100);
+  PaletteFilter_RestoreAdditive(0x100, 0x1a0);
+  PaletteFilter_RestoreAdditive(0xc0, 0x100);
   BYTE(palette_filter_countdown) -= 1;
   flag_update_cgram_in_nmi++;
 }
 
 void Palette_FadeIntro2() {
-  RestorePaletteAdditive_FadeIn(0x40, 0xc0);
-  RestorePaletteAdditive_FadeIn(0x40, 0xc0);
+  PaletteFilter_RestoreAdditive(0x40, 0xc0);
+  PaletteFilter_RestoreAdditive(0x40, 0xc0);
   BYTE(palette_filter_countdown) -= 1;
   flag_update_cgram_in_nmi++;
 }
 
-void Palette_InitWhiteFilter() {
+void PaletteFilter_InitializeWhiteFilter() {
   for (int i = 0; i < 256; i++)
     aux_palette_buffer[i] = 0x7fff;
   main_palette_buffer[32] = main_palette_buffer[0];
@@ -234,7 +234,7 @@ void Palette_InitWhiteFilter() {
   mirror_vars.ctr2 = 0;
 }
 
-void RestorePaletteAdditive_FadeIn(int from, int to) {
+void PaletteFilter_RestoreAdditive(int from, int to) {
   from >>= 1, to >>= 1;
   do {
     uint16 c = main_palette_buffer[from], cx = c;
@@ -249,7 +249,7 @@ void RestorePaletteAdditive_FadeIn(int from, int to) {
   } while (++from != to);
 }
 
-void RestorePaletteSubtractive(uint16 from, uint16 to) {
+void PaletteFilter_RestoreSubtractive(uint16 from, uint16 to) {
   from >>= 1, to >>= 1;
   do {
     uint16 c = main_palette_buffer[from], cx = c;
@@ -264,10 +264,10 @@ void RestorePaletteSubtractive(uint16 from, uint16 to) {
   } while (++from != to);
 }
 
-void PaletteFilter_Restore_Strictly_Bg_Subtractive() {
+void PaletteFilter_RestoreBGSubstractiveStrict() {
   if (darkening_or_lightening_screen == 255)
     return;
-  RestorePaletteSubtractive(0x40, 0x100);
+  PaletteFilter_RestoreSubtractive(0x40, 0x100);
   if (++palette_filter_countdown == 0x20) {
     darkening_or_lightening_screen = 255;
     WORD(TS_copy) = 0;
@@ -275,13 +275,13 @@ void PaletteFilter_Restore_Strictly_Bg_Subtractive() {
   flag_update_cgram_in_nmi++;
 }
 
-void PaletteFilter_Restore_Strictly_Bg_Additive() {
-  RestorePaletteAdditive_FadeIn(0x40, 0x100);
+void PaletteFilter_RestoreBGAdditiveStrict() {
+  PaletteFilter_RestoreAdditive(0x40, 0x100);
   palette_filter_countdown++;
   flag_update_cgram_in_nmi++;
 }
 
-void PaletteFilter_IncreaseTrinexxRed() {
+void Trinexx_FlashShellPalette_Red() {
   if (!byte_7E04BE) {
     for (int i = 0; i < 7; i++) {
       uint16 v = main_palette_buffer[0x41 + i];
@@ -297,7 +297,7 @@ void PaletteFilter_IncreaseTrinexxRed() {
   byte_7E04BE--;
 }
 
-void PaletteFilter_RestoreTrinexxRed() {
+void Trinexx_UnflashShellPalette_Red() {
   if (!byte_7E04BE) {
     for (int i = 0; i < 7; i++) {
       uint16 u = aux_palette_buffer[0x41 + i];
@@ -314,7 +314,7 @@ void PaletteFilter_RestoreTrinexxRed() {
   byte_7E04BE--;
 }
 
-void PaletteFilter_IncreaseTrinexxBlue() {
+void Trinexx_FlashShellPalette_Blue() {
   if (!byte_7E04BF) {
     for (int i = 0; i < 7; i++) {
       uint16 v = main_palette_buffer[0x41 + i];
@@ -331,7 +331,7 @@ void PaletteFilter_IncreaseTrinexxBlue() {
 
 }
 
-void PaletteFilter_RestoreTrinexxBlue() {
+void Trinexx_UnflashShellPalette_Blue() {
   if (!byte_7E04BF) {
     for (int i = 0; i < 7; i++) {
       uint16 u = aux_palette_buffer[0x41 + i];
@@ -368,7 +368,7 @@ void PaletteFilter_Crystal() {
   PaletteFilter_WishPonds_Inner();
 }
 
-int DecompSprOrBg(uint8 *dst, const uint8 *src) {
+int Decompress(uint8 *dst, const uint8 *src) {
   uint8 *dst_org = dst;
   int len;
   for (;;) {
@@ -419,11 +419,11 @@ int DecompSprOrBg(uint8 *dst, const uint8 *src) {
 }
 
 int Decomp_spr(uint8 *dst, int gfx) {
-  return DecompSprOrBg(dst, kSprGfx[gfx]);
+  return Decompress(dst, kSprGfx[gfx]);
 }
 
 int Decomp_bg(uint8 *dst, int gfx) {
-  return DecompSprOrBg(dst, kBgGfx[gfx]);
+  return Decompress(dst, kBgGfx[gfx]);
 }
 
 static const uint8 kMainTilesets[37][8] = {
@@ -721,7 +721,7 @@ static const uint8 kAuxTilesets[82][4] = {
   { 23,  64,  65,  57},
 };
 
-void LoadTransAuxGfx() {
+void LoadTransAuxGFX() {
   uint8 *dst = &g_ram[0x6000];
   const uint8 *p = kAuxTilesets[aux_tile_theme_index];
   int len;
@@ -749,7 +749,7 @@ void LoadTransAuxGfx() {
   Gfx_LoadSpritesInner(dst + 0x600 * 4 );
 }
 
-void Dungeon_LoadSpriteSets() {
+void LoadTransAuxGFX_sprite() {
   Gfx_LoadSpritesInner(&g_ram[0x7800]);
 }
 
@@ -772,7 +772,7 @@ void Expand3To4High(uint8 *dst, const uint8 *src, const uint8 *base, int num) {
 
 static const uint16 kTagalongWhich[14] = {0, 0x600, 0x300, 0x300, 0x300, 0, 0, 0x900, 0x600, 0x600, 0x900, 0x900, 0x600, 0x900};
 
-void Tagalong_LoadGfx() {
+void LoadFollowerGraphics() {
   uint8 yv = 0x64;
   if (savegame_tagalong != 1) {
     yv = 0x66;
@@ -788,7 +788,7 @@ void Tagalong_LoadGfx() {
 }
 
 
-void IntroLoadGfx4() {
+void LoadItemGFX_Auxiliary() {
   Decomp_bg(&g_ram[0x14000], 0xf);
   Do3To4Low16Bit(&g_ram[0x9000 + 0x2340], &g_ram[0x14000], 16);
 
@@ -809,7 +809,7 @@ uint8 *LoadItemAnimationGfxOne(uint8 *dst, int num, int r12, bool from_temp) {
   return dst + 0x40 * num;
 }
 
-void LoadItemAnimationGfx() {
+void LoadItemGFXIntoWRAM4BPPBuffer() {
   uint8 *dst = &g_ram[0x9000 + 0x480];
   dst = LoadItemAnimationGfxOne(dst, 7, 0, false);  // rod
   dst = LoadItemAnimationGfxOne(dst, 7, 1, false);  // hammer
@@ -839,7 +839,7 @@ void LoadItemAnimationGfx() {
   Expand3To4High(dst, &g_ram[0x14000], g_ram, 3);
   Expand3To4High(dst + 3 * 0x20, &g_ram[0x14180], g_ram, 3);
 
-  IntroLoadGfx4();
+  LoadItemGFX_Auxiliary();
 }
 
 
@@ -850,7 +850,7 @@ static const uint16 kDecodeAnimatedSpriteTile_Tab[57] = {
   0x3c0, 0x990, 0x9a8, 0x9c0, 0x9d8, 0xa08, 0xa38, 0x600, 0x630, 
 };
 
-void DecodeAnimatedSpriteTile(uint8 a) {
+void WriteTo4BPPBuffer_at_7F4000(uint8 a) {
   uint8 *src = &g_ram[0x14000] + kDecodeAnimatedSpriteTile_Tab[a];
   Expand3To4High(&g_ram[0x9000] + 0x2d40, src, g_ram, 2);
   Expand3To4High(&g_ram[0x9000] + 0x2d40 + 0x40, src + 0x180, g_ram, 2);
@@ -861,13 +861,13 @@ void DecodeAnimatedSpriteTile_variable(uint8 a) {
             (a == 0xc || a >= 0x24) ? 0x5c : 0x5b;
   Decomp_spr(&g_ram[0x14600], y);
   Decomp_spr(&g_ram[0x14000], 0x5a);
-  DecodeAnimatedSpriteTile(a);
+  WriteTo4BPPBuffer_at_7F4000(a);
 }
 
 static const uint16 kSwordTypeToGfxOffs[5] = {0, 0, 0x120, 0x120, 0x120};
 static const uint16 kShieldTypeToGfxOffs[4] = {0x660, 0x660, 0x6f0, 0x900};
 
-void DecompSwordGfx() {
+void DecompressSwordGraphics() {
   Decomp_spr(&g_ram[0x14600], 0x5f);
   Decomp_spr(&g_ram[0x14000], 0x5e);
   const uint8 *src = &g_ram[0x14000] + kSwordTypeToGfxOffs[link_sword_type];
@@ -875,7 +875,7 @@ void DecompSwordGfx() {
   Expand3To4High(&g_ram[0x9000 + 0x180], src + 0x180, g_ram, 12);
 }
 
-void DecompShieldGfx() {
+void DecompressShieldGraphics() {
   Decomp_spr(&g_ram[0x14600], 0x5f);
   Decomp_spr(&g_ram[0x14000], 0x5e);
   const uint8 *src = &g_ram[0x14000] + kShieldTypeToGfxOffs[link_shield_type];
@@ -883,7 +883,7 @@ void DecompShieldGfx() {
   Expand3To4High(&g_ram[0x9000 + 0x3c0], src + 0x180, g_ram,6);
 }
 
-void DecompDungAnimatedTiles(uint8 a) {
+void DecompressAnimatedDungeonTiles(uint8 a) {
   Decomp_bg(&g_ram[0x14000], a);
   Do3To4Low16Bit(&g_ram[0x9000 + 0x1680], &g_ram[0x14000], 48);
   Decomp_bg(&g_ram[0x14000], 0x5c);
@@ -900,7 +900,7 @@ void DecompDungAnimatedTiles(uint8 a) {
   animated_tile_vram_addr = 0x3b00;
 }
 
-void DecompOwAnimatedTiles(uint8 a) {
+void DecompressAnimatedOverworldTiles(uint8 a) {
   Decomp_bg(&g_ram[0x14000], a);
   Do3To4Low16Bit(&g_ram[0x9000 + 0x1680], &g_ram[0x14000], 64);
   Decomp_bg(&g_ram[0x14000], a + 1);
@@ -938,11 +938,11 @@ void Overworld_LoadPalettes(uint8 bg, uint8 spr) {
     sprite_aux1_palette = d[0];
   if (d[1] >= 0)
     sprite_aux2_palette = d[1];
-  Palette_OverworldBgAux1();
-  Palette_OverworldBgAux2();
-  Palette_OverworldBgAux3();
-  Palette_SpriteAux1();
-  Palette_SpriteAux2();
+  Palette_Load_OWBG1();
+  Palette_Load_OWBG2();
+  Palette_Load_OWBG3();
+  Palette_Load_SpriteAux1();
+  Palette_Load_SpriteAux2();
 }
 
 void Palette_SetBgAndFixedColor(uint16 color) {
@@ -983,7 +983,7 @@ void Palette_SpecialOw() {
 }
 
 
-void Overworld_CgramAuxToMain() {
+void Overworld_CopyPalettesToCache() {
   memcpy(main_palette_buffer, aux_palette_buffer, 512);
   flag_update_cgram_in_nmi += 1;
 }
@@ -1018,11 +1018,11 @@ void Palette_AssertTranslucencySwap() {
   Palette_SetTranslucencySwap(true);
 }
 
-void Palette_SingleLoad(const uint16 *src, int dst, int x_ents) {
+void Palette_LoadSingle(const uint16 *src, int dst, int x_ents) {
   memcpy(&aux_palette_buffer[(dst + overworld_palette_aux_or_main) >> 1], src, sizeof(uint16) * (x_ents + 1));
 }
 
-void Palette_MultiLoad(const uint16 *src, int dst, int x_ents, int y_pals) {
+void Palette_LoadMultiple(const uint16 *src, int dst, int x_ents, int y_pals) {
   x_ents++;
   do {
     memcpy(&aux_palette_buffer[(dst + overworld_palette_aux_or_main) >> 1], src, sizeof(uint16) * x_ents);
@@ -1031,12 +1031,12 @@ void Palette_MultiLoad(const uint16 *src, int dst, int x_ents, int y_pals) {
   } while (--y_pals >= 0);
 }
 
-void Palette_ArbitraryLoad(const uint16 *src, int dst, int x_ents) {
+void Palette_LoadMultiple_Arbitrary(const uint16 *src, int dst, int x_ents) {
   memcpy(&aux_palette_buffer[dst >> 1], src, sizeof(uint16) * (x_ents + 1));
   memcpy(&main_palette_buffer[dst >> 1], src, sizeof(uint16) * (x_ents + 1));
 }
 
-void Palette_SelectScreenArmor(int k, uint8 armor, uint8 gloves) {
+void Palette_LoadForFileSelect_Armor(int k, uint8 armor, uint8 gloves) {
   const uint16 *pal = kPalette_ArmorAndGloves + armor * 15;
   for (int i = 0; i != 15; i++)
     aux_palette_buffer[k + 0x81 + i] = main_palette_buffer[k + 0x81 + i] = pal[i];
@@ -1044,24 +1044,24 @@ void Palette_SelectScreenArmor(int k, uint8 armor, uint8 gloves) {
     aux_palette_buffer[k + 0x8d] = main_palette_buffer[k + 0x8d] = kGlovesColor[gloves - 1];
 }
 
-void Palette_SelectScreenSword(int k, uint8 sword) {
+void Palette_LoadForFileSelect_Sword(int k, uint8 sword) {
   const uint16 *src = kPalette_Sword + (sword ? sword - 1 : 0) * 3;
   for (int i = 0; i != 3; i++)
     aux_palette_buffer[k + 0x99 + i] = main_palette_buffer[k + 0x99 + i] = src[i];
 }
 
-void Palette_SelectScreenShield(int k, uint8 shield) {
+void Palette_LoadForFileSelect_Shield(int k, uint8 shield) {
   const uint16 *src = kPalette_Shield + (shield ? shield - 1 : 0) * 4;
   for (int i = 0; i != 4; i++)
     aux_palette_buffer[k + 0x9c + i] = main_palette_buffer[k + 0x9c + i] = src[i];
 }
 
-void Palette_SelectScreen() {
+void Palette_LoadForFileSelect() {
   uint8 *src = g_zenv.sram;
   for (int i = 0; i < 3; i++) {
-    Palette_SelectScreenArmor(i * 0x20, src[kSrmOffs_Armor], src[kSrmOffs_Gloves]);
-    Palette_SelectScreenSword(i * 0x20, src[kSrmOffs_Sword]);
-    Palette_SelectScreenShield(i * 0x20, src[kSrmOffs_Shield]);
+    Palette_LoadForFileSelect_Armor(i * 0x20, src[kSrmOffs_Armor], src[kSrmOffs_Gloves]);
+    Palette_LoadForFileSelect_Sword(i * 0x20, src[kSrmOffs_Sword]);
+    Palette_LoadForFileSelect_Shield(i * 0x20, src[kSrmOffs_Shield]);
     src += 0x500;
   }
   for (int i = 0; i < 7; i++) {
@@ -1071,60 +1071,60 @@ void Palette_SelectScreen() {
 }
 
 
-void Palette_DungBgMain() {
+void Palette_Load_DungeonSet() {
   const uint16 *src = kPalette_DungBgMain + (dung_hdr_palette_1 >> 1) * 90;
-  Palette_MultiLoad(src, 0x42, 14, 5);
-  Palette_SingleLoad(src, overworld_palette_swap_flag ? 0x1f2 : 0x112, 6);
+  Palette_LoadMultiple(src, 0x42, 14, 5);
+  Palette_LoadSingle(src, overworld_palette_swap_flag ? 0x1f2 : 0x112, 6);
 }
 
-void Palette_SpriteAux3() {
+void Palette_Load_SpritePal0Left() {
   const uint16 *src = kPalette_SpriteAux3 + overworld_palette_sp0 * 7;
-  Palette_SingleLoad(src, overworld_palette_swap_flag ? 0x1e2 : 0x102, 6);
+  Palette_LoadSingle(src, overworld_palette_swap_flag ? 0x1e2 : 0x102, 6);
 }
 
-void Palette_MainSpr() {
+void Palette_Load_SpriteMain() {
   const uint16 *src = kPalette_MainSpr + (overworld_screen_index & 0x40 ? 60 : 0);
-  Palette_MultiLoad(src, 0x122, 14, 3);
+  Palette_LoadMultiple(src, 0x122, 14, 3);
 }
 
-void Palette_MiscSprite_Indoors() {
+void Palette_Load_SpriteEnvironment_Dungeon() {
   const uint16 *src = kPalette_MiscSprite_Indoors + palette_sp6 * 7;
-  Palette_SingleLoad(src, 0x1d2, 6);
+  Palette_LoadSingle(src, 0x1d2, 6);
 }
 
 void Palette_MiscSprite_Outdoors() {
   int t = (overworld_screen_index & 0x40) ? 9 : 7;
   const uint16 *src = kPalette_MiscSprite_Indoors + t * 7;
-  Palette_SingleLoad(src, overworld_palette_swap_flag ? 0x1f2 : 0x112, 6);
+  Palette_LoadSingle(src, overworld_palette_swap_flag ? 0x1f2 : 0x112, 6);
   src = kPalette_MiscSprite_Indoors + (t - 1) * 7;
-  Palette_SingleLoad(src, 0x1d2, 6);
+  Palette_LoadSingle(src, 0x1d2, 6);
 }
 
-void Palette_MiscSprite() {
+void Palette_Load_SpriteEnvironment() {
   if (player_is_indoors)
-    Palette_MiscSprite_Indoors();
+    Palette_Load_SpriteEnvironment_Dungeon();
   else
     Palette_MiscSprite_Outdoors();
 }
 
-void Palette_SpriteAux1() {
+void Palette_Load_SpriteAux1() {
   const uint16 *src = kPalette_SpriteAux1 + (sprite_aux1_palette) * 7;
-  Palette_SingleLoad(src, 0x1A2, 6);
+  Palette_LoadSingle(src, 0x1A2, 6);
 }
-void Palette_SpriteAux2() {
+void Palette_Load_SpriteAux2() {
   const uint16 *src = kPalette_SpriteAux1 + (sprite_aux2_palette) * 7;
-  Palette_SingleLoad(src, 0x1C2, 6);
+  Palette_LoadSingle(src, 0x1C2, 6);
 }
 
-void Palette_Sword() {
+void Palette_Load_Sword() {
   const uint16 *src = kPalette_Sword + ((int8)link_sword_type > 0 ? link_sword_type - 1 : 0) * 3;  // wtf: zelda reads offset 0xff
-  Palette_ArbitraryLoad(src, 0x1b2, 2);
+  Palette_LoadMultiple_Arbitrary(src, 0x1b2, 2);
   flag_update_cgram_in_nmi += 1;
 }
 
-void Palette_Shield() {
+void Palette_Load_Shield() {
   const uint16 *src = kPalette_Shield + (link_shield_type ? link_shield_type - 1 : 0) * 4;
-  Palette_ArbitraryLoad(src, 0x1b8, 3);
+  Palette_LoadMultiple_Arbitrary(src, 0x1b8, 3);
   flag_update_cgram_in_nmi += 1;
 }
 
@@ -1134,23 +1134,23 @@ void Palette_UpdateGlovesColor() {
   flag_update_cgram_in_nmi += 1;
 }
 
-void Palette_ArmorAndGloves() {
+void Palette_Load_LinkArmorAndGloves() {
   const uint16 *src = kPalette_ArmorAndGloves + link_armor * 15;
-  Palette_ArbitraryLoad(src, 0x1e2, 14);
+  Palette_LoadMultiple_Arbitrary(src, 0x1e2, 14);
   Palette_UpdateGlovesColor();
 }
 
-void Palette_AgahnimClones() {
+void Palette_LoadAgahnim() {
   const uint16 *src = kPalette_SpriteAux1 + 14 * 7;
-  Palette_ArbitraryLoad(src, 0x162, 6);
-  Palette_ArbitraryLoad(src, 0x182, 6);
-  Palette_ArbitraryLoad(src, 0x1a2, 6);
+  Palette_LoadMultiple_Arbitrary(src, 0x162, 6);
+  Palette_LoadMultiple_Arbitrary(src, 0x182, 6);
+  Palette_LoadMultiple_Arbitrary(src, 0x1a2, 6);
   src = kPalette_SpriteAux1 + 21 * 7;
-  Palette_ArbitraryLoad(src, 0x1c2, 6);
+  Palette_LoadMultiple_Arbitrary(src, 0x1c2, 6);
   flag_update_cgram_in_nmi++;
 }
 
-void Intro_LoadPalettes() {
+void Overworld_LoadAllPalettes() {
   memset(aux_palette_buffer + 0x180 / 2, 0, 128);
   memset(main_palette_buffer, 0, 512);
 
@@ -1163,14 +1163,14 @@ void Intro_LoadPalettes() {
   overworld_palette_swap_flag = 0;
   overworld_palette_aux_or_main = 0;
   Palette_BgAndFixedColor_Black();
-  Palette_SpriteAux3();
-  Palette_MainSpr();
-  Palette_OverworldBgMain();
-  Palette_OverworldBgAux1();
-  Palette_OverworldBgAux2();
-  Palette_OverworldBgAux3();
-  Palette_MiscSprite_Indoors();
-  Palette_Hud();
+  Palette_Load_SpritePal0Left();
+  Palette_Load_SpriteMain();
+  Palette_Load_OWBGMain();
+  Palette_Load_OWBG1();
+  Palette_Load_OWBG2();
+  Palette_Load_OWBG3();
+  Palette_Load_SpriteEnvironment_Dungeon();
+  Palette_Load_HUD();
 
   for (int i = 0; i < 8; i++)
     main_palette_buffer[0x1b0 / 2 + i] = aux_palette_buffer[0x1d0 / 2 + i];
@@ -1179,16 +1179,16 @@ void Intro_LoadPalettes() {
 void Dungeon_LoadPalettes() {
   overworld_palette_aux_or_main = 0;
   Palette_BgAndFixedColor_Black();
-  Palette_SpriteAux3();
-  Palette_MainSpr();
-  Palette_SpriteAux1();
-  Palette_SpriteAux2();
-  Palette_Sword();
-  Palette_Shield();
-  Palette_MiscSprite();
-  Palette_ArmorAndGloves();
-  Palette_Hud();
-  Palette_DungBgMain();
+  Palette_Load_SpritePal0Left();
+  Palette_Load_SpriteMain();
+  Palette_Load_SpriteAux1();
+  Palette_Load_SpriteAux2();
+  Palette_Load_Sword();
+  Palette_Load_Shield();
+  Palette_Load_SpriteEnvironment();
+  Palette_Load_LinkArmorAndGloves();
+  Palette_Load_HUD();
+  Palette_Load_DungeonSet();
   Overworld_LoadPalettesInner();
 }
 
@@ -1199,7 +1199,7 @@ void Overworld_LoadPalettesInner() {
   darkening_or_lightening_screen = 2;
   palette_filter_countdown = 0;
   WORD(mosaic_target_level) = 0;
-  Overworld_CgramAuxToMain();
+  Overworld_CopyPalettesToCache();
 }
 
 void LoadGearPalette(int dst, const uint16 *src, int n) {
@@ -1209,13 +1209,13 @@ void LoadGearPalette(int dst, const uint16 *src, int n) {
 
 void LoadGearPalettes(uint8 sword, uint8 shield, uint8 armor) {
   const uint16 *src = kPalette_Sword + (sword && sword != 255 ? sword - 1 : 0) * 3;
-  Palette_ArbitraryLoad(src, 0x1b2, 2);
+  Palette_LoadMultiple_Arbitrary(src, 0x1b2, 2);
 
   src = kPalette_Shield + (shield ? shield - 1 : 0) * 4;
-  Palette_ArbitraryLoad(src, 0x1b8, 3);
+  Palette_LoadMultiple_Arbitrary(src, 0x1b8, 3);
 
   src = kPalette_ArmorAndGloves + armor * 15;
-  Palette_ArbitraryLoad(src, 0x1e2, 14);
+  Palette_LoadMultiple_Arbitrary(src, 0x1e2, 14);
   flag_update_cgram_in_nmi++;
 }
 
@@ -1282,40 +1282,40 @@ void Palette_Restore_BG_And_HUD() {
   Palette_Restore_Coldata();
 }
 
-void Palette_OverworldBgMain() {
+void Palette_Load_OWBGMain() {
   const uint16 *src = kPalette_OverworldBgMain + overworld_palette_mode * 35;
-  Palette_MultiLoad(src, 0x42, 6, 4);
+  Palette_LoadMultiple(src, 0x42, 6, 4);
 }
 
-void Palette_OverworldBgAux1() {
+void Palette_Load_OWBG1() {
   const uint16 *src = kPalette_OverworldBgAux12 + overworld_palette_aux1_bp2to4_hi * 21;
-  Palette_MultiLoad(src, 0x52, 6, 2);
+  Palette_LoadMultiple(src, 0x52, 6, 2);
 }
 
-void Palette_OverworldBgAux2() {
+void Palette_Load_OWBG2() {
   const uint16 *src = kPalette_OverworldBgAux12 + overworld_palette_aux2_bp5to7_hi * 21;
-  Palette_MultiLoad(src, 0xB2, 6, 2);
+  Palette_LoadMultiple(src, 0xB2, 6, 2);
 }
 
-void Palette_OverworldBgAux3() {
+void Palette_Load_OWBG3() {
   const uint16 *src = kPalette_OverworldBgAux3 + overworld_palette_aux3_bp7_lo * 7;
-  Palette_SingleLoad(src, 0xE2, 6);
+  Palette_LoadSingle(src, 0xE2, 6);
 }
 
-void Palette_PalaceMapBg() {
-  Palette_MultiLoad(kPalette_PalaceMapBg, 0x40, 15, 5);
+void Palette_Load_DungeonMapBG() {
+  Palette_LoadMultiple(kPalette_PalaceMapBg, 0x40, 15, 5);
 }
 
-void Palette_PalaceMapSpr() {
-  Palette_MultiLoad(kPalette_PalaceMapSpr, 0x182, 6, 2);
+void Palette_Load_DungeonMapSprite() {
+  Palette_LoadMultiple(kPalette_PalaceMapSpr, 0x182, 6, 2);
 }
 
-void Palette_Hud() {
+void Palette_Load_HUD() {
   const uint16 *src = kHudPalData + hud_palette * 32;
-  Palette_MultiLoad(src, 0x0, 15, 1);
+  Palette_LoadMultiple(src, 0x0, 15, 1);
 }
 
-void Palette_ResetHud45ForText() {
+void ResetHUDPalettes4and5() {
   for (int i = 0; i < 8; i++)
     main_palette_buffer[16 + i] = 0;
   palette_filter_countdown = 0;
@@ -1324,7 +1324,7 @@ void Palette_ResetHud45ForText() {
 }
 
 
-void Palette_Func1() {
+void Dungeon_HandleTranslucencyAndPalettes() {
   if (overworld_palette_swap_flag)
     Palette_RevertTranslucencySwap();
 
@@ -1346,7 +1346,7 @@ void Palette_Func1() {
         agahnim_pal_setting[3] = 0;
         agahnim_pal_setting[4] = 0;
         agahnim_pal_setting[5] = 0;
-        Palette_AgahnimClones();
+        Palette_LoadAgahnim();
       }
       a = 0x70;
     }
@@ -1358,14 +1358,14 @@ void Palette_Func1() {
   mosaic_target_level = 0;
   darkening_or_lightening_screen = 2;
   overworld_palette_aux_or_main = 0;
-  Palette_DungBgMain();
-  Palette_SpriteAux3();
-  Palette_SpriteAux1();
-  Palette_SpriteAux2();
+  Palette_Load_DungeonSet();
+  Palette_Load_SpritePal0Left();
+  Palette_Load_SpriteAux1();
+  Palette_Load_SpriteAux2();
   subsubmodule_index += 1;
 }
 
-void Filter_MajorWhitenMain() {
+void HandleScreenFlash() {
   int j = intro_times_pal_flash;
   if (!j || submodule_index != 0)
     return;
@@ -1398,7 +1398,7 @@ static const uint8 kConfigureSpotlightTable_Helper_Tab[129] = {
   0, 
 };
 
-uint16 ConfigureSpotlightTable_Helper(uint8 a) {
+uint16 IrisSpotlight_CalculateCircleValue(uint8 a) {
   uint8 t = snes_divide(a << 8, spotlight_var1) >> 1;
   uint8 r10 = kConfigureSpotlightTable_Helper_Tab[t];
   uint16 p = 2 * (uint8)(r10 * (uint8)spotlight_var1 >> 8);
@@ -1413,7 +1413,7 @@ uint16 ConfigureSpotlightTable_Helper(uint8 a) {
   return r0 == 0xffff ? 0xff : r0;
 }
 
-void ConfigureSpotlightTable() {
+void IrisSpotlight_ConfigureTable() {
   uint16 r14 = link_y_coord - BG2VOFS_copy2 + 12;
   spotlight_y_lower = r14 - spotlight_var1;
   spotlight_y_upper = r14 + spotlight_var1;
@@ -1430,7 +1430,7 @@ void ConfigureSpotlightTable() {
       uint8 t = spotlight_var4;
       if (spotlight_var4)
         spotlight_var4--;
-      r8 = ConfigureSpotlightTable_Helper(t);
+      r8 = IrisSpotlight_CalculateCircleValue(t);
     }
     if (r4 < 0xe0)
       hdma_table[r4] = r8;
@@ -1452,7 +1452,7 @@ void ConfigureSpotlightTable() {
     INIDISP_copy = 0x80;
     zelda_ppu_write(INIDISP, 0x80);
   } else {
-    ResetSpotlightTable();
+    IrisSpotlight_ResetTable();
   }
   subsubmodule_index = 0;
   submodule_index = 0;
@@ -1468,7 +1468,7 @@ void ConfigureSpotlightTable() {
     Sprite_ResetAll();
 }
 
-void ResetSpotlightTable() {
+void IrisSpotlight_ResetTable() {
   for (int i = 0; i < 224; i++)
     mode7_hdma_table[i] = 0xff00;
 }
@@ -1490,7 +1490,7 @@ void SpotlightInternal(uint8 x, uint8 y) {
     COLDATA_copy1 = 0x40;
     COLDATA_copy2 = 0x80;
   }
-  ConfigureSpotlightTable();
+  IrisSpotlight_ConfigureTable();
   HDMAEN_copy = 0x80;
   INIDISP_copy = 0xf;
 }
@@ -1500,18 +1500,18 @@ void Spotlight_open() {
   SpotlightInternal(0, 2);
 }
 
-void Spotlight_close() {
+void IrisSpotlight_close() {
   SpotlightInternal(0x7e, 0);
 }
 
-void Hdma_ConfigureWaterTable() {
+void AdjustWaterHDMAWindow() {
   uint16 r10 = water_hdma_var1 - BG2VOFS_copy2;
   spotlight_y_lower = r10 - water_hdma_var2;
   spotlight_y_upper = r10 + water_hdma_var2;
-  Hdma_ConfigureWaterTable_Inner(r10);
+  AdjustWaterHDMAWindow_X(r10);
 }
 
-void Hdma_ConfigureWaterTable_Inner(uint16 r10) {
+void AdjustWaterHDMAWindow_X(uint16 r10) {
   spotlight_var3 = water_hdma_var0 - BG2HOFS_copy2;
   uint16 r12 = water_hdma_var3 ? water_hdma_var3 - 1 : 0;
   uint16 r2 = spotlight_var3 + r12;
@@ -1548,7 +1548,7 @@ void Hdma_ConfigureWaterTable_Inner(uint16 r10) {
   } while (r6--, r10 != r4++);
 }
 
-void Watergate_Helper() {
+void FloodDam_PrepFloodHDMA() {
   spotlight_y_lower = water_hdma_var1 - BG2VOFS_copy2;
   spotlight_var3 = water_hdma_var0 - BG2HOFS_copy2;
   uint16 r14 = water_hdma_var3 ^ 1;
@@ -1592,7 +1592,7 @@ static const int8 kGraphicsLoadSp6[20] = {
   -1, -1, -1, -1, -1, 
 };
 
-void Graphics_MaybeLoadChrHalfSlot() {
+void Graphics_LoadChrHalfSlot() {
   int k = load_chr_halfslot_even_odd;
   if (k == 0)
     return;
@@ -1603,11 +1603,11 @@ void Graphics_MaybeLoadChrHalfSlot() {
     if (k == 1) {
       palette_sp6 = 10;
       overworld_palette_aux_or_main = 0x200;
-      Palette_MiscSprite();
+      Palette_Load_SpriteEnvironment();
       flag_update_cgram_in_nmi++;
     } else {
       overworld_palette_aux_or_main = 0x200;
-      Palette_MiscSprite_Indoors();
+      Palette_Load_SpriteEnvironment_Dungeon();
       flag_update_cgram_in_nmi++;
     }
   }
@@ -1653,7 +1653,7 @@ void Graphics_MaybeLoadChrHalfSlot() {
   } while (--num);
 }
 
-void Vram_EraseTilemaps(uint16 r2, uint16 r0) {
+void EraseTileMaps(uint16 r2, uint16 r0) {
   uint16 *dst = g_zenv.vram;
   for (int i = 0; i < 0x2000; i++)
     dst[i] = r0;
@@ -1663,19 +1663,19 @@ void Vram_EraseTilemaps(uint16 r2, uint16 r0) {
     dst[i] = r2;
 }
 
-void Vram_EraseTilemaps_PalaceMap() {
-  Vram_EraseTilemaps(0x7f, 0x300);
+void EraseTileMaps_dungeonmap() {
+  EraseTileMaps(0x7f, 0x300);
 }
 
-void Vram_EraseTilemaps_normal() {
-  Vram_EraseTilemaps(0x7f, 0x1ec);
+void EraseTileMaps_normal() {
+  EraseTileMaps(0x7f, 0x1ec);
 }
 
-void Vram_EraseTilemaps_Triforce() {
-  Vram_EraseTilemaps(0xa9, 0x7f);
+void EraseTileMaps_triforce() {
+  EraseTileMaps(0xa9, 0x7f);
 }
 
-void Upload3To4Low(const uint8 *decomp_addr) {
+void Do3To4Low(const uint8 *decomp_addr) {
   for (int j = 0; j < 64; j++) {
     for (int i = 0; i < 8; i++, decomp_addr += 2)
       zelda_ppu_write_word(VMDATAL, *(uint16 *)decomp_addr);
@@ -1684,7 +1684,7 @@ void Upload3To4Low(const uint8 *decomp_addr) {
   }
 }
 
-void Upload3To4High(const uint8 *decomp_addr) {
+void Do3To4High(const uint8 *decomp_addr) {
   for (int j = 0; j < 64; j++) {
     uint16 *t = (uint16 *)&dung_line_ptrs_row0;
     for (int i = 7; i >= 0; i--, decomp_addr += 2) {
@@ -1699,51 +1699,51 @@ void Upload3To4High(const uint8 *decomp_addr) {
   }
 }
 
-void LoadSpriteGfx(int gfx_pack, uint8 *decomp_addr) {
+void LoadSpriteGraphics(int gfx_pack, uint8 *decomp_addr) {
   Decomp_spr(decomp_addr, gfx_pack);
 
   if (gfx_pack == 0x52 || gfx_pack == 0x53 || gfx_pack == 0x5a || gfx_pack == 0x5b ||
       gfx_pack == 0x5c || gfx_pack == 0x5e || gfx_pack == 0x5f)
-    Upload3To4High(decomp_addr);
+    Do3To4High(decomp_addr);
   else
-    Upload3To4Low(decomp_addr);
+    Do3To4Low(decomp_addr);
 }
 
-void LoadBgGfx(int gfx_pack, int slot, uint8 *decomp_addr) {
+void LoadBackgroundGraphics(int gfx_pack, int slot, uint8 *decomp_addr) {
   Decomp_bg(decomp_addr, gfx_pack);
   if ((main_tile_theme_index >= 0x20) ? (slot == 7 || slot == 2 || slot == 3 || slot == 4) : (slot >= 4))
-    Upload3To4High(decomp_addr);
+    Do3To4High(decomp_addr);
   else
-    Upload3To4Low(decomp_addr);
+    Do3To4Low(decomp_addr);
 }
 
-void LoadCommonSprGfxToVram() {
-  Upload3To4High(GetCompSpritePtr(misc_sprites_graphics_index));
+void LoadCommonSprites() {
+  Do3To4High(GetCompSpritePtr(misc_sprites_graphics_index));
   if (main_module_index != 1) {
-    Upload3To4Low(GetCompSpritePtr(6));
-    Upload3To4Low(GetCompSpritePtr(7));
+    Do3To4Low(GetCompSpritePtr(6));
+    Do3To4Low(GetCompSpritePtr(7));
   } else {
     // select file
-    LoadSpriteGfx(94, &g_ram[0x14000]);
-    LoadSpriteGfx(95, &g_ram[0x14000]);
+    LoadSpriteGraphics(94, &g_ram[0x14000]);
+    LoadSpriteGraphics(95, &g_ram[0x14000]);
   }
 }
 
 
-void InitTilesets() {
+void InitializeTilesets() {
   zelda_ppu_write(VMAIN, 0x80);
   zelda_ppu_write_word(VMADDL, 0x4400);
-  LoadCommonSprGfxToVram();
+  LoadCommonSprites();
   const uint8 *p = kSpriteTilesets[sprite_graphics_index];
   if (p[0]) sprite_gfx_subset_0 = p[0];
   if (p[1]) sprite_gfx_subset_1 = p[1];
   if (p[2]) sprite_gfx_subset_2 = p[2];
   if (p[3]) sprite_gfx_subset_3 = p[3];
 
-  LoadSpriteGfx(sprite_gfx_subset_0, &g_ram[0x7800]);
-  LoadSpriteGfx(sprite_gfx_subset_1, &g_ram[0x7e00]);
-  LoadSpriteGfx(sprite_gfx_subset_2, &g_ram[0x8400]);
-  LoadSpriteGfx(sprite_gfx_subset_3, &g_ram[0x8a00]);
+  LoadSpriteGraphics(sprite_gfx_subset_0, &g_ram[0x7800]);
+  LoadSpriteGraphics(sprite_gfx_subset_1, &g_ram[0x7e00]);
+  LoadSpriteGraphics(sprite_gfx_subset_2, &g_ram[0x8400]);
+  LoadSpriteGraphics(sprite_gfx_subset_3, &g_ram[0x8a00]);
 
   zelda_ppu_write_word(VMADDL, 0x2000);
 
@@ -1755,14 +1755,14 @@ void InitTilesets() {
   aux_bg_subset_2 = at[2] ? at[2] : mt[5];
   aux_bg_subset_3 = at[3] ? at[3] : mt[6];
 
-  LoadBgGfx(mt[0], 7, &g_ram[0x14000]);
-  LoadBgGfx(mt[1], 6, &g_ram[0x14000]);
-  LoadBgGfx(mt[2], 5, &g_ram[0x14000]);
-  LoadBgGfx(aux_bg_subset_0, 4, &g_ram[0x6000]);
-  LoadBgGfx(aux_bg_subset_1, 3, &g_ram[0x6600]);
-  LoadBgGfx(aux_bg_subset_2, 2, &g_ram[0x6c00]);
-  LoadBgGfx(aux_bg_subset_3, 1, &g_ram[0x7200]);
-  LoadBgGfx(mt[7], 0, &g_ram[0x14000]);
+  LoadBackgroundGraphics(mt[0], 7, &g_ram[0x14000]);
+  LoadBackgroundGraphics(mt[1], 6, &g_ram[0x14000]);
+  LoadBackgroundGraphics(mt[2], 5, &g_ram[0x14000]);
+  LoadBackgroundGraphics(aux_bg_subset_0, 4, &g_ram[0x6000]);
+  LoadBackgroundGraphics(aux_bg_subset_1, 3, &g_ram[0x6600]);
+  LoadBackgroundGraphics(aux_bg_subset_2, 2, &g_ram[0x6c00]);
+  LoadBackgroundGraphics(aux_bg_subset_3, 1, &g_ram[0x7200]);
+  LoadBackgroundGraphics(mt[7], 0, &g_ram[0x14000]);
 }
 
 void DecompAndUpload2bpp(uint8 pack) {
@@ -1772,7 +1772,7 @@ void DecompAndUpload2bpp(uint8 pack) {
     zelda_ppu_write_word(VMDATAL, WORD(src[0]));
 }
 
-void LoadDefaultGfx() {
+void LoadDefaultGraphics() {
   zelda_ppu_write(VMAIN, 0x80);
   zelda_ppu_write_word(VMADDL, 0x4000);
   const uint8 *src = GetCompSpritePtr(0);
@@ -1796,7 +1796,7 @@ void LoadDefaultGfx() {
   DecompAndUpload2bpp(0x69);
 }
 
-void Attract_InitGraphics_Helper1() {
+void Attract_LoadBG3GFX() {
   // load 2bpp gfx for attract images
   zelda_ppu_write(VMAIN, 0x80);
   zelda_ppu_write(VMADDL, 0);
@@ -1804,14 +1804,14 @@ void Attract_InitGraphics_Helper1() {
   DecompAndUpload2bpp(0x67);
 }
 
-void Graphics_LoadCommonSpr() {
+void LoadCommonSprites_2() {
   zelda_ppu_write(VMAIN, 0x80);
   zelda_ppu_write(VMADDL, 0);
   zelda_ppu_write(VMADDH, 0x44);
-  LoadCommonSprGfxToVram();
+  LoadCommonSprites();
 }
 
-void LoadMainAuxTiles() {
+void AnimateMirrorWarp_DecompressNewTileSets() {
   const uint8 *mt = kMainTilesets[main_tile_theme_index];
   const uint8 *at = kAuxTilesets[aux_tile_theme_index];
 
@@ -1827,7 +1827,7 @@ void LoadMainAuxTiles() {
   if (p[3]) sprite_gfx_subset_3 = p[3];
 }
 
-void DecompAuxAndSprites() {
+void ReloadPreviouslyLoadedSheets() {
   Decomp_bg(&g_ram[0x6000], aux_bg_subset_0);
   Decomp_bg(&g_ram[0x6600], aux_bg_subset_1);
   Decomp_bg(&g_ram[0x6c00], aux_bg_subset_2);
@@ -1841,7 +1841,7 @@ void DecompAuxAndSprites() {
 
 static const uint8 kMirrorWarp_LoadNext_NmiLoad[15] = {0, 14, 15, 16, 17, 0, 0, 0, 0, 0, 0, 18, 19, 20, 0};
 
-void MirrorWarp_LoadNext() {
+void AnimateMirrorWarp() {
   int st = overworld_map_state++, tt;
   nmi_subroutine_index = nmi_disable_core_updates = kMirrorWarp_LoadNext_NmiLoad[st];
   uint8 t, xt = overworld_screen_index & 0x40 ? 8 : 0;
@@ -1853,7 +1853,7 @@ void MirrorWarp_LoadNext() {
       MirrorWarp_Helper();
     break;
   case 1:
-    LoadMainAuxTiles();
+    AnimateMirrorWarp_DecompressNewTileSets();
     Decomp_bg(&g_ram[0x14000], kVariousPacks[xt]);
     Decomp_bg(&g_ram[0x14600], kVariousPacks[xt + 1]);
     Do3To4High16Bit(&g_ram[0x10000], &g_ram[0x14000], 64);
@@ -1887,16 +1887,16 @@ void MirrorWarp_LoadNext() {
     nmi_subroutine_index = nmi_disable_core_updates = 13;
     break;
   case 7:
-    MirrorWarp_LoadNext_7();
+    Overworld_DrawScreenAtCurrentMirrorPosition();
     nmi_disable_core_updates++;
     break;
   case 8:
-    MirrorWarp_LoadNext_8();
+    MirrorWarp_LoadSpritesAndColors();
     nmi_subroutine_index = nmi_disable_core_updates = 12;
     break;
   case 10:
     t = overworld_screen_index & 0xbf;
-    DecompOwAnimatedTiles(t == 3 || t == 5 || t == 7 ? 0x58 : 0x5a);
+    DecompressAnimatedOverworldTiles(t == 3 || t == 5 || t == 7 ? 0x58 : 0x5a);
     break;
   case 11:
     t = overworld_screen_index;
@@ -1917,7 +1917,7 @@ void MirrorWarp_LoadNext() {
     Decomp_spr(&g_ram[0x14000], sprite_gfx_subset_2);
     Decomp_spr(&g_ram[0x14600], sprite_gfx_subset_3);
     Do3To4Low16Bit(&g_ram[0x10000], &g_ram[0x14000], 128);
-    Player_AfterMirrorWarp();
+    HandleFollowersAfterMirroring();
     break;
   case 14:
     overworld_map_state = 14;
@@ -1925,7 +1925,7 @@ void MirrorWarp_LoadNext() {
   }
 }
 
-void Palette_AnimCommon() {
+void PaletteFilter_StartBlindingWhite() {
   main_palette_buffer[0] = main_palette_buffer[32];
   if (!darkening_or_lightening_screen) {
     if (++palette_filter_countdown == 66) {
@@ -1947,35 +1947,35 @@ void Palette_AnimCommon() {
   flag_update_cgram_in_nmi++;
 }
 
-void Palette_DarkenOrLighten_Step() {
+void PaletteFilter_BlindingWhite() {
   if (darkening_or_lightening_screen == 0xff)
     return;
 
   if (darkening_or_lightening_screen == 2) {
-    RestorePaletteAdditive_FadeIn(0x40, 0x1b0);
-    RestorePaletteAdditive_FadeIn(0x1c0, 0x1e0);
+    PaletteFilter_RestoreAdditive(0x40, 0x1b0);
+    PaletteFilter_RestoreAdditive(0x1c0, 0x1e0);
   } else {
-    RestorePaletteSubtractive(0x40, 0x1b0);
-    RestorePaletteSubtractive(0x1c0, 0x1e0);
+    PaletteFilter_RestoreSubtractive(0x40, 0x1b0);
+    PaletteFilter_RestoreSubtractive(0x1c0, 0x1e0);
   }
-  Palette_AnimCommon();
+  PaletteFilter_StartBlindingWhite();
 }
 
-void TriforceRoom_AnimPalette() {
-  RestorePaletteAdditive_FadeIn(0x40, 0x200);
-  Palette_AnimCommon();
+void PaletteFilter_BlindingWhiteTriforce() {
+  PaletteFilter_RestoreAdditive(0x40, 0x200);
+  PaletteFilter_StartBlindingWhite();
 }
 
-void Palette_MirrorWarp_Step() {
+void MirrorWarp_RunAnimationSubmodules() {
   if (--mirror_vars.ctr) {
-    MirrorWarp_LoadNext();
+    AnimateMirrorWarp();
     return;
   }
   mirror_vars.ctr = 2;
-  Palette_DarkenOrLighten_Step();
+  PaletteFilter_BlindingWhite();
 }
 
-void WhirlpoolSaturateBlue() {
+void PaletteFilter_WhirlpoolBlue() {
   if (frame_counter & 1) {
     for (int i = 0x20; i != 0x100; i++) {
       uint16 t = main_palette_buffer[i];
@@ -1997,7 +1997,7 @@ void WhirlpoolSaturateBlue() {
   flag_update_cgram_in_nmi++;
 }
 
-void WhirlpoolIsolateBlue() {
+void PaletteFilter_IsolateWhirlpoolBlue() {
   for (int i = 0x20; i != 0x100; i++) {
     uint16 t = main_palette_buffer[i];
     if (t & 0x3e0)
@@ -2017,7 +2017,7 @@ void WhirlpoolIsolateBlue() {
   flag_update_cgram_in_nmi++;
 }
 
-void WhirlpoolRestoreBlue() {
+void PaletteFilter_WhirlpoolRestoreBlue() {
   if (frame_counter & 1) {
     for (int i = 0x20; i != 0x100; i++) {
       uint16 u = aux_palette_buffer[i] & 0x7c00;
@@ -2040,7 +2040,7 @@ void WhirlpoolRestoreBlue() {
   flag_update_cgram_in_nmi++;
 }
 
-void WhirlpoolRestoreRedGreen() {
+void PaletteFilter_WhirlpoolRestoreRedGreen() {
   for (int i = 0x20; i != 0x100; i++) {
     uint16 u0 = aux_palette_buffer[i] & 0x3e0;
     uint16 u1 = aux_palette_buffer[i] & 0x1f;
@@ -2060,7 +2060,7 @@ void WhirlpoolRestoreRedGreen() {
 }
 
 
-void Dungeon_OrangeBlueBarrierUpload(int x, int y) {
+void Dungeon_UpdatePegGFXBuffer(int x, int y) {
   uint16 *src = (uint16 *)&g_ram[0xb340];
   for (int i = 0; i < 64; i++)
     messaging_buf[i] = src[(x >> 1) + i];
@@ -2069,28 +2069,28 @@ void Dungeon_OrangeBlueBarrierUpload(int x, int y) {
   nmi_subroutine_index = 23;
 }
 
-void Dungeon_OrangeBlueBarrierUpload_A() {
+void Module07_16_UpdatePegs_Step1() {
   if (BYTE(orange_blue_barrier_state))
-    Dungeon_OrangeBlueBarrierUpload(0x80, 0x100);
+    Dungeon_UpdatePegGFXBuffer(0x80, 0x100);
   else
-    Dungeon_OrangeBlueBarrierUpload(0x100, 0x80);
+    Dungeon_UpdatePegGFXBuffer(0x100, 0x80);
 }
 
-void Dungeon_OrangeBlueBarrierUpload_B() {
+void Module07_16_UpdatePegs_Step2() {
   if (BYTE(orange_blue_barrier_state))
-    Dungeon_OrangeBlueBarrierUpload(0x100, 0x80);
+    Dungeon_UpdatePegGFXBuffer(0x100, 0x80);
   else
-    Dungeon_OrangeBlueBarrierUpload(0x80, 0x100);
+    Dungeon_UpdatePegGFXBuffer(0x80, 0x100);
 }
 
-void Dungeon_OrangeBlueBarrierUpload_C() {
+void Module07_16_UpdatePegs_Step3() {
   if (BYTE(orange_blue_barrier_state))
-    Dungeon_OrangeBlueBarrierUpload(0x180, 0x0);
+    Dungeon_UpdatePegGFXBuffer(0x180, 0x0);
   else
-    Dungeon_OrangeBlueBarrierUpload(0x0, 0x180);
+    Dungeon_UpdatePegGFXBuffer(0x0, 0x180);
 }
 
-void Text_DecompressStoryGfx() {
+void Attract_DecompressStoryGFX() {
   Decomp_spr(&g_ram[0x14000], 0x67);
   Decomp_spr(&g_ram[0x14800], 0x68);
 }
@@ -2098,17 +2098,17 @@ void Text_DecompressStoryGfx() {
 void Overworld_LoadAreaPalettesEx(uint8 x) {
   overworld_palette_mode = x;
   overworld_palette_aux_or_main &= 0xff;
-  Palette_MainSpr();
-  Palette_MiscSprite();
-  Palette_SpriteAux1();
-  Palette_SpriteAux2();
-  Palette_Sword();
-  Palette_Shield();
-  Palette_ArmorAndGloves();
+  Palette_Load_SpriteMain();
+  Palette_Load_SpriteEnvironment();
+  Palette_Load_SpriteAux1();
+  Palette_Load_SpriteAux2();
+  Palette_Load_Sword();
+  Palette_Load_Shield();
+  Palette_Load_LinkArmorAndGloves();
   overworld_palette_sp0 = (savegame_is_darkworld & 0x40) ? 3 : 1;
-  Palette_SpriteAux3();
-  Palette_Hud();
-  Palette_OverworldBgMain();
+  Palette_Load_SpritePal0Left();
+  Palette_Load_HUD();
+  Palette_Load_OWBGMain();
 }
 
 void Overworld_LoadAreaPalettes() {
@@ -2118,7 +2118,7 @@ void Overworld_LoadAreaPalettes() {
   Overworld_LoadAreaPalettesEx(x);
 }
 
-void Palette_ZeroPalettesAndCopyFirst() {
+void SpecialOverworld_CopyPalettesToCache() {
   for (int i = 32; i < 32 * 8; i++)
     main_palette_buffer[i] = 0;
   for (int i = 0; i < 8; i++) {
@@ -2146,12 +2146,12 @@ void Dungeon_RestoreStarTileChr() {
   nmi_subroutine_index = 0x18;
 }
 
-void Dungeon_InitStarTileChr() {
+void ResetStarTileGraphics() {
   byte_7E04BC = 0;
   Dungeon_RestoreStarTileChr();
 }
 
-void Player_SetElectrocutionMosaicLevel() {
+void LinkZap_HandleMosaic() {
   int level = mosaic_level;
   if (!mosaic_inc_or_dec) {
     level += 0x10;
@@ -2176,7 +2176,7 @@ void Player_SetCustomMosaicLevel(uint8 a) {
 
 const uint16 *GetFontPtr() { return kFontData; }
 
-void CopyFontToVram() {
+void TransferFontToVRAM() {
   zelda_ppu_write(OBSEL, 2);
   zelda_ppu_write(VMAIN, 0x80);
   zelda_ppu_write_word(VMADDL, 0x7000);

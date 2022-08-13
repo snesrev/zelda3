@@ -242,7 +242,7 @@ void RunEmulatedFuncSilent(uint32 pc, uint16 a, uint16 x, uint16 y, bool mf, boo
 }
 
 void RunOrigAsmCodeOneLoop(Snes *snes) {
-  // Run until the wait loop in Vector_RESET,
+  // Run until the wait loop in Interrupt_Reset,
   // Or the polyhedral main function.
   for(int loops = 0;;loops++) {
     snes_printCpuLine(snes);
@@ -680,7 +680,7 @@ void PatchRom(uint8_t *rom) {
     p[8] = 0x40 - 7;
   }
 
-  // Overworld_DrawVerticalStrip can read bad memory if int is negative
+  // BufferAndBuildMap16Stripes_Y can read bad memory if int is negative
   if (1) {
     uint8_t *p = rom + 0x10000 - 0x8000;
     int thunk = 0xFF6E;
@@ -721,14 +721,14 @@ void PatchRom(uint8_t *rom) {
 
   }
 
-  // Fix so Overworld_HandleBigRock / DoorAnim_DoWork2 preserves R2/R0 destroyed
+  // Fix so SmashRockPile_fromLift / Overworld_DoMapUpdate32x32_B preserves R2/R0 destroyed
   {
     /*
     .9B:BFA2 A5 00                 mov.w   A, R0
     .9B:BFA4 48                    push    A
     .9B:BFA5 A5 02                 mov.w   A, R2
     .9B:BFA7 48                    push    A
-    .9B:C0F1 22 5C AD 02           callf   DoorAnim_DoWork2
+    .9B:C0F1 22 5C AD 02           callf   Overworld_DoMapUpdate32x32_B
     .9B:C048 68                    pop     A
     .9B:C049 85 00                 mov.w   R0, A
     .9B:C04B 68                    pop     A
@@ -752,16 +752,16 @@ void PatchRom(uint8_t *rom) {
 
   }
 
-  rom[0x2dec7] = 0;  // Fix Uncle_LeavingHouse reading bad ram
+  rom[0x2dec7] = 0;  // Fix Uncle_Embark reading bad ram
 
-  rom[0x4be5e] = 0;  // Overlord_StalfosTrap doesn't initialize the sprite_D memory location
+  rom[0x4be5e] = 0;  // Overlord05_FallingStalfos doesn't initialize the sprite_D memory location
 
   rom[0xD79A4] = 0;  // 0x1AF9A4: // Lanmola_SpawnShrapnel uses undefined carry value
 
   rom[0xF0A46] = 0;  // 0x1E8A46 Helmasaur Carry Junk
   rom[0xF0A52] = 0;  // 0x1E8A52 Helmasaur Carry Junk
 
-  rom[0xef9b9] = 0xb9; // TalkingTree_Type0_State2
+  rom[0xef9b9] = 0xb9; // TalkingTree_SpitBomb
 
   rom[0xdf107] = 0xa2;
   rom[0xdf108] = 0x03;
@@ -793,7 +793,7 @@ void PatchRom(uint8_t *rom) {
 
   PatchRomBP(rom, 0x1DCDEB); // y is destroyed earlier, restore it..
 
-  // SmithyFrog_Main doesn't save X
+  // Smithy_Frog doesn't save X
   memmove(rom + 0x332b8, rom + 0x332b7, 4); rom[0x332b7] = 0xfa;
 
   // This needs to be here because the ancilla code reads
@@ -803,7 +803,7 @@ void PatchRom(uint8_t *rom) {
   rom[0x443fe] = 0x48; rom[0x443ff] = 0x6;
   rom[0x44607] = 0x48; rom[0x44608] = 0x6;
 
-  // AddAncilla destroys R14
+  // Ancilla_AddAncilla destroys R14
   rom[0x49d0c] = 0xda; rom[0x49d0d] = 0xfa; 
   rom[0x49d0f] = 0xda; rom[0x49d10] = 0xfa; 
 
