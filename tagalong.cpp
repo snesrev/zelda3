@@ -15,7 +15,7 @@ void Follower_OldMan();
 void Follower_OldManUnused();
 void Tagalong_Draw();
 void Follower_BasicMover();
-void Tagalong_DrawInner(uint8 a, uint16 x, uint16 y);
+void Follower_AnimateMovement_preserved(uint8 a, uint16 x, uint16 y);
 void Follower_HandleTrigger();
 bool Follower_CheckProximityToLink();
 void Follower_DoLayers();
@@ -75,7 +75,7 @@ static const uint16 kTagalong_Msg[3] = {0x20, 0x108, 0x11d};
 
 void Follower_NoTimedMessage();
 
-void Tagalong_Main() {
+void Follower_Main() {
   if (!savegame_tagalong)
     return;
   if (savegame_tagalong == 0xe) {
@@ -421,7 +421,7 @@ void Follower_OldManUnused() {
 void Follower_DoLayers() {
   oam_priority_value = kTagalongFlags[saved_tagalong_floor] << 8;
   uint8 a = (savegame_tagalong == 12 || savegame_tagalong == 13) ? 2 : 1;
-  Tagalong_DrawInner(a, saved_tagalong_x, saved_tagalong_y);
+  Follower_AnimateMovement_preserved(a, saved_tagalong_x, saved_tagalong_y);
 }
 
 bool Follower_CheckProximityToLink() {
@@ -576,7 +576,7 @@ void Tagalong_Draw() {
   uint16 x = tagalong_x_lo[k] | tagalong_x_hi[k] << 8;
   uint16 y = tagalong_y_lo[k] | tagalong_y_hi[k] << 8;
   uint8 a = tagalong_layerbits[k];
-  Tagalong_DrawInner(a, x, y);
+  Follower_AnimateMovement_preserved(a, x, y);
 }
 
 struct TagalongSprXY {
@@ -674,7 +674,7 @@ static const uint8 kTagalongDraw_SprInfo0[24] = {
 };
 static const uint16 kTagalongDraw_SprOffs0[2] = {0x170, 0xc0};
 static const uint16 kTagalongDraw_SprOffs1[2] = {0x1c0, 0x110};
-void Tagalong_DrawInner(uint8 ain, uint16 xin, uint16 yin) {
+void Follower_AnimateMovement_preserved(uint8 ain, uint16 xin, uint16 yin) {
 
   uint8 yt = 0, av = 0;
   uint8 sc = 0;

@@ -121,7 +121,7 @@ void Player_Sword_SpinAttackJerks_HoldDown() {
           AncillaSpawn_SwordChargeSparkle();
 
         if (link_spin_attack_step_counter < 64 && ++link_spin_attack_step_counter == 48) {
-          PlaySfx_Set2(55);
+          Ancilla_Sfx2_Near(55);
           AncillaAdd_ChargedSpinAttackSparkle();
         }
       } else {
@@ -144,7 +144,7 @@ void Player_Sword_SpinAttackJerks_HoldDown() {
     if (frames == 13) {
       if ((uint8)(link_sword_type + 1) & ~1 && (bitmask_of_dragstate & 9)) {
         AncillaAdd_WallTapSpark(27, 1);
-        PlaySfx_Set2((bitmask_of_dragstate & 8) ? 6 : 5);
+        Ancilla_Sfx2_Near((bitmask_of_dragstate & 8) ? 6 : 5);
         TileDetect_MainHandler(1);
       }
       frames = 10;
@@ -155,7 +155,7 @@ void Player_Sword_SpinAttackJerks_HoldDown() {
   CalculateSwordHitBox();
 }
 
-void Link_SetSpinAttacking() {
+void Link_AnimateVictorySpin() {
   link_player_handler_state = 3;
   link_spin_offsets = (link_direction_facing >> 1) * 12;
   link_delay_timer_spin_attack = 3;
@@ -169,7 +169,7 @@ void Link_SetSpinAttacking() {
 
 void Link_ActivateSpinAttack() {
   AncillaAdd_SpinAttackInitSpark(42, 0, 0);
-  Link_SetSpinAttacking();
+  Link_AnimateVictorySpin();
 }
 
 void HandleSwordControls() {
@@ -333,7 +333,7 @@ void TileDetect_MainHandler(uint8 item) {
     if ((ty < 4 || ty >= 11) && (tx < 4 || tx >= 12) && countdown_for_blink == 0 && link_auxiliary_state == 0) {
       if (player_is_indoors) {
         Dungeon_FlagRoomData_Quadrants();
-        PlaySfx_Set2(0x33);
+        Ancilla_Sfx2_Near(0x33);
         link_speed_setting = 0;
         submodule_index = 21;
         BYTE(dungeon_room_index_prev) = dungeon_room_index;
@@ -348,7 +348,7 @@ void TileDetect_MainHandler(uint8 item) {
     if (tiledetect_thick_grass & 1) {
       draw_water_ripples_or_grass = 2;
       if (!Link_PermissionForSloshSounds() && link_auxiliary_state == 0)
-        PlaySfx_Set2(26);
+        Ancilla_Sfx2_Near(26);
       return;
     }
 
@@ -363,9 +363,9 @@ void TileDetect_MainHandler(uint8 item) {
         }
       } else if (!Link_PermissionForSloshSounds()) {
         if ((uint8)overworld_screen_index == 0x70) {
-          PlaySfx_Set2(27);
+          Ancilla_Sfx2_Near(27);
         } else if (link_auxiliary_state == 0) {
-          PlaySfx_Set2(28);
+          Ancilla_Sfx2_Near(28);
         }
       }
       return;
@@ -375,9 +375,9 @@ void TileDetect_MainHandler(uint8 item) {
       draw_water_ripples_or_grass = 1;
       if (!Link_PermissionForSloshSounds()) {
         if ((uint8)overworld_screen_index == 0x70) {
-          PlaySfx_Set2(27);
+          Ancilla_Sfx2_Near(27);
         } else if (link_auxiliary_state == 0) {
-          PlaySfx_Set2(28);
+          Ancilla_Sfx2_Near(28);
         }
       }
       return;
@@ -511,7 +511,7 @@ bool InitializePushBlock(uint8 r14, uint8 idx) {
 
   if (dung_hdr_tag[0] != 38 && dung_replacement_tile_state[idx >> 1] == 0) {
     if (!PushBlock_AttemptToPushTheBlock(0, x, y)) {
-      PlaySfx_Set2(0x22);
+      Ancilla_Sfx2_Near(0x22);
       dung_replacement_tile_state[idx >> 1] = 1;
       return false;
     }
@@ -1034,7 +1034,7 @@ void Link_BonkAndSmash() {
       int k = FindInByteArray(kLink_Lift_tab, (uint8)j, 9);
       if (k >= 0) {
         if (k == 2 || k == 4)
-          PlaySfx_Set3(0x32);
+          Ancilla_Sfx3_Near(0x32);
         Sprite_SpawnImmediatelySmashedTerrain(k, pt.x, pt.y);
       }
     }
@@ -1047,7 +1047,7 @@ void RepelDash() {
     AncillaAdd_DashTremor(29, 1);
     Prepare_ApplyRumbleToSprites();
     if ((sound_effect_2 & 0x3f) != 27 && (sound_effect_2 & 0x3f) != 50)
-      PlaySfx_Set3(3);
+      Ancilla_Sfx3_Near(3);
     LinkApplyTileRebound();
   }
 }
@@ -1284,7 +1284,7 @@ void StartMovementCollisionChecks_X_HandleOutdoors() {
       link_x_coord = (link_x_coord_safe_return_hi << 8) | link_x_coord_safe_return_lo;
       link_disable_sprite_damage = 1;
       Link_HopInOrOutOfWater_X();
-      PlaySfx_Set2(0x20);
+      Ancilla_Sfx2_Near(0x20);
     }
   }  // endif_afterSwimCheck
 
@@ -1308,7 +1308,7 @@ void StartMovementCollisionChecks_X_HandleOutdoors() {
   }  // endif_4
 
   if ((detection_of_ledge_tiles_horiz_uphoriz & 7) != 0 && RunLedgeHopTimer()) {
-    PlaySfx_Set2(0x20);
+    Ancilla_Sfx2_Near(0x20);
     link_actual_vel_x = (link_last_direction_moved_towards & 1) ? 0x10 : -0x10;
     Link_CancelDash();
     link_auxiliary_state = 2;
@@ -1335,7 +1335,7 @@ void StartMovementCollisionChecks_X_HandleOutdoors() {
   }  // endif_5
 
   if ((detection_of_unknown_tile_types & 0x77) != 0 && RunLedgeHopTimer()) {
-    uint8 sfx = PlaySfx_Set2(0x20);
+    uint8 sfx = Ancilla_Sfx2_Near(0x20);
     link_player_handler_state = (sfx & 7) == 0 ? 16 : 15;
     link_actual_vel_x = (link_last_direction_moved_towards & 1) ? 0x10 : -0x10;
     Link_CancelDash();
@@ -1354,7 +1354,7 @@ void StartMovementCollisionChecks_X_HandleOutdoors() {
       (detection_of_ledge_tiles_horiz_uphoriz & 0x7) == 0 &&
       (detection_of_unknown_tile_types & 0x77) == 0 &&
       link_player_handler_state != 13 && RunLedgeHopTimer()) {
-    PlaySfx_Set2(0x20);
+    Ancilla_Sfx2_Near(0x20);
     Link_CancelDash();
     link_disable_sprite_damage = 1;
     bitmask_of_dragstate = 0;
@@ -1515,7 +1515,7 @@ void StartMovementCollisionChecks_Y_HandleOutdoors() {
       if (!link_is_bunny_mirror)
         link_player_handler_state = kPlayerState_Swimming;
     } else {
-      PlaySfx_Set2(0x20);
+      Ancilla_Sfx2_Near(0x20);
       link_y_coord = (link_y_coord_safe_return_hi << 8) | link_y_coord_safe_return_lo;
       link_x_coord = (link_x_coord_safe_return_hi << 8) | link_x_coord_safe_return_lo;
       link_disable_sprite_damage = 1;
@@ -1563,7 +1563,7 @@ void StartMovementCollisionChecks_Y_HandleOutdoors() {
   }
 
   if (tiledetect_vertical_ledge & 7 && RunLedgeHopTimer()) {
-    PlaySfx_Set2(0x20);
+    Ancilla_Sfx2_Near(0x20);
     link_disable_sprite_damage = 1;
     Link_CancelDash();
     bitmask_of_dragstate = 0;
@@ -1593,7 +1593,7 @@ void StartMovementCollisionChecks_Y_HandleOutdoors() {
 
     if (detection_of_ledge_tiles_horiz_uphoriz & 0x70 && !(tiledetect_vertical_ledge & 0x77) && RunLedgeHopTimer()) {
       Link_CancelDash();
-      PlaySfx_Set2(0x20);
+      Ancilla_Sfx2_Near(0x20);
       link_last_direction_moved_towards = detection_of_ledge_tiles_horiz_uphoriz & 0x40 ? 3 : 2;
       link_disable_sprite_damage = 1;
       bitmask_of_dragstate = 0;
@@ -1814,7 +1814,7 @@ label_3:
     uint16 x = link_x_coord + kLink_DoMoveXCoord_Indoors_dx[link_last_direction_moved_towards];
 
     Dungeon_DeleteRupeeTile(x, y);
-    PlaySfx_Set3(10);
+    Ancilla_Sfx3_Near(10);
   }  // endif_12_norupee
 
   if (tiledetect_var4 & 0x22) {
@@ -1850,7 +1850,7 @@ label_3:
 endif_19:
     link_disable_sprite_damage = 1;
     Link_HopInOrOutOfWater_X();
-    PlaySfx_Set2(0x20);
+    Ancilla_Sfx2_Near(0x20);
   } else {
     // else_20
     if ((tiledetect_normal_tiles & 7) == 7 && link_is_in_deep_water != 0) {
@@ -2030,7 +2030,7 @@ label_3:
     uint16 x = link_x_coord + kLink_DoMoveXCoord_Indoors_dx[link_last_direction_moved_towards];
 
     Dungeon_DeleteRupeeTile(x, y);
-    PlaySfx_Set3(10);
+    Ancilla_Sfx3_Near(10);
   }  // endif_12_norupee
 
   if (tiledetect_var4 & 0x22) {
@@ -2047,7 +2047,7 @@ label_3:
     about_to_jump_off_ledge++;
     link_disable_sprite_damage = 1;
     link_auxiliary_state = 2;
-    PlaySfx_Set2(0x20);
+    Ancilla_Sfx2_Near(0x20);
 
     goto endif_19;
   } else if ((tiledetect_deepwater & 7) == 7 && link_is_in_deep_water == 0) {
@@ -2063,7 +2063,7 @@ label_3:
       link_grabbing_wall = 0;
       link_speed_setting = 0;
       Link_ResetSwimmingState();
-      PlaySfx_Set2(0x20);
+      Ancilla_Sfx2_Near(0x20);
     }
 endif_19:
     link_disable_sprite_damage = 1;
@@ -2387,9 +2387,9 @@ void Link_HandleRecoilAndTimer(bool jump_into_middle) {
         if (!link_is_bunny_mirror || !link_is_in_deep_water) {
           if (link_want_make_noise_when_dashed) {
             link_want_make_noise_when_dashed = 0;
-            PlaySfx_Set2(33);
+            Ancilla_Sfx2_Near(33);
           } else if (scratch_0 != 2 && link_player_handler_state != 4) {
-            PlaySfx_Set2(33);
+            Ancilla_Sfx2_Near(33);
           }
           if (link_player_handler_state == 4) {
             Link_ForceUnequipCape_quietly();
@@ -2400,9 +2400,9 @@ void Link_HandleRecoilAndTimer(bool jump_into_middle) {
           }
           TileDetect_MainHandler(0);
           if (tiledetect_thick_grass & 1)
-            PlaySfx_Set2(26);
+            Ancilla_Sfx2_Near(26);
           if (tiledetect_shallow_water & 1 && sound_effect_1 != 36)
-            PlaySfx_Set2(28);
+            Ancilla_Sfx2_Near(28);
 
           if (tiledetect_deepwater & 1) {
             link_player_handler_state = kPlayerState_Swimming;
@@ -2865,7 +2865,7 @@ endif_1:
     link_position_mode = 0;
     link_incapacitated_timer = 0;
     link_auxiliary_state = 0;
-    PlaySfx_Set3(31);
+    Ancilla_Sfx3_Near(31);
   }
 
   link_cant_change_direction = 0;
@@ -2981,7 +2981,7 @@ void LinkState_SpinAttack() {
       link_delay_timer_spin_attack = 2;
       link_animation_steps = 0;
       link_direction &= ~0xf;
-      PlaySfx_Set3(43);
+      Ancilla_Sfx3_Near(43);
       link_player_handler_state = kPlayerState_Electrocution;
       LinkState_Zapped();
     } else {
@@ -3008,7 +3008,7 @@ void LinkState_SpinAttack() {
   step_counter_for_spin_attack++;
 
   if (step_counter_for_spin_attack == 2)
-    PlaySfx_Set3(35);
+    Ancilla_Sfx3_Near(35);
 
   if (step_counter_for_spin_attack == 12) {
     link_cant_change_direction &= ~1;
@@ -3076,7 +3076,7 @@ void PlayerHandler_04_Swimming() {
       return;
     }
     link_swim_hard_stroke = t;
-    PlaySfx_Set2(37);
+    Ancilla_Sfx2_Near(37);
     link_maybe_swim_faster = 1;
     swimming_countdown = 7;
     Link_HandleSwimAccels();
@@ -3248,7 +3248,7 @@ void LinkHop_HoppingSouthOW() {
   link_actual_vel_y = 0;
   draw_water_ripples_or_grass = 0;
   if (!link_incapacitated_timer && !link_actual_vel_z_mirror) {
-    PlaySfx_Set2(32);
+    Ancilla_Sfx2_Near(32);
     LinkHop_FindTileToLandOnSouth();
     if (!player_is_indoors)
       link_is_on_lower_level = 2;
@@ -3268,7 +3268,7 @@ void LinkHop_HoppingSouthOW() {
         link_player_handler_state = kPlayerState_FallingIntoHole;
       if (link_player_handler_state != kPlayerState_Swimming &&
           link_player_handler_state != kPlayerState_FallingIntoHole && !link_is_in_deep_water)
-        PlaySfx_Set2(33);
+        Ancilla_Sfx2_Near(33);
       link_disable_sprite_damage = 0;
       allow_scroll_z = 0;
       link_auxiliary_state = 0;
@@ -3326,7 +3326,7 @@ void LinkState_HandlingJump() {
       }
       Link_SplashUponLanding();
       if (link_player_handler_state != kPlayerState_Swimming && !link_is_in_deep_water)
-        PlaySfx_Set2(33);
+        Ancilla_Sfx2_Near(33);
 after_pit:
       if (link_player_handler_state != kPlayerState_Swimming || !link_is_bunny_mirror)
         link_disable_sprite_damage = 0;
@@ -3378,7 +3378,7 @@ void LinkState_HoppingDiagonallyUpOW() {
   if (sign8(link_z_coord)) {
     Link_SplashUponLanding();
     if (link_player_handler_state != kPlayerState_Swimming && !link_is_in_deep_water)
-      PlaySfx_Set2(33);
+      Ancilla_Sfx2_Near(33);
     link_disable_sprite_damage = 0;
     link_auxiliary_state = 0;
     link_actual_vel_z = 0xff;
@@ -3396,7 +3396,7 @@ void LinkState_HoppingDiagonallyDownOW() {
   if (!link_incapacitated_timer && !link_actual_vel_z_mirror) {
     link_last_direction_moved_towards = 1;
     uint16 old_x = link_x_coord;
-    PlaySfx_Set2(32);
+    Ancilla_Sfx2_Near(32);
     LinkHop_FindLandingSpotDiagonallyDown();
     link_x_coord = old_x;
 
@@ -3434,7 +3434,7 @@ bool Link_HandleBunnyTransformation() {
     }
     Link_CancelDash();
     AncillaAdd_CapePoof(0x23, 4);
-    PlaySfx_Set2(0x14);
+    Ancilla_Sfx2_Near(0x14);
     link_bunny_transform_timer = 20;
     link_disable_sprite_damage = 1;
     link_need_for_poof_for_transform = 1;
@@ -3507,7 +3507,7 @@ void Link_ApplyConveyor() {
   link_x_coord = t >> 8;
 }
 
-void Player_ApplyDragAndComputeVel(uint16 x, uint16 y) {
+void Link_HandleVelocityAndSandDrag(uint16 x, uint16 y) {
   link_y_coord += drag_player_y;
   link_x_coord += drag_player_x;
   link_y_vel = link_y_coord - y;
@@ -3553,7 +3553,7 @@ void LinkState_Dashing() {
       link_delay_timer_spin_attack = 2;
       link_animation_steps = 0;
       link_direction &= ~0xf;
-      PlaySfx_Set3(43);
+      Ancilla_Sfx3_Near(43);
       link_player_handler_state = kPlayerState_Electrocution;
       LinkState_Zapped();
     } else {
@@ -3568,7 +3568,7 @@ void LinkState_Dashing() {
   if (a == 0)
     a = index_of_dashing_sfx--;
   if (!(kDashTab1[link_countdown_for_dash >> 4] & a))
-    PlaySfx_Set2(35);
+    Ancilla_Sfx2_Near(35);
   if (sign8(--link_countdown_for_dash)) {
     link_countdown_for_dash = 0;
     if (savegame_tagalong == kTagalongArr1[savegame_tagalong])
@@ -3603,7 +3603,7 @@ void LinkState_Dashing() {
     Link_HandleMovingFloor();
     Link_ApplyConveyor();
     if (player_on_somaria_platform)
-      Player_ApplyDragAndComputeVel(org_x, org_y);
+      Link_HandleVelocityAndSandDrag(org_x, org_y);
     link_y_vel = link_y_coord - link_y_coord_safe_return_lo;
     link_x_vel = link_x_coord - link_x_coord_safe_return_lo;
     Link_HandleCardinalCollision();
@@ -3801,10 +3801,10 @@ loc_87AD49:
     if (tiledetect_thick_grass & 1) {
       draw_water_ripples_or_grass = 2;
       if (!Link_PermissionForSloshSounds())
-        PlaySfx_Set2(26);
+        Ancilla_Sfx2_Near(26);
     } else if ((tiledetect_shallow_water | tiledetect_deepwater) & 1) {
       draw_water_ripples_or_grass++;
-      PlaySfx_Set2((uint8)overworld_screen_index == 0x70 ? 27 : 28);
+      Ancilla_Sfx2_Near((uint8)overworld_screen_index == 0x70 ? 27 : 28);
     }
   }
 
@@ -3940,7 +3940,7 @@ void LinkState_HoldingBigRock() {
       link_delay_timer_spin_attack = 2;
       link_animation_steps = 0;
       link_direction &= ~0xf;
-      PlaySfx_Set3(43);
+      Ancilla_Sfx3_Near(43);
       link_player_handler_state = kPlayerState_Electrocution;
       LinkState_Zapped();
     } else {
@@ -4080,7 +4080,7 @@ void LinkState_ReadingDesertTablet() {
 void LinkState_TemporaryBunny() {
   if (!link_timer_tempbunny) {
     AncillaAdd_CapePoof(0x23, 4);
-    PlaySfx_Set2(0x15);
+    Ancilla_Sfx2_Near(0x15);
     link_bunny_transform_timer = 32;
     link_player_handler_state = 0;
     Link_ResetProperties_C();
@@ -4122,7 +4122,7 @@ void HandleLink_From1D() {
     link_delay_timer_spin_attack = 2;
     link_animation_steps = 0;
     link_direction &= ~0xf;
-    PlaySfx_Set3(43);
+    Ancilla_Sfx3_Near(43);
     link_player_handler_state = 7;
     LinkState_Zapped();
   } else {
@@ -4153,7 +4153,7 @@ void LinkState_TreePull() {
       if (!(joypad1H_last & 4))
         goto out;
       button_mask_b_y = 4;
-      PlaySfx_Set2(0x22);
+      Ancilla_Sfx2_Near(0x22);
     }
 
     if (!sign8(--some_animation_timer))
@@ -4260,7 +4260,7 @@ void Link_ControlHandler() {
         }
         if (countdown_for_blink == 0)
           countdown_for_blink = 58;
-        PlaySfx_Set2(38);
+        Ancilla_Sfx2_Near(38);
         number_of_times_hurt_by_sprites++;
         uint8 new_dmg = link_health_current - dmg;
         if (new_dmg == 0 || new_dmg >= 0xa8) {
@@ -4593,7 +4593,7 @@ void Player_SomethingWithVelocity_TiredOrSwim(uint16 xvel, uint16 yvel) {
     Link_ApplyMovingFloorVelocity();
   link_x_page_movement_delta = 0;
   link_y_page_movement_delta = 0;
-  Player_ApplyDragAndComputeVel(org_x, org_y);
+  Link_HandleVelocityAndSandDrag(org_x, org_y);
 }
 
 void HandleSwimStrokeAndSubpixels() {
@@ -4651,7 +4651,7 @@ void LinkHop_FindArbitraryLandingSpot() {
   link_x_coord_safe_return_hi = link_x_coord >> 8;
 
   if (link_player_handler_state != 10 && player_on_somaria_platform == 2) {
-    Player_ApplyDragAndComputeVel(x, y);
+    Link_HandleVelocityAndSandDrag(x, y);
     return;
   }
 
@@ -4667,7 +4667,7 @@ void LinkHop_FindArbitraryLandingSpot() {
 
   Link_HandleMovingFloor();
   Link_ApplyConveyor();
-  Player_ApplyDragAndComputeVel(x, y);
+  Link_HandleVelocityAndSandDrag(x, y);
 }
 
 void Link_HandleVelocity() {
@@ -4676,7 +4676,7 @@ void Link_HandleVelocity() {
     link_y_coord_safe_return_hi = link_y_coord >> 8;
     link_x_coord_safe_return_lo = link_x_coord;
     link_x_coord_safe_return_hi = link_x_coord >> 8;
-    Player_ApplyDragAndComputeVel(link_x_coord, link_y_coord);
+    Link_HandleVelocityAndSandDrag(link_x_coord, link_y_coord);
     return;
   }
 
@@ -5020,7 +5020,7 @@ void Link_PerformThrow() {
       player_handler_timer = 1;
     } else {
       Point16U pt;
-      uint8 attr = player_is_indoors ? Dungeon_LiftAndReplaceLiftable(&pt) : Overworld_LiftableTiles(&pt);
+      uint8 attr = player_is_indoors ? Dungeon_LiftAndReplaceLiftable(&pt) : Overworld_HandleLiftableTiles(&pt);
 
       i = 8;
       while (kLink_Lift_tab[i] != attr) {
@@ -5089,7 +5089,7 @@ void Link_APress_LiftCarryThrow() {
         if (player_handler_timer == 6) {
           BYTE(dung_secrets_unk1) = 0;
           Point16U pt;
-          uint8 what = (player_is_indoors) ? Dungeon_LiftAndReplaceLiftable(&pt) : Overworld_LiftableTiles(&pt);
+          uint8 what = (player_is_indoors) ? Dungeon_LiftAndReplaceLiftable(&pt) : Overworld_HandleLiftableTiles(&pt);
           link_player_handler_state = 24;
           flag_is_sprite_to_pick_up = 1;
           Sprite_SpawnThrowableTerrain((what & 0xf) + 1, pt.x, pt.y);
@@ -5229,7 +5229,7 @@ void Link_ReceiveItem(uint8 item, int chest_position) {
   }
   link_receiveitem_index = item;
   if (item == 0x3e)
-    PlaySfx_Set3(0x2e);
+    Ancilla_Sfx3_Near(0x2e);
   link_receiveitem_var1 = 0x60;
   if (item_receipt_method == 0 || item_receipt_method == 3) {
     link_state_bits = 0;
@@ -5439,7 +5439,7 @@ bool LinkCheckMagicCost(uint8 x) {
     return true;
   }
   if (x != 3) {
-    PlaySfx_Set2(60);
+    Ancilla_Sfx2_Near(60);
     dialogue_message_index = 123;
     Main_ShowTextMessage();
   }
@@ -5540,7 +5540,7 @@ void LinkItem_Bow() {
         Hud_RefreshIcon();
     } else {
       ancilla_type[obj] = 0;
-      PlaySfx_Set2(60);
+      Ancilla_Sfx2_Near(60);
     }
   }
 
@@ -5608,7 +5608,7 @@ void LinkItem_Hammer() {
     TileDetect_MainHandler(3);
     Ancilla_AddHitStars(22, 0);
     if (sound_effect_1 == 0) {
-      PlaySfx_Set2(16);
+      Ancilla_Sfx2_Near(16);
       SpawnHammerWaterSplash();
     }
   } else if (player_handler_timer == 3) {
@@ -5631,7 +5631,7 @@ void LinkItem_Rod() {
     if (eq_selected_rod == 1)
       AncillaAdd_FireRodShot(2, 1);
     else
-      RodItem_CreateIceShot(11, 1);
+      AncillaAdd_IceRodShot(11, 1);
     link_delay_timer_spin_attack = kRodAnimDelays[0];
     link_animation_steps = 0;
     player_handler_timer = 0;
@@ -5666,7 +5666,7 @@ void LinkItem_Net() {
     link_position_mode = 16;
     link_cant_change_direction |= 1;
     link_animation_steps = 0;
-    PlaySfx_Set2(50);
+    Ancilla_Sfx2_Near(50);
   }
 
   HaltLinkWhenUsingItems();
@@ -5690,7 +5690,7 @@ void LinkItem_Net() {
 }
 
 void AncillaAdd_DugUpFlute(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k < 0)
     return;
   ancilla_step[k] = 0;
@@ -5702,7 +5702,7 @@ void AncillaAdd_DugUpFlute(uint8 a, uint8 y) {
 }
 
 void AncillaAdd_ShovelDirt(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_timer[k] = 20;
@@ -5773,18 +5773,18 @@ void LinkItem_Shovel() {
   if (player_handler_timer == 1) {
     TileDetect_MainHandler(2);
     if (BYTE(word_7E04B2)) {
-      PlaySfx_Set3(27);
+      Ancilla_Sfx3_Near(27);
       AncillaAdd_DugUpFlute(54, 0);
     }
 
     if (!((tiledetect_thick_grass | tiledetect_destruction_aftermath) & 1)) {
       Ancilla_AddHitStars(22, 0); // hit stars
-      PlaySfx_Set2(5);
+      Ancilla_Sfx2_Near(5);
     } else {
       AncillaAdd_ShovelDirt(23, 0); // shovel dirt
       if (byte_7E03FC)
         DiggingGameGuy_AttemptPrizeSpawn();
-      PlaySfx_Set2(18);
+      Ancilla_Sfx2_Near(18);
     }
   }
 
@@ -5806,7 +5806,7 @@ void LinkItem_Flute() {
   if (!CheckYButtonPress())
     return;
   flute_countdown = 128;
-  PlaySfx_Set2(19);
+  Ancilla_Sfx2_Near(19);
   if (player_is_indoors || overworld_screen_index & 0x40 || main_module_index == 11)
     return;
   int i = 4;
@@ -5844,7 +5844,7 @@ void LinkItem_Cape() {
       return;
     button_mask_b_y &= ~0x40;
     if (!link_magic_power) {
-      PlaySfx_Set2(60);
+      Ancilla_Sfx2_Near(60);
       dialogue_message_index = 123;
       Main_ShowTextMessage();
       return;
@@ -5854,7 +5854,7 @@ void LinkItem_Cape() {
     cape_decrement_counter = kCapeDepletionTimers[link_magic_consumption];
     link_bunny_transform_timer = 20;
     AncillaAdd_CapePoof(35, 4);
-    PlaySfx_Set2(20);
+    Ancilla_Sfx2_Near(20);
   } else {
     link_disable_sprite_damage = 1;
     HaltLinkWhenUsingItems();
@@ -5884,7 +5884,7 @@ void LinkItem_Bottle() {
     return;
   if (b < 3) {
 fail:
-    PlaySfx_Set2(60);
+    Ancilla_Sfx2_Near(60);
   } else if (b == 3) {  // red potion
     if (link_health_capacity == link_health_current)
       goto fail;
@@ -5935,7 +5935,7 @@ void LinkItem_Book() {
   if (byte_7E02ED) {
     Link_PerformDesertPrayer();
   } else {
-    PlaySfx_Set2(60);
+    Ancilla_Sfx2_Near(60);
   }
 }
 
@@ -5944,7 +5944,7 @@ void AncillaAdd_CaneOfByrnaInitSpark(uint8 a, uint8 y) {
     if (ancilla_type[k] == 0x31)
       ancilla_type[k] = 0;
   }
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_aux_timer[k] = 9;
@@ -5978,7 +5978,7 @@ void LinkItem_CaneOfByrna() {
   player_handler_timer++;
   link_delay_timer_spin_attack = kByrnaDelays[player_handler_timer];
   if (player_handler_timer == 1) {
-    PlaySfx_Set3(42);
+    Ancilla_Sfx3_Near(42);
   } else if (player_handler_timer == 3) {
 out:
     link_var30d = 0;
@@ -5995,7 +5995,7 @@ void AncillaAdd_Hookshot(uint8 a, uint8 y) {
   static const int8 kHookshot_Yd[4] = { 4, 20, 8, 8 };
   static const int8 kHookshot_Xd[4] = { 0, 0, -4, 11 };
 
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_aux_timer[k] = 3;
     ancilla_item_to_link[k] = 0;
@@ -6041,7 +6041,7 @@ void LinkItem_Bombos() {
 
   if (is_standing_in_doorway || flag_block_link_menu || dung_savegame_state_bits & 0x8000 || !((uint8)(link_sword_type + 1) & ~1) ||
       super_bomb_going_off && savegame_tagalong == 13) {
-    PlaySfx_Set2(60);
+    Ancilla_Sfx2_Near(60);
     return;
   }
 
@@ -6056,7 +6056,7 @@ void LinkItem_Bombos() {
   state_for_spin_attack = kBombosAnimStates[0];
   step_counter_for_spin_attack = 0;
   byte_7E0324 = 0;
-  PlaySfx_Set3(35);
+  Ancilla_Sfx3_Near(35);
 }
 
 void LinkState_UsingBombos() {
@@ -6066,9 +6066,9 @@ void LinkState_UsingBombos() {
 
   step_counter_for_spin_attack++;
   if (step_counter_for_spin_attack == 4) {
-    PlaySfx_Set3(35);
+    Ancilla_Sfx3_Near(35);
   } else if (step_counter_for_spin_attack == 10) {
-    PlaySfx_Set2(44);
+    Ancilla_Sfx2_Near(44);
   } else if (step_counter_for_spin_attack == 20) {
     step_counter_for_spin_attack = 19;
   }
@@ -6091,7 +6091,7 @@ void LinkItem_Ether() {
 
   if (is_standing_in_doorway || flag_block_link_menu || dung_savegame_state_bits & 0x8000 || !((uint8)(link_sword_type + 1) & ~1) ||
       super_bomb_going_off && savegame_tagalong == 13) {
-    PlaySfx_Set2(60);
+    Ancilla_Sfx2_Near(60);
     return;
   }
 
@@ -6106,7 +6106,7 @@ void LinkItem_Ether() {
   state_for_spin_attack = 0;
   step_counter_for_spin_attack = 0;
   byte_7E0324 = 0;
-  PlaySfx_Set3(35);
+  Ancilla_Sfx3_Near(35);
 }
 
 void LinkState_UsingEther() {
@@ -6116,9 +6116,9 @@ void LinkState_UsingEther() {
 
   step_counter_for_spin_attack++;
   if (step_counter_for_spin_attack == 4) {
-    PlaySfx_Set3(35);
+    Ancilla_Sfx3_Near(35);
   } else if (step_counter_for_spin_attack == 9) {
-    PlaySfx_Set2(44);
+    Ancilla_Sfx2_Near(44);
   } else if (step_counter_for_spin_attack == 12) {
     step_counter_for_spin_attack = 10;
   }
@@ -6142,7 +6142,7 @@ void LinkItem_Quake() {
 
   if (is_standing_in_doorway || flag_block_link_menu || dung_savegame_state_bits & 0x8000 || !((uint8)(link_sword_type + 1) & ~1) ||
       super_bomb_going_off && savegame_tagalong == 13) {
-    PlaySfx_Set2(60);
+    Ancilla_Sfx2_Near(60);
     return;
   }
 
@@ -6160,7 +6160,7 @@ void LinkItem_Quake() {
   link_actual_vel_z_mirror = 40;
   link_actual_vel_z_copy_mirror = 40;
   BYTE(link_z_coord_mirror) = 0;
-  PlaySfx_Set3(35);
+  Ancilla_Sfx3_Near(35);
 }
 
 void LinkState_UsingQuake() {
@@ -6188,11 +6188,11 @@ void LinkState_UsingQuake() {
 
   step_counter_for_spin_attack++;
   if (step_counter_for_spin_attack == 4) {
-    PlaySfx_Set3(35);
+    Ancilla_Sfx3_Near(35);
   } else if (step_counter_for_spin_attack == 10) {
-    PlaySfx_Set2(44);
+    Ancilla_Sfx2_Near(44);
   } else if (step_counter_for_spin_attack == 11) {
-    PlaySfx_Set2(12);
+    Ancilla_Sfx2_Near(12);
   } else if (step_counter_for_spin_attack == 12) {
     step_counter_for_spin_attack = 11;
   }
@@ -6249,7 +6249,7 @@ void LinkItem_CaneOfSomaria() {
 
 void Link_ForceUnequipCape() {
   AncillaAdd_CapePoof(35, 4);
-  PlaySfx_Set2(21);
+  Ancilla_Sfx2_Near(21);
   Link_ForceUnequipCape_quietly();
 }
 
@@ -6268,7 +6268,7 @@ void LinkItem_Mirror() {
   button_mask_b_y &= ~0x40;
 
   if (is_standing_in_doorway || !cheatWalkThroughWalls && !player_is_indoors && !(overworld_screen_index & 0x40)) {
-    PlaySfx_Set2(60);
+    Ancilla_Sfx2_Near(60);
     return;
   }
 
@@ -6389,7 +6389,7 @@ void LinkItem_Powder() {
     if (is_standing_in_doorway || !CheckYButtonPress())
       return;
     if (link_item_mushroom != 2) {
-      PlaySfx_Set2(60);
+      Ancilla_Sfx2_Near(60);
       goto out;
     }
     if (!LinkCheckMagicCost(2))
@@ -6517,10 +6517,10 @@ void HandleDungeonLandingFromPit() {
   }
   TileDetect_MainHandler(0);
   if (tiledetect_shallow_water & 1)
-    PlaySfx_Set2(0x24);
+    Ancilla_Sfx2_Near(0x24);
   Player_TileDetectNearby();
   if ((sound_effect_1 & 0x3f) != 0x24)
-    PlaySfx_Set2(0x21);
+    Ancilla_Sfx2_Near(0x21);
 
   if (dung_hdr_collision_2 == 2 && (tiledetect_water_staircase & 0xf))
     byte_7E0322 = 3;

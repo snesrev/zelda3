@@ -38,14 +38,14 @@ void CrystalCutscene_InitializePolyhedral() {
   TM_copy = 0x16;
 }
 
-void Polyhedral_SetPalette() {
+void LoadTriforceSpritePalette() {
   memcpy(main_palette_buffer + 0xd0, kPolyhedralPalette, 16);
   flag_update_cgram_in_nmi++;
 }
 
 void Intro_InitGfx_Helper() {
   Polyhedral_InitializeThread();
-  Polyhedral_SetPalette();
+  LoadTriforceSpritePalette();
   virq_trigger = 0x90;
   poly_config1 = 255;
   poly_base_x = 32;
@@ -164,7 +164,7 @@ void Module19_TriforceRoom() {
     break;
   case 1:  //
     ConditionalMosaicControl();
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     break;
   case 2:  //
     EnableForceBlank();
@@ -225,13 +225,13 @@ void Module19_TriforceRoom() {
       mosaic_level -= 0x10;
     BGMODE_copy = 9;
     MOSAIC_copy = mosaic_level | 7;
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     break;
   case 7:  //
     TriforceRoom_PrepGFXSlotForPoly();
     dialogue_message_index = 0x173;
     Main_ShowTextMessage();
-    Messaging_Text();
+    RenderText();
     BYTE(R16) = 0x80;
     main_module_index = 25;
     subsubmodule_index++;
@@ -249,7 +249,7 @@ void Module19_TriforceRoom() {
     break;
   case 9:  //
     AdvancePolyhedral();
-    Messaging_Text();
+    RenderText();
     if (!submodule_index) {
       overworld_map_state = 0;
       main_module_index = 25;
@@ -389,7 +389,7 @@ void Intro_SpriteType_A_0(int k) {
   intro_sprite_isinited[k]++;
 }
 
-void CopyIntroSprite0ToOam(int k) {
+void AnimateSceneSprite_DrawTriangle(int k) {
   static const IntroSpriteEnt kIntroSprite0_Left_Ents[16] = {
     { 0,  0, 0x80, 0x1b, 2},
     {16,  0, 0x82, 0x1b, 2},
@@ -433,7 +433,7 @@ void Intro_SpriteType_B_0(int k) {
   static const uint8 kIntroSprite0_XLimit[3] = { 75, 95, 117 };
   static const uint8 kIntroSprite0_YLimit[3] = { 88, 48, 88 };
 
-  CopyIntroSprite0ToOam(k);
+  AnimateSceneSprite_DrawTriangle(k);
   AnimateSceneSprite_MoveTriangle(k);
   if (intro_step_index != 5) {
     if (!(intro_frame_ctr & 31)) {
@@ -451,7 +451,7 @@ void Intro_SpriteType_B_0(int k) {
 }
 
 
-void Intro_SpriteType_A_1(int k) {
+void EXIT_0CCA90(int k) {
   // empty
 }
 
@@ -514,7 +514,7 @@ void AnimateSceneSprite_CreditsTriangle(int k) {
   static const int8 kIntroSprite7_XAcc[3] = { -1, 0, 1 };
   static const int8 kIntroSprite7_YAcc[3] = { 1, -1, 1 };
 
-  Polyhedral_SetPalette();
+  LoadTriforceSpritePalette();
   Intro_CopySpriteType4ToOam(k);
   AnimateSceneSprite_MoveTriangle(k);
   if (submodule_index != 36) {
@@ -530,7 +530,7 @@ void AnimateSceneSprite_CreditsTriangle(int k) {
 
 
 
-void Intro_SpriteType_A_2(int k) {
+void InitializeSceneSprite_Copyright(int k) {
   intro_x_lo[k] = 76;
   intro_x_hi[k] = 0;
   intro_y_lo[k] = 184;
@@ -538,7 +538,7 @@ void Intro_SpriteType_A_2(int k) {
   intro_sprite_isinited[k]++;
 }
 
-void Intro_SpriteType_B_2_NintendoCopy(int k) {
+void AnimateSceneSprite_Copyright(int k) {
   static const IntroSpriteEnt kIntroSprite2_Ents[13] = {
     { 0, 0, 0x40, 0x0a, 0},
     { 8, 0, 0x41, 0x0a, 0},
@@ -614,8 +614,8 @@ void Intro_AnimOneObj(int k) {
   case 1:
     switch (intro_sprite_subtype[k]) {
     case 0: Intro_SpriteType_A_0(k); break;
-    case 1: Intro_SpriteType_A_1(k); break;
-    case 2: Intro_SpriteType_A_2(k); break;
+    case 1: EXIT_0CCA90(k); break;
+    case 2: InitializeSceneSprite_Copyright(k); break;
     case 3: InitializeSceneSprite_Sparkle(k); break;
     case 4:
     case 5:
@@ -626,8 +626,8 @@ void Intro_AnimOneObj(int k) {
   case 2:
     switch (intro_sprite_subtype[k]) {
     case 0: Intro_SpriteType_B_0(k); break;
-    case 1: Intro_SpriteType_A_1(k); break;
-    case 2: Intro_SpriteType_B_2_NintendoCopy(k); break;
+    case 1: EXIT_0CCA90(k); break;
+    case 2: AnimateSceneSprite_Copyright(k); break;
     case 3: AnimateSceneSprite_Sparkle(k); break;
     case 4:
     case 5:
@@ -814,7 +814,7 @@ void Credits_LoadScene_Overworld_Overlay() {
   subsubmodule_index++;
 }
 void Credits_LoadScene_Overworld_LoadMap() {
-  Overworld_LoadAmbientOverlayAndMapData();
+  Overworld_LoadAndBuildScreen();
   Credits_PrepAndLoadSprites();
   R16 = 0;
   subsubmodule_index = 0;
@@ -1299,7 +1299,7 @@ void Credits_SpriteDraw_Single(int k, uint8 a, uint8 j) {
   };
 
   Oam_AllocateFromRegionA(a * 4);
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
   Sprite_DrawMultiple(k, kEndSequence_Dmds[j >> 1] + a * sprite_graphics[k], a, &g_ending_coords);
 }
 
@@ -1312,20 +1312,20 @@ void Credits_SpriteDraw_DrawShadow(int k) {
   sprite_oam_flags[k] = 0x30;
   Credits_SpriteDraw_SetShadowProp(k, 0);
   Oam_AllocateFromRegionA(4);
-  Sprite_DrawShadow(k, &g_ending_coords);
+  SpriteDraw_Shadow(k, &g_ending_coords);
 }
 
 void EndSequence_DrawShadow2(int k) {
   Credits_SpriteDraw_SetShadowProp(k, 0);
   Oam_AllocateFromRegionA(4);
-  Sprite_DrawShadow(k, &g_ending_coords);
+  SpriteDraw_Shadow(k, &g_ending_coords);
 }
 
 
 void Credits_SpriteDraw_PreexistingSpriteDraw(int k, uint8 a) {
   Oam_AllocateFromRegionA(a);
   cur_object_index = k;
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
   SpriteActive_Main(k);
 }
 
@@ -1343,7 +1343,7 @@ void Credits_SpriteDraw_CirclingBirds(int k) {
     if (sprite_y_vel[k] == (uint8)kEnding_MoveSprite_Func1_TargetY[j])
       sprite_head_dir[k]++;
   }
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
 }
 
 void Ending_Func2(int k, uint8 ain) {
@@ -1397,7 +1397,7 @@ void Credits_SpriteDraw_AddSparkle(int j_count, uint8 xb, uint8 yb) {
 void Credits_SpriteDraw_ActivateAndRunSprite(int k, uint8 a) {
   cur_object_index = k;
   Oam_AllocateFromRegionA(a);
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
   uint8 bak0 = submodule_index;
   submodule_index = 0;
   sprite_state[k] = 9;
@@ -1415,7 +1415,7 @@ void Credits_SpriteDraw_MoveSquirrel(int k) {
     int j = sprite_C[k];
     sprite_x_vel[k] = kEnding_Func5_Xvel[j];
     sprite_y_vel[k] = kEnding_Func5_Yvel[j];
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   }
 }
 
@@ -1429,7 +1429,7 @@ void Credits_SpriteDraw_WalkLinkAwayFromPedestal(int k) {
   sprite_oam_flags[k] = 32;
   Credits_SpriteDraw_Single(k, 2, 26);
   EndSequence_DrawShadow2(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
 }
 
 void Credits_HandleSceneFade() {
@@ -1542,7 +1542,7 @@ void Credits_HandleSceneFade() {
       }
       Credits_SpriteDraw_Single(k, kEnding_Case4_Tab0[k], kEnding_Case4_Tab1[k]);
       EndSequence_DrawShadow2(k);
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     } while (--k >= 0);
     break;
   }
@@ -1592,7 +1592,7 @@ void Credits_HandleSceneFade() {
         sound_effect_2 = 0x21;
       sprite_graphics[k] = kEnding_Case6_Gfx[j];
       sprite_oam_flags[k] = 0x33;
-      Sprite_Get_16_bit_Coords(k);
+      Sprite_Get16BitCoords(k);
       SpriteActive_Main(k);
     }
     break;
@@ -1603,20 +1603,20 @@ void Credits_HandleSceneFade() {
     sprite_type[k] = 0xe9;
     Oam_AllocateFromRegionA(0xc);
     sprite_oam_flags[k] = 0x37;
-    Sprite_Get_16_bit_Coords(k);
+    Sprite_Get16BitCoords(k);
     if (!(frame_counter & 15))
       sprite_graphics[k] ^= 1;
     SpriteActive_Main(k);
     if (R16 >= 0x180) {
       sprite_y_vel[k] = 4;
       if (sprite_y_lo[k] != 0x7c)
-        Sprite_Move(k);
+        Sprite_MoveXY(k);
     }
     k--;
     sprite_type[k] = 0x36;
     Oam_AllocateFromRegionA(0x18);
     sprite_oam_flags[k] = 0x39;
-    Sprite_Get_16_bit_Coords(k);
+    Sprite_Get16BitCoords(k);
     if (!sprite_delay_main[k]) {
       static const int8 kEnding_Case7_Gfx[2] = { 1, -1 };
       sprite_delay_main[k] = 4;
@@ -1629,7 +1629,7 @@ void Credits_HandleSceneFade() {
     sprite_type[k] = 0x2c;
     Oam_AllocateFromRegionA(0x2c);
     sprite_oam_flags[k] = 0x3b;
-    Sprite_Get_16_bit_Coords(k);
+    Sprite_Get16BitCoords(k);
     sprite_graphics[k] = R16 < 0x1c0 ? R16 >> 5 & 1 : 2;
     SpriteActive_Main(k);
     break;
@@ -1646,7 +1646,7 @@ void Credits_HandleSceneFade() {
       }
       if (sprite_state[k]) {
         sprite_y_vel[k] = -8;
-        Sprite_Move(k);
+        Sprite_MoveXY(k);
         if (!(frame_counter & 1))
           sprite_x_vel[k] += ((frame_counter >> 5) ^ k) & 1 ? -1 : 1;
         Credits_SpriteDraw_Single(k, 1, 0x10);
@@ -1683,7 +1683,7 @@ void Credits_HandleSceneFade() {
     static const uint8 kWishPond_X[8] = { 0, 4, 8, 12, 16, 20, 24, 0 };
     static const uint8 kWishPond_Y[8] = { 0, 8, 16, 24, 32, 40, 4, 36 };
     k = 5;
-    Sprite_Get_16_bit_Coords(k);
+    Sprite_Get16BitCoords(k);
     if (!sprite_pause[k]) {
       uint8 xb = kWishPond_X[GetRandomNumber() & 7] + cur_sprite_x;
       uint8 yb = kWishPond_Y[GetRandomNumber() & 7] + cur_sprite_y;
@@ -1743,7 +1743,7 @@ void Credits_HandleSceneFade() {
     if (!sprite_graphics[k]) {
       sprite_x_vel[k] += sign8(sprite_x_lo[k] - 0x80) ? 1 : -1;
       sprite_y_vel[k] += sign8(sprite_y_lo[k] - 0xb0) ? 1 : -1;
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     }
 
     sprite_oam_flags[k] = sprite_x_vel[k] >> 1 & 0x40 ^ 0x7e;
@@ -1789,7 +1789,7 @@ void Credits_HandleSceneFade() {
       sprite_graphics[k] += 2;
     }
     Credits_SpriteDraw_Single(k, 3, 0x34);
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     break;
   case 14: {
     static const int8 kEnding_Case14_Tab1[4] = { 0, 1, 0, 2 };
@@ -1824,7 +1824,7 @@ void Credits_HandleSceneFade() {
             sprite_x_vel[k] = a;
           }
         }
-        Sprite_Move(k);
+        Sprite_MoveXY(k);
         sprite_graphics[k] = kEnding_Case14_Tab1[frame_counter >> 3 & 3];
         Credits_SpriteDraw_PreexistingSpriteDraw(k, 16);
       }
@@ -2088,7 +2088,7 @@ void Credits_StopCreditsScroll() {
 void Credits_FadeAndDisperseTriangles() {
   BYTE(R16)--;
   if (!BYTE(R18)) {
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     if (BYTE(palette_filter_countdown)) {
       Credits_AnimateTheTriangles();
       return;
@@ -2175,7 +2175,7 @@ void Module1A_Credits() {
   kEndSequence_Funcs[submodule_index]();
 }
 
-void Intro_InitializeMemory();
+void Intro_Init_Continue();
 
 void Intro_InitializeBackgroundSettings() {
   zelda_ppu_write(SETINI, 0);
@@ -2223,7 +2223,7 @@ void Intro_Init() {
   flag_update_cgram_in_nmi++;
   submodule_index++;
   sound_effect_2 = 10;
-  Intro_InitializeMemory();
+  Intro_Init_Continue();
 }
 
 void Intro_Clear1kbBlocksOfWRAM() {
@@ -2342,7 +2342,7 @@ void Intro_AnimateTriforce() {
   }
 }
 
-void Intro_TopAnimateObjs() {
+void Intro_HandleAllTriforceAnimations() {
   intro_frame_ctr++;
   Intro_AnimateTriforce();
   Scene_AnimateEverySprite();
@@ -2452,7 +2452,7 @@ void Intro_PeriodicSwordAndIntroFlash() {
 
 
 void IntroZeldaFadein() {
-  Intro_TopAnimateObjs();
+  Intro_HandleAllTriforceAnimations();
   if (!(frame_counter & 1))
     return;
   Palette_FadeIntroOneStep();
@@ -2467,7 +2467,7 @@ void IntroZeldaFadein() {
 }
 
 void Intro_SwordComingDown() {
-  Intro_TopAnimateObjs();
+  Intro_HandleAllTriforceAnimations();
   intro_did_run_step = 0;
   is_nmi_thread_active = 0;
   Intro_PeriodicSwordAndIntroFlash();
@@ -2482,7 +2482,7 @@ void Intro_SwordComingDown() {
 
 void Intro_FadeInBg() {
   Intro_PeriodicSwordAndIntroFlash();
-  Intro_TopAnimateObjs();
+  Intro_HandleAllTriforceAnimations();
   if (BYTE(palette_filter_countdown)) {
     if (frame_counter & 1)
       Palette_FadeIntro2();
@@ -2497,7 +2497,7 @@ void Intro_FadeInBg() {
 }
 
 void Intro_WaitPlayer() {
-  Intro_TopAnimateObjs();
+  Intro_HandleAllTriforceAnimations();
   intro_did_run_step = 0;
   is_nmi_thread_active = 0;
   Intro_PeriodicSwordAndIntroFlash();
@@ -2529,7 +2529,7 @@ void Intro_DisplayLogo() {
 }
 
 
-void Intro_InitializeMemory() {
+void Intro_Init_Continue() {
   Intro_DisplayLogo();
   int t = subsubmodule_index++;
   if (t >= 11) {
@@ -2549,20 +2549,20 @@ void Intro_InitializeMemory() {
 }
 
 
-void Module_Intro() {
+void Module00_Intro() {
   if (submodule_index >= 8 && ((filtered_joypad_L & 0xc0 | filtered_joypad_H) & 0xd0)) {
     FadeMusicAndResetSRAMMirror();
     return;
   }
   switch (submodule_index) {
   case 0: Intro_Init(); break;
-  case 1: Intro_InitializeMemory(); break;
+  case 1: Intro_Init_Continue(); break;
   case 10:
   case 2: Intro_InitializeTriforcePolyThread(); break;
   case 3:
   case 4:
   case 9:
-  case 11: Intro_TopAnimateObjs(); break;
+  case 11: Intro_HandleAllTriforceAnimations(); break;
   case 5: IntroZeldaFadein(); break;
   case 6: Intro_SwordComingDown(); break;
   case 7: Intro_FadeInBg(); break;
@@ -2630,7 +2630,7 @@ void Credits_LoadScene_Overworld_PrepGFX() {
   sprite_graphics_index = kEnding_SpritePack[k];
   uint8 sprpal = kEnding_SpritePal[k];
   InitializeTilesets();
-  Overworld_LoadAreaPalettes();
+  OverworldLoadScreensPaletteSet();
   Overworld_LoadPalettes(GetOverworldBgPalette(BYTE(overworld_screen_index)), sprpal);
 
   hud_palette = 1;

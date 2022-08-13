@@ -26,14 +26,14 @@ void Module18_GanonEmerges() {
 
   switch (overworld_map_state) {
   case 0:  // GetBirdForPursuit
-    Dungeon_Effect_Handler();
+    Dungeon_HandleLayerEffect();
     CallForDuckIndoors();
     SaveDungeonKeys();
     overworld_map_state++;
     flag_is_link_immobilized++;
     break;
   case 1:  // PrepForPyramidLocation
-    Dungeon_Effect_Handler();
+    Dungeon_HandleLayerEffect();
     if (submodule_index == 10) {
       overworld_screen_index = 91;
       player_is_indoors = 0;
@@ -43,7 +43,7 @@ void Module18_GanonEmerges() {
     }
     break;
   case 2:  // FadeOutDungeonScreen
-    Dungeon_Effect_Handler();
+    Dungeon_HandleLayerEffect();
     if (--INIDISP_copy)
       break;
     EnableForceBlank();

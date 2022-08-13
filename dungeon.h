@@ -50,7 +50,7 @@ void Dungeon_LoadAttributeTable();
 void Dungeon_LoadAttribute_Selectable();
 void Dungeon_ProcessTorchesAndDoors();
 void Dungeon_InterRoomTrans_notDarkRoom();
-void ApplyPaletteFilter();
+void ApplyPaletteFilter_bounce();
 void ResetTransitionPropsAndAdvanceSubmodule();
 void SubtileTransitionCalculateLanding();
 void ResetThenCacheRoomEntryProperties();
@@ -94,7 +94,7 @@ void Dungeon_UpdateTileMapWithCommonTile(int x, int y, uint8 v);
 void SavePalaceDeaths();
 
 void Door_LoadBlastWallAttr(int k);
-void Dungeon_Effect_Handler();
+void Dungeon_HandleLayerEffect();
 
 void Ganon_ExtinguishTorch_adjust_translucency();
 void Ganon_ExtinguishTorch();

@@ -768,7 +768,7 @@ void PatchRom(uint8_t *rom) {
   rom[0xdf109] = 0x6b;  // Palette_AgahnimClone destoys X
 
 
-  rom[0x4a966] = 0;  // Tagalong_DrawInner
+  rom[0x4a966] = 0;  // Follower_AnimateMovement_preserved
 
   PatchRomBP(rom, 0x1de0e5);
   PatchRomBP(rom, 0x6d0b6);
@@ -803,7 +803,7 @@ void PatchRom(uint8_t *rom) {
   rom[0x443fe] = 0x48; rom[0x443ff] = 0x6;
   rom[0x44607] = 0x48; rom[0x44608] = 0x6;
 
-  // Ancilla_AddAncilla destroys R14
+  // AncillaAdd_AddAncilla_Bank09 destroys R14
   rom[0x49d0c] = 0xda; rom[0x49d0d] = 0xfa; 
   rom[0x49d0f] = 0xda; rom[0x49d10] = 0xfa; 
 

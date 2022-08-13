@@ -38,7 +38,7 @@ void Dungeon_SaveAndLoadLoadAllPalettes(uint8 a, uint8 k) {
 }
 
 void Attract_Fade() {
-  Intro_TopAnimateObjs();
+  Intro_HandleAllTriforceAnimations();
   intro_did_run_step = 0;
   is_nmi_thread_active = 0;
   Intro_PeriodicSwordAndIntroFlash();
@@ -343,7 +343,7 @@ void Death_Func31() {
   subsubmodule_index = 10;
 }
 
-void Attract_PrepLast() {
+void AttractScene_EndOfStory() {
   Attract_SetUpConclusionHDMA();
   Death_Func31();
 }
@@ -355,7 +355,7 @@ void Attract_LoadNewScene() {
   case 2: AttractScene_ThroneRoom(); break;
   case 3: Attract_PrepZeldaPrison(); break;
   case 4: Attract_PrepMaidenWarp(); break;
-  case 5: Attract_PrepLast(); break;
+  case 5: AttractScene_EndOfStory(); break;
   }
 }
 
@@ -453,7 +453,7 @@ void AttractDramatize_PolkaDots() {
   joypad1L_last = 0;
   filtered_joypad_L = 0;
   filtered_joypad_H = 0;
-  Messaging_Text();
+  RenderText();
   if (!--attract_legend_ctr) {
     attract_sequence++;
     attract_state -= 3;
@@ -497,7 +497,7 @@ void Attract_ShowTimedTextMessage() {
   BYTE(joypad1L_last) = 0;
   BYTE(filtered_joypad_L) = 0;
   BYTE(filtered_joypad_H) = 0;
-  Messaging_Text();
+  RenderText();
   if (oam_priority_value)
     oam_priority_value--;
 }
@@ -560,7 +560,7 @@ void Sprite_SimulateSoldier(int k, uint16 x, uint16 y, uint8 dir, uint8 flags, u
   Sprite_SetX(k, x);
   Sprite_SetY(k, y);
   sprite_z[k] = 0;
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
   sprite_D[k] = sprite_head_dir[k] = dir;
   sprite_graphics[k] = kSimulateSoldier_Gfx[dir] + gfx;
   sprite_flags3[k] = 16;
@@ -571,7 +571,7 @@ void Sprite_SimulateSoldier(int k, uint16 x, uint16 y, uint8 dir, uint8 flags, u
   int oam_idx = k * 8;
   oam_cur_ptr = 0x800 + oam_idx * 4;
   oam_ext_cur_ptr = 0xa20 + oam_idx;
-  Soldier_Draw(k);
+  Guard_HandleAllAnimation(k);
 }
 
 void Attract_ZeldaPrison_Case0() {
@@ -1011,7 +1011,7 @@ void AttractDramatize_AgahnimAltar() {
 
 }
 
-void Attract_RunSequence() {
+void Attract_EnactStory() {
   switch (attract_sequence) {
   case 0: AttractDramatize_PolkaDots(); break;
   case 1: AttractDramatize_WorldMap(); break;
@@ -1046,10 +1046,10 @@ void Module14_Attract() {
   case 2: Attract_FadeOutSequence(); break;
   case 3: Attract_LoadNewScene(); break;
   case 4: Attract_FadeInSequence(); break;
-  case 5: Attract_RunSequence(); break;
+  case 5: Attract_EnactStory(); break;
   case 6: Attract_FadeOutSequence(); break;
   case 7: Attract_LoadNewScene(); break;
-  case 8: Attract_RunSequence(); break;
+  case 8: Attract_EnactStory(); break;
   case 9: Attract_SkipToFileSelect(); break;
   }
 }

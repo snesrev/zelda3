@@ -4872,7 +4872,7 @@ handle_f0:
 
 }
 
-void Effect_DoNothing() {
+void LayerEffect_Nothing() {
 }
 void LayerEffect_Scroll() {
   if (dung_savegame_state_bits & 0x8000) {
@@ -4960,8 +4960,8 @@ void LayerEffect_Ganon() {
 }
 
 static PlayerHandlerFunc *const kDungeon_Effect_Handler[28] = {
-  &Effect_DoNothing,
-  &Effect_DoNothing,
+  &LayerEffect_Nothing,
+  &LayerEffect_Nothing,
   &LayerEffect_Scroll,
   &LayerEffect_WaterRapids,
   &LayerEffect_Trinexx,
@@ -4971,7 +4971,7 @@ static PlayerHandlerFunc *const kDungeon_Effect_Handler[28] = {
 };
 
 
-void Dungeon_Effect_Handler() {
+void Dungeon_HandleLayerEffect() {
   kDungeon_Effect_Handler[dung_hdr_collision_2]();
 }
 
@@ -5219,7 +5219,7 @@ void UsedForStraightInterRoomStaircase() {
   link_timer_push_get_tired = 28;
   countdown_timer_for_staircases = 32;
   link_disable_sprite_damage = 1;
-  PlaySfx_Set2(which_staircase_index & 4 ? 0x18 : 0x16);
+  Ancilla_Sfx2_Near(which_staircase_index & 4 ? 0x18 : 0x16);
 
   tiledetect_which_y_pos[1] = link_x_coord + (which_staircase_index & 4 ? -15 : 16);
   tiledetect_which_y_pos[0] = link_y_coord;
@@ -6542,9 +6542,9 @@ void DungeonTransition_Subtile_ApplyFilter() {
     subsubmodule_index++;
     return;
   }
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
   if (BYTE(palette_filter_countdown))
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
 }
 void DungeonTransition_Subtile_ResetShutters() {
   BYTE(dung_flag_trapdoors_down) = 0;
@@ -6677,9 +6677,9 @@ void Module07_02_01_LoadNextRoom() {
 }
 void Module07_02_FadedFilter() {
   if (dung_want_lights_out | dung_want_lights_out_copy) {
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     if (BYTE(palette_filter_countdown))
-      ApplyPaletteFilter();
+      ApplyPaletteFilter_bounce();
   } else {
     subsubmodule_index++;
   }
@@ -6710,12 +6710,12 @@ void Dungeon_InterRoomTrans_State7() {
 }
 void Dungeon_InterRoomTrans_State10() {
   if (dung_want_lights_out | dung_want_lights_out_copy)
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
   Dungeon_InterRoomTrans_notDarkRoom();
 }
 void Dungeon_InterRoomTrans_State9() {
   if (dung_want_lights_out | dung_want_lights_out_copy)
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
   Dungeon_InterRoomTrans_State4();
 }
 void Dungeon_InterRoomTrans_State12() {
@@ -6724,14 +6724,14 @@ void Dungeon_InterRoomTrans_State12() {
       return;
     SubtileTransitionCalculateLanding();
     if (dung_want_lights_out | dung_want_lights_out_copy)
-      ApplyPaletteFilter();
+      ApplyPaletteFilter_bounce();
   }
   subsubmodule_index++;
   Dungeon_ResetTorchBackgroundAndPlayer();
 }
 void Dungeon_InterRoomTrans_State13() {
   if (dung_want_lights_out | dung_want_lights_out_copy)
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
   Dungeon_IntraRoomTrans_State5();
 }
 void Dungeon_InterRoomTrans_State15() {
@@ -6948,7 +6948,7 @@ void Dungeon_Staircase14() {
   Dungeon_ResetTorchBackgroundAndPlayer();
 }
 void Module07_07_0F_FallingFadeIn() {
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
   if (BYTE(darkening_or_lightening_screen))
     return;
   HIBYTE(tiledetect_which_y_pos[0]) = HIBYTE(link_y_coord) + (BYTE(link_y_coord) >= BYTE(tiledetect_which_y_pos[0]));
@@ -7033,9 +7033,9 @@ table:
   switch (subsubmodule_index) {
   case 0: ResetTransitionPropsAndAdvance_ResetInterface(); break;
   case 1:
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     if (BYTE(palette_filter_countdown))
-      ApplyPaletteFilter();
+      ApplyPaletteFilter_bounce();
     break;
   case 2: Dungeon_InitializeRoomFromSpecial(); break;
   case 3: DungeonTransition_TriggerBGC34UpdateAndAdvance(); break;
@@ -7061,7 +7061,7 @@ table:
 
 static PlayerHandlerFunc *const kDungeon_Submodule_7_DownFloorTrans[18] = {
   &Module07_07_00_HandleMusicAndResetRoom,
-  &ApplyPaletteFilter,
+  &ApplyPaletteFilter_bounce,
   &Dungeon_InitializeRoomFromSpecial,
   &DungeonTransition_TriggerBGC34UpdateAndAdvance,
   &DungeonTransition_TriggerBGC56UpdateAndAdvance,
@@ -7411,7 +7411,7 @@ void DungeonTransition_RunFiltering() {
     Dungeon_ApproachFixedColor_variable(overworld_fixed_color_plusminus);
     mosaic_target_level = 0;
   }
-  Dungeon_HandleTranslucencyAndPalettes();
+  Dungeon_HandleTranslucencyAndPalette();
 }
 
 void Module07_0E_00_InitPriorityAndScreens() {
@@ -7448,9 +7448,9 @@ void Module07_0E_01_HandleMusicAndResetProps() {
 }
 void Module07_0E_02_ApplyFilterIf() {
   if (staircase_var1 < 9) {
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     if (palette_filter_countdown)
-      ApplyPaletteFilter();
+      ApplyPaletteFilter_bounce();
   }
   if (staircase_var1 != 0) {
     staircase_var1--;
@@ -7560,7 +7560,7 @@ void Dungeon_InterRoomTrans_notDarkRoom() {
   subsubmodule_index++;
 }
 void Dungeon_SpiralStaircase11() {
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
   WaterFlood_BuildOneQuadrantForVRAM();
   subsubmodule_index++;
 }
@@ -7638,14 +7638,14 @@ void ResetThenCacheRoomEntryProperties() {
 }
 
 void Dungeon_SpiralStaircase12() {
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
   Dungeon_PrepareNextRoomQuadrantUpload();
   subsubmodule_index++;
 }
 
 void Dungeon_DoubleApplyAndIncrementGrayscale() {
-  ApplyPaletteFilter();
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
+  ApplyPaletteFilter_bounce();
   ApplyGrayscaleFixed_Incremental();
 }
 void Dungeon_AdvanceThenSetBossMusicUnorthodox() {
@@ -7779,7 +7779,7 @@ void HandleLinkOnSpiralStairs() {
   tiledetect_which_y_pos[1] = link_x_coord + ((which_staircase_index & 4) ? -8 : 12);
   some_animation_timer_steps = 1;
   countdown_timer_for_staircases = 6;
-  PlaySfx_Set2(which_staircase_index & 4 ? 25 : 23);
+  Ancilla_Sfx2_Near(which_staircase_index & 4 ? 25 : 23);
 }
 
 static PlayerHandlerFunc *const kDungeon_SpiralStaircase[20] = {
@@ -7962,13 +7962,13 @@ void Module07_11_00_PrepAndReset() {
 }
 void Module07_11_01_FadeOut() {
   if (staircase_var1 < 9) {
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     if (BYTE(palette_filter_countdown) == 23)
       subsubmodule_index++;
   }
 }
 void Module07_11_02_LoadAndPrepRoom() {
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
   Dungeon_LoadRoom();
   Dungeon_RestoreStarTileChr();
   LoadTransAuxGFX();
@@ -7978,20 +7978,20 @@ void Module07_11_02_LoadAndPrepRoom() {
   subsubmodule_index++;
 }
 void Module07_11_03_FilterAndLoadBGChars() {
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
   DungeonTransition_TriggerBGC34UpdateAndAdvance();
 }
 void Module07_11_04_FilterDoBGAndResetSprites() {
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
   DungeonTransition_TriggerBGC56UpdateAndAdvance();
   BYTE(dungeon_room_index2) = BYTE(dungeon_room_index);
   Dungeon_ResetSprites();
 }
 void Module07_11_09_LoadSpriteGraphics() {
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
   subsubmodule_index--;
   LoadNewSpriteGFXSet();
-  Dungeon_HandleTranslucencyAndPalettes();
+  Dungeon_HandleTranslucencyAndPalette();
 }
 void Module07_11_0A_ScrollCamera() {
   link_visibility_status = tagalong_var5 = 12;
@@ -8127,7 +8127,7 @@ void Module07_14_00_ScrollCamera() {
 void Module07_15_01_ApplyMosaicAndFilter() {
   ConditionalMosaicControl();
   MOSAIC_copy = mosaic_level | 3;
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
 }
 void Module07_15_04_SyncRoomPropsAndBuildOverlay() {
   ApplyGrayscaleFixed_Incremental();
@@ -8148,7 +8148,7 @@ void Module07_15_0E_FadeInFromWarp() {
     mosaic_level -= 0x10;
   BGMODE_copy = 9;
   MOSAIC_copy = mosaic_level | 3;
-  ApplyPaletteFilter();
+  ApplyPaletteFilter_bounce();
 }
 void Module07_15_0F_FinalizeAndCacheEntry() {
   if (overworld_map_state == 5) {
@@ -8189,7 +8189,7 @@ void Module07_16_UpdatePegs() {
   case 0:
   case 1: Module07_16_UpdatePegs_Step1(); break;
   case 2: Module07_16_UpdatePegs_Step2(); break;
-  case 3: Module07_16_UpdatePegs_Step3(); break;
+  case 3: RecoverPegGFXFromMapping(); break;
   case 4:
     Dungeon_FlipCrystalPegAttribute();
     subsubmodule_index = 0;
@@ -8380,7 +8380,7 @@ static PlayerHandlerFunc *const kDungeonSubmodules[31] = {
 };
 
 void Module07_Dungeon() {
-  Dungeon_Effect_Handler();
+  Dungeon_HandleLayerEffect();
   kDungeonSubmodules[submodule_index]();
   dung_misc_objs_index = 0;
   Dungeon_PushBlock_Handler();
@@ -8755,7 +8755,7 @@ void Module11_DungeonFallingEntrance() {
     break;
   case 1:
     if (!(frame_counter & 1))
-      ApplyPaletteFilter();
+      ApplyPaletteFilter_bounce();
     break;
   case 2:
     Module11_02_LoadEntrance();

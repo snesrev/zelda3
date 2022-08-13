@@ -85,13 +85,13 @@ uint8 Oam_AllocateFromRegionF(uint8 num) {
   return Oam_GetBufferPosition(num, 10);
 }
 
-void OAM_AllocateDeferToPlayer(int k) {
+void Oam_AllocateDeferToPlayer(int k) {
   if (sprite_floor[k] != link_is_on_lower_level)
     return;
-  PairU8 right = Sprite_IsToRightOfPlayer(k);
+  PairU8 right = Sprite_IsRightOfLink(k);
   if ((uint8)(right.b + 0x10) >= 0x20)
     return;
-  PairU8 below = Sprite_IsBelowPlayer(k);
+  PairU8 below = Sprite_IsBelowLink(k);
   if ((uint8)(below.b + 0x20) >= 0x48)
     return;
   uint8 nslots = ((sprite_flags2[k] & 0x1f) + 1) << 2;
@@ -108,7 +108,7 @@ void SpriteAddXY(int k, int xv, int yv) {
 }
 
 void Sprite_DrawMultiplePlayerDeferred(int k, const DrawMultipleData *src, int n, PrepOamCoordsRet *info) {
-  OAM_AllocateDeferToPlayer(k);
+  Oam_AllocateDeferToPlayer(k);
   Sprite_DrawMultiple(k, src, n, info);
 }
 
@@ -172,7 +172,7 @@ void Sprite_MoveY(int k) {
   }
 }
 
-void Sprite_Move(int k) {
+void Sprite_MoveXY(int k) {
   Sprite_MoveX(k);
   Sprite_MoveY(k);
 }
@@ -183,7 +183,7 @@ void Sprite_MoveZ(int k) {
   sprite_z[k] = z >> 8;
 }
 
-void Sprite_MoveXyz(int k) {
+void Sprite_MoveXYZ(int k) {
   Sprite_MoveZ(k);
   Sprite_MoveX(k);
   Sprite_MoveY(k);
@@ -219,7 +219,7 @@ bool Sprite_ReturnIfRecoiling(int k) {
       else
         sprite_y_recoil[k] = sprite_y_vel[k] = 0;
     } else {
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     }
   }
   sprite_y_vel[k] = yvbak;
@@ -277,7 +277,7 @@ void Sprite_SetupHitBox(int k, SpriteHitBox *hb) {
 }
 
 // Returns the carry flag
-bool Utility_CheckIfHitBoxesOverlap(SpriteHitBox *hb) {
+bool CheckIfHitBoxesOverlap(SpriteHitBox *hb) {
   int t, u;
   uint8 r15, r12;
 
@@ -308,7 +308,7 @@ bool Utility_CheckIfHitBoxesOverlap(SpriteHitBox *hb) {
 static const uint8 kSpriteDamage_Tab2[4] = {6, 4, 0, 0};
 static const uint8 kSpriteDamage_Tab3[4] = {4, 6, 0, 2};
 
-bool Sprite_CheckDamageToPlayer(int k) {
+bool Sprite_CheckDamageToLink(int k) {
   if (link_disable_sprite_damage)
     return false;
   return Sprite_CheckDamageToPlayer_1(k);
@@ -317,22 +317,22 @@ bool Sprite_CheckDamageToPlayer(int k) {
 bool Sprite_CheckDamageToPlayer_1(int k) {
   if ((k ^ frame_counter) & 3 | sprite_hit_timer[k])
     return false;
-  return Sprite_CheckDamageToPlayerSameLayer(k);
+  return Sprite_CheckDamageToLink_same_layer(k);
 }
 
-bool Sprite_CheckDamageToPlayerSameLayer(int k) {
+bool Sprite_CheckDamageToLink_same_layer(int k) {
   if (link_is_on_lower_level != sprite_floor[k])
     return false;
-  return Sprite_CheckDamageToPlayerIgnoreLayer(k);
+  return Sprite_CheckDamageToLink_ignore_layer(k);
 }
 
-bool Sprite_CheckDamageToPlayerIgnoreLayer(int k) {
+bool Sprite_CheckDamageToLink_ignore_layer(int k) {
   uint8 carry, t;
   if (sprite_flags4[k]) {
     SpriteHitBox hitbox;
     Link_SetupHitBox(&hitbox);
     Sprite_SetupHitBox(k, &hitbox);
-    carry = Utility_CheckIfHitBoxesOverlap(&hitbox);
+    carry = CheckIfHitBoxesOverlap(&hitbox);
   } else {
     carry = Sprite_SetupHitBox00(k);
   }
@@ -350,7 +350,7 @@ bool Sprite_CheckDamageToPlayerIgnoreLayer(int k) {
   t = button_b_frames ? kSpriteDamage_Tab2[link_direction_facing >> 1] : link_direction_facing;
   if (t != kSpriteDamage_Tab3[sprite_D[k]]) {
 if_3:
-    Sprite_Sprite_AttemptDamageToLinkPlusRecoil(k);
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
     if (sprite_type[k] == 0xc)
       Sprite_Func3(k);
     return true;
@@ -404,7 +404,7 @@ void ThrownSprite_CheckDamageToSingleSprite(int k, int j) {
   hb.r9_yhi = sprite_y_hi[k] + (u >> 8) - (t < 0);
   hb.r3 = 8;
   Sprite_SetupHitBox(j, &hb);
-  if (!Utility_CheckIfHitBoxesOverlap(&hb))
+  if (!CheckIfHitBoxesOverlap(&hb))
     return;
   if (sprite_type[j] == 0x3f) {
     Sprite_PlaceWeaponTink(k);
@@ -463,7 +463,7 @@ void Sprite_SpawnLeapingFish(int k) {
   int j = Sprite_SpawnDynamically(k, 0xd2, &info);
   if (j < 0)
     return;
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_ai_state[j] = 2;
   sprite_delay_main[j] = 48;
   if (sprite_type[k] == 0xd2)
@@ -512,7 +512,7 @@ void Sprite_DrawRippleIfInWater(int k) {
       cur_sprite_y -= 7;
   }
   SpriteDraw_WaterRipple(k);
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
   Oam_AllocateFromRegionA(((sprite_flags2[k] & 0x1f) + 1) * 4);
 }
 
@@ -802,10 +802,10 @@ ProjectSpeedRet Sprite_ProjectSpeedTowardsLink(int k, uint8 vel) {
     ProjectSpeedRet rv = { 0, 0, 0, 0 };
     return rv;
   }
-  PairU8 below = Sprite_IsBelowPlayer(k);
+  PairU8 below = Sprite_IsBelowLink(k);
   uint8 r12 = sign8(below.b) ? -below.b : below.b;
 
-  PairU8 right = Sprite_IsToRightOfPlayer(k);
+  PairU8 right = Sprite_IsRightOfLink(k);
   uint8 r13 = sign8(right.b) ? -right.b : right.b;
   uint8 t;
   bool swapped = false;
@@ -857,7 +857,7 @@ uint8 Sprite_ConvertVelocityToAngle(uint8 x, uint8 y) {
   }
 }
 
-ProjectSpeedRet Sprite_ProjectSpeedTowardsEntity(int k, uint16 x, uint16 y, uint8 vel) {
+ProjectSpeedRet Sprite_ProjectSpeedTowardsLocation(int k, uint16 x, uint16 y, uint8 vel) {
   if (vel == 0) {
     ProjectSpeedRet rv = { 0, 0, 0, 0 };
     return rv;
@@ -891,9 +891,9 @@ ProjectSpeedRet Sprite_ProjectSpeedTowardsEntity(int k, uint16 x, uint16 y, uint
   return rv;
 }
 
-uint8 Sprite_DirectionToFacePlayer(int k, PointU8 *coords_out) {
-  PairU8 below = Sprite_IsBelowPlayer(k);
-  PairU8 right = Sprite_IsToRightOfPlayer(k);
+uint8 Sprite_DirectionToFaceLink(int k, PointU8 *coords_out) {
+  PairU8 below = Sprite_IsBelowLink(k);
+  PairU8 right = Sprite_IsRightOfLink(k);
   uint8 ym = sign8(below.b) ? -below.b : below.b;
   tmp_counter = ym;
   uint8 xm = sign8(right.b) ? -right.b : right.b;
@@ -902,7 +902,7 @@ uint8 Sprite_DirectionToFacePlayer(int k, PointU8 *coords_out) {
   return (xm >= ym) ? right.a : below.a + 2;
 }
 
-PairU8 Sprite_IsBelowPlayer(int k) {
+PairU8 Sprite_IsBelowLink(int k) {
   int t = BYTE(link_y_coord) + 8;
   int u = (t & 0xff) + sprite_z[k];
   int v = (u & 0xff) - sprite_y_lo[k];
@@ -912,7 +912,7 @@ PairU8 Sprite_IsBelowPlayer(int k) {
   return rv;
 }
 
-PairU8 Sprite_IsToRightOfPlayer(int k) {
+PairU8 Sprite_IsRightOfLink(int k) {
   uint16 x = link_x_coord - Sprite_GetX(k);
   PairU8 rv = { (uint8)(sign16(x) ? 1 : 0), (uint8)x };
   return rv;
@@ -952,9 +952,9 @@ void Guard_ParrySwordAttacks(int k) {
     return;
   }
   Player_SetupActionHitBox(&hb);
-  if (sign8(button_b_frames) || !Utility_CheckIfHitBoxesOverlap(&hb)) {
+  if (sign8(button_b_frames) || !CheckIfHitBoxesOverlap(&hb)) {
     Sprite_SetupHitBox(k, &hb);
-    if (!Utility_CheckIfHitBoxesOverlap(&hb))
+    if (!CheckIfHitBoxesOverlap(&hb))
       Sprite_AttemptDamageToLinkWithCollisionCheck(k);
     else
       Sprite_AttemptZapDamage(k);
@@ -977,7 +977,7 @@ void Sprite_AttemptZapDamage(int k) {
     if (!countdown_for_blink) {
       sprite_delay_aux1[k] = 64;
       link_electrocute_on_touch = 64;
-      Sprite_Sprite_AttemptDamageToLinkPlusRecoil(k);
+      Sprite_AttemptDamageToLinkPlusRecoil(k);
     }
   } else {
     ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, sign8(button_b_frames - 9) ? 0x50 : 0x40);
@@ -1339,14 +1339,14 @@ void Sprite_ZeroVelocity_XY(int k) {
   sprite_x_vel[k] = sprite_y_vel[k] = 0;
 }
 
-uint8 Sprite_CheckDamageFromPlayer(int k) {
+uint8 Sprite_CheckDamageFromLink(int k) {
   if (sprite_hit_timer[k] & 0x80 || sprite_floor[k] != link_is_on_lower_level || player_oam_y_offset == 0x80)
     return 0;
 
   SpriteHitBox hb;
   Player_SetupActionHitBox(&hb);
   Sprite_SetupHitBox(k, &hb);
-  if (!Utility_CheckIfHitBoxesOverlap(&hb))
+  if (!CheckIfHitBoxesOverlap(&hb))
     return 0;
 
   set_when_damaging_enemies = 0;
@@ -1420,8 +1420,8 @@ void Sprite_AttemptDamageToLinkWithCollisionCheck(int k) {
   SpriteHitBox hb;
   Sprite_DoHitBoxesFast(k, &hb);
   Link_SetupHitBox_conditional(&hb);
-  if (Utility_CheckIfHitBoxesOverlap(&hb))
-    Sprite_Sprite_AttemptDamageToLinkPlusRecoil(k);
+  if (CheckIfHitBoxesOverlap(&hb))
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
 }
 
 static const int8 kPlayerDamages[30] = {
@@ -1429,7 +1429,7 @@ static const int8 kPlayerDamages[30] = {
   8, 4, 32, 16, 8, 32, 24, 16, 24, 16, 8, 64, 48, 24, 
 };
 
-void Sprite_Sprite_AttemptDamageToLinkPlusRecoil(int k) {
+void Sprite_AttemptDamageToLinkPlusRecoil(int k) {
   if (countdown_for_blink | link_disable_sprite_damage)
     return;
   link_incapacitated_timer = 19;
@@ -1636,17 +1636,17 @@ void Sprite_PrepAndDrawSingleLargeNoPrep(int k, PrepOamCoordsRet *info) {
   }
   bytewise_extended_oam[oam - oam_buf] = 2 | ((info->x >= 256) ? 1: 0);
   if (sprite_flags3[k] & 0x10)
-    Sprite_DrawShadow(k, info);
+    SpriteDraw_Shadow(k, info);
 }
 
-void Sprite_PrepAndDrawSingleLarge(int k) {
+void SpriteDraw_SingleLarge(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
   Sprite_PrepAndDrawSingleLargeNoPrep(k, &info);
 }
 
-void Sprite_PrepAndDrawSingleSmall(int k) {
+void SpriteDraw_SingleSmall(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
@@ -1662,7 +1662,7 @@ void Sprite_PrepAndDrawSingleSmall(int k) {
     SpriteDraw_Shadow_custom(k, &info, 2);
 }
 
-void Sprite_DrawKey(int k) {
+void Sprite_DrawThinAndTall(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
@@ -1676,10 +1676,10 @@ void Sprite_DrawKey(int k) {
   oam[1].charnum = a + 0x10;
   oam[0].flags = oam[1].flags = info.flags;
   if (sprite_flags3[k] & 0x10)
-    Sprite_DrawShadow(k, &info);
+    SpriteDraw_Shadow(k, &info);
 }
 
-void Sprite_DrawShadow(int k, PrepOamCoordsRet *oam) {
+void SpriteDraw_Shadow(int k, PrepOamCoordsRet *oam) {
   SpriteDraw_Shadow_custom(k, oam, 10);
 }
 
@@ -2613,7 +2613,7 @@ void SpriteModule_Poof(int k) {
       if (sprite_die_action[k] == 0) {
         ForcePrizeDrop(k, 2, 2);
       } else {
-        SpriteDeath_Func1(k);
+        Sprite_DoTheDeath(k);
       }
     }
   } else {
@@ -2650,7 +2650,7 @@ void SpriteModule_Drown(int k) {
     if (sprite_A[k] == 6)
       Oam_AllocateFromRegionC(8);
     sprite_flags3[k] ^= 16;
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     OamEnt *oam = GetOamCurPtr();
     int j = sprite_delay_main[k];
     if (j == 1)
@@ -2667,7 +2667,7 @@ void SpriteModule_Drown(int k) {
     if (Sprite_ReturnIfPaused(k))
       return;
     sprite_subtype2[k]++;
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     Sprite_MoveZ(k);
     sprite_z_vel[k] -= 2;
     if (sign8(sprite_z[k])) {
@@ -2692,7 +2692,7 @@ void SpriteExplode_SpawnEA(int k) {
   tmp_counter = sprite_type[k];
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamicallyEx(k, 0xea, &info, 14);
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_z_vel[j] = 32;
   sprite_floor[j] = link_is_on_lower_level;
   sprite_A[j] = (j == 9) ? 2 : 6;
@@ -2862,7 +2862,7 @@ void SpriteModule_Fall2(int k) {
   }
   sprite_y_vel[k] = (int8)sprite_y_recoil[k] >> 2;
   sprite_x_vel[k] = (int8)sprite_x_recoil[k] >> 2;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
 }
 
 static const DrawMultipleData kSpriteDrawFall0Data[12] = {
@@ -2971,7 +2971,7 @@ void SpriteDeath_MainEx(int k, bool second_entry) {
       return;
     }
     if (sprite_delay_main[k] == 0) {
-      SpriteDeath_Func1(k);
+      Sprite_DoTheDeath(k);
       return;
     }
   }
@@ -3007,7 +3007,7 @@ static const uint8 kPrizeItems[56] = {
 };
 static const uint8 kPrizeZ[15] = {0, 0x24, 0x24, 0x24, 0x20, 0x20, 0x20, 0x24, 0x24, 0x24, 0x24, 0, 0x24, 0x20, 0x20};
 
-void SpriteDeath_Func1(int k) {
+void Sprite_DoTheDeath(int k) {
   uint8 type = sprite_type[k];
   // This is how Vitreous knows whether to come out of his slime pool
   if (type == 0xBE)
@@ -3167,7 +3167,7 @@ void SpriteModule_Burn(int k) {
   sprite_hit_timer[k] = 0;
   int j = sprite_delay_main[k] - 1;
   if (j == 0) {
-    SpriteDeath_Func1(k);
+    Sprite_DoTheDeath(k);
     return;
   }
   uint8 bak = sprite_graphics[k];
@@ -3252,7 +3252,7 @@ void SpriteModule_Carried(int k) {
   Sprite_SetY(k, link_y_coord + 8 - z);
   sprite_floor[k] = link_is_on_lower_level & 1;
   CarriedSprite_CheckForThrow(k);
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
   if (sprite_unk4[k] != 11) {
     SpriteActive_Main(k);
     if (sprite_delay_aux4[k] == 1) {
@@ -3292,7 +3292,7 @@ bool Sprite_TutorialGuard_ShowMessageOnContact(int k, uint16 msg) {
   uint8 bak4 = sprite_flags4[k];
   sprite_flags2[k] = 0x80;
   sprite_flags4[k] = 0x07;
-  bool rv = Sprite_CheckDamageToPlayerSameLayer(k);
+  bool rv = Sprite_CheckDamageToLink_same_layer(k);
   sprite_flags2[k] = bak2;
   sprite_flags4[k] = bak4;
   if (!rv)
@@ -3480,13 +3480,13 @@ void Sprite_HitTimer31(int k) {
   }
 }
 
-void Sprite_Get_16_bit_Coords(int k) {
+void Sprite_Get16BitCoords(int k) {
   cur_sprite_x = sprite_x_lo[k] | sprite_x_hi[k] << 8;
   cur_sprite_y = sprite_y_lo[k] | sprite_y_hi[k] << 8;
 }
 
 void Sprite_TimersAndOam(int k) {
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
 
   uint8 num = ((sprite_flags2[k] & 0x1f) + 1) * 4;
 
@@ -3697,7 +3697,7 @@ void Sprite_Main() {
     drag_player_x = drag_player_y = 0;
   Oam_ResetRegionBases();
   Garnish_ExecuteUpperSlots();
-  Tagalong_Main();
+  Follower_Main();
   byte_7E0FB2 = flag_is_sprite_to_pick_up;
   flag_is_sprite_to_pick_up = 0;
   HIBYTE(dungmap_var8) = 0x80;
@@ -3772,12 +3772,12 @@ void Sprite_NullifyHookshotDrag() {
 int Sprite_ShowSolicitedMessage(int k, uint16 msg) {
   static const uint8 kShowMessageFacing_Tab0[4] = {4, 6, 0, 2};
   dialogue_message_index = msg;
-  if (!Sprite_CheckDamageToPlayerSameLayer(k) ||
+  if (!Sprite_CheckDamageToLink_same_layer(k) ||
       Sprite_CheckIfLinkIsBusy() ||
       !(filtered_joypad_L & 0x80) ||
       sprite_delay_aux4[k] || link_auxiliary_state == 2)
     return sprite_D[k];
-  uint8 dir = Sprite_DirectionToFacePlayer(k, NULL);
+  uint8 dir = Sprite_DirectionToFaceLink(k, NULL);
   if (link_direction_facing != kShowMessageFacing_Tab0[dir])
     return sprite_D[k];
   Sprite_ShowMessageUnconditional(dialogue_message_index);
@@ -3787,10 +3787,10 @@ int Sprite_ShowSolicitedMessage(int k, uint16 msg) {
 
 int Sprite_ShowMessageOnContact(int k, uint16 msg) {
   dialogue_message_index = msg;
-  if (!Sprite_CheckDamageToPlayerSameLayer(k) || link_auxiliary_state == 2)
+  if (!Sprite_CheckDamageToLink_same_layer(k) || link_auxiliary_state == 2)
     return sprite_D[k];
   Sprite_ShowMessageUnconditional(dialogue_message_index);
-  return Sprite_DirectionToFacePlayer(k, NULL) ^ 0x103;
+  return Sprite_DirectionToFaceLink(k, NULL) ^ 0x103;
 }
 
 void Sprite_ShowMessageUnconditional(uint16 msg) {
@@ -3820,13 +3820,13 @@ bool Sprite_CheckIfLinkIsBusy() {
 }
 
 bool Sprite_CheckDamageToAndFromLink(int k) {
-  Sprite_CheckDamageFromPlayer(k);
-  return Sprite_CheckDamageToPlayer(k);
+  Sprite_CheckDamageFromLink(k);
+  return Sprite_CheckDamageToLink(k);
 }
 
 void SpriteStunned_MainEx(int k, bool second_entry) {
   if (second_entry)
-    goto ThrownSprite_TileAndPeerInteraction;
+    goto ThrownSprite_TileAndSpriteInteraction;
   Sprite_DrawRippleIfInWater(k);
   SpriteStunned_Main_Func1(k);
   if (Sprite_ReturnIfPaused(k))
@@ -3837,15 +3837,15 @@ void SpriteStunned_MainEx(int k, bool second_entry) {
     sprite_x_vel[k] = sprite_y_vel[k] = 0;
   }
   if (sprite_delay_main[k] < 0x20)
-    Sprite_CheckDamageFromPlayer(k);
+    Sprite_CheckDamageFromLink(k);
   if (Sprite_ReturnIfRecoiling(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (!sprite_E[k]) {
     Sprite_CheckTileCollision(k);
     if (!sprite_state[k])
       return;
-  ThrownSprite_TileAndPeerInteraction:
+  ThrownSprite_TileAndSpriteInteraction:
     if (sprite_wallcoll[k] & 0xf) {
       Sprite_ApplyRicochet(k);
       if (sprite_state[k] == 11)
@@ -3883,7 +3883,7 @@ void SpriteStunned_MainEx(int k, bool second_entry) {
       SpriteSpawnInfo info;
 
       if (sign8(z - 0xf0) && (j = Sprite_SpawnDynamically(k, 0xec, &info)) >= 0) {
-        Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+        Sprite_SetSpawnedCoordinates(j, &info);
         Sprite_Func22(j);
       }
     } else if (a == 8) {
@@ -3922,13 +3922,13 @@ void Sprite_Func22(int k) {
 }
 
 void ThrowableScenery_InteractWithSpritesAndTiles(int k) {
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (!sprite_E[k])
     Sprite_CheckTileCollision(k);
-  ThrownSprite_TileAndPeerInteraction(k);
+  ThrownSprite_TileAndSpriteInteraction(k);
 }
 
-void ThrownSprite_TileAndPeerInteraction(int k) {
+void ThrownSprite_TileAndSpriteInteraction(int k) {
   SpriteStunned_MainEx(k, true);
 }
 
@@ -4009,7 +4009,7 @@ bool Sprite_ReturnIfLiftedPermissive(int k) {
     SpriteHitBox hb;
     Link_SetupHitBox_conditional(&hb);
     Sprite_SetupHitBox(k, &hb);
-    if (Utility_CheckIfHitBoxesOverlap(&hb))
+    if (CheckIfHitBoxesOverlap(&hb))
       byte_7E0FB2 = flag_is_sprite_to_pick_up = k + 1;
     return false;
   } else {
@@ -4021,7 +4021,7 @@ bool Sprite_ReturnIfLiftedPermissive(int k) {
     sprite_delay_main[k] = 16;
     sprite_unk3[k] = 0;
     sprite_I[k] = 0;
-    link_direction_facing = kSprite_ReturnIfLifted_Dirs[Sprite_DirectionToFacePlayer(k, NULL)];
+    link_direction_facing = kSprite_ReturnIfLifted_Dirs[Sprite_DirectionToFaceLink(k, NULL)];
     return true;
   }
 }
@@ -4057,7 +4057,7 @@ uint8 Sprite_BounceFromTileCollision(int k) {
   return 0;
 }
 
-void Sprite_Sprite_SetSpawnedCoordinates(int k, SpriteSpawnInfo *info) {
+void Sprite_SetSpawnedCoordinates(int k, SpriteSpawnInfo *info) {
   sprite_x_lo[k] = info->r0_x;
   sprite_x_hi[k] = info->r0_x >> 8;
   sprite_y_lo[k] = info->r2_y;
@@ -4088,7 +4088,7 @@ bool SpriteDraw_AbsorbableTransient(int k, bool transient) {
   }
   uint8 t = kAbsorbable_Tab1[j - 0xd8];
   if (t == 0) {
-    Sprite_PrepAndDrawSingleSmall(k);
+    SpriteDraw_SingleSmall(k);
     return false;
   }
   if (t == 2) {
@@ -4097,11 +4097,11 @@ bool SpriteDraw_AbsorbableTransient(int k, bool transient) {
         goto draw_key;
       sprite_graphics[k] = 1;
     }
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     return false;
   }
 draw_key:
-  Sprite_DrawKey(k);
+  Sprite_DrawThinAndTall(k);
   return false;
 }
 
@@ -4142,7 +4142,7 @@ void Sprite_DrawNumberedAbsorbable(int k, int a) {
     oam->flags = info.flags;
     bytewise_extended_oam[oam - oam_buf] = kNumberedAbsorbable_Ext[j] | (x >> 8 & 1);
   } while (oam++, --n >= 0);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_CheckAbsorptionByPlayer(int k) {
@@ -4302,7 +4302,7 @@ void Sprite_HaltAllMovement() {
 void Sprite_BehaveAsBarrier(int k) {
   uint8 bak = sprite_flags4[k];
   sprite_flags4[k] = 0;
-  if (Sprite_CheckDamageToPlayerSameLayer(k))
+  if (Sprite_CheckDamageToLink_same_layer(k))
     Sprite_HaltAllMovement();
   sprite_flags4[k] = bak;
 }
@@ -4389,7 +4389,7 @@ void Entity_ApplyRumbleToSprites(SpriteHitBox *hb) {
       continue;
     if (byte_7E0FC6 != 0xe) {
       Sprite_SetupHitBox(j, hb);
-      if (!Utility_CheckIfHitBoxesOverlap(hb))
+      if (!CheckIfHitBoxesOverlap(hb))
         continue;
     }
     sprite_E[j] = 0;

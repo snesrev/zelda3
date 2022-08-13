@@ -137,7 +137,7 @@ void Overlord18_InvisibleStalfos(int k) {
 }
 
 
-void Overlord_SnakeTrap(int k) {
+void Overlord06_BadSwitchSnake(int k) {
   static const uint8 kSnakeTrapOverlord_Tab1[8] = { 0x20, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80, 0x90 };
 
   uint8 a = overlord_gen1[k];
@@ -269,7 +269,7 @@ void SpawnFallingTile(int k) {
   }
 }
 
-void Overlord_CrumbleTilePath(int k) {
+void Overlord0A_FallingSquare(int k) {
   static const uint8 kCrumbleTilePathData[108 + 1] = {
     2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 3, 3, 3,
     3, 3, 3, 0, 0, 0, 0, 0, 0, 0, 3, 1, 3, 0, 3, 1,
@@ -313,7 +313,7 @@ void Overlord_CrumbleTilePath(int k) {
   }
 }
 
-void Overlord_PirogusuFactory(int k) {
+void Overlord10_PirogusuSpawner_left(int k) {
   static const uint8 kOverlordPirogusu_A[4] = { 2, 3, 0, 1 };
 
   tmp_counter = overlord_type[k] - 16;
@@ -574,27 +574,27 @@ static HandlerFuncK *const kOverlordFuncs[26] = {
   &Overlord03_VerticalCannon,
   &Overlord_StalfosFactory,
   &Overlord05_FallingStalfos,
-  &Overlord_SnakeTrap,
+  &Overlord06_BadSwitchSnake,
   &Overlord07_MovingFloor,
   &Overlord08_BlobSpawner,
   &Overlord09_WallmasterSpawner,
-  &Overlord_CrumbleTilePath,
-  &Overlord_CrumbleTilePath,
-  &Overlord_CrumbleTilePath,
-  &Overlord_CrumbleTilePath,
-  &Overlord_CrumbleTilePath,
-  &Overlord_CrumbleTilePath,
-  &Overlord_PirogusuFactory,
-  &Overlord_PirogusuFactory,
-  &Overlord_PirogusuFactory,
-  &Overlord_PirogusuFactory,
+  &Overlord0A_FallingSquare,
+  &Overlord0A_FallingSquare,
+  &Overlord0A_FallingSquare,
+  &Overlord0A_FallingSquare,
+  &Overlord0A_FallingSquare,
+  &Overlord0A_FallingSquare,
+  &Overlord10_PirogusuSpawner_left,
+  &Overlord10_PirogusuSpawner_left,
+  &Overlord10_PirogusuSpawner_left,
+  &Overlord10_PirogusuSpawner_left,
   &Overlord14_TileRoom,
   &Overlord15_WizzrobeSpawner,
   &Overlord16_ZoroSpawner,
   &Overlord17_PotTrap,
   &Overlord18_InvisibleStalfos,
   &Overlord19_ArmosCoordinator_bounce,
-  &Overlord_SnakeTrap,
+  &Overlord06_BadSwitchSnake,
 };
 
 void Overlord_CheckIfActive(int k) {

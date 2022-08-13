@@ -53,7 +53,7 @@ void HandleDungeonLandingFromPit();
 void BombosTablet_StartCutscene();
 void EtherTablet_StartCutscene();
 void CheckAbilityToSwim();
-void Link_SetSpinAttacking();
+void Link_AnimateVictorySpin();
 void Refund_Magic(uint8 x);
 void CacheCameraProperties();
 

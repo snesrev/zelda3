@@ -77,7 +77,7 @@ void Module_SelectFile_0() {
   InitializeTilesets();
   LoadFileSelectGraphics();
   Intro_ValidateSram();
-  LoadEnemyDamageData();
+  DecompressEnemyDamageSubclasses();
 }
 
 void FileSelect_EraseTriforce() {
@@ -89,7 +89,7 @@ void FileSelect_EraseTriforce() {
   submodule_index++;
 }
 
-void Module_SelectFile_1() {
+void FileSelect_ReInitSaveFlagsAndEraseTriforce() {
   memset(selectfile_arr1, 0, 6);
   FileSelect_EraseTriforce();
 }
@@ -352,7 +352,7 @@ void Module01_FileSelect() {
   BG3VOFS_copy2 = 0;
   switch (submodule_index) {
   case 0: Module_SelectFile_0(); break;
-  case 1: Module_SelectFile_1(); break;
+  case 1: FileSelect_ReInitSaveFlagsAndEraseTriforce(); break;
   case 2: SelectFile_Func2_Vram(); break;
   case 3: FileSelect_TriggerStripesAndAdvance(); break;
   case 4: FileSelect_TriggerNameStripesAndAdvance(); break;
@@ -608,7 +608,7 @@ void Module02_CopyFile() {
   }
 }
 
-void Module_EraseFile_2() {
+void KILLFile_SetUp() {
   nmi_load_bg_from_vram = 8;
   submodule_index++;
   INIDISP_copy = 0xf;
@@ -735,11 +735,11 @@ void KILLFile_HandleConfirmation() {
   nmi_load_bg_from_vram = 1;
 }
 
-void Module_EraseFile() {
+void Module03_KILLFile() {
   switch (submodule_index) {
   case 0: FileSelect_EraseTriforce(); break;
   case 1: SelectFile_Func2_Vram(); break;
-  case 2: Module_EraseFile_2(); break;
+  case 2: KILLFile_SetUp(); break;
   case 3: KILLFile_HandleSelection(); break;
   case 4: KILLFile_HandleConfirmation(); break;
   }
@@ -966,7 +966,7 @@ void Module_NamePlayer_3() {
   sound_effect_1 = 0x2c;
 }
 
-void Module_NamePlayer() {
+void Module04_NameFile() {
   switch (submodule_index) {
   case 0: Module_NamePlayer_0(); break;
   case 1: Module_NamePlayer_1(); break;

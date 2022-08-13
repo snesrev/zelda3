@@ -83,7 +83,7 @@ static const uint16 kPaletteFilteringBits[64] = {
   0x1111, 0x1111,  0x844, 0x2211,  0x421,  0x421,  0x208, 0x1041,  0x101,  0x101,   0x20,  0x401,      1,      1,      0,      1,
 };
 
-void ApplyPaletteFilter() {
+void ApplyPaletteFilter_bounce() {
 
   const uint16 *load_ptr = kPaletteFilteringBits + (palette_filter_countdown >= 0x10);
 
@@ -1324,7 +1324,7 @@ void ResetHUDPalettes4and5() {
 }
 
 
-void Dungeon_HandleTranslucencyAndPalettes() {
+void Dungeon_HandleTranslucencyAndPalette() {
   if (overworld_palette_swap_flag)
     Palette_RevertTranslucencySwap();
 
@@ -2083,7 +2083,7 @@ void Module07_16_UpdatePegs_Step2() {
     Dungeon_UpdatePegGFXBuffer(0x80, 0x100);
 }
 
-void Module07_16_UpdatePegs_Step3() {
+void RecoverPegGFXFromMapping() {
   if (BYTE(orange_blue_barrier_state))
     Dungeon_UpdatePegGFXBuffer(0x180, 0x0);
   else
@@ -2111,7 +2111,7 @@ void Overworld_LoadAreaPalettesEx(uint8 x) {
   Palette_Load_OWBGMain();
 }
 
-void Overworld_LoadAreaPalettes() {
+void OverworldLoadScreensPaletteSet() {
   uint8 sc = overworld_screen_index & 0x3f;
   uint8 x = (sc == 3 || sc == 5 || sc == 7) ? 2 : 0;
   x += (overworld_screen_index & 0x40) ? 1 : 0;

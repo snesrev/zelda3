@@ -23,8 +23,8 @@ uint8 CalculateSfxPan(uint16 x);
 void AncillaAdd_ItemReceipt(uint8 ain, uint8 yin, int chest_pos);
 
 uint8 HandleItemTileAction_Overworld(uint16 x, uint16 y);
-uint8 PlaySfx_Set2(uint8 a);
-void PlaySfx_Set3(uint8 a);
+uint8 Ancilla_Sfx2_Near(uint8 a);
+void Ancilla_Sfx3_Near(uint8 a);
 
 void Main_ShowTextMessage();
 uint8 CalculateSfxPan_Arbitrary(uint8 a);

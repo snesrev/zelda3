@@ -35,7 +35,7 @@ int AncillaAdd_AddAncilla_Bank08(uint8 type, uint8 y);
 
 void AncillaAdd_ExplodingSomariaBlock(int k);
 void Ancilla_Main();
-int Ancilla_AddAncilla(uint8 a, uint8 y);
+int AncillaAdd_AddAncilla_Bank09(uint8 a, uint8 y);
 void AncillaAdd_SwordSwingSparkle(uint8 a, uint8 y);
 
 
@@ -76,7 +76,7 @@ int AncillaAdd_Arrow(uint8 a, uint8 ax, uint8 ay, uint16 xcoord, uint16 ycoord);
 void AncillaAdd_Bomb(uint8 a, uint8 y);
 
 void AncillaAdd_FireRodShot(uint8 type, uint8 y);
-void RodItem_CreateIceShot(uint8 a, uint8 y);
+void AncillaAdd_IceRodShot(uint8 a, uint8 y);
 void Ancilla_AddHitStars(uint8 a, uint8 y);
 void AncillaAdd_ExplodingWeatherVane(uint8 a, uint8 y);
 void AncillaAdd_Duck_take_off(uint8 a, uint8 y);

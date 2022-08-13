@@ -3,7 +3,7 @@
 #include "variables.h"
 #include "snes_regs.h"
 
-void Module_Overworld();
+void Module09_Overworld();
 void OverworldOverlay_HandleRain();
 void Overworld_DrawMap16(uint16 tile, uint16 value);
 void Overworld_DrawMap16_Persist(uint16 tile, uint16 value);
@@ -19,7 +19,7 @@ void MirrorWarp_Helper();
 void Overworld_DrawScreenAtCurrentMirrorPosition();
 void MirrorWarp_LoadSpritesAndColors();
 void Overworld_SetSongList();
-void Module_PreOverworld();
+void Module08_OverworldLoad();
 void AdjustLinkBunnyStatus();
 void ForceNonbunnyStatus();
 void Module10_SpotlightOpen();
@@ -28,7 +28,7 @@ void Overworld_LoadOverlays2();
 void FluteMenu_LoadTransport();
 void FluteMenu_LoadSelectedScreenPalettes();
 void Overworld_SetFixedColAndScroll();
-void Overworld_LoadAmbientOverlayAndMapData();
+void Overworld_LoadAndBuildScreen();
 void Overworld_LoadBirdTravelPos(int k);
 void FindPartnerWhirlpoolExit();
 void ConditionalMosaicControl();
@@ -59,8 +59,8 @@ void PreOverworld_LoadOverlays();
 void Overworld_DoMapUpdate32x32();
 int Overworld_SmashRockPile(bool down_one_tile, Point16U *pt);
 void Overworld_DoMapUpdate32x32_B();
-void LoadEnemyDamageData();
-uint8 Overworld_LiftableTiles(Point16U *pt_arg);
+void DecompressEnemyDamageSubclasses();
+uint8 Overworld_HandleLiftableTiles(Point16U *pt_arg);
 uint16 Overworld_ToolAndTileInteraction(uint16 x, uint16 y);
 void Overworld_GetPitDestination();
 void Sprite_LoadGraphicsProperties();

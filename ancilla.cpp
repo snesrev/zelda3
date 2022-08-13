@@ -492,7 +492,7 @@ bool Ancilla_CheckBasicSpriteCollision_Single(int k, int j) {
   SpriteHitBox hb;
   Ancilla_SetupBasicHitBox(k, &hb);
   Sprite_SetupHitBox(j, &hb);
-  if (!Utility_CheckIfHitBoxesOverlap(&hb))
+  if (!CheckIfHitBoxesOverlap(&hb))
     return false;
   if (sprite_type[j] == 0x92 && sprite_C[j] < 3)
     return true;
@@ -504,7 +504,7 @@ bool Ancilla_CheckBasicSpriteCollision_Single(int k, int j) {
     return false;
 
   int x = Ancilla_GetX(k) - 8, y = Ancilla_GetY(k) - 8 - ancilla_z[k];
-  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(j, x, y, 80);
+  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(j, x, y, 80);
   sprite_y_recoil[j] = ~pt.y;
   sprite_x_recoil[j] = ~pt.x;
   Ancilla_CheckDamageToSprite(j, ancilla_type[k]);
@@ -553,7 +553,7 @@ bool Ancilla_CheckSpriteCollision_Single(int k, int j) {
   Ancilla_SetupHitBox(k, &hb);
 
   Sprite_SetupHitBox(j, &hb);
-  if (!Utility_CheckIfHitBoxesOverlap(&hb))
+  if (!CheckIfHitBoxesOverlap(&hb))
     return false;
 
   bool return_value = true;
@@ -1085,7 +1085,7 @@ void AncillaAdd_BoomerangWallClink(int k) {
   static const uint8 kBoomerangWallHit_Tab0[16] = {0, 6, 4, 0, 2, 10, 12, 0, 0, 8, 14, 0, 0, 0, 0, 0};
   boomerang_temp_x = Ancilla_GetX(k);
   boomerang_temp_y = Ancilla_GetY(k);
-  k = Ancilla_AddAncilla(6, 1);
+  k = AncillaAdd_AddAncilla_Bank09(6, 1);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_arr3[k] = 1;
@@ -1440,7 +1440,7 @@ void Bomb_CheckSpriteDamage(int k) {
     hb.r2 = 48;
     hb.r3 = 48;
     Sprite_SetupHitBox(j, &hb);
-    if (!Utility_CheckIfHitBoxesOverlap(&hb))
+    if (!CheckIfHitBoxesOverlap(&hb))
       continue;
     if (sprite_type[j] == 0x92 && sprite_C[j] >= 3)
       continue;
@@ -1487,7 +1487,7 @@ void Bomb_CheckSpriteAndPlayerDamage(int k) {
   hb.r5_spr_ylo = ay;
   hb.r11_spr_yhi = ay >> 8;
 
-  if (!Utility_CheckIfHitBoxesOverlap(&hb))
+  if (!CheckIfHitBoxesOverlap(&hb))
     return;
 
   int x = Ancilla_GetX(k) - 8, y = Ancilla_GetY(k) - 12;
@@ -1771,7 +1771,7 @@ void AncillaAdd_Bomb(uint8 a, uint8 y) {
   static const int8 kBomb_Place_X1[4] = {8, 8, -6, 22};
   static const int8 kBomb_Place_Y1[4] = {4, 28, 12, 12};
 
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k < 0)
     return;
   if (link_item_bombs == 0) {
@@ -2101,7 +2101,7 @@ Point16U Sparkle_PrepOamFromRadial(AncillaRadialProjection p) {
   return pt;
 }
 
-void Ancilla0C_SwordBeam_bounce(int k) {
+void Ancilla_SwordBeam(int k) {
   uint8 flags = 2;
 
   if (!submodule_index) {
@@ -2496,7 +2496,7 @@ void Powder_ApplyDamageToSprites(int k) {
     SpriteHitBox hb;
     Ancilla_SetupBasicHitBox(k, &hb);
     Sprite_SetupHitBox(j, &hb);
-    if (!Utility_CheckIfHitBoxesOverlap(&hb))
+    if (!CheckIfHitBoxesOverlap(&hb))
       continue;
 
     if ((a = sprite_type[j]) != 0xb || (a = player_is_indoors) == 0 || (a = dungeon_room_index2 - 1) != 0) {
@@ -2581,7 +2581,7 @@ void AncillaAdd_MagicPowder(uint8 a, uint8 y) {
   static const int8 kMagicPower_X1[4] = {10, 10, -8, 28};
   static const int8 kMagicPower_Y1[4] = {1, 40, 22, 22};
 
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_z[k] = 0;
@@ -2935,7 +2935,7 @@ void Ancilla18_EtherSpell(int k) {
 }
 
 void AncillaAdd_EtherSpell(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_arr25[k] = 0;
@@ -3228,7 +3228,7 @@ void AncillaAdd_BombosSpell(uint8 a, uint8 y) {
   flag_custom_spell_anim_active = 1;
   ancilla_step[k] = 0;
   ancilla_item_to_link[k] = 0;
-  PlaySfx_Set2(0x2a);
+  Ancilla_Sfx2_Near(0x2a);
 
   uint8 t = kGeneratedBombosArr[frame_counter];
   t = (t < 0xe0) ? t : t & 0x7f;
@@ -3438,7 +3438,7 @@ void QuakeSpell_ControlBolts(int k) {
         continue;
 
       if (j == 0 && quake_arr2[j] == 2) {
-        PlaySfx_Set2(0xc);
+        Ancilla_Sfx2_Near(0xc);
         quake_var5 = 1;
       } else if (j == 1 && quake_arr2[j] == 2) {
         quake_var5 = 4;
@@ -3515,7 +3515,7 @@ void Ancilla1C_QuakeSpell(int k) {
 }
 
 void AncillaAdd_QuakeSpell(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_step[k] = 0;
     ancilla_item_to_link[k] = 0;
@@ -3646,7 +3646,7 @@ void Ancilla1E_DashDust(int k) {
 void AncillaAdd_HookshotWallClink(int kin, uint8 a, uint8 y) {
   static const int8 kHookshotWallHit_X[8] = {8, 8, 0, 10, 12, 8, 4, 0};
   static const int8 kHookshotWallHit_Y[8] = {0, 8, 8, 8, 4, 8, 12, 8};
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_arr3[k] = 1;
@@ -3968,7 +3968,7 @@ void Ancilla22_ItemReceipt(int k) {
 
     if (ancilla_aux_timer[k] == 40 && ancilla_step[k] != 2) {
       if (Ancilla_AddRupees(k) || ancilla_item_to_link[k] != 0x17)
-        PlaySfx_Set3(0xf);
+        Ancilla_Sfx3_Near(0xf);
     }
     goto label_b;
   }
@@ -4017,14 +4017,14 @@ endif_11:
     if (link_health_capacity != 0xa0) {
       link_health_capacity += 8;
       link_hearts_filler += link_health_capacity - link_health_current;
-      PlaySfx_Set3(0xd);
+      Ancilla_Sfx3_Near(0xd);
     }
   } else if (a == 0x3e) {
     flag_is_link_immobilized = 0;
     if (link_health_capacity != 0xa0) {
       link_health_capacity += 8;
       link_hearts_filler += 8;
-      PlaySfx_Set3(0xd);
+      Ancilla_Sfx3_Near(0xd);
     }
   } else if (a == 0x42) {
     link_hearts_filler += 8;
@@ -5073,7 +5073,7 @@ kill_me:
   swordbeam_temp_x = link_x_coord + 8;
   if (!ancilla_timer[k]) {
     ancilla_timer[k] = 21;
-    PlaySfx_Set3(0x30);
+    Ancilla_Sfx3_Near(0x30);
   }
   OamEnt *oam = GetOamCurPtr();
   int i = ancilla_step[k];
@@ -5111,7 +5111,7 @@ void ByrnaWindupSpark_TransmuteToNormal(int k) {
   ancilla_arr1[k] = 2;
   ancilla_timer[k] = 21;
   swordbeam_var2 = 20;
-  PlaySfx_Set3(0x30);
+  Ancilla_Sfx3_Near(0x30);
   Ancilla31_ByrnaSpark(k);
 }
 
@@ -5350,7 +5350,7 @@ void Ancilla36_Flute(int k) {
 void AncillaAdd_CutsceneDuck(uint8 a, uint8 y) {
   if (AncillaAdd_CheckForPresence(a))
     return;
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_dir[k] = 2;
     ancilla_arr3[k] = 3;
@@ -5394,7 +5394,7 @@ void Ancilla37_WeathervaneExplosion(int k) {
   ancilla_G[k] = 1;
   if (!ancilla_arr3[k]) {
     ancilla_arr3[k] += 1;
-    PlaySfx_Set2(0xc);
+    Ancilla_Sfx2_Near(0xc);
   }
   if (!ancilla_step[k] && sign8(--ancilla_aux_timer[k])) {
     ancilla_step[k] = 1;
@@ -5673,7 +5673,7 @@ void Ancilla41_WaterfallSplash(int k) {
   }
 
   if (!submodule_index && !(frame_counter & 7))
-    PlaySfx_Set2(0x1c);
+    Ancilla_Sfx2_Near(0x1c);
 
   draw_water_ripples_or_grass = 1;
   if (!sign8(link_animation_steps - 6))
@@ -5807,7 +5807,7 @@ void Ancilla42_HappinessPondRupees(int k) {
 
 
 void AddHappinessPondRupees(uint8 arg) {
-  int k = Ancilla_AddAncilla(0x42, 9);
+  int k = AncillaAdd_AddAncilla_Bank09(0x42, 9);
   if (k < 0)
     return;
   sound_effect_2 = Link_CalculateSfxPan() | 0x13;
@@ -6021,7 +6021,7 @@ static HandlerFuncK *const kAncilla_Funcs[67] = {
   &Ancilla09_Arrow,
   &Ancilla0A_ArrowInTheWall,
   &Ancilla0B_IceRodShot,
-  &Ancilla0C_SwordBeam_bounce,
+  &Ancilla_SwordBeam,
   &Ancilla0D_SpinAttackFullChargeSpark,
   &Ancilla33_BlastWallExplosion,
   &Ancilla33_BlastWallExplosion,
@@ -6106,7 +6106,7 @@ void Ancilla_Main() {
 }
 
 
-int Ancilla_AddAncilla(uint8 a, uint8 y) {
+int AncillaAdd_AddAncilla_Bank09(uint8 a, uint8 y) {
   int k = Ancilla_AllocInit(a, y);
   if (k >= 0) {
     ancilla_type[k] = a;
@@ -6123,7 +6123,7 @@ int Ancilla_AddAncilla(uint8 a, uint8 y) {
 
 
 void AncillaAdd_SwordSwingSparkle(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_aux_timer[k] = 1;
@@ -6179,7 +6179,7 @@ void AncillaAdd_SpinAttackInitSpark(uint8 a, uint8 x, uint8 y) {
   static const int8 kSpinAttackStartSparkle_Y[4] = {32, -8, 10, 20};
   static const int8 kSpinAttackStartSparkle_X[4] = {10, 7, 28, -10};
 
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   for (int i = 4; i >= 0; i--) {
     if (ancilla_type[i] == 0x31)
       ancilla_type[i] = 0;
@@ -6197,7 +6197,7 @@ void AncillaAdd_SpinAttackInitSpark(uint8 a, uint8 x, uint8 y) {
 void AncillaAdd_WallTapSpark(uint8 a, uint8 y) {
   static const int8 kWallTapSpark_X[4] = {11, 10, -12, 29};
   static const int8 kWallTapSpark_Y[4] = {-4, 32, 17, 17};
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 5;
     ancilla_aux_timer[k] = 1;
@@ -6228,7 +6228,7 @@ void AncillaAdd_GTCutscene() {
   if (AncillaAdd_CheckForPresence(0x43))
     return;
 
-  int k = Ancilla_AddAncilla(0x43, 4);
+  int k = AncillaAdd_AddAncilla_Bank09(0x43, 4);
   if (k < 0)
     return;
 
@@ -6265,7 +6265,7 @@ void AncillaAdd_GTCutscene() {
 void AncillaAdd_WaterfallSplash() {
   if (AncillaAdd_CheckForPresence(0x41))
     return;
-  int k = Ancilla_AddAncilla(0x41, 4);
+  int k = AncillaAdd_AddAncilla_Bank09(0x41, 4);
   if (k >= 0) {
     ancilla_timer[k] = 2;
     ancilla_item_to_link[k] = 0;
@@ -6333,7 +6333,7 @@ void AncillaAdd_TossedPondItem(uint8 a, uint8 xin, uint8 yin) {
   };
 
   link_receiveitem_index = xin;
-  int k = Ancilla_AddAncilla(a, yin);
+  int k = AncillaAdd_AddAncilla_Bank09(a, yin);
   if (k >= 0) {
     sound_effect_2 = Link_CalculateSfxPan() | 0x13;
     uint8 sb = kReceiveItemGfx[xin];
@@ -6389,7 +6389,7 @@ void AncillaAdd_SwordChargeSparkle(int k) {
 void AddDashingDustEx(uint8 a, uint8 y, uint8 flag) {
   static const int8 kAddDashingDust_X[4] = {4, 4, 6, 0};
   static const int8 kAddDashingDust_Y[4] = {20, 4, 16, 16};
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_step[k] = flag;
     ancilla_item_to_link[k] = 0;
@@ -6419,7 +6419,7 @@ void AncillaAdd_DashTremor(uint8 a, uint8 y) {
   static const uint8 kAddDashTremor_Tab[2] = {0x80, 0x78};
   if (AncillaAdd_CheckForPresence(a))
     return;
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 16;
     ancilla_L[k] = 0;
@@ -6434,7 +6434,7 @@ void AncillaAdd_DashTremor(uint8 a, uint8 y) {
 
 
 void AncillaAdd_DwarfPoof(uint8 ain, uint8 yin) {
-  int k = Ancilla_AddAncilla(ain, yin);
+  int k = AncillaAdd_AddAncilla_Bank09(ain, yin);
   if (k < 0)
     return;
   if (savegame_tagalong == 8)
@@ -6453,7 +6453,7 @@ void AncillaAdd_DwarfPoof(uint8 ain, uint8 yin) {
 }
 
 void AncillaAdd_BunnyPoof(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     link_visibility_status = 0xc;
     ancilla_step[k] = 0;
@@ -6471,7 +6471,7 @@ void AncillaAdd_BunnyPoof(uint8 a, uint8 y) {
 void AncillaAdd_LampFlame(uint8 a, uint8 y) {
   static const int8 kLampFlame_X[4] = {0, 0, -20, 18};
   static const int8 kLampFlame_Y[4] = {-16, 24, 4, 4};
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_aux_timer[k] = 0;
@@ -6490,7 +6490,7 @@ void AncillaAdd_FallingPrize(uint8 a, uint8 item_idx, uint8 yv) {
   static const int16 kFallingItem_Y[7] = {0x48, 0x78, 0x78, 0x78, 0x78, 0x68, 0x78};
   static const uint8 kFallingItem_Z[7] = {0x60, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80};
   link_receiveitem_index = item_idx;
-  int k = Ancilla_AddAncilla(a, yv);
+  int k = AncillaAdd_AddAncilla_Bank09(a, yv);
   if (k < 0)
     return;
   uint8 item_type = kFallingItem_Type[item_idx];
@@ -6526,7 +6526,7 @@ void AncillaAdd_FallingPrize(uint8 a, uint8 item_idx, uint8 yv) {
 }
 
 void AncillaAdd_MSCutscene(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_aux_timer[k] = 2;
@@ -6537,7 +6537,7 @@ void AncillaAdd_MSCutscene(uint8 a, uint8 y) {
 
 
 void AncillaAdd_Snoring(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_y_vel[k] = -8;
@@ -6571,7 +6571,7 @@ void AddSwordBeam(uint8 y) {
   static const int8 kSwordBeam_Yvel[4] = {-64, 64, 0, 0};
   static const int8 kSwordBeam_Xvel[4] = {0, 0, -64, 64};
 
-  int k = Ancilla_AddAncilla(0xc, y);
+  int k = AncillaAdd_AddAncilla_Bank09(0xc, y);
   if (k < 0)
     return;
   int j = link_direction_facing * 2;
@@ -6608,7 +6608,7 @@ void AddSwordBeam(uint8 y) {
 
 void AncillaAdd_VictorySpin() {
   if ((link_sword_type + 1 & 0xfe) != 0) {
-    int k = Ancilla_AddAncilla(0x3b, 0);
+    int k = AncillaAdd_AddAncilla_Bank09(0x3b, 0);
     if (k >= 0) {
       ancilla_item_to_link[k] = 0;
       ancilla_arr3[k] = 1;
@@ -6618,7 +6618,7 @@ void AncillaAdd_VictorySpin() {
 }
 
 int AncillaAdd_DoorDebris() {
-  int k = Ancilla_AddAncilla(8, 1);
+  int k = AncillaAdd_AddAncilla_Bank09(8, 1);
   if (k >= 0) {
     ancilla_arr25[k] = 0;
     ancilla_arr26[k] = 7;
@@ -6629,7 +6629,7 @@ int AncillaAdd_DoorDebris() {
 
 
 bool AncillaAdd_Splash(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     sound_effect_1 = Link_CalculateSfxPan() | 0x24;
     ancilla_item_to_link[k] = 0;
@@ -6650,7 +6650,7 @@ void AncillaAdd_GraveStone(uint8 ain, uint8 yin) {
   static const uint8 kMoveGravestone_Ctr[15] = {0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x30, 0x38, 0x58};
   static const uint8 kMoveGravestone_Idx[9] = {0, 1, 4, 6, 8, 12, 13, 14, 15};
 
-  int k = Ancilla_AddAncilla(ain, yin);
+  int k = AncillaAdd_AddAncilla_Bank09(ain, yin);
   if (k < 0)
     return;
   int t = ((link_y_coord & 0xf) < 7 ? link_y_coord : link_y_coord + 16) & ~0xf;
@@ -6705,7 +6705,7 @@ void AncillaAdd_GraveStone(uint8 ain, uint8 yin) {
 void AncillaAdd_BushPoof(uint16 x, uint16 y) {
   if (!(link_item_in_hand & 0x40))
     return;
-  int k = Ancilla_AddAncilla(0x3f, 4);
+  int k = AncillaAdd_AddAncilla_Bank09(0x3f, 4);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_timer[k] = 7;
@@ -6727,7 +6727,7 @@ uint8 AncillaAdd_Boomerang(uint8 a, uint8 y) {
   static const int8 kBoomerang_Tab8[8] = {-16, 6, 0, 0, -8, 8, -8, 8};
   static const int8 kBoomerang_Tab9[8] = {0, 0, -8, 8, 8, 8, -8, -8};
 
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k < 0)
     return 0;
   ancilla_aux_timer[k] = 0;
@@ -6871,7 +6871,7 @@ void AncillaAdd_FireRodShot(uint8 type, uint8 y) {
   }
 
   if (type != 1)
-    PlaySfx_Set2(0xe);
+    Ancilla_Sfx2_Near(0xe);
 
   ancilla_type[j] = type;
   ancilla_numspr[j] = kAncilla_Pflags[type];
@@ -6910,13 +6910,13 @@ void AncillaAdd_FireRodShot(uint8 type, uint8 y) {
   }
 }
 
-void RodItem_CreateIceShot(uint8 a, uint8 y) {
+void AncillaAdd_IceRodShot(uint8 a, uint8 y) {
   static const int8 kIceRod_X[4] = {0, 0, -20, 20};
   static const int8 kIceRod_Y[4] = {-16, 24, 8, 8};
   static const int8 kIceRod_Xvel[4] = {0, 0, -48, 48};
   static const int8 kIceRod_Yvel[4] = {-48, 48, 0, 0};
 
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k < 0) {
     Refund_Magic(0);
     return;
@@ -6954,7 +6954,7 @@ void RodItem_CreateIceShot(uint8 a, uint8 y) {
 void Ancilla_AddHitStars(uint8 a, uint8 y) {
   static const int8 kShovelHitStars_XY[12] = {21, -11, 21, 11, 3, -6, 21, 5, 16, -14, 16, 14};
   static const int8 kShovelHitStars_X2[6] = {-3, 19, 2, 13, -6, 22};
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_item_to_link[k] = 0;
     ancilla_aux_timer[k] = 2;
@@ -6983,7 +6983,7 @@ void AncillaAdd_ExplodingWeatherVane(uint8 a, uint8 y) {
   static const uint8 kWeathervane_Tab8[12] = {0, 2, 4, 6, 3, 8, 14, 8, 12, 7, 10, 8};
   static const uint8 kWeathervane_Tab10[12] = {48, 18, 32, 20, 22, 24, 32, 20, 24, 22, 20, 32};
 
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k < 0)
     return;
 
@@ -7026,7 +7026,7 @@ void AddBirdCommon(int k) {
 void AddBirdTravelSomething(uint8 a, uint8 y) {
   if (AncillaAdd_CheckForPresence(a))
     return;
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     link_player_handler_state = 0;
     link_speed_setting = 0;
@@ -7045,7 +7045,7 @@ void AddBirdTravelSomething(uint8 a, uint8 y) {
 void AncillaAdd_Duck_take_off(uint8 a, uint8 y) {
   if (AncillaAdd_CheckForPresence(a))
     return;
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_timer[k] = 0x78;
     ancilla_L[k] = 0;
@@ -7057,7 +7057,7 @@ void AncillaAdd_Duck_take_off(uint8 a, uint8 y) {
 }
 
 void CallForDuckIndoors() {
-  PlaySfx_Set2(0x13);
+  Ancilla_Sfx2_Near(0x13);
   AncillaAdd_Duck_take_off(0x27, 4);
 }
 
@@ -7257,7 +7257,7 @@ void RevivalFairy_MonitorHP() {
 }
 
 void AncillaAdd_SuperBombExplosion(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_R[k] = 0;
     ancilla_step[k] = 0;
@@ -7376,7 +7376,7 @@ void AncillaAdd_SomariaBlock(uint8 type, uint8 y) {
     return;
   }
 
-  PlaySfx_Set3(0x2a);
+  Ancilla_Sfx3_Near(0x2a);
   ancilla_step[k] = 0;
   ancilla_y_vel[k] = 0;
   ancilla_x_vel[k] = 0;
@@ -7410,7 +7410,7 @@ void AncillaAdd_SomariaBlock(uint8 type, uint8 y) {
 
 
 void AncillaAdd_CapePoof(uint8 a, uint8 y) {
-  int k = Ancilla_AddAncilla(a, y);
+  int k = AncillaAdd_AddAncilla_Bank09(a, y);
   if (k >= 0) {
     ancilla_step[k] = 1;
     link_is_transforming = 1;

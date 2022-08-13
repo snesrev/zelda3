@@ -734,7 +734,7 @@ void DungeonMap_RecoverGFX() {
 
   sound_effect_2 = 16;
   music_control = 0xf3;
-  Module07_16_UpdatePegs_Step3();
+  RecoverPegGFXFromMapping();
   flag_update_cgram_in_nmi++;
   overworld_map_state++;
   INIDISP_copy = 0;
@@ -769,7 +769,7 @@ static PlayerHandlerFunc *const kDungMapSubmodules[] = {
   &DungMap_RestoreOld,
 };
 
-void Messaging_DungMap() {
+void Module0E_03_DungeonMap() {
   kDungMapSubmodules[overworld_map_state]();
 }
 
@@ -1593,7 +1593,7 @@ static PlayerHandlerFunc *const kMessaging_Text[] = {
   &RenderText_PostDeathSaveOptions,
 };
 
-void Messaging_Text() {
+void RenderText() {
   kMessaging_Text[messaging_module]();
 }
 
@@ -1731,7 +1731,7 @@ void DesertPrayer_InitializeIrisHDMA() {
 void Module0E_05_DesertPrayer() {
   switch (subsubmodule_index) {
   case 0: ResetTransitionPropsAndAdvance_ResetInterface(); break;
-  case 1: ApplyPaletteFilter(); break;
+  case 1: ApplyPaletteFilter_bounce(); break;
   case 2: 
     DesertPrayer_InitializeIrisHDMA();
     BYTE(palette_filter_countdown) = mosaic_target_level - 1;
@@ -1739,7 +1739,7 @@ void Module0E_05_DesertPrayer() {
     BYTE(darkening_or_lightening_screen) = 2;
     break;
   case 3: 
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     // fall through
   case 4:
     DesertPrayer_BuildIrisHDMATable();
@@ -2111,7 +2111,7 @@ void FluteMenu_LoadSelectedScreen() {
 void Overworld_LoadOverlayAndMap() {
   uint16 bak1 = WORD(main_module_index);
   uint16 bak2 = WORD(overworld_map_state);
-  Overworld_LoadAmbientOverlayAndMapData();
+  Overworld_LoadAndBuildScreen();
   WORD(overworld_map_state) = bak2 + 1;
   WORD(main_module_index) = bak1;
 }
@@ -2136,7 +2136,7 @@ void FluteMenu_FadeInAndQuack() {
   }
 }
 
-void OverworldMap_RestoreGfx() {
+void WorldMap_ExitMap() {
   overworld_palette_aux_or_main = 0;
   hud_palette = 0;
   InitializeTilesets();
@@ -2437,12 +2437,12 @@ void Messaging_OverworldMap() {
     WorldMap_RestoreGraphics();
     break;
   case 7:
-    OverworldMap_RestoreGfx();
+    WorldMap_ExitMap();
     break;
   }
 }
 
-void Messaging_BirdTravel() {
+void Module0E_0A_FluteMenu() {
   switch (overworld_map_state) {
   case 0:
     WorldMap_FadeOut();
@@ -2484,7 +2484,7 @@ void Module0E_0B_SaveMenu() {
   // This is the continue / save and quit menu
   if (!player_is_indoors)
     Overworld_DwDeathMountainPaletteAnimation();
-  Messaging_Text();
+  RenderText();
   flag_update_hud_in_nmi = 0;
   nmi_disable_core_updates = 0;
   if (subsubmodule_index < 3)
@@ -2509,15 +2509,15 @@ void Module0E_0B_SaveMenu() {
 static PlayerHandlerFunc *const kMessagingSubmodules[12] = {
   &Module_Messaging_0,
   &Hud_Module_Run,
-  &Messaging_Text,
-  &Messaging_DungMap,
+  &RenderText,
+  &Module0E_03_DungeonMap,
   &Module0E_04_RedPotion,
   &Module0E_05_DesertPrayer,
   &Module_Messaging_6,
   &Messaging_OverworldMap,
   &Module0E_08_GreenPotion,
   &Module0E_09_BluePotion,
-  &Messaging_BirdTravel,
+  &Module0E_0A_FluteMenu,
   &Module0E_0B_SaveMenu,
 };
 
@@ -2711,7 +2711,7 @@ void GameOver_AnimateChoiceFairy() {
   oam_buf[spr].flags = 0x78;
 }
 
-void Link_SpinAndDie_bounce() {
+void Death_Func4() {
   Death_PlayerSwoon();
 }
 void GameOver_SplatAndFade() {
@@ -2886,7 +2886,7 @@ void GameOver_Finalize_GAMEOVR() {
   uint8 bak1 = main_module_index;
   uint8 bak2 = submodule_index;
   messaging_module = 2;
-  Messaging_Text();
+  RenderText();
   submodule_index = bak2 + 1;
   main_module_index = bak1;
   g_ram[0xc8] = 2;
@@ -3062,7 +3062,7 @@ static PlayerHandlerFunc *const kModule_Death[16] = {
   &Death_Func1,
   &GameOver_DelayBeforeIris,
   &GameOver_IrisWipe,
-  &Link_SpinAndDie_bounce,
+  &Death_Func4,
   &GameOver_SplatAndFade,
   &Death_Func6,
   &Animate_GAMEOVER_Letters_bounce,
@@ -3085,7 +3085,7 @@ void Module12_GameOver() {
 static const uint8 kLocationMenuStartPos[3] = {0, 1, 6};
 
 void Module1B_SpawnSelect() {
-  Messaging_Text();
+  RenderText();
   if (submodule_index)
     return;
   nmi_load_bg_from_vram = 0;

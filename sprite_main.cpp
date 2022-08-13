@@ -28,7 +28,7 @@ void SpritePrep_Kyameron(int k);
 int Sprite_SpawnBomb(int k);
 int Sprite_SpawnFireball(int k);
 void Sprite_Guard_SendOutProbe(int k);
-void Sprite_Sprite_SpawnProbeAlways(int k, uint8 r15);
+void Sprite_SpawnProbeAlways(int k, uint8 r15);
 void Thief_Draw(int k);
 void Lady_Draw(int k);
 bool ShopItem_HandleCost(int amt);
@@ -48,16 +48,16 @@ void Sprite_Raven(int k) {
   int j;
   bool fleeing = false;
   sprite_obj_prio[k] |= 0x30;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   switch (sprite_ai_state[k]) {
   case 0: { // inwait
-    PairU8 r = Sprite_IsToRightOfPlayer(k);
+    PairU8 r = Sprite_IsRightOfLink(k);
     sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | r.a * 0x40;
     int x = link_x_coord - cur_sprite_x;
     int y = link_y_coord - cur_sprite_y;
@@ -114,7 +114,7 @@ void Vulture_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kVulture_Dmd[sprite_graphics[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 
 }
 
@@ -128,7 +128,7 @@ void Sprite_01_Vulture_bounce(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   switch (sprite_ai_state[k]) {
   case 0:  // dormant
     if (++sprite_subtype2[k] == 160) {
@@ -167,7 +167,7 @@ void Sprite_02_StalfosHead(int k) {
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | kStalfosHead_OamFlags[j];
   sprite_graphics[k] = kStalfosHead_Gfx[j];
   sprite_obj_prio[k] = 0x30;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_ReturnIfRecoiling(k))
@@ -175,7 +175,7 @@ void Sprite_02_StalfosHead(int k) {
   Sprite_CheckDamageToAndFromLink(k);
   if (sprite_F[k])
     Sprite_ZeroVelocity_XY(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   sprite_subtype2[k]++;
   ProjectSpeedRet pt;
   if (sprite_delay_main[k]) {
@@ -196,7 +196,7 @@ void Sprite_02_StalfosHead(int k) {
 }
 
 void PullSwitch_HandleUpPulling(int k) {
-  if (!Sprite_CheckDamageToPlayerSameLayer(k))
+  if (!Sprite_CheckDamageToLink_same_layer(k))
     return;
   link_actual_vel_y = 0;
   link_actual_vel_x = 0;
@@ -234,7 +234,7 @@ void BadPullDownSwitch_Draw(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
-  OAM_AllocateDeferToPlayer(k);
+  Oam_AllocateDeferToPlayer(k);
   OamEnt *oam = GetOamCurPtr();
   uint8 yoff = kBadPullSwitch_Tab5[kBadPullSwitch_Tab4[sprite_graphics[k]]];
   for (int i = 4; i >= 0; i--, oam++) {
@@ -252,7 +252,7 @@ void BadPullUpSwitch_Draw(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
-  OAM_AllocateDeferToPlayer(k);
+  Oam_AllocateDeferToPlayer(k);
   OamEnt *oam = GetOamCurPtr();
   uint8 yoff = kBadPullSwitch_Tab5[kBadPullSwitch_Tab4[sprite_graphics[k]]];
   for (int i = 1; i >= 0; i--, oam++) {
@@ -291,7 +291,7 @@ void PullSwitch_FacingUp(int k) {
 }
 
 void PullSwitch_HandleDownPulling(int k) {
-  if (!Sprite_CheckDamageToPlayerSameLayer(k))
+  if (!Sprite_CheckDamageToLink_same_layer(k))
     return;
   link_actual_vel_y = 0;
   link_actual_vel_x = 0;
@@ -324,7 +324,7 @@ void GoodPullSwitch_Draw(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
-  OAM_AllocateDeferToPlayer(k);
+  Oam_AllocateDeferToPlayer(k);
   OamEnt *oam = GetOamCurPtr();
   uint8 t = kGoodPullSwitch_Tab2[sprite_graphics[k]];
   oam[0].x = oam[1].x = info.x;
@@ -365,7 +365,7 @@ void PullSwitch_FacingDown(int k) {
     sprite_graphics[k] = 0;
 }
 
-void Sprite_PullSwitch(int k) {
+void Sprite_PullSwitch_bounce(int k) {
   if (sprite_type[k] == 5 || sprite_type[k] == 7)
     PullSwitch_FacingUp(k);
   else
@@ -415,7 +415,7 @@ void Octorock_Draw(int k) {
   sprite_flags2[k]++;
 }
 
-void Sprite_Octorock(int k) {
+void Sprite_08_Octorok(int k) {
   static const uint8 kOctorock_Tab0[20] = {
     0, 2, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 2, 2, 2, 2, 2, 1, 1, 0, 
   };
@@ -437,7 +437,7 @@ void Sprite_Octorock(int k) {
     return;
   if (Sprite_ReturnIfRecoiling(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_CheckDamageToAndFromLink(k);
   if (!(sprite_ai_state[k] & 1)) {
     sprite_graphics[k] = ++sprite_subtype2[k] >> 3 & 3 | (sprite_D[k] & 2) << 1;
@@ -550,7 +550,7 @@ void GiantMoldorm_DrawSegment_C_OrTail(int k, int lookback) {
   cur_sprite_y = moldorm_y_lo[j] | moldorm_y_hi[j] << 8;
   uint8 bak = sprite_oam_flags[k];
   sprite_oam_flags[k] = (bak & 0x3f) | kGiantMoldorm_OamFlags[sprite_subtype2[k] >> 1 & 3];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   sprite_oam_flags[k] = bak;
 }
 
@@ -579,7 +579,7 @@ void Moldorm_HandleTail(int k) {
     uint16 oldy = Sprite_GetY(k);
     Sprite_SetX(k, cur_sprite_x);
     Sprite_SetY(k, cur_sprite_y);
-    Sprite_CheckDamageFromPlayer(k);
+    Sprite_CheckDamageFromLink(k);
     sprite_A[k] = 0;
     sprite_flags4[k] = 9;
     sprite_defl_bits[k] = 4;
@@ -643,7 +643,7 @@ void GiantMoldorm_Draw(int k) {
     }
   }
   GiantMoldorm_IncrementalSegmentExplosion(k);
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
 }
 
 void Sprite_09_Moldorm_bounce(int k) {
@@ -671,7 +671,7 @@ void Sprite_09_Moldorm_bounce(int k) {
     return;
   }
 
-  Sprite_CheckDamageFromPlayer(k);
+  Sprite_CheckDamageFromLink(k);
   bool low_health = (sprite_health[k] < 3);
   sprite_subtype2[k] += low_health ? 2 : 1;
   if (!(frame_counter & (low_health ? 3 : 7)))
@@ -684,7 +684,7 @@ void Sprite_09_Moldorm_bounce(int k) {
     return;
   }
 
-  if (!link_incapacitated_timer && Sprite_CheckDamageToPlayer(k)) {
+  if (!link_incapacitated_timer && Sprite_CheckDamageToLink(k)) {
     Link_CancelDash();
     ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, 0x28);
     link_actual_vel_y = pt.y;
@@ -697,7 +697,7 @@ void Sprite_09_Moldorm_bounce(int k) {
   int j = sprite_D[k] + low_health * 16;
   sprite_x_vel[k] = kGiantMoldorm_Xvel[j];
   sprite_y_vel[k] = kGiantMoldorm_Yvel[j];
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (Sprite_CheckTileCollision(k)) {
     sprite_D[k] = kGiantMoldorm_NextDir[sprite_D[k]];
     SpriteSfx_QueueSfx2WithPan(k, 0x21);
@@ -750,7 +750,7 @@ void Sprite_0B_Cucco(int k) {
   if (sprite_x_vel[k] != 0)
     sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | (sign8(sprite_x_vel[k]) ? 0 : 0x40);
 
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (sprite_head_dir[k] != 0) {
     sprite_type[k] = 0x3d;
     SpritePrep_LoadProperties(k);
@@ -773,11 +773,11 @@ void Sprite_0B_Cucco(int k) {
     return;
   if (sprite_C[k] != 0) {
     sprite_oam_flags[k] |= 0x10;
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     sprite_z[k] = 12;
     sprite_ignore_projectile[k] = 12;
     if (((k ^ frame_counter) & 7) == 0)
-      Sprite_CheckDamageToPlayer(k);
+      Sprite_CheckDamageToLink(k);
     Chicken_IncrSubtype2(k, 4);
   } else {
     sprite_health[k] = 255;
@@ -791,7 +791,7 @@ void Sprite_0B_Cucco(int k) {
       }
       sprite_ai_state[k] = 2;
     }
-    Sprite_CheckDamageFromPlayer(k);
+    Sprite_CheckDamageFromLink(k);
     switch (sprite_ai_state[k]) {
     case 0: Cucco_Calm(k); break;
     case 1: Chicken_Hopping(k); break;
@@ -855,7 +855,7 @@ void Cucco_Carried(int k) {
   if (Cucco_DoMovement_XY(k)) {
     sprite_x_vel[k] = -sprite_x_vel[k];
     sprite_y_vel[k] = -sprite_y_vel[k];
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     Sprite_HalveSpeed_XY(k);
     Sprite_HalveSpeed_XY(k);
     BawkBawk(k);
@@ -874,7 +874,7 @@ void Cucco_Carried(int k) {
   }
 }
 uint8 Cucco_DoMovement_XY(int k) {
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   return Sprite_CheckTileCollision(k);
 }
 void Cucco_SummonAvenger(int k) {
@@ -934,11 +934,11 @@ void Sprite_0C_OctorokStone(int k) {
     if (sprite_delay_main[k] == 30)
       SpriteSfx_QueueSfx2WithPan(k, 0x1f);
   } else {
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     if (Sprite_ReturnIfInactive(k))
       return;
-    Sprite_CheckDamageToPlayer(k);
-    Sprite_Move(k);
+    Sprite_CheckDamageToLink(k);
+    Sprite_MoveXY(k);
     if (!((k ^ frame_counter) & 3) && Sprite_CheckTileCollision(k))
       Sprite_Func3(k);
   }
@@ -1010,7 +1010,7 @@ void BuzzBlob_Draw(int k) {
     oam->flags = kBuzzBlob_DrawFlags[g * 3 + i] | info.flags;
     bytewise_extended_oam[oam - oam_buf] = kBuzzBlob_DrawExt[i] | (x >> 8 & 1);    
   }
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Buzzblob_SelectNewDirection(int k) {
@@ -1039,7 +1039,7 @@ void Sprite_0D_Buzzblob(int k) {
   if (!sprite_delay_main[k])
     Buzzblob_SelectNewDirection(k);
   if (!sprite_delay_aux1[k])
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   Sprite_CheckTileCollision2(k);
   Sprite_BounceOffWall(k);
   Sprite_CheckDamageToAndFromLink(k);
@@ -1082,7 +1082,7 @@ void SnapDragon_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kSnapDragon_Dmd[sprite_graphics[k] * 4], 4, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_0E_Snapdragon(int k) {
@@ -1108,7 +1108,7 @@ void Sprite_0E_Snapdragon(int k) {
         sprite_A[k] = 3;
         sprite_delay_main[k] = 96;
         sprite_C[k]++;
-        sprite_D[k] = Sprite_IsBelowPlayer(k).a * 2 + Sprite_IsToRightOfPlayer(k).a;
+        sprite_D[k] = Sprite_IsBelowLink(k).a * 2 + Sprite_IsRightOfLink(k).a;
       } else {
         sprite_D[k] = GetRandomNumber() & 3;
       }
@@ -1118,7 +1118,7 @@ void Sprite_0E_Snapdragon(int k) {
     break;
   case 1:  // attack
     sprite_B[k]++;
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (Sprite_CheckTileCollision(k))
       sprite_D[k] ^= 3;
     j = sprite_D[k] + (sprite_C[k] ? 4 : 0);
@@ -1165,7 +1165,7 @@ void Octoballoon_FormBabby(int k) {
     SpriteSpawnInfo info;
     int j = Sprite_SpawnDynamically(k, 0x10, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_x_vel[j] = kOctoballoon_Spawn_Xv[i];
       sprite_y_vel[j] = kOctoballoon_Spawn_Yv[i];
       sprite_z_vel[j] = 48;
@@ -1199,7 +1199,7 @@ void Octoballoon_Draw(int k) {
     oam->flags = kOctoballoon_Draw_Flags[j] | info.flags;
     bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
   }
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_0F_Octoballoon(int k) {
@@ -1227,10 +1227,10 @@ void Sprite_0F_Octoballoon(int k) {
     if (sprite_y_vel[k] - pt.y)
       sprite_y_vel[k] += sign8(sprite_y_vel[k] - pt.y) ? 1 : -1;
   }
-  Sprite_Move(k);
-  if (Sprite_CheckDamageToPlayer(k))
+  Sprite_MoveXY(k);
+  if (Sprite_CheckDamageToLink(k))
     Octoballoon_RecoilLink(k);
-  Sprite_CheckDamageFromPlayer(k);
+  Sprite_CheckDamageFromLink(k);
   Sprite_CheckTileCollision2(k);
   Sprite_BounceOffWall(k);
 }
@@ -1238,7 +1238,7 @@ void Sprite_10_OctoballoonBaby(int k) {
   if (!sprite_subtype2[k])
     sprite_state[k] = 0;
   if (sprite_subtype2[k] >= 64 || !(sprite_subtype2[k] & 1))
-    Sprite_PrepAndDrawSingleSmall(k);
+    SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_subtype2[k]--;
@@ -1250,7 +1250,7 @@ void Sprite_10_OctoballoonBaby(int k) {
     sprite_z[k] = 0;
     sprite_z_vel[k] = 16;
   }
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_CheckTileCollision2(k);
   Sprite_BounceOffWall(k);
   Sprite_CheckDamageToAndFromLink(k);
@@ -1270,7 +1270,7 @@ void Hinox_SetDirection(int k, uint8 dir) {
   sprite_y_vel[k] = kHinox_Yvel[dir];
 }
 void Hinox_FaceLink(int k) {
-  Hinox_SetDirection(k, Sprite_DirectionToFacePlayer(k, NULL));
+  Hinox_SetDirection(k, Sprite_DirectionToFaceLink(k, NULL));
   sprite_x_vel[k] <<= 1;
   sprite_y_vel[k] <<= 1;
 }
@@ -1329,7 +1329,7 @@ void Hinox_Draw(int k) {
   static const uint8 kHinoxOffs[12] = { 0, 4, 8, 12, 16, 19, 22, 25, 28, 33, 38, 42 };
   int j = sprite_graphics[k];
   Sprite_DrawMultiple(k, &kHinox_Dmd[kHinoxOffs[j]], kHinoxNum[j], &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_11_Hinox(int k) {
@@ -1367,7 +1367,7 @@ void Sprite_11_Hinox(int k) {
         sprite_A[k] = 11;
         sprite_subtype2[k]++;
       }
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (!Sprite_CheckTileCollision(k)) {
         static const uint8 kHinox_WalkGfx[4] = {6, 4, 0, 2};
         sprite_graphics[k] = kHinox_WalkGfx[sprite_D[k]] + (sprite_subtype2[k] & 1);
@@ -1478,7 +1478,7 @@ void Moblin_Draw(int k) {
   int j = sprite_head_dir[k];
   oam->charnum = kMoblin_HeadChar[j];
   oam->flags = oam->flags &~0x40 | kMoblin_HeadFlags[j];
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Moblin_MaterializeSpear(int k) {
@@ -1512,7 +1512,7 @@ void Sprite_12_Moblin(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_CheckTileCollision2(k);
   switch(sprite_ai_state[k]) {
   case 0:  // select dir
@@ -1535,7 +1535,7 @@ void Sprite_12_Moblin(int k) {
         }
         return;
       }
-      if (sprite_D[k] == Sprite_DirectionToFacePlayer(k, NULL)) {
+      if (sprite_D[k] == Sprite_DirectionToFaceLink(k, NULL)) {
         sprite_ai_state[k]++;
         sprite_delay_main[k] = 32;
         Sprite_ZeroVelocity_XY(k);
@@ -1550,7 +1550,7 @@ void Sprite_12_Moblin(int k) {
     sprite_ai_state[k] = 0;
     if (++sprite_C[k] == 4) {
       sprite_C[k] = 0;
-      sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL);
+      sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL);
     }
     Sprite_ZeroVelocity_XY(k);
     sprite_z_vel[k] = 0;
@@ -1583,7 +1583,7 @@ void Sprite_13_MiniHelmasaur(int k) {
     if (sign8(y)) y = -y;
     sprite_D[k] = (x >= y) ? (sprite_x_vel[k] >> 7) : (sprite_y_vel[k] >> 7) + 2;
   }
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   HelmasaurHardHatBeetleCommon(k);
 }
 
@@ -1593,7 +1593,7 @@ int Sprite_SpawnDustCloud(int k) {
   if (j >= 0) {
     info.r2_y += (GetRandomNumber() & 15);
     info.r0_x += (GetRandomNumber() & 15) - 8;
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_subtype2[j] = 1;
   }
   return j;
@@ -1606,7 +1606,7 @@ void Sprite_14_ThievesTownGrate_bounce(int k) {
     return;
   if (Sprite_CheckIfLinkIsBusy())
     return;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     link_need_for_pullforrupees_sprite = 1;
     sprite_A[k] = 1;
   } else {
@@ -1664,11 +1664,11 @@ void SpriteDraw_Antfairy(int k) {
   Sprite_DrawMultiple(k, &kDrawFourAroundOne_Dmd[sprite_graphics[k] * 5], 5, NULL);
 }
 
-void Sprite_Bubble(int k) {
+void Sprite_15_Antifairy(int k) {
   SpriteDraw_Antfairy(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (Sprite_CheckDamageToPlayer(k) && sprite_delay_main[k] == 0) {
+  if (Sprite_CheckDamageToLink(k) && sprite_delay_main[k] == 0) {
     sprite_delay_main[k] = 16;
     int t = link_magic_power - 8;
     if (t < 0)
@@ -1677,7 +1677,7 @@ void Sprite_Bubble(int k) {
       sound_effect_2 = 0x1d;
     link_magic_power = t;
   }
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_BounceFromTileCollision(k);
 }
 
@@ -1752,7 +1752,7 @@ void Elder_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kElder_Dmd[sprite_graphics[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_16_Elder_bounce(int k) {
@@ -1776,14 +1776,14 @@ void Sprite_Hoarder_Frantic(int k) {
   static const int8 kRupeeCrab_Xvel[4] = {-16, 16, -16, 16};
   static const int8 kRupeeCrab_Yvel[4] = {-16, -16, 16, 16};
 
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_ReturnIfRecoiling(k))
     return;
-  Sprite_CheckDamageFromPlayer(k);
+  Sprite_CheckDamageFromLink(k);
   if (!sprite_delay_aux2[k])
-    Sprite_CheckDamageToPlayer(k);
+    Sprite_CheckDamageToLink(k);
   int j = ++sprite_subtype2[k] >> 1 & 3;
   sprite_graphics[k] = kRupeeCrab_Gfx[j];
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | kRupeeCrab_OamFlags[j];
@@ -1793,7 +1793,7 @@ void Sprite_Hoarder_Frantic(int k) {
     sprite_x_vel[k] = kRupeeCrab_Xvel[j];
     sprite_y_vel[k] = kRupeeCrab_Yvel[j];
   } else {
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   }
   Sprite_CheckTileCollision2(k);
   if (!sprite_delay_aux4[k] && !((k ^ frame_counter) & 31)) {
@@ -1822,7 +1822,7 @@ void Sprite_Hoarder_Frantic(int k) {
   j = Sprite_SpawnDynamicallyEx(k, type, &info, end);
   if (j >= 0) {
     sprite_head_dir[k]++;
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     Sprite_SetX(j, info.r0_x + 8);
     sprite_z_vel[j] = 32;
     sprite_delay_aux4[j] = 16;
@@ -1867,7 +1867,7 @@ void Sprite_Hoarder_Covered(int k) {
     return;
   sprite_graphics[k] = 0;
   PointU8 pt;
-  uint8 dir = Sprite_DirectionToFacePlayer(k, &pt);
+  uint8 dir = Sprite_DirectionToFaceLink(k, &pt);
   if (sprite_delay_main[k])
     goto lbl;
   if ((uint8)(pt.y + 0x30) < 0x60 && (uint8)(pt.x + 0x20) < 0x40) {
@@ -1875,9 +1875,9 @@ void Sprite_Hoarder_Covered(int k) {
 lbl:sprite_x_vel[k] = kRupeeCoveredGrab_Xvel[dir];
     sprite_y_vel[k] = kRupeeCoveredGrab_Yvel[dir];
     if (!sprite_wallcoll[k])
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     Sprite_CheckTileCollision2(k);
-    Sprite_CheckDamageFromPlayer(k);
+    Sprite_CheckDamageFromLink(k);
     sprite_graphics[k] = kRupeeCoveredGrab_Gfx[++sprite_subtype2[k] >> 1 & 3];
   }
   if (sprite_type[k] != 0x3e || link_item_gloves >= 1)
@@ -1890,7 +1890,7 @@ lbl:sprite_x_vel[k] = kRupeeCoveredGrab_Xvel[dir];
     SpriteSpawnInfo info;
     int j = Sprite_SpawnDynamically(k, 0x3e, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_flags2[j] &= ~0x80;
       sprite_delay_aux2[j] = 128;
       sprite_oam_flags[j] = 9;
@@ -1899,7 +1899,7 @@ lbl:sprite_x_vel[k] = kRupeeCoveredGrab_Xvel[dir];
   }
 }
 
-void Sprite_CoveredRupeeCrab(int k) {
+void Sprite_17_Hoarder(int k) {
   if (sprite_ai_state[k])
     Sprite_Hoarder_Frantic(k);
   else
@@ -1949,7 +1949,7 @@ void Moldorm_Draw(int k) {
   }
 }
 
-void SpritePrep_Moldorm(int k) {
+void SpritePrep_MiniMoldorm_bounce(int k) {
   int j = 32 * k;
   for (int i = 0; i < 32; i++, j++) {
     moldorm_x_lo[j] = sprite_x_lo[k];
@@ -1968,7 +1968,7 @@ void Sprite_18_MiniMoldorm(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   if (sprite_F[k])
-    SpritePrep_Moldorm(k);
+    SpritePrep_MiniMoldorm_bounce(k);
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
@@ -1976,7 +1976,7 @@ void Sprite_18_MiniMoldorm(int k) {
   int j = sprite_D[k];
   sprite_x_vel[k] = kMoldorm_Xvel[j];
   sprite_y_vel[k] = kMoldorm_Yvel[j];
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (Sprite_CheckTileCollision(k)) {
     if (GetRandomNumber() & 1)
       sprite_head_dir[k] = -sprite_head_dir[k];
@@ -2046,7 +2046,7 @@ void Sprite_19_Poe(int k) {
   oam_cur_ptr += 4;
   oam_ext_cur_ptr++;
   sprite_flags2[k]--;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   sprite_flags2[k]++;
   if (Sprite_ReturnIfInactive(k))
     return;
@@ -2059,7 +2059,7 @@ void Sprite_19_Poe(int k) {
   }
   Sprite_CheckDamageToAndFromLink(k);
   sprite_subtype2[k]++;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (!(frame_counter & 1)) {
     j = sprite_G[k] & 1;
     sprite_z_vel[k] += kPoe_Accel[j];
@@ -2073,7 +2073,7 @@ void Sprite_19_Poe(int k) {
     if (!sprite_delay_main[k]) {
       sprite_ai_state[k] = 1;
       if (!(GetRandomNumber() & 12))
-        sprite_head_dir[k] = Sprite_IsBelowPlayer(k).a;
+        sprite_head_dir[k] = Sprite_IsBelowLink(k).a;
       else
         sprite_head_dir[k] = GetRandomNumber() & 1;
     }
@@ -2094,7 +2094,7 @@ void Sprite_19_Poe(int k) {
 }
 
 bool Smithy_ListenForHammer(int k) {
-  return sprite_delay_aux1[k] == 0 && hud_cur_item == 12 && (link_item_in_hand & 2) && player_handler_timer == 2 && Sprite_CheckDamageToPlayerSameLayer(k);
+  return sprite_delay_aux1[k] == 0 && hud_cur_item == 12 && (link_item_in_hand & 2) && player_handler_timer == 2 && Sprite_CheckDamageToLink_same_layer(k);
 }
 void Smithy_SpawnSpark(int k);
 
@@ -2123,7 +2123,7 @@ void Smithy_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kSmithy_Dmd[sprite_graphics[k] * 4 + sprite_D[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Smithy_Main(int k) {
@@ -2255,7 +2255,7 @@ void Smithy_Main(int k) {
     sprite_graphics[k] = 4;
     break;
   }
-  case 11:  // Smithy_Thanks
+  case 11:  // Smithy_CopiouslyThankful
     Sprite_ShowSolicitedMessage(k, 0xe3);
     break;
 
@@ -2325,7 +2325,7 @@ void SmithyFrog_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, kSmithyFrog_Dmd, 1, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Smithy_Frog(int k) {
@@ -2367,7 +2367,7 @@ void ReturningSmithy_Draw(int k) {
   PrepOamCoordsRet info;
   BYTE(dma_var7) = kReturningSmithy_Dma[j];
   Sprite_DrawMultiplePlayerDeferred(k, &kReturningSmithy_Dmd[j], 1, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Smithy_Homecoming(int k) {
@@ -2380,7 +2380,7 @@ void Smithy_Homecoming(int k) {
     static const int8 kReturningSmithy_Dir[3] = {0, 2, -1};
     static const int8 kReturningSmithy_Xvel[4] = {0, 0, -13, 13};
     static const int8 kReturningSmithy_Yvel[4] = {-13, 13, 0, 0};
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     sprite_graphics[k] = frame_counter >> 3 & 1;
     if (sprite_delay_main[k])
       return;
@@ -2461,11 +2461,11 @@ void Sprite_1B_Arrow(int k) {
         j = (frame_counter << 1 & 4) | sprite_D[k];
         sprite_x_vel[k] = kEnemyArrow_Xvel[j];
         sprite_y_vel[k] = kEnemyArrow_Yvel[j];
-        Sprite_Move(k);
+        Sprite_MoveXY(k);
       }
       return;
     }
-    Sprite_CheckDamageToPlayerSameLayer(k);
+    Sprite_CheckDamageToLink_same_layer(k);
     if (sprite_E[k] == 0 && Sprite_CheckTileCollision(k)) {
       if (sprite_A[k]) {
         SpriteSfx_QueueSfx2WithPan(k, 0x5);
@@ -2477,7 +2477,7 @@ void Sprite_1B_Arrow(int k) {
         SpriteSfx_QueueSfx2WithPan(k, 0x8);
       }
     } else {
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     }
   } else {
     if (sprite_ai_state[k] == 0) {
@@ -2489,7 +2489,7 @@ void Sprite_1B_Arrow(int k) {
     }
     sprite_D[k] = kEnemyArrow_Dirs[sprite_delay_main[k] >> 3 & 3];
     Sprite_MoveZ(k);
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     sprite_z_vel[k] -= 2;
     if (sign8(sprite_z[k]))
       sprite_state[k] = 0;
@@ -2527,7 +2527,7 @@ void Statue_BlockSprites(int k) {
     if ((uint16)(cur_sprite_x - x + 12) < 24 &&
         (uint16)(cur_sprite_y - y + 12) < 36) {
       sprite_F[j] = 4;
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 32);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 32);
       sprite_y_recoil[j] = pt.y;
       sprite_x_recoil[j] = pt.x;
     }
@@ -2557,18 +2557,18 @@ void Sprite_1C_Statue(int k) {
   dung_flag_statechange_waterpuzzle = 0;
   if (Statue_CheckForSwitch(k))
     dung_flag_statechange_waterpuzzle = 1;
-  Sprite_Move(k);
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_MoveXY(k);
+  Sprite_Get16BitCoords(k);
   Sprite_CheckTileCollision2(k);
   Sprite_ZeroVelocity_XY(k);
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     sprite_delay_main[k] = 7;
     Sprite_RepelDash();
     if (sprite_delay_aux1[k]) {
       Sprite_NullifyHookshotDrag();
       return;
     }
-    j = Sprite_DirectionToFacePlayer(k, NULL);
+    j = Sprite_DirectionToFaceLink(k, NULL);
     sprite_x_vel[k] = kMovableStatue_Xvel[j];
     sprite_y_vel[k] = kMovableStatue_Yvel[j];
   } else {
@@ -2576,7 +2576,7 @@ void Sprite_1C_Statue(int k) {
       sprite_delay_aux1[k] = 13;
     if ((uint16)(cur_sprite_x - link_x_coord + 16) < 35 &&
         (uint16)(cur_sprite_y - link_y_coord + 12) < 36 &&
-        link_direction_facing == kMovableStatue_Dir[j = Sprite_DirectionToFacePlayer(k, NULL)] &&
+        link_direction_facing == kMovableStatue_Dir[j = Sprite_DirectionToFaceLink(k, NULL)] &&
         !link_is_running) {
       link_is_near_moveable_statue = 1;
       sprite_A[k] = 1;
@@ -2618,11 +2618,11 @@ void Sprite_1D_FluteQuest(int k) {
 }
 void Sprite_1E_CrystalSwitch(int k) {
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0xe | kCrystalSwitchPal[orange_blue_barrier_state & 1];
-  OAM_AllocateDeferToPlayer(k);
-  Sprite_PrepAndDrawSingleLarge(k);
+  Oam_AllocateDeferToPlayer(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     Sprite_NullifyHookshotDrag();
     link_speed_setting = 0;
     Sprite_RepelDash();
@@ -2633,7 +2633,7 @@ void Sprite_1E_CrystalSwitch(int k) {
   }
   if (sprite_F[k] == 0) {
     if (sign8(button_b_frames - 9))
-      Sprite_CheckDamageFromPlayer(k);
+      Sprite_CheckDamageFromLink(k);
   } else if (sprite_F[k]-- == 11) {
     orange_blue_barrier_state ^= 1;
     submodule_index = 22;
@@ -2674,7 +2674,7 @@ void Sprite_1F_SickKid(int k) {
     return;
   switch (sprite_ai_state[k]) {
   case 0:  // resting
-    if (Sprite_CheckIfLinkIsBusy() || !Sprite_CheckDamageToPlayerSameLayer(k))
+    if (Sprite_CheckIfLinkIsBusy() || !Sprite_CheckDamageToLink_same_layer(k))
       return;
     if ((link_bottle_info[0] | link_bottle_info[1] | link_bottle_info[2] | link_bottle_info[3]) < 2) {
       Sprite_ShowSolicitedMessage(k, 0x104);
@@ -2713,7 +2713,7 @@ void Sluggula_DropBomb(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamicallyEx(k, 0x4a, &info, 11);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     Sprite_TransmuteToBomb(j);
   }
 }
@@ -2725,7 +2725,7 @@ void Sprite_20_Sluggula(int k) {
   int j = sprite_D[k] << 1 | (sprite_subtype2[k] & 8) >> 3;
   sprite_graphics[k] = kSluggula_Gfx[j];
   sprite_oam_flags[k] = sprite_oam_flags[k] & 191 | kSluggula_OamFlags[j];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_ReturnIfRecoiling(k))
@@ -2750,7 +2750,7 @@ set_vel:
       sprite_ai_state[k] = 0;
       sprite_delay_main[k] = 32;
     }
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (!Sprite_CheckTileCollision(k))
       return;
     j = (sprite_D[k] ^= 1);
@@ -2802,7 +2802,7 @@ void PushSwitch_Draw(int k) {
     {  0,  0, 0xca, 0x20},
   };
   static const uint8 kPushSwitch_WH[16] = {8, 6, 0x10, 0x10, 0x10, 8, 0x10, 8, 0x10, 8, 0x10, 8, 0x10, 3, 0x10, 8};
-  OAM_AllocateDeferToPlayer(k);
+  Oam_AllocateDeferToPlayer(k);
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
@@ -2856,15 +2856,15 @@ void PushSwitch_Draw(int k) {
     hb.r6_spr_xsize = kPushSwitch_WH[d * 2 + 0];
     hb.r7_spr_ysize = kPushSwitch_WH[d * 2 + 1];
     Link_SetupHitBox(&hb);
-    if (Utility_CheckIfHitBoxesOverlap(&hb)) {
+    if (CheckIfHitBoxesOverlap(&hb)) {
       uint16 oldy = Sprite_GetY(k);
       Sprite_SetY(k, oldy + 19);
-      uint8 new_dir = Sprite_DirectionToFacePlayer(k, NULL);
+      uint8 new_dir = Sprite_DirectionToFaceLink(k, NULL);
       Sprite_SetY(k, oldy);
       if (new_dir == 0 && link_direction_facing == 4)
         sprite_C[k]++;
     } else {
-      if (!Sprite_CheckDamageToPlayerSameLayer(k))
+      if (!Sprite_CheckDamageToLink_same_layer(k))
         return;
     }
     Sprite_NullifyHookshotDrag();
@@ -2925,7 +2925,7 @@ void Ropa_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kRopa_Dmd[sprite_graphics[k] * 3], 3, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 
 }
 void Sprite_22_Ropa(int k) {
@@ -2946,7 +2946,7 @@ void Sprite_22_Ropa(int k) {
     }
     break;
   case 1:  // pounce
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (Sprite_CheckTileCollision(k))
       Sprite_ZeroVelocity_XY(k);
     Sprite_MoveZ(k);
@@ -2973,7 +2973,7 @@ void RedBari_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kRedBari_Dmd[sprite_graphics[k] * 4], 4, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void RedBari_Split(int k) {
@@ -2985,7 +2985,7 @@ void RedBari_Split(int k) {
     SpriteSpawnInfo info;
     int j = Sprite_SpawnDynamically(k, 0x23, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_flags3[j] = 0x33;
       sprite_oam_flags[j] = 3;
       sprite_flags4[j] = 1;
@@ -2999,7 +2999,7 @@ void RedBari_Split(int k) {
 
 }
 
-void Sprite_BlueBari(int k) {
+void Sprite_23_RedBari(int k) {
   static const int8 kBari_Xvel2[16] = {0, 8, 11, 14, 16, 14, 11, 8, 0, -8, -11, -14, -16, -14, -11, -8};
   static const int8 kBari_Yvel2[16] = {-16, -14, -11, -8, 0, 8, 11, 14, 16, 14, 11, 8, 0, -9, -11, -14};
   static const uint8 kBari_Gfx[2] = {0, 3};
@@ -3023,9 +3023,9 @@ void Sprite_BlueBari(int k) {
     return;
   }
   if (sprite_C[k] != 0) {
-    Sprite_PrepAndDrawSingleSmall(k);
+    SpriteDraw_SingleSmall(k);
   } else if (sprite_graphics[k] >= 2) {
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
   } else {
     RedBari_Draw(k);
   }
@@ -3062,7 +3062,7 @@ void Sprite_BlueBari(int k) {
   if (!((k ^ frame_counter) & 3 | sprite_delay_main[k])) {
 recoil_from_split:
     if (!sprite_wallcoll[k])
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     Sprite_CheckTileCollision2(k);
   }
   j = sprite_C[k];
@@ -3089,7 +3089,7 @@ void TalkingTree_SpawnBomb(int k) {
   int j = Sprite_SpawnDynamically(k, 0x4a, &info);
   if (j >= 0) {
     Sprite_TransmuteToBomb(j);
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_delay_aux1[j] = 64;
     sprite_y_vel[j] = 24;
     sprite_z_vel[j] = 18;
@@ -3127,7 +3127,7 @@ void TalkingTree_Mouth(int k) {
   switch(sprite_ai_state[k]) {
   case 0:
     sprite_graphics[k] = 0;
-    if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+    if (Sprite_CheckDamageToLink_same_layer(k)) {
       Link_CancelDash();
       link_incapacitated_timer = 16;
       ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, 48);
@@ -3180,7 +3180,7 @@ void TalkingTree_Mouth(int k) {
 
 void TalkingTree_Eye(int k) {
   static const int8 kTalkingTree_Type1_X[2] = {9, -9};
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   int j = sprite_head_dir[k];
@@ -3217,7 +3217,7 @@ void HelmasaurHardHatBeetleCommon(int k) {
       sprite_x_vel[k] = 0;
     sprite_y_vel[k] = 0;
   } else {
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   }
   Sprite_CheckTileCollision(k);
   if (!((k ^ frame_counter) & 31)) {
@@ -3241,7 +3241,7 @@ void HardHatBeetle_Draw(int k) {
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kHardHatBeetle_Dmd[sprite_graphics[k] * 2], 2, &info);
   if (sprite_flags3[k] & 0x10)
-    Sprite_DrawShadow(k, &info);
+    SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_26_HardhatBeetle(int k) {
@@ -3258,12 +3258,12 @@ void Sprite_27_Deadrock(int k) {
   int j = (sprite_delay_aux2[k] ? (sprite_delay_aux2[k] & 4) : (sprite_ai_state[k] != 2)) ? sprite_A[k] : 8;
   sprite_graphics[k] = kDeadRock_Gfx[j];
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | kDeadRock_OamFlags[j];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (!sprite_F[k] && (Sprite_CheckDamageFromPlayer(k) & kCheckDamageFromPlayer_Carry) && !sound_effect_1)
+  if (!sprite_F[k] && (Sprite_CheckDamageFromLink(k) & kCheckDamageFromPlayer_Carry) && !sound_effect_1)
     SpriteSfx_QueueSfx2WithPan(k, 0xb);
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     Sprite_NullifyHookshotDrag();
     Sprite_RepelDash();
   }
@@ -3284,7 +3284,7 @@ void Sprite_27_Deadrock(int k) {
       sprite_delay_main[k] = (GetRandomNumber() & 31) + 32;
       if (++sprite_B[k] == 4) {
         sprite_B[k] = 0;
-        j = Sprite_DirectionToFacePlayer(k, NULL);
+        j = Sprite_DirectionToFaceLink(k, NULL);
       } else {
         j = GetRandomNumber() & 3;
       }
@@ -3299,7 +3299,7 @@ set_dir:
       sprite_ai_state[k] = 0;
       sprite_delay_main[k] = 32;
     } else {
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (Sprite_CheckTileCollision(k)) {
         j = sprite_D[k] ^ 1;
         goto set_dir;
@@ -3340,7 +3340,7 @@ void StoryTeller_1_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kStoryTeller_Dmd[sprite_subtype2[k] * 2 + sprite_graphics[k]], 1, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void DarkWorldHintNPC_Idle(int k) {
@@ -3459,7 +3459,7 @@ void FluteBoyFather_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kFluteBoyFather_Dmd[sprite_graphics[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 void Sprite_FluteDad(int k) {
   FluteBoyFather_Draw(k);
@@ -3474,7 +3474,7 @@ void Sprite_FluteDad(int k) {
   } else if (link_item_flute < 2) {
     Sprite_ShowSolicitedMessage(k, 0xa1);
   } else if (!(Sprite_ShowSolicitedMessage(k, 0xa4) & 0x100) && 
-             hud_cur_item == 13 && (joypad1H_last&0x40) && Sprite_CheckDamageToPlayerSameLayer(k)) {
+             hud_cur_item == 13 && (joypad1H_last&0x40) && Sprite_CheckDamageToLink_same_layer(k)) {
     Sprite_ShowMessageUnconditional(0xa2);
     sprite_ai_state[k]++;
     sprite_graphics[k] = 2;
@@ -3484,11 +3484,11 @@ void Sprite_FluteDad(int k) {
 void Sprite_ThiefHideoutGuy(int k) {
   if (!(frame_counter & 3)) {
     sprite_graphics[k] = 2;
-    uint8 dir = Sprite_DirectionToFacePlayer(k, NULL);
+    uint8 dir = Sprite_DirectionToFaceLink(k, NULL);
     sprite_head_dir[k] = dir == 3 ? 2 : dir;
   }
   sprite_oam_flags[k] = 15;
-  OAM_AllocateDeferToPlayer(k);
+  Oam_AllocateDeferToPlayer(k);
   Thief_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
@@ -3498,7 +3498,7 @@ void Sprite_ThiefHideoutGuy(int k) {
 }
 
 void Thief_CheckCollisionWithLink(int k) {
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, 32);
     link_actual_vel_y = pt.y;
     sprite_y_recoil[k] = pt.y ^ 0xff;
@@ -3562,7 +3562,7 @@ void Thief_GrabBooty(int k, int j) {
 
 void Thief_TargetBooty(int k, int j) {
   if (!((k ^ frame_counter) & 3)) {
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, Sprite_GetX(j), Sprite_GetY(j), 19);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, Sprite_GetX(j), Sprite_GetY(j), 19);
     sprite_x_vel[k] = pt.x;
     sprite_y_vel[k] = pt.y;
   }
@@ -3598,9 +3598,9 @@ void Sprite_C4_Thief(int k) {
     return;
   if (Sprite_ReturnIfRecoiling(k))
     return;
-  Sprite_CheckDamageFromPlayer(k);
+  Sprite_CheckDamageFromLink(k);
   if (sprite_ai_state[k] != 3) {
-    j = Sprite_DirectionToFacePlayer(k, NULL);
+    j = Sprite_DirectionToFaceLink(k, NULL);
     sprite_head_dir[k] = j;
     if ((j ^ sprite_D[k]) == 1)
       sprite_D[k] = j;
@@ -3619,7 +3619,7 @@ void Sprite_C4_Thief(int k) {
     break;
   case 1:  // watch player
     Thief_CheckCollisionWithLink(k);
-    sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL);
+    sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL);
     if (!sprite_delay_main[k]) {
       sprite_ai_state[k] = 2;
       sprite_delay_main[k] = 32;
@@ -3632,7 +3632,7 @@ thief_common:
   case 2:  // chase player
     Sprite_ApplySpeedTowardsLink(k, 18);
     if (!sprite_wallcoll[k])
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     Sprite_CheckTileCollision(k);
     if (!sprite_delay_main[k]) {
       if ((uint16)(link_x_coord - cur_sprite_x + 0x50) >= 0xa0 ||
@@ -3641,7 +3641,7 @@ thief_common:
         sprite_delay_main[k] = 128;
       }
     }
-    if (Sprite_CheckDamageToPlayer(k)) {
+    if (Sprite_CheckDamageToLink(k)) {
       sprite_ai_state[k]++;
       sprite_delay_main[k] = 32;
       Thief_SpillItems(k);
@@ -3655,7 +3655,7 @@ thief_common:
     if (!sprite_delay_main[k]) {
       sprite_graphics[k] = kThief_Gfx[4 + sprite_D[k] + (++sprite_subtype2[k] & 4)];
       if (!sprite_wallcoll[k])
-        Sprite_Move(k);
+        Sprite_MoveXY(k);
       Sprite_CheckTileCollision(k);
       sprite_D[k] = sprite_head_dir[k];
     }
@@ -3687,7 +3687,7 @@ void BlindHideoutGuy_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kBlindHideoutGuy_Dmd[sprite_graphics[k] * 2 + sprite_D[k] * 4], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_BlindsHutGuy(int k) {
@@ -3719,7 +3719,7 @@ void SweepingLady_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kSweepingLadyDmd[sprite_graphics[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 void Sprite_SweepingLady(int k) {
   SweepingLady_Draw(k);
@@ -3732,7 +3732,7 @@ void Sprite_SweepingLady(int k) {
 
 void Sprite_Hobo_Bubble(int k) {
   Oam_AllocateFromRegionC(4);
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_graphics[k] = (frame_counter >> 4 & 1) + 2;
@@ -3750,7 +3750,7 @@ int Hobo_SpawnBubble(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x2b, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_subtype2[j] = 1;
     sprite_z_vel[j] = 2;
     sprite_delay_main[j] = 96;
@@ -3764,10 +3764,10 @@ int Hobo_SpawnBubble(int k) {
 void Sprite_Hobo_Smoke(int k) {
   static const uint8 kHoboSmoke_OamFlags[4] = {0, 64, 128, 192};
   sprite_graphics[k] = 6;
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_MoveZ(k);
   sprite_oam_flags[k] = sprite_oam_flags[k] & 0x3f | kHoboSmoke_OamFlags[frame_counter >> 4 & 3];
   if (!sprite_delay_main[k])
@@ -3778,7 +3778,7 @@ void Hobo_SpawnSmoke(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x2b, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     Sprite_SetY(j, info.r2_y - 4);
     sprite_subtype2[j] = 3;
     sprite_z_vel[j] = 7;
@@ -3789,7 +3789,7 @@ void Hobo_SpawnSmoke(int k) {
 }
 
 void Sprite_Hobo_Fire(int k) {
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_graphics[k] = frame_counter >> 3 & 1;
@@ -3837,7 +3837,7 @@ void Sprite_Hobo_Bum(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_flags4[k] = 3;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     Sprite_NullifyHookshotDrag();
     link_speed_setting = 0;
     Link_CancelDash();
@@ -3845,7 +3845,7 @@ void Sprite_Hobo_Bum(int k) {
   switch(sprite_ai_state[k]) {
   case 0:  // sleeping
     sprite_flags4[k] = 7;
-    if (Sprite_CheckDamageToPlayerSameLayer(k) && (filtered_joypad_L & 0x80)) {
+    if (Sprite_CheckDamageToLink_same_layer(k) && (filtered_joypad_L & 0x80)) {
       sprite_ai_state[k] = 1;
       int j = sprite_E[k];
       sprite_delay_main[j] = 4;
@@ -3894,7 +3894,7 @@ void SpritePrep_Hobo_SpawnSmoke(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x2b, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_subtype2[j] = 0;
     sprite_ignore_projectile[j] = 0;
   }
@@ -4192,10 +4192,10 @@ void Sprite_FluteKid_Stumpy(int k) {
 }
 
 void Sprite_FluteKid_Quaver(int k) {
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_MoveZ(k);
   if (!sprite_delay_main[k])
     sprite_state[k] = 0;
@@ -4225,7 +4225,7 @@ void Sprite_MazeGameLady(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_TrackBodyToHead(k);
-  sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+  sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
   switch (sprite_ai_state[k]) {
   case 0:  // startup
     if (sprite_x_lo[k] < BYTE(link_x_coord)) {
@@ -4278,7 +4278,7 @@ void MazeGameGuy_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kMazeGameGuy_Dmd[sprite_graphics[k] * 2 + sprite_D[k] * 4], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_MazeGameGuy(int k) {
@@ -4360,7 +4360,7 @@ void Sprite_FortuneTeller(int k) {
   case 1: // dwarf solidity
     if (Sprite_ReturnIfInactive(k))
       return;
-    if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+    if (Sprite_CheckDamageToLink_same_layer(k)) {
       Sprite_NullifyHookshotDrag();
       link_speed_setting = 0;
       Link_CancelDash();
@@ -4499,7 +4499,7 @@ void QuarrelBros_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kQuarrelBros_Dmd[sprite_graphics[k] * 2 + sprite_D[k] * 4], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 
 }
 
@@ -4508,7 +4508,7 @@ void Sprite_QuarrelBros(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_TrackBodyToHead(k);
-  sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+  sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
   if (!(dungeon_room_index & 1)) {
     Sprite_ShowSolicitedMessage(k, 0x131);
   } else if (!(dung_door_opened & 0xff00)) {
@@ -4531,7 +4531,7 @@ void RupeePull_SpawnPrize(int k) {
       int j = Sprite_SpawnDynamically(k, kSpawnRupees_Type[byte_7E0FB6], &info);
       if (j < 0)
         break;
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_x_vel[j] = kSpawnRupees_Xvel[tmp_counter];
       sprite_y_vel[j] = kSpawnRupees_Yvel[tmp_counter];
       sprite_stunned[j] = 255;
@@ -4621,7 +4621,7 @@ void Sprite_33_RupeePull_bounce(int k) {
     return;
   if (Sprite_CheckIfLinkIsBusy())
     return;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     link_need_for_pullforrupees_sprite = 1;
     sprite_A[k] = 1;
   } else {
@@ -4643,7 +4643,7 @@ void InnKeeper_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, kInnKeeper_Dmd, 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_InnKeeper(int k) {
@@ -4686,7 +4686,7 @@ void Witch_Draw(int k) {
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
-  OAM_AllocateDeferToPlayer(k);
+  Oam_AllocateDeferToPlayer(k);
   OamEnt *oam = GetOamCurPtr();
   int g = sprite_graphics[k];
 
@@ -4730,7 +4730,7 @@ void Sprite_Witch(int k) {
     return;
   uint8 bak0 = sprite_flags4[k];
   sprite_flags4[k] = 2;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     Sprite_NullifyHookshotDrag();
     link_speed_setting = 0;
     Link_CancelDash();
@@ -4752,7 +4752,7 @@ void Sprite_Witch(int k) {
     } else if (link_item_mushroom == 1) {
       if (!(joypad1H_last & 0x40)) {
         Sprite_ShowSolicitedMessage(k, 0x4c);
-      } else if (Sprite_CheckDamageToPlayerSameLayer(k) && hud_cur_item == 5) {
+      } else if (Sprite_CheckDamageToLink_same_layer(k) && hud_cur_item == 5) {
         Witch_AcceptShroom(k);
       }
     } else {
@@ -4770,7 +4770,7 @@ void Sprite_Witch(int k) {
 void Waterfall(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     if (BYTE(overworld_screen_index) == 0x43)
       AncillaAdd_GTCutscene();
     else
@@ -4870,7 +4870,7 @@ void Sprite_BatCrash(int k) {
   RetreatBat_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   BatCrash_DrawHardcodedGarbage(k);
   bg1_y_offset = 0;
   if (sprite_delay_aux3[k]) {
@@ -4976,7 +4976,7 @@ void Sprite_38_EyeStatue_bounce(int k) {
     Sprite_PrepOamCoord(k, &info);
     if (Sprite_ReturnIfInactive(k))
       return;
-    if (Sprite_DirectionToFacePlayer(k, NULL) == 2 && sprite_unk2[k] == 9) {
+    if (Sprite_DirectionToFaceLink(k, NULL) == 2 && sprite_unk2[k] == 9) {
       dung_flag_statechange_waterpuzzle++;
       sprite_B[k] = 1;
     }
@@ -4991,7 +4991,7 @@ void MiddleAgedMan_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kMiddleAgedMan_Dmd[0], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_39_Locksmith(int k) {
@@ -5008,7 +5008,7 @@ void Sprite_39_Locksmith(int k) {
     Sprite_ShowSolicitedMessage(k, 0x107);
     bak = sprite_x_lo[k];
     sprite_x_lo[k] -= 16;
-    Sprite_Get_16_bit_Coords(k);
+    Sprite_Get16BitCoords(k);
     sprite_x_vel[k] = 1;
     sprite_y_vel[k] = 1;
     if (!Sprite_CheckTileCollision(k)) {
@@ -5069,11 +5069,11 @@ void Sprite_MadBatterBolt(int k) {
 
   if (sprite_subtype2[k] & 16)
     Oam_AllocateFromRegionB(4);
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (!sprite_ai_state[k]) {
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (!sprite_delay_main[k])
       sprite_ai_state[k] = 1;
   } else {
@@ -5094,7 +5094,7 @@ void Sprite_MagicBat_SpawnLightning(int k) {
     int j = Sprite_SpawnDynamically(k, 0x3a, &info);
     if (j >= 0) {
       SpriteSfx_QueueSfx3WithPan(k, 0x1);
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       Sprite_SetX(j, info.r0_x + 4);
       Sprite_SetY(j, info.r2_y + 12 - sprite_z[k]);
       sprite_z[j] = 0;
@@ -5125,7 +5125,7 @@ int Sprite_SpawnSuperficialBombBlast(int k) {
     sprite_flags2[j] = 3;
     sprite_oam_flags[j] = 4;
     SpriteSfx_QueueSfx2WithPan(k, 0x15);
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
   }
   return j;
 }
@@ -5134,7 +5134,7 @@ void Sprite_SpawnDummyDeathAnimation(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xb, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_state[j] = 6;
     sprite_delay_main[j] = 15;
     SpriteSfx_QueueSfx2WithPan(k, 0x14);
@@ -5149,16 +5149,16 @@ void Sprite_3A_MagicBat_bounce(int k) {
   }
 
   if (sprite_ai_state[k])
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_MoveZ(k);
   switch(sprite_ai_state[k]) {
   case 0:  // wait for summon
     if (link_magic_consumption >= 2)
       return;
-    if (!Sprite_CheckDamageToPlayerSameLayer(k))
+    if (!Sprite_CheckDamageToLink_same_layer(k))
       return;
     for (int i = 4; i >= 0; i--) {
       if (ancilla_type[i] == 0x1a) {
@@ -5222,12 +5222,12 @@ void Sprite_3A_MagicBat_bounce(int k) {
 }
 
 void Sprite_BookOfMudora(int k) {
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (Sprite_CheckDamageToPlayerSameLayer(k))
+  if (Sprite_CheckDamageToLink_same_layer(k))
     sprite_ai_state[k] = 3;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   sprite_z_vel[k]--;
   Sprite_MoveZ(k);
   if (sign8(sprite_z[k])) {
@@ -5264,12 +5264,12 @@ void Sprite_BookOfMudora(int k) {
 }
 
 void Sprite_BonkKey(int k) {
-  Sprite_DrawKey(k);
+  Sprite_DrawThinAndTall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (Sprite_CheckDamageToPlayerSameLayer(k))
+  if (Sprite_CheckDamageToLink_same_layer(k))
     sprite_ai_state[k] = 3;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   sprite_z_vel[k]--;
   Sprite_MoveZ(k);
   if (sign8(sprite_z[k])) {
@@ -5348,7 +5348,7 @@ int LumberjackTree_SpawnLeaves(int k) {
   sprite_subtype2[j] = 1;
   sprite_ai_state[j] = 2;
   sprite_delay_main[j] = 8;
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   return j;
 }
 
@@ -5358,12 +5358,12 @@ void Sprite_LumberjackTree(int k) {
   DashTreeTop_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     Sprite_NullifyHookshotDrag();
     link_speed_setting = 0;
     Sprite_RepelDash();
   }
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   sprite_z_vel[k]--;
   Sprite_MoveZ(k);
   if (sign8(sprite_z[k])) {
@@ -5427,7 +5427,7 @@ void TroughBoy_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kTroughBoy_Dmd[sprite_D[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_TroughBoy(int k) {
@@ -5436,7 +5436,7 @@ void Sprite_TroughBoy(int k) {
     return;
   Sprite_BehaveAsBarrier(k);
   Sprite_TrackBodyToHead(k);
-  sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+  sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
   
   if (savegame_map_icons_indicator < 3) {
     if (Sprite_ShowSolicitedMessage(k, 0x147) & 0x100)
@@ -5491,7 +5491,7 @@ void Lady_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kLadyDmd[sprite_graphics[k] * 2 + sprite_D[k] * 4], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void YoungSnitchLady_Draw(int k) {
@@ -5515,7 +5515,7 @@ void YoungSnitchLady_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kYoungSnitchLady_Dmd[sprite_graphics[k] * 2 + sprite_D[k] * 4], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 
@@ -5555,16 +5555,16 @@ void Sprite_OldSnitchLady(int k) {
   if (sprite_ai_state[k] < 3) {
     if (player_is_indoors) {
       Sprite_TrackBodyToHead(k);
-      sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+      sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
       Sprite_ShowSolicitedMessage(k, 0xad);
       return;
     }
-    if (!sprite_ai_state[k] && Sprite_CheckDamageToPlayerSameLayer(k)) {
-      sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+    if (!sprite_ai_state[k] && Sprite_CheckDamageToLink_same_layer(k)) {
+      sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
       sprite_delay_main[k] = 1;
     } else {
       if (Sprite_TrackBodyToHead(k))
-        Sprite_Move(k);
+        Sprite_MoveXY(k);
       else
         sprite_delay_main[k] = 1;
     }
@@ -5607,7 +5607,7 @@ void Sprite_OldSnitchLady(int k) {
       sprite_delay_main[k] = 16;
     } else {
       flag_is_link_immobilized = 1;
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, ovx, ovy, 64);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, ovx, ovy, 64);
       sprite_x_vel[k] = pt.x;
       sprite_y_vel[k] = pt.y;
       sprite_D[k] = 0;
@@ -5627,7 +5627,7 @@ void Sprite_OldSnitchLady(int k) {
       Overworld_DrawWoodenDoor(pos, true);
       sprite_ai_state[k] = 3;
     }
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     break;
   case 3:
     sprite_state[k] = 0;
@@ -5690,7 +5690,7 @@ void EvilBarrier_Draw(int k) {
   };
   cur_sprite_y += 8;
   Sprite_DrawMultiple(k, &kEvilBarrier_Dmd[sprite_graphics[k] * 9], 9, NULL);
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
 }
 
 void Sprite_EvilBarrier(int k) {
@@ -5701,9 +5701,9 @@ void Sprite_EvilBarrier(int k) {
   sprite_graphics[k] = frame_counter >> 1 & 3;
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (Sprite_CheckDamageFromPlayer(k) && link_sword_type < 2) {
+  if (Sprite_CheckDamageFromLink(k) && link_sword_type < 2) {
     sprite_hit_timer[k] = 0;
-    Sprite_Sprite_AttemptDamageToLinkPlusRecoil(k);
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
     if (!countdown_for_blink)
       link_electrocute_on_touch = 64;
   }
@@ -5783,7 +5783,7 @@ void Sprite_TutorialGuardOrBarrier_bounce(int k) {
 
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_CheckDamageFromPlayer(k);
+  Sprite_CheckDamageFromLink(k);
   
   if (BYTE(overworld_area_index) == 0x1b && (sprite_y_lo[k] == 0x50 || sprite_y_lo[k] == 0x90)) {
     Sprite_TutorialGuard_ShowMessageOnContact(k, sprite_y_lo[k] == 0x50 ? 0xB2 : 0xB3);
@@ -5795,7 +5795,7 @@ void Sprite_TutorialGuardOrBarrier_bounce(int k) {
   Sprite_CheckDamageToAndFromLink(k);
   if (((k ^ frame_counter) & 0x1f) == 0) {
     uint8 jbak = sprite_D[k];
-    sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+    sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
     if (sprite_D[k] != jbak && !((sprite_D[k] ^ jbak) & 2))
       sprite_delay_aux1[k] = 12;
   }
@@ -5879,7 +5879,7 @@ void Sprite_71_Leever(int k) {
       sprite_delay_main[k] = 127;
     } else {
       Sprite_ApplySpeedTowardsLink(k, 16);
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       Sprite_CheckTileCollision2(k);
     }
     break;
@@ -5902,7 +5902,7 @@ stop_attack:
     } else {
       if (!(sprite_subtype2[k] & 7))
         Sprite_ApplySpeedTowardsLink(k, kLeever_AttackSpd[sprite_A[k]]);
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (Sprite_CheckTileCollision(k))
         goto stop_attack;
       sprite_graphics[k] = kLeever_AttackGfx[++sprite_subtype2[k] >> 2 & 3];
@@ -5991,7 +5991,7 @@ void Sprite_72_FairyPond(int k) {
       sprite_state[k] = 0;
     sprite_graphics[k] = sprite_C[k] >> 3;
     Oam_AllocateFromRegionC(4);
-    Sprite_PrepAndDrawSingleSmall(k);
+    SpriteDraw_SingleSmall(k);
     return;
   }
   if (sprite_B[k]) {
@@ -6473,7 +6473,7 @@ void Uncle_Draw(int k) {
   Sprite_DrawMultiple(k, src, 6, &info);
   
   if (sprite_D[k] != 0 && sprite_D[k] != 3)
-    Sprite_DrawShadow(k, &info);
+    SpriteDraw_Shadow(k, &info);
 }
 
 static const uint8 kUncle_LeaveHouse_Delay[2] = {64, 224};
@@ -6482,7 +6482,7 @@ static const int8 kUncle_LeaveHouse_Xvel[4] = {0, 0, -12, 12};
 static const int8 kUncle_LeaveHouse_Yvel[4] = {-12, 12, 0, 0};
 
 void Uncle_AtHouse(int k) {
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   switch (sprite_ai_state[k]) {
   case 0:  // Uncle_TriggerTelepathy
     link_x_coord_prev = 0x940;
@@ -6540,7 +6540,7 @@ void Uncle_AtHouse(int k) {
 void Uncle_InPassage(int k) {
   switch (sprite_ai_state[k]) {
   case 0:  // RemoveZeldaTelepathTagalong
-    if (Sprite_CheckDamageToPlayerSameLayer(k))
+    if (Sprite_CheckDamageToLink_same_layer(k))
       Link_CancelDash();
     if (Sprite_ShowMessageOnContact(k, 0xe) & 0x100) {
       savegame_tagalong = 0;
@@ -6596,7 +6596,7 @@ void Priest_Draw(int k) {
   int j = sprite_D[k] * 2 + sprite_graphics[k];
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, kPriest_Dmd + j * 2, 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Priest_Dying(int k) {
@@ -6669,7 +6669,7 @@ void Priest_RunRescueCutscene(int k) {
     }
     break;
   case 3:
-    sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+    sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
     j = Sprite_ShowSolicitedMessage(k, 0x16);
     if (j & 0x100)
       sprite_D[k] = sprite_head_dir[k] = (uint8)j;
@@ -6678,7 +6678,7 @@ void Priest_RunRescueCutscene(int k) {
 }
 
 void Priest_Chillin(int k) {
-  sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+  sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
   int m = (link_which_pendants & 7) == 7 ? 0x1a :
           savegame_map_icons_indicator >= 3 ? 0x19 : 0x16;
   int j = Sprite_ShowSolicitedMessage(k, m);
@@ -6695,7 +6695,7 @@ void Sprite_Priest(int k) {
     return;
   Sprite_BehaveAsBarrier(k);
   if (Sprite_TrackBodyToHead(k))
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   switch (sprite_subtype2[k]) {
   case 0: Priest_Dying(k); break;
   case 1: Priest_RunRescueCutscene(k); break;
@@ -6726,7 +6726,7 @@ void Sprite_SanctuaryMantle(int k) {
     sprite_A[k] = 0x40;
     goto lbl2;
   }
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     Sprite_NullifyHookshotDrag();
     link_speed_setting = 0;
     Sprite_RepelDash();
@@ -6740,7 +6740,7 @@ lbl2:
     case 0: {
       uint16 x = Sprite_GetX(k);
       Sprite_SetX(k, x + 19);
-      uint8 dir = Sprite_DirectionToFacePlayer(k, NULL);
+      uint8 dir = Sprite_DirectionToFaceLink(k, NULL);
       Sprite_SetX(k, x);
       if (dir == 1 || dir == 3) {
         sprite_A[k]++;
@@ -6759,7 +6759,7 @@ lbl2:
       sprite_delay_aux1[k] = 2;
       break;
     case 2:
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (sprite_delay_main[k] == 0) {
         flag_is_link_immobilized = 0;
         sprite_x_vel[k] = 0;
@@ -6832,7 +6832,7 @@ void RunningMan_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kRunningMan_Dmd[(sprite_D[k] * 4 + sprite_graphics[k] * 2) & 0xf], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_RunningMan(int k) {
@@ -6851,7 +6851,7 @@ void Sprite_RunningMan(int k) {
   Sprite_CheckTileCollision(k);
   uint8 bak0 = sprite_flags4[k];
   sprite_flags4[k] = 7;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     sprite_C[k] = sprite_ai_state[k];
     sprite_ai_state[k] = 3;
   }
@@ -6859,9 +6859,9 @@ void Sprite_RunningMan(int k) {
   switch (sprite_ai_state[k]) {
   case 0:  // chill
     Sprite_TrackBodyToHead(k);
-    j = Sprite_DirectionToFacePlayer(k, NULL);
+    j = Sprite_DirectionToFaceLink(k, NULL);
     sprite_head_dir[k] = j ^ 3;
-    if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+    if (Sprite_CheckDamageToLink_same_layer(k)) {
       Link_CancelDash();
       sprite_D[k] = j ^ 3;
       sprite_head_dir[k] = j | 2;
@@ -6877,14 +6877,14 @@ void Sprite_RunningMan(int k) {
   case 2:  // run right
     if (sprite_delay_main[k] != 0) {
       sprite_graphics[k] = frame_counter >> 3 & 1;
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     } else {
       RunningBoy_SpawnDustGarnish(k);
       sprite_graphics[k] = frame_counter >> 2 & 1;
       j = sprite_head_dir[k];
       sprite_x_vel[k] = kRunningMan_Xvel[j];
       sprite_y_vel[k] = kRunningMan_Yvel[j];
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (sprite_A[k]) {
         sprite_A[k]--;
         break;
@@ -6923,7 +6923,7 @@ uint8 BottleVendor_Draw(int k) {
     {0,  0, 0x00a2, 2},
   };
   Sprite_DrawMultiplePlayerDeferred(k, &kBottleVendor_Dmd[sprite_graphics[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
   return (info.x | info.y) >> 8;
 }
 
@@ -7006,7 +7006,7 @@ void BottleMerchant_DetectFish(int k) {
       hb.r9_yhi = sprite_y_hi[k];
       hb.r3 = 16;
       Sprite_SetupHitBox(i, &hb);
-      if (Utility_CheckIfHitBoxesOverlap(&hb))
+      if (CheckIfHitBoxesOverlap(&hb))
         sprite_E[k] = 0x80 | i;
       return;
     }
@@ -7022,7 +7022,7 @@ void BottleMerchant_BuyBee(int k) {
   do {
     int j = Sprite_SpawnDynamically(k, 0xd8, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_x_lo[j] = info.r0_x + 4;
       sprite_stunned[j] = 0xff;
       sprite_x_vel[j] = kBottleVendor_GoodBeeX[tmp_counter];
@@ -7044,7 +7044,7 @@ void BottleMerchant_BuyFish(int k) {
     int j = Sprite_SpawnDynamically(k, kBottleVendor_FishRewardType[tmp_counter], &info);
     if (j < 0)
       return;
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_x_lo[j] = info.r0_x + 4;
     sprite_stunned[j] = 0xff;
     sprite_x_vel[j] = kBottleVendor_FishRewardXv[tmp_counter];
@@ -7088,10 +7088,10 @@ static const int8 kZelda_Yvel[4] = {-9, 9, 0, 0};
 
 void Zelda_InCell(int k) {
   int j;
-  sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+  sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
   switch (sprite_ai_state[k]) {
   case 0:  // AwaitingRescue
-    if (!Sprite_CheckDamageToPlayerSameLayer(k))
+    if (!Sprite_CheckDamageToLink_same_layer(k))
       return;
     sprite_ai_state[k]++;
     flag_is_link_immobilized++;
@@ -7168,7 +7168,7 @@ void Zelda_EnteringSanctuary(int k) {
     Sprite_LoadGraphicsProperties_light_world_only();
     break;
   case 2:  // be careful
-    sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+    sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
     j = Sprite_ShowSolicitedMessage(k, 0x1e);
     if (j & 0x100)
       sprite_D[k] = sprite_head_dir[k] = (uint8)j;
@@ -7177,7 +7177,7 @@ void Zelda_EnteringSanctuary(int k) {
 }
 
 void Zelda_AtSanctuary(int k) {
-  sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+  sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
   int m = (link_which_pendants & 7) == 7 ? 0x27 :
           savegame_map_icons_indicator >= 3 ? 0x26 : 0x1e;
   int j = Sprite_ShowSolicitedMessage(k, m);
@@ -7187,13 +7187,13 @@ void Zelda_AtSanctuary(int k) {
   }
 }
 
-void Sprite_Zelda(int k) {
+void Sprite_76_Zelda(int k) {
   CrystalMaiden_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_BehaveAsBarrier(k);
   if (Sprite_TrackBodyToHead(k))
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   switch (sprite_subtype2[k]) {
   case 0: Zelda_InCell(k); break;
   case 1: Zelda_EnteringSanctuary(k); break;
@@ -7256,7 +7256,7 @@ void Sprite_D8_Heart(int k) {
   Sprite_CheckAbsorptionByPlayer(k);
   if (Sprite_HandleDraggingByAncilla(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_MoveZ(k);
   if (sign8(sprite_z[k])) {
     sprite_z[k] = 0;
@@ -7299,7 +7299,7 @@ void Sprite_D8_Heart(int k) {
   }
 }
 
-void Sprite_ItemPickup(int k) {
+void Sprite_D9_GreenRupee(int k) {
   Sprite_DrawRippleIfInWater(k);
   if (SpriteDraw_AbsorbableTransient(k, true))
     return;
@@ -7310,7 +7310,7 @@ int Sprite_SpawnSmallSplash(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamicallyEx(k, 0xec, &info, 14);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sound_effect_1 = 0;
     SpriteSfx_QueueSfx2WithPan(k, 0x28);
     sprite_state[j] = 3;
@@ -7325,7 +7325,7 @@ void Sprite_Absorbable_Main(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_MoveZ(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (sprite_delay_aux3[k] == 0) {
     Sprite_CheckTileCollision2(k);
     Sprite_BounceOffWall(k);
@@ -7384,9 +7384,9 @@ void Sprite_E3_Fairy(int k) {
   switch (sprite_ai_state[k]) {
   case 0: // normal
     if (!sprite_delay_aux4[k]) {
-      if (Sprite_CheckDamageToPlayer(k)) {
+      if (Sprite_CheckDamageToLink(k)) {
         Sprite_HandleAbsorptionByPlayer(k);
-      } else if (Sprite_CheckDamageFromPlayer(k) & kCheckDamageFromPlayer_Ne) {
+      } else if (Sprite_CheckDamageFromLink(k) & kCheckDamageFromPlayer_Ne) {
         sprite_ai_state[k]++;
         Sprite_ShowMessageUnconditional(0xc9);
         return;
@@ -7438,11 +7438,11 @@ void Faerie_HandleMovement(int k) {
     else
       sprite_oam_flags[k] |= 0x40;
   }
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (!(frame_counter & 63)) {
     uint16 x = (link_x_coord & ~0xff) + GetRandomNumber();
     uint16 y = (link_y_coord & ~0xff) + GetRandomNumber();
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 16);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 16);
     sprite_A[k] = pt.y;
     sprite_D[k] = pt.x;
   }
@@ -7461,7 +7461,7 @@ void Faerie_HandleMovement(int k) {
   }
 }
 
-void Sprite_Key(int k) {
+void Sprite_E4_SmallKey(int k) {
   if (dung_savegame_state_bits & (kAbsorbBigKey[sprite_die_action[k]] << 8)) {
     sprite_state[k] = 0;
     return;
@@ -7472,10 +7472,10 @@ void Sprite_Key(int k) {
   Sprite_Absorbable_Main(k);
 }
 void Sprite_Mushroom(int k) {
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_CheckIfLinkIsBusy())
     return;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     sprite_state[k] = 0;
     item_receipt_method = 0;
     Link_ReceiveItem(0x29, 0);
@@ -7503,8 +7503,8 @@ void Sprite_FakeSword(int k) {
       Sprite_ShowMessageUnconditional(0x6f);
     }
   } else {
-    Sprite_Move(k);
-    ThrownSprite_TileAndPeerInteraction(k);
+    Sprite_MoveXY(k);
+    ThrownSprite_TileAndSpriteInteraction(k);
   }
 }
 
@@ -7550,7 +7550,7 @@ void Sprite_BagOfPowder(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_BehaveAsBarrier(k);
-  if (!Sprite_CheckDamageToPlayerSameLayer(k) || !(filtered_joypad_L & 0x80))
+  if (!Sprite_CheckDamageToLink_same_layer(k) || !(filtered_joypad_L & 0x80))
     return;
   Link_CancelDash();
   item_receipt_method = 0;
@@ -7579,7 +7579,7 @@ void Sprite_GreenCauldron(int k) {
       PotionCauldron_GoBeep(k);
     return;
   }
-  if (!Sprite_CheckDamageToPlayerSameLayer(k) || !(filtered_joypad_L & 0x80))
+  if (!Sprite_CheckDamageToLink_same_layer(k) || !(filtered_joypad_L & 0x80))
     return;
   if (link_rupees_goal < 60) {
     Sprite_ShowMessageUnconditional(0x17c);
@@ -7620,7 +7620,7 @@ void Sprite_BlueCauldron(int k) {
       PotionCauldron_GoBeep(k);
     return;
   }
-  if (!Sprite_CheckDamageToPlayerSameLayer(k) || !(filtered_joypad_L & 0x80))
+  if (!Sprite_CheckDamageToLink_same_layer(k) || !(filtered_joypad_L & 0x80))
     return;
   if (link_rupees_goal < 160) {
     Sprite_ShowMessageUnconditional(0x17c);
@@ -7661,7 +7661,7 @@ void Sprite_RedCauldron(int k) {
       PotionCauldron_GoBeep(k);
     return;
   }
-  if (!Sprite_CheckDamageToPlayerSameLayer(k) || !(filtered_joypad_L & 0x80))
+  if (!Sprite_CheckDamageToLink_same_layer(k) || !(filtered_joypad_L & 0x80))
     return;
   if (link_rupees_goal < 120) {
     Sprite_ShowMessageUnconditional(0x17c);
@@ -7707,7 +7707,7 @@ void SpriteDraw_WaterRipple(int k) {
   oam[1].flags = t | 0x40;
 }
 
-void Sprite_SpriteDraw_WaterRipple_WithOamAdjust(int k) {
+void SpriteDraw_WaterRipple_WithOamAdjust(int k) {
   SpriteDraw_WaterRipple(k);
   oam_cur_ptr += 8;
   oam_ext_cur_ptr += 2;
@@ -7717,7 +7717,7 @@ int Sprite_SpawnWaterSplash(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xc0, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_A[j] = 0x80;
     sprite_flags2[j] = 2;
     sprite_ignore_projectile[j] = 2;
@@ -7735,13 +7735,13 @@ void Sprite_HeartContainer(int k) {
   sprite_ignore_projectile[k] = sprite_G[k];
   if (!sprite_G[k]) {
     DecodeAnimatedSpriteTile_variable(3);
-    Sprite_Get_16_bit_Coords(k);
+    Sprite_Get16BitCoords(k);
     sprite_G[k] = 1;
   }
 
   if (BYTE(dungeon_room_index2) == 6 && !sprite_z[k])
-    Sprite_SpriteDraw_WaterRipple_WithOamAdjust(k);
-  Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_WaterRipple_WithOamAdjust(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_z_vel[k] -= 2;
@@ -7757,7 +7757,7 @@ void Sprite_HeartContainer(int k) {
   }
   if (Sprite_CheckIfLinkIsBusy())
     return;
-  if (!Sprite_CheckDamageToPlayerSameLayer(k))
+  if (!Sprite_CheckDamageToLink_same_layer(k))
     return;
   sprite_state[k] = 0;
   if (sprite_A[k]) {
@@ -7805,7 +7805,7 @@ void Sprite_HeartPiece(int k) {
     if (!sprite_state[k])
       return;
   }
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_CheckIfLinkIsBusy())
@@ -7816,14 +7816,14 @@ void Sprite_HeartPiece(int k) {
 
   sprite_z_vel[k]--;
   Sprite_MoveZ(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (sign8(sprite_z[k])) {
     sprite_z[k] = 0;
     sprite_z_vel[k] = ((sprite_z_vel[k] ^ 255) & 248) >> 1;
     sprite_x_vel[k] = (int8)sprite_x_vel[k] >> 1;
   }
 
-  if (sprite_delay_aux4[k] || !Sprite_CheckDamageToPlayerSameLayer(k))
+  if (sprite_delay_aux4[k] || !Sprite_CheckDamageToLink_same_layer(k))
     return;
 
   link_heart_pieces = link_heart_pieces + 1 & 3;
@@ -7930,7 +7930,7 @@ void Sprite_EC_ThrownItem(int k) {
     if (sprite_C[k] >= 6) {
       SpriteDraw_ThrownItem_Gigantic(k);
     } else {
-      Sprite_PrepAndDrawSingleLarge(k);
+      SpriteDraw_SingleLarge(k);
       OamEnt *oam = GetOamCurPtr();
       uint8 t = player_is_indoors + is_in_dark_world;
       int j = sprite_C[k];
@@ -8185,7 +8185,7 @@ void Sprite_SomariaPlatform(int k) {
     SomariaPlatform_Draw(k);
     if (Sprite_ReturnIfInactive(k))
       return;
-    if (!(drag_player_x | drag_player_y) && sign8(player_near_pit_state - 2) && Sprite_CheckDamageToPlayerIgnoreLayer(k)) {
+    if (!(drag_player_x | drag_player_y) && sign8(player_near_pit_state - 2) && Sprite_CheckDamageToLink_ignore_layer(k)) {
       sprite_C[k] = 1;
       Link_CancelDash();
       if (link_player_handler_state != kPlayerState_Hookshot && link_player_handler_state != kPlayerState_SpinAttacking) {
@@ -8210,7 +8210,7 @@ void Sprite_SomariaPlatform(int k) {
           int j = sprite_D[k];
           drag_player_x += kSomariaPlatform_DragX[j];
           drag_player_y += kSomariaPlatform_DragY[j];
-          Sprite_Move(k);
+          Sprite_MoveXY(k);
           SomariaPlatform_DragLink(k);
         } else {
           player_on_somaria_platform = 1;
@@ -8250,7 +8250,7 @@ void Sprite_MovableMantleTrampoline(int k) {
   MovableMantle_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (!Sprite_CheckDamageToPlayerSameLayer(k))
+  if (!Sprite_CheckDamageToLink_same_layer(k))
     return;
   Sprite_NullifyHookshotDrag();
   Sprite_RepelDash();
@@ -8269,7 +8269,7 @@ void Sprite_MovableMantleTrampoline(int k) {
   if (sound_effect_1 == 0)
     sound_effect_1 = 34;
   sprite_x_vel[k] = 2;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
 }
 
 void MedallionTablet_Draw(int k) {
@@ -8300,7 +8300,7 @@ void MedallionTablet_Draw(int k) {
 
 void BombosTablet(int k) {
   static const uint16 kMedallionTabletMsg[2] = {0x10d, 0x10f};
-  if (link_direction_facing || Sprite_DirectionToFacePlayer(k, NULL) != 2)
+  if (link_direction_facing || Sprite_DirectionToFaceLink(k, NULL) != 2)
     return;
   if ((uint16)(cur_sprite_y + 16) < link_y_coord)
     return;
@@ -8325,7 +8325,7 @@ void BombosTablet(int k) {
 
 void EtherTablet(int k) {
   static const uint16 kMedallionTabletEtherMsg[2] = {0x10d, 0x10e};
-  if (link_direction_facing || Sprite_DirectionToFacePlayer(k, NULL) != 2)
+  if (link_direction_facing || Sprite_DirectionToFaceLink(k, NULL) != 2)
     return;
   if ((uint8)(sprite_y_lo[k] + 16) < BYTE(link_y_coord))
     return;
@@ -8355,7 +8355,7 @@ void MedallionTablet_Main(int k) {
     return;
   link_position_mode &= ~0x20;
   sprite_A[k] = 0;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     Sprite_NullifyHookshotDrag();
     link_speed_setting = 0;
     Sprite_RepelDash();
@@ -8672,7 +8672,7 @@ void Guard_AnimateWeapon(int k, const PrepOamCoordsRet *poc) {
 
 static const uint8 kSoldier_DrawShadow[4] = {0xc, 0xc, 0xa, 0xa};
 
-void Soldier_Draw(int k) {
+void Guard_HandleAllAnimation(int k) {
   PrepOamCoordsRet poc;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &poc))
     return;
@@ -8714,9 +8714,9 @@ void Guard_ApplySpeedInDirection(int k) {
     return;
   int i;
   if (sprite_wallcoll[k] & 3) {
-    i = 2 + Sprite_IsBelowPlayer(k).a;
+    i = 2 + Sprite_IsBelowLink(k).a;
   } else {
-    i = Sprite_IsToRightOfPlayer(k).a;
+    i = Sprite_IsRightOfLink(k).a;
   }
   sprite_x_vel[k] = kSoldier_SetTowardsVel[i];
   sprite_y_vel[k] = kSoldier_SetTowardsVel[i + 2];
@@ -8729,7 +8729,7 @@ void Sprite_Guard_SendOutProbe(int k) {
     return;
   uint8 a = sprite_anim_clock[k]++;
   uint8 r15 = ((a & 0x1f) + kSprite_SpawnProbeStaggered_Tab[sprite_D[k]]) & 0x3f;
-  Sprite_Sprite_SpawnProbeAlways(k, r15);
+  Sprite_SpawnProbeAlways(k, r15);
 }
 
 static const int8 kSpawnProbe_Xvel[64] = {
@@ -8745,7 +8745,7 @@ static const int8 kSpawnProbe_Yvel[64] = {
   -16, -16, -16, -16, -16, -16, -16, -16, -14, -12, -10, -8, -6, -4, -2, 0, 
 };
 
-void Sprite_Sprite_SpawnProbeAlways(int k, uint8 r15) {
+void Sprite_SpawnProbeAlways(int k, uint8 r15) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamicallyEx(k, 0x41, &info, 10);
   if (j < 0)
@@ -8775,7 +8775,7 @@ void Soldier_Func12(int k) {
       SpriteSfx_QueueSfx3WithPan(k, 4);
     }
     Sprite_ApplySpeedTowardsLink(k, 16);
-    sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL);
+    sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL);
   }
   Guard_ApplySpeedInDirection(k);
   sprite_subtype2[k]++;
@@ -8800,7 +8800,7 @@ void Guard_Main(int k) {
     sprite_D[k] = kSoldier_DirectionLockSettings[bak2];
     sprite_graphics[k] = kSoldier_Gfx[bak2];
   }
-  Soldier_Draw(k);
+  Guard_HandleAllAnimation(k);
   sprite_D[k] = bak2;
   sprite_graphics[k] = bak1;
 
@@ -8816,7 +8816,7 @@ void Guard_Main(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Guard_ParrySwordAttacks(k);
-  if ((Sprite_CheckDamageToPlayer(k) || sprite_alert_flag) && sprite_ai_state[k] < 3) {
+  if ((Sprite_CheckDamageToLink(k) || sprite_alert_flag) && sprite_ai_state[k] < 3) {
     sprite_ai_state[k] = 3;
     Guard_SetTimerAndAssertTileHitBox(k, 0x20);
   } else if (sprite_F[k] != 0 && sprite_F[k] >= 4) {
@@ -8827,10 +8827,10 @@ void Guard_Main(int k) {
     return;
   if ((sprite_subtype[k] & 7) < 5) {
     if (!sprite_wallcoll[k])
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     Sprite_CheckTileCollision(k);
   } else {
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   }
   if (sprite_ai_state[k] != 4)
     sprite_G[k] = 0;
@@ -8893,7 +8893,7 @@ void Guard_Main(int k) {
   }
   case 3:
     Sprite_ZeroVelocity_XY(k);
-    sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL);
+    sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL);
     if (sprite_delay_main[k] == 0) {
       sprite_ai_state[k] = 4;
       Guard_SetTimerAndAssertTileHitBox(k, 255);
@@ -8920,7 +8920,7 @@ void SpriteDraw_BNCBody(int k, PrepOamCoordsRet *info, int spr_offs);
 int ctr;
 bool foo = false;
 
-void Sprite_Soldier(int k) {
+void Sprite_41_BlueGuard(int k) {
   if (sprite_C[k])
     Probe(k);
   else
@@ -8962,18 +8962,18 @@ void Sprite_44_BluesainBolt(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   if (!sprite_wallcoll[k])
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   Sprite_CheckTileCollision(k);
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_CheckDamageToLink(k);
   if (!((k ^ frame_counter) & 15)) {
-    sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL);
+    sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL);
     Sprite_ApplySpeedTowardsLink(k, 18);
     Guard_ApplySpeedInDirection(k);
   }
   sprite_graphics[k] = kFlailTrooperGfx[++sprite_subtype2[k] >> 1 & 7 | sprite_D[k] << 3];
 }
 void Sprite_45_UsainBolt(int k) {
-  Soldier_Draw(k);
+  Guard_HandleAllAnimation(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   BoltGuard_TriggerChaseTheme(k);
@@ -8981,11 +8981,11 @@ void Sprite_45_UsainBolt(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   if (!sprite_wallcoll[k])
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   Sprite_CheckTileCollision(k);
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_CheckDamageToLink(k);
   if (!((k ^ frame_counter) & 15)) {
-    sprite_head_dir[k] = sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+    sprite_head_dir[k] = sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
     Sprite_ApplySpeedTowardsLink(k, 18);
     Guard_ApplySpeedInDirection(k);
   }
@@ -9164,7 +9164,7 @@ void SoldierThrowing_Common(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   if (!sprite_wallcoll[k])
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   Sprite_CheckTileCollision(k);
   switch (sprite_ai_state[k]) {
   case 0:  // resting
@@ -9212,7 +9212,7 @@ agitated_jump_to:
     break;
   case 3:  // noticed player
     Sprite_ZeroVelocity_XY(k);
-    sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL);
+    sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL);
     if (sprite_delay_main[k] == 0) {
       sprite_ai_state[k] = 4;
       sprite_delay_main[k] = 60;
@@ -9227,12 +9227,12 @@ agitated_jump_to:
       return;
     }
     if (!((frame_counter ^ k) & 7)) {
-      sprite_D[k] = sprite_head_dir[k] = j = Sprite_DirectionToFacePlayer(k, NULL);
+      sprite_D[k] = sprite_head_dir[k] = j = Sprite_DirectionToFaceLink(k, NULL);
       if (sprite_type[k] == 0x48)
         j += 4;
       uint16 x = link_x_coord + kSolderThrowing_Xd[j];
       uint16 y = link_y_coord + kSolderThrowing_Yd[j];
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 24);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 24);
       sprite_x_vel[k] = pt.x;
       sprite_y_vel[k] = pt.y;
       if ((uint8)(pt.xdiff + 6) < 12 && (uint8)(pt.ydiff + 6) < 12) {
@@ -9266,7 +9266,7 @@ void BushJavelinSoldier_Draw(int k) {
   sprite_oam_flags[k] = sprite_oam_flags[k] & 0xf1 | 2;
   uint16 bak2 = cur_sprite_y;
   cur_sprite_y += 8;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   cur_sprite_y = bak2;
   sprite_oam_flags[k] = bak1;
   sprite_graphics[k] = bak0;
@@ -9312,7 +9312,7 @@ void BushGuard_SpawnFoliage(int k) {
   int j = Sprite_SpawnDynamically(k, 0xec, &info);
   if (j < 0)
     return;
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_state[j] = 6;
   sprite_delay_main[j] = 32;
   sprite_flags2[j] += 3;
@@ -9337,11 +9337,11 @@ void Sprite_BushGuard_Main(int k) {
     }
     break;
   case 1:
-    Sprite_CheckDamageFromPlayer(k);
+    Sprite_CheckDamageFromLink(k);
     if (sprite_delay_main[k] == 0) {
       sprite_ai_state[k] = 2;
       sprite_delay_main[k] = 48;
-      sprite_head_dir[k] = sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);;
+      sprite_head_dir[k] = sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);;
     } else {
       if (sprite_delay_main[k] == 0x20)
         BushGuard_SpawnFoliage(k);
@@ -9404,12 +9404,12 @@ void SpriteBomb_CheckDamageToSprite(int k, int j) {
   hb.r1_ylo = y;
   hb.r9_yhi = y >> 8;
   Sprite_SetupHitBox(j, &hb);
-  if (!Utility_CheckIfHitBoxesOverlap(&hb) || sprite_type[j] == 0x11)
+  if (!CheckIfHitBoxesOverlap(&hb) || sprite_type[j] == 0x11)
     return;
   Ancilla_CheckDamageToSprite_preset(j, 8);
   x = Sprite_GetX(j);
   y = Sprite_GetY(j) - sprite_z[j];
-  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 32);
+  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 32);
   sprite_y_recoil[j] = pt.y;
   sprite_x_recoil[j] = pt.x;
 }
@@ -9418,7 +9418,7 @@ void SpriteBomb_CheckDamageToSprite(int k, int j) {
 void SpriteBomb_ExplosionIncoming(int k) {
   if (sprite_E[k])
     sprite_obj_prio[k] |= 48;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (sprite_hit_timer[k] || sprite_delay_aux1[k] == 1) {
     sprite_hit_timer[k] = 0;
     if (sprite_state[k] == 10)
@@ -9437,11 +9437,11 @@ void SpriteBomb_ExplosionIncoming(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   if (!sprite_delay_aux3[k])
-    Sprite_CheckDamageFromPlayer(k);
-  Sprite_Move(k);
+    Sprite_CheckDamageFromLink(k);
+  Sprite_MoveXY(k);
   if (player_is_indoors)
     Sprite_CheckTileCollision(k);
-  ThrownSprite_TileAndPeerInteraction(k);
+  ThrownSprite_TileAndSpriteInteraction(k);
 }
 
 void SpriteDraw_BombGuard_Arm(int k, PrepOamCoordsRet *info) {
@@ -9482,7 +9482,7 @@ void BombGuard_CreateBomb(int k) {
     Sprite_ApplySpeedTowardsLink(j, 16);
     PointU8 pt;
     sprite_C[j] = 1;
-    Sprite_DirectionToFacePlayer(j, &pt);
+    Sprite_DirectionToFaceLink(j, &pt);
     if (sign8(pt.x))
       pt.x = -pt.x;
     if (sign8(pt.y))
@@ -9501,7 +9501,7 @@ void BombGuard(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  sprite_head_dir[k] = sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+  sprite_head_dir[k] = sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
   if (sprite_ai_state[k] == 0) {
     if (!sprite_delay_main[k]) {
       sprite_ai_state[k] = 1;
@@ -9556,7 +9556,7 @@ void Sprite_4A_BombGuard(int k) {
       if (j != cur_object_index && sprite_state[j] >= 9 && !((frame_counter ^ j) & 7 | sprite_hit_timer[j]))
         SpriteBomb_CheckDamageToSprite(k, j);
     }
-    Sprite_CheckDamageToPlayer(k);
+    Sprite_CheckDamageToLink(k);
   }
   SpriteDraw_SpriteBombExplosion(k);
   if (!sprite_delay_aux1[k])
@@ -9612,7 +9612,7 @@ void Recruit_Draw(int k) {
   oam->charnum = kRecruit_Draw_Char[r6];
   oam->flags = kRecruit_Draw_Flags[r6] | info.flags;
   bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_4B_GreenKnifeGuard(int k) {
@@ -9623,7 +9623,7 @@ void Sprite_4B_GreenKnifeGuard(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_CheckTileCollision(k);
   if (sprite_ai_state[k] != 0) {
     GreenKnifeGuard_Moving(k);
@@ -9637,7 +9637,7 @@ void Sprite_4B_GreenKnifeGuard(int k) {
   sprite_D[k] = sprite_head_dir[k];
   PointU8 out;
   int j = sprite_D[k];
-  if (j == Sprite_DirectionToFacePlayer(k, &out) && 
+  if (j == Sprite_DirectionToFaceLink(k, &out) && 
      (((uint8)(out.x + 0x10) < 0x20) || ((uint8)(out.y + 0x10) < 0x20))) {
     j += 4;
     sprite_delay_main[k] = 128;
@@ -9722,7 +9722,7 @@ void Sprite_4C_Geldman(int k) {
     } else {
       sprite_graphics[k] = kGerudoMan_PursueGfx[sprite_delay_main[k] >> 2 & 1];
       Sprite_CheckDamageToAndFromLink(k);
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     }
     break;
   case 4:  // submerge
@@ -9776,7 +9776,7 @@ void Toppo_Flustered(int k) {
   sprite_ignore_projectile[k] = 130;
   sprite_flags3[k] = 73;
   if (!sprite_subtype[k]) {
-    if (Sprite_CheckDamageToPlayer(k)) {
+    if (Sprite_CheckDamageToLink(k)) {
       dialogue_message_index = 0x174;
       Sprite_ShowMessageMinimal();
       sprite_subtype2[k] = 1;
@@ -9792,7 +9792,7 @@ void Toppo_Flustered(int k) {
     SpriteSpawnInfo info;
     int j = Sprite_SpawnDynamically(k, 0x4d, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       ForcePrizeDrop(j, 6, 6);
     }
     sprite_subtype[k]++;
@@ -9871,10 +9871,10 @@ void Bot_Draw(int k) {
   int j = sprite_A[k];
   sprite_graphics[k] = kBot_Gfx[j];
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | kBot_OamFlags[j];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
 }
 
-void Sprite_Bot(int k) {
+void Sprite_4E_Popo(int k) {
   Bot_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
@@ -9907,7 +9907,7 @@ void Sprite_Bot(int k) {
         Sprite_CheckTileCollision(k);
         return;
       }
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (!sprite_wallcoll[k]) {
         Sprite_CheckTileCollision(k);
         return;
@@ -9943,13 +9943,13 @@ void SpriteDraw_BigCannonball(int k) {
 }
 void Sprite_50_Cannonball(int k) {
   if (!sprite_ai_state[k])
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
   else
     SpriteDraw_BigCannonball(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_graphics[k] = ++sprite_subtype2[k] >> 2 & 1;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (sprite_delay_main[k]) {
     if (sprite_delay_main[k] == 1)
       sprite_state[k] = 0;
@@ -9971,7 +9971,7 @@ void Armos_Draw(int k) {
       return;
   }
   Sprite_DrawMultiple(k, &kArmos_Dmd[0], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 void Sprite_51_ArmosStatue(int k) {
   Armos_Draw(k);
@@ -10001,7 +10001,7 @@ void Sprite_51_ArmosStatue(int k) {
         sprite_delay_main[k] = 48;
         SpriteSfx_QueueSfx2WithPan(k, 0x22);
       }
-      if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+      if (Sprite_CheckDamageToLink_same_layer(k)) {
         Sprite_NullifyHookshotDrag();
         Sprite_RepelDash();
       }
@@ -10012,7 +10012,7 @@ void Sprite_51_ArmosStatue(int k) {
     Sprite_CheckDamageToAndFromLink(k);
     if (Sprite_ReturnIfRecoiling(k))
       return;
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     Sprite_CheckTileCollision(k);
     if ((sprite_delay_main[k] | sprite_z[k]) == 0) {
       sprite_delay_main[k] = 8;
@@ -10053,7 +10053,7 @@ void Sprite_Zora_RegurgitateFlippers(int k) {
   int j = Sprite_SpawnDynamically(k, 0xc0, &info);
   if (j < 0)
     return;
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_z_vel[j] = 32;
   sprite_y_vel[j] = 16;
   sprite_A[j] = 30;
@@ -10262,7 +10262,7 @@ void ArmosKnight_Draw(int k) {
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
   if (!sprite_A[k] && submodule_index != 7)
-    OAM_AllocateDeferToPlayer(k);
+    Oam_AllocateDeferToPlayer(k);
   OamEnt *oam = GetOamCurPtr();
   int g = sprite_graphics[k];
   for (int i = 3; i >= 0; i--, oam++) {
@@ -10326,13 +10326,13 @@ void Sprite_53_ArmosKnight(int k) {
       SpriteSpawnInfo info;
       int j = Sprite_SpawnDynamically(k, 0xea, &info);
       assert(j >= 0);
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_z_vel[j] = 32;
       sprite_A[j] = 1;
     }
     return;
   }
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_MoveZ(k);
   sprite_z_vel[k] -= 4;
   if (sign8(sprite_z[k])) {
@@ -10365,8 +10365,8 @@ void Sprite_53_ArmosKnight(int k) {
         Sprite_MoveX(k);
         sprite_x_vel[k] = 0;
       }
-      Sprite_CheckDamageFromPlayer(k);
-      if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+      Sprite_CheckDamageFromLink(k);
+      if (Sprite_CheckDamageToLink_same_layer(k)) {
         Sprite_NullifyHookshotDrag();
         Sprite_RepelDash();
       }
@@ -10378,10 +10378,10 @@ void Sprite_53_ArmosKnight(int k) {
     if (!sprite_ai_state[k]) {
       uint16 x = overlord_y_hi[k] << 8 | overlord_x_hi[k];
       uint16 y = overlord_floor[k] << 8 | overlord_gen2[k];
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 16);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 16);
       sprite_x_vel[k] = pt.x;
       sprite_y_vel[k] = pt.y;
-      Sprite_Get_16_bit_Coords(k);
+      Sprite_Get16BitCoords(k);
       if ((uint16)(x - cur_sprite_x + 2) < 4 && (uint16)(y - cur_sprite_y + 2) < 4)
         sprite_ai_state[k] = 1;
     } else {
@@ -10414,7 +10414,7 @@ void Sprite_ArmosCrusher(int k) {
     sprite_z_vel[k] += 3;
     if (Sprite_CheckTileCollision(k))
       goto advance;
-    Sprite_Get_16_bit_Coords(k);
+    Sprite_Get16BitCoords(k);
     uint16 x, y;
     x = sprite_B[k] | sprite_C[k] << 8;
     y = sprite_E[k] | sprite_head_dir[k] << 8;
@@ -10452,7 +10452,7 @@ void Lanmola_SpawnShrapnel(int k) {
     SpriteSpawnInfo info;
     int j = Sprite_SpawnDynamically(k, 0xC2, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_x_lo[j] = info.r0_x + 4;
       sprite_y_lo[j] = info.r2_y + 4;
       sprite_ignore_projectile[j] = 1;
@@ -10608,15 +10608,15 @@ lbl_a:
     uint16 y2 = sprite_y_hi[k] << 8 | sprite_C[k];
     if ((uint16)(x - x2 + 2) < 4 && (uint16)(y - y2 + 2) < 4)
       sprite_ai_state[k] = 3;
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x2, y2, 10);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x2, y2, 10);
     sprite_y_vel[k] = pt.y;
     sprite_x_vel[k] = pt.x;
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     break;
   }
   case 3:
     Sprite_CheckDamageToAndFromLink(k);
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     Sprite_MoveZ(k);
     if (!sign8(sprite_z_vel[k] + 20))
       sprite_z_vel[k] -= 1;
@@ -10640,7 +10640,7 @@ lbl_a:
         SpriteSpawnInfo info;
         int j = Sprite_SpawnDynamically(k, 0xEA, &info);
         assert(j >= 0);
-        Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+        Sprite_SetSpawnedCoordinates(j, &info);
         sprite_z_vel[j] = 32;
         sprite_A[j] = 3;
       }
@@ -10693,15 +10693,15 @@ void Sprite_Fireball(int k) {
   sprite_ignore_projectile[k] = sprite_E[k];
   if (sprite_delay_main[k])
     Oam_AllocateFromRegionC(4);
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   Fireball_SpawnTrailGarnish(k);
-  if (Sprite_CheckDamageToPlayer(k)) {
+  if (Sprite_CheckDamageToLink(k)) {
     sprite_state[k] = 0;
     return;
   }
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (player_is_indoors && !sprite_delay_aux1[k] && !((k ^ frame_counter) & 3) && Sprite_CheckTileCollision(k)) {
     sprite_state[k] = 0;
     return;
@@ -10722,7 +10722,7 @@ void Sprite_Fireball(int k) {
   hb.r1_ylo = y;
   hb.r9_yhi = y >> 8;
   hb.r3 = kSprite_ZoraFireball_H[j];
-  if (Utility_CheckIfHitBoxesOverlap(&hb)) {
+  if (CheckIfHitBoxesOverlap(&hb)) {
     Sprite_PlaceRupulseSpark_2(k);
     sprite_state[k] = 0;
     SpriteSfx_QueueSfx2WithPan(k, 0x6);
@@ -10787,7 +10787,7 @@ void Sprite_Zora_Main(int k) {
     if (!sprite_delay_main[k]) {
       Sprite_SetX(k, (sprite_A[k] | sprite_B[k] << 8) + kSprite_Zora_Surface_XY[GetRandomNumber() & 7]);
       Sprite_SetY(k, (sprite_C[k] | sprite_head_dir[k] << 8) + kSprite_Zora_Surface_XY[GetRandomNumber() & 7]);
-      Sprite_Get_16_bit_Coords(k);
+      Sprite_Get16BitCoords(k);
       Sprite_CheckTileCollision(k);
       if (sprite_tiletype == 8) {
         sprite_delay_main[k] = 127;
@@ -10838,7 +10838,7 @@ void Sprite_55_Zora(int k) {
 
 void WalkingZora_DrawWaterRipples(int k) {
   if (sprite_anim_clock[k])
-    Sprite_SpriteDraw_WaterRipple_WithOamAdjust(k);
+    SpriteDraw_WaterRipple_WithOamAdjust(k);
 }
 
 void WalkingZora_Draw(int k) {
@@ -10871,7 +10871,7 @@ void WalkingZora_Draw(int k) {
   bytewise_extended_oam[oam - oam_buf] = 2 | (info.x >> 8 & 1);
 
   if (!sprite_anim_clock[k])
-    Sprite_DrawShadow(k, &info);
+    SpriteDraw_Shadow(k, &info);
 }
 
 void WalkingZora_AdjustShadow(int k) {
@@ -10909,7 +10909,7 @@ void Sprite_56_WalkingZora(int k) {
       SpriteSfx_QueueSfx2WithPan(k, 0x28);
       sprite_B[k]++;
       sprite_z_vel[k] = 48;
-      sprite_head_dir[k] = sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+      sprite_head_dir[k] = sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
     } else {
       sprite_graphics[k] = kSprite_Zora_SurfacingGfx[sprite_delay_main[k] >> 3];
     }
@@ -10928,7 +10928,7 @@ void Sprite_56_WalkingZora(int k) {
       sprite_z[k] = 0;
       sprite_z_vel[k] = 0;
       if (!((k ^ frame_counter) & 15)) {
-        int j = Sprite_DirectionToFacePlayer(k, NULL);
+        int j = Sprite_DirectionToFaceLink(k, NULL);
         sprite_head_dir[k] = j;
         if (!((k ^ frame_counter) & 31)) {
           sprite_D[k] = j;
@@ -10936,7 +10936,7 @@ void Sprite_56_WalkingZora(int k) {
         }
       }
     }
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     Sprite_CheckTileCollision(k);
     if (sign8(sprite_z[k] - 1)) {
       WalkingZora_AdjustShadow(k);
@@ -10952,7 +10952,7 @@ void Sprite_56_WalkingZora(int k) {
     sprite_subtype2[k]++;
     break;
   case 3:  // Depressed
-    Sprite_CheckDamageFromPlayer(k);
+    Sprite_CheckDamageFromLink(k);
     if (!(frame_counter & 3) && !--sprite_G[k]) {
       sprite_B[k] = 2;
       if (sprite_state[k] == 10) {
@@ -10967,15 +10967,15 @@ void Sprite_56_WalkingZora(int k) {
     sprite_wallcoll[k] = 0;
     WalkingZora_DrawWaterRipples(k);
     sprite_flags2[k] -= 2;
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     sprite_flags2[k] += 2;
     sprite_anim_clock[k] = 0;
     if (Sprite_ReturnIfInactive(k))
       return;
     if (Sprite_ReturnIfRecoiling(k))
       return;
-    Sprite_Move(k);
-    ThrownSprite_TileAndPeerInteraction(k);
+    Sprite_MoveXY(k);
+    ThrownSprite_TileAndSpriteInteraction(k);
     WalkingZora_AdjustShadow(k);
     break;
   }
@@ -10994,7 +10994,7 @@ void DesertBarrier_Draw(int k) {
   }
   BYTE(cur_sprite_x) += (sprite_delay_main[k] >> 1) & 1;
   PointU8 pt;
-  Sprite_DirectionToFacePlayer(k, &pt);
+  Sprite_DirectionToFaceLink(k, &pt);
   if ((uint8)(pt.x + 0x20) < 0x40 && (uint8)(pt.y + 0x20) < 0x40)
     Oam_AllocateFromRegionB(16);
   Sprite_DrawMultiple(k, kDesertBarrier_Dmd, 4, NULL);
@@ -11004,7 +11004,7 @@ void Sprite_57_DesertStatue(int k) {
   DesertBarrier_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  bool dmg = Sprite_CheckDamageToPlayerSameLayer(k);
+  bool dmg = Sprite_CheckDamageToLink_same_layer(k);
   if (dmg) {
     Sprite_NullifyHookshotDrag();
     Sprite_RepelDash();
@@ -11028,7 +11028,7 @@ void Sprite_57_DesertStatue(int k) {
   int j = sprite_D[k];
   sprite_x_vel[k] = kDesertBarrier_Xv[j];
   sprite_y_vel[k] = kDesertBarrier_Yv[j];
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (Sprite_CheckTileCollision(k))
     sprite_D[k] = kDesertBarrier_NextD[sprite_D[k]];
   flag_is_link_immobilized = 1;
@@ -11059,7 +11059,7 @@ void Crab_Draw(int k) {
     oam->flags = kCrab_Draw_Flags[j] | info.flags;
     bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
   }
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 void Sprite_58_Crab(int k) {
   static const int8 kCrab_Xvel[4] = {28, -28, 0, 0};
@@ -11070,7 +11070,7 @@ void Sprite_58_Crab(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (Sprite_CheckTileCollision(k) || !sprite_delay_main[k]) {
     sprite_delay_main[k] = (GetRandomNumber() & 63) + 32;
     sprite_D[k] = sprite_delay_main[k] & 3;
@@ -11084,10 +11084,10 @@ void Sprite_59_LostWoodsBird(int k) {
   if (sprite_delay_aux1[k])
     return;
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | (sign8(sprite_x_vel[k]) ? 0 : 0x40);
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_MoveZ(k);
   switch (sprite_ai_state[k]) {
   case 0:
@@ -11107,10 +11107,10 @@ void Sprite_5A_LostWoodsSquirrel(int k) {
   if (sprite_delay_aux1[k])
     return;
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | (sign8(sprite_x_vel[k]) ? 0 : 0x40);
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_MoveZ(k);
   sprite_z_vel[k] -= 2;
   if (sign8(sprite_z[k])) {
@@ -11121,12 +11121,12 @@ void Sprite_5A_LostWoodsSquirrel(int k) {
   sprite_graphics[k] = sprite_delay_main[k] ? 1 : 0;
 }
 
-void Sprite_Spark(int k) {
+void Sprite_5B_Spark_Clockwise(int k) {
   static const uint8 kSpark_OamFlags[4] = {0, 0x40, 0x80, 0xc0};
   static const uint8 kSpark_directions[8] = {1, 3, 2, 0, 7, 5, 6, 4};
   int j;
 
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (!(frame_counter & 1))
@@ -11145,8 +11145,8 @@ void Sprite_Spark(int k) {
   }
 
   sprite_oam_flags[k] = sprite_oam_flags[k] & 0x3f | kSpark_OamFlags[frame_counter >> 2 & 3];
-  Sprite_Move(k);
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_MoveXY(k);
+  Sprite_CheckDamageToLink(k);
   j = sprite_D[k];
   sprite_x_vel[k] = kSoldierB_Xvel[j];
   sprite_y_vel[k] = kSoldierB_Yvel[j];
@@ -11204,7 +11204,7 @@ void SpikeRoller_Draw(int k) {
   }
 }
 
-void Sprite_SpikeRoller(int k) {
+void Sprite_5D_Roller_VerticalDownFirst(int k) {
   static const int8 kSpikeRoller_XYvel[6] = {-16, 16, 0, 0, -16, 16};
   sprite_graphics[k] = sprite_subtype2[k] >> 1 & 1 | sprite_D[k] & 2;
   SpikeRoller_Draw(k);
@@ -11218,7 +11218,7 @@ void Sprite_SpikeRoller(int k) {
   int j = sprite_D[k];
   sprite_x_vel[k] = kSpikeRoller_XYvel[j];
   sprite_y_vel[k] = kSpikeRoller_XYvel[j + 2];
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   sprite_subtype2[k]++;
 }
 
@@ -11323,11 +11323,11 @@ void Sprite_61_Beamos(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_CheckTileCollision(k);
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_CheckDamageToLink(k);
   switch (sprite_ai_state[k]) {
   case 0:
     if (!((k ^ frame_counter) & 3)) {
-      Sprite_Sprite_SpawnProbeAlways(k, sprite_D[k]);
+      Sprite_SpawnProbeAlways(k, sprite_D[k]);
       sprite_D[k]++;
     }
     sprite_D[k] &= 63;
@@ -11385,7 +11385,7 @@ void Sprite_Beamos_Laser(int k) {
     beamos_y_lo[t] = sprite_y_lo[k];
     beamos_x_hi[t] = sprite_x_hi[k];
     beamos_x_lo[t] = sprite_x_lo[k];
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   }
 
   if (sprite_delay_main[k]) {
@@ -11395,7 +11395,7 @@ void Sprite_Beamos_Laser(int k) {
     }
     return;
   }
-  if (!Sprite_CheckDamageToPlayerSameLayer(k) && !Sprite_CheckTileCollision(k))
+  if (!Sprite_CheckDamageToLink_same_layer(k) && !Sprite_CheckTileCollision(k))
     return;
   SpriteSfx_QueueSfx3WithPan(k, 0x26);
   sprite_delay_main[k] = 16;
@@ -11403,7 +11403,7 @@ void Sprite_Beamos_Laser(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x61, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_delay_main[j] = 16;
     sprite_flags2[j] = 3;
     sprite_C[j] = 2;
@@ -11473,7 +11473,7 @@ void SpriteDraw_LightFountain(int k) {
 void MasterSword_SpawnLightWell(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x62, &info);
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_subtype2[j] = 4;
   sprite_oam_flags[j] = 5;
   sprite_flags2[j] = 0;
@@ -11482,7 +11482,7 @@ void MasterSword_SpawnLightWell(int k) {
 void MasterSword_SpawnLightFountain(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x62, &info);
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_subtype2[j] = 1;
   sprite_oam_flags[j] = 5;
   sprite_flags2[j] = 0;
@@ -11599,7 +11599,7 @@ void MasterSword_Main(int k) {
     MasterSword_Draw(k);
   switch (sprite_ai_state[k]) {
   case 0:  // waiting 
-    if (Sprite_CheckIfLinkIsBusy() || !Sprite_CheckDamageToPlayerSameLayer(k) || link_direction_facing != 2 ||
+    if (Sprite_CheckIfLinkIsBusy() || !Sprite_CheckDamageToLink_same_layer(k) || link_direction_facing != 2 ||
       !(filtered_joypad_L & 0x80) || (link_which_pendants & 7) != 7)
       return;
 
@@ -11682,9 +11682,9 @@ void Sprite_MasterSword_LightWell(int k) {
 }
 
 void Sprite_MasterSword_LightBeam(int k) {
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (sprite_A[k]) {
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (frame_counter & 3)
       return;
     MasterSword_SpawnReplacementLightBeam(k);
@@ -11695,10 +11695,10 @@ void Sprite_MasterSword_LightBeam(int k) {
 
 void Sprite_MasterSword_Prop(int k) {
   Oam_AllocateFromRegionB(4);
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   switch (sprite_ai_state[k]) {
   case 0:  // drifting away
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (!sprite_delay_main[k]) {
       sprite_ai_state[k] = 1;
       sprite_delay_main[k] = 208;
@@ -11713,7 +11713,7 @@ void Sprite_MasterSword_Prop(int k) {
     }
     break;
   case 2:  // fly
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (!sprite_delay_main[k]) {
       sprite_x_vel[k] <<= 1;
       sprite_y_vel[k] <<= 1;
@@ -11779,7 +11779,7 @@ void Sprite_63_DebirandoPit(int k) {
   static const uint8 kDebirandoPit_ClosingGfx[4] = {3, 3, 4, 5};
 
   PointU8 pt;
-  Sprite_DirectionToFacePlayer(k, &pt);
+  Sprite_DirectionToFaceLink(k, &pt);
   if ((uint8)(pt.y + 0x20) < 0x40 && (uint8)(pt.x + 0x20) < 0x40)
     Oam_AllocateFromRegionB(16);
 
@@ -11793,7 +11793,7 @@ void Sprite_63_DebirandoPit(int k) {
     sprite_flags2[k] += 4;
     return;
   }
-  if (sprite_graphics[k] < 3 && Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (sprite_graphics[k] < 3 && Sprite_CheckDamageToLink_same_layer(k)) {
     Link_CancelDash();
     if (!(filtered_joypad_L & 16))
       link_prevent_from_moving = 1;
@@ -11968,7 +11968,7 @@ void ArcheryGame_Host_ProctorGame(int k) {
       ancilla_type[0] | ancilla_type[1] | ancilla_type[2] | ancilla_type[3] | ancilla_type[4])
     return;
   sprite_flags4[k] = 0xA;
-  if (Sprite_CheckDamageToPlayerSameLayer(k) && filtered_joypad_L & 0x80) {
+  if (Sprite_CheckDamageToLink_same_layer(k) && filtered_joypad_L & 0x80) {
     ArcheryGameGuy_ShowMsg(k, 0x88);
     sprite_ai_state[k] = 3;
   }
@@ -11981,7 +11981,7 @@ void ArcheryGameGuy_Draw(int k) {
   static const uint8 kArcheryGameGuy_Draw_Flags[15] = {8, 6, 6, 8, 6, 8, 8, 6, 6, 8, 6, 6, 8, 6, 6};
   static const uint8 kArcheryGameGuy_Draw_Ext[15] = {2, 2, 2, 2, 2, 0, 2, 2, 2, 2, 2, 2, 2, 2, 2};
 
-  OAM_AllocateDeferToPlayer(k);
+  Oam_AllocateDeferToPlayer(k);
   PrepOamCoordsRet info;
   Sprite_PrepOamCoord(k, &info);
   OamEnt *oam = GetOamCurPtr();
@@ -11994,7 +11994,7 @@ void ArcheryGameGuy_Draw(int k) {
     oam->flags = kArcheryGameGuy_Draw_Flags[j] | info.flags;
     bytewise_extended_oam[oam - oam_buf] = kArcheryGameGuy_Draw_Ext[j];
   }
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 
@@ -12005,7 +12005,7 @@ void ArcheryGame_Host(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_flags4[k] = 0;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     Sprite_NullifyHookshotDrag();
     link_speed_setting = 0;
     Link_CancelDash();
@@ -12022,7 +12022,7 @@ void ArcheryGame_Host(int k) {
   switch (sprite_ai_state[k]) {
   case 0:
     sprite_flags4[k] = 10;
-    if (Sprite_CheckDamageToPlayerSameLayer(k) && filtered_joypad_L & 0x80) {
+    if (Sprite_CheckDamageToLink_same_layer(k) && filtered_joypad_L & 0x80) {
       sprite_ai_state[k] = 1;
       ArcheryGameGuy_ShowMsg(k, 0x85);
     }
@@ -12078,7 +12078,7 @@ void Sprite_GoodOrBadArcheryTarget(int k) {
     int j = sprite_delay_aux2[k] ? sprite_delay_aux2[k] : (sprite_subtype2[k] >> 3);
     sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | (j & 4) << 4;
     BYTE(cur_sprite_y) -= 3;
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     if (sprite_delay_aux2[k]) {
       if (sprite_delay_aux2[k] == 96 && !submodule_index) {
         sprite_delay_main[0] = 112;
@@ -12091,7 +12091,7 @@ void Sprite_GoodOrBadArcheryTarget(int k) {
     // bad target
     sprite_flags2[k] &= ~0x1f;
     BYTE(cur_sprite_y) += 3;
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
   }
   if (Sprite_ReturnIfInactive(k))
     return;
@@ -12154,7 +12154,7 @@ void SpritePrep_ArrowGame_bounce(int k) {
   sprite_subtype[k] = link_num_arrows;
 }
 
-void Sprite_WallCannon(int k) {
+void Sprite_66_WallCannonVerticalLeft(int k) {
   static const int8 kWallCannon_Xvel[4] = {0, 0, -16, 16};
   static const int8 kWallCannon_Yvel[4] = {-16, 16, 0, 0};
   static const uint8 kWallCannon_Gfx[4] = {0, 0, 2, 2};
@@ -12167,7 +12167,7 @@ void Sprite_WallCannon(int k) {
   int j = sprite_D[k];
   sprite_graphics[k] = kWallCannon_Gfx[j] + (sprite_delay_aux2[k] != 0);
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | kWallCannon_OamFlags[j];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (!sprite_delay_main[k]) {
@@ -12177,7 +12177,7 @@ void Sprite_WallCannon(int k) {
   j = sprite_A[k];
   sprite_x_vel[k] = kWallCannon_Xvel[j];
   sprite_y_vel[k] = kWallCannon_Yvel[j];
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
 
   if (!((k << 2) + frame_counter & 31))
     sprite_delay_aux2[k] = 16;
@@ -12393,13 +12393,13 @@ void Sprite_6A_BallNChain(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckTileCollision(k);
-  Sprite_Move(k);
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_MoveXY(k);
+  Sprite_CheckDamageToLink(k);
 
   PointU8 pt = { 0, 0 };
 
   if (((k ^ frame_counter) & 0xf) == 0)
-    sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, &pt);
+    sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, &pt);
 
   switch (sprite_ai_state[k]) {
   case 0:
@@ -12447,10 +12447,10 @@ attack_common:
 }
 
 void Sprite_Cannonball(int k) {
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (sprite_delay_main[k] == 30) {
     Sprite_SpawnPoofGarnish(k);
   } else if (sprite_delay_main[k] == 0 && Sprite_CheckTileCollision(k)) {
@@ -12480,14 +12480,14 @@ void Sprite_6C_MirrorPortal(int k) {
       return;
 
     if (submodule_index != 0x23 && byte_7E0FC6 < 3)
-      Sprite_PrepAndDrawSingleLarge(k);
+      SpriteDraw_SingleLarge(k);
     if (Sprite_ReturnIfInactive(k))
       return;
     int j = frame_counter >> 2 & 3;
     sprite_oam_flags[k] = sprite_oam_flags[k] & 0x3f | kSprite_WarpVortex_Flags[j];
     if (Sprite_CheckIfLinkIsBusy())
       return;
-    if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+    if (Sprite_CheckDamageToLink_same_layer(k)) {
       if (sprite_A[k] && (link_disable_sprite_damage | countdown_for_blink) == 0 && !flag_is_link_immobilized) {
         submodule_index = 0x23;
         link_triggered_by_whirlpool_sprite = 1;
@@ -12524,13 +12524,13 @@ void Sprite_6D_Rat(int k) {
   int j = sprite_A[k];
   sprite_graphics[k] = kSpriteRat_Tab0[j];
   sprite_oam_flags[k] = (sprite_oam_flags[k] & 0x3f) | kSpriteRat_Tab1[j];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_CheckTileCollision(k);
   if (sprite_ai_state[k] != 0) {
     if (sprite_delay_main[k] == 0) {
@@ -12569,7 +12569,7 @@ void Sprite_6E_Rope(int k) {
   j = sprite_A[k];
   sprite_graphics[k] = kSpriteRope_Gfx[j];
   sprite_oam_flags[k] = (sprite_oam_flags[k] & 0x3f) | kSpriteRope_Flags[j];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (sprite_E[k]) {
@@ -12591,7 +12591,7 @@ void Sprite_6E_Rope(int k) {
     if (Sprite_ReturnIfRecoiling(k))
       return;
     Sprite_CheckDamageToAndFromLink(k);
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     Sprite_CheckTileCollision(k);
     if (sprite_ai_state[k] != 0) {
       if (sprite_delay_main[k] == 0) {
@@ -12621,7 +12621,7 @@ void Sprite_6E_Rope(int k) {
         sprite_delay_main[k] = (a & 0x7f) + 0x40;
 
         PointU8 pt;
-        uint8 dir = Sprite_DirectionToFacePlayer(k, &pt);
+        uint8 dir = Sprite_DirectionToFaceLink(k, &pt);
         if ((uint8)(pt.y + 0x10) < 0x20 || (uint8)(pt.x + 0x18) < 0x20) {
           sprite_G[k] = 4;
           sprite_D[k] = dir;
@@ -12637,13 +12637,13 @@ void Sprite_6F_Keese(int k) {
   static const int8 kSpriteKeese_Tab0[4] = {2, 10, 6, 14};
 
   sprite_obj_prio[k] |= 0x30;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (sprite_ai_state[k]) {
     if (sprite_delay_main[k] == 0) {
       sprite_ai_state[k] = 0;
@@ -12666,7 +12666,7 @@ void Sprite_6F_Keese(int k) {
       return;
 
     PointU8 pt;
-    uint8 dir = Sprite_DirectionToFacePlayer(k, &pt);
+    uint8 dir = Sprite_DirectionToFaceLink(k, &pt);
     if ((uint8)(pt.y + 0x28) >= 0x50 || (uint8)(pt.x + 0x28) >= 0x50)
       return;
     SpriteSfx_QueueSfx3WithPan(k, 0x1e);
@@ -12701,7 +12701,7 @@ void Sprite_70_KingHelmasaurFireball_bounce(int k) {
   if (!((k ^ frame_counter) & 3) &&
       (uint16)(link_x_coord - cur_sprite_x + 8) < 16 &&
       (uint16)(link_y_coord - cur_sprite_y + 16) < 16) {
-    Sprite_Sprite_AttemptDamageToLinkPlusRecoil(k);
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
   }
   switch (sprite_ai_state[k]) {
   case 0:  // pre migrate down
@@ -12730,11 +12730,11 @@ void Sprite_70_KingHelmasaurFireball_bounce(int k) {
       HelmasaurFireball_QuadSplit(k);
     } else if (sprite_head_dir[k] < 20) {
       sprite_head_dir[k]++;
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     }
     break;
   case 4:  // move
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     break;
   }
 }
@@ -12752,7 +12752,7 @@ void HelmasaurFireball_TriSplit(int k) {
     SpriteSpawnInfo info;
     int j = Sprite_SpawnDynamically(k, 0x70, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_x_vel[j] = kHelmasaurFireball_TriSplit_Xvel[i];
       sprite_y_vel[j] = kHelmasaurFireball_TriSplit_Yvel[i];
       sprite_ai_state[j] = 3;
@@ -12774,7 +12774,7 @@ void HelmasaurFireball_QuadSplit(int k) {
     SpriteSpawnInfo info;
     int j = Sprite_SpawnDynamically(k, 0x70, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_x_vel[j] = kHelmasaurFireball_QuadSplit_Xvel[i];
       sprite_y_vel[j] = kHelmasaurFireball_QuadSplit_Yvel[i];
       sprite_ai_state[j] = 4;
@@ -12800,7 +12800,7 @@ void SpawnBeeFromHive(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x79, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     InitializeSpawnedBee(j);
   }
 }
@@ -12872,7 +12872,7 @@ void Bee_Bzzt(int k) {
 
 void Bee_Main(int k) {
   Bee_HandleZ(k);
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   Bee_HandleInteractions(k);
   if (Sprite_ReturnIfInactive(k))
     return;
@@ -12881,11 +12881,11 @@ void Bee_Main(int k) {
   if (sprite_head_dir[k])
     Sprite_SpawnSparkleGarnish(k);
   Bee_Bzzt(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   sprite_graphics[k] = (k ^ frame_counter) >> 1 & 1;
   if (!sprite_delay_aux4[k]) {
-    Sprite_CheckDamageToPlayer(k);
-    if (Sprite_CheckDamageFromPlayer(k) & kCheckDamageFromPlayer_Ne) {
+    Sprite_CheckDamageToLink(k);
+    if (Sprite_CheckDamageFromLink(k) & kCheckDamageFromPlayer_Ne) {
       Sprite_ShowMessageUnconditional(0xc8);
       sprite_ai_state[k] = 2; // put in bottle
       return;
@@ -12898,7 +12898,7 @@ void Bee_Main(int k) {
   if (sprite_delay_main[k] == 0) {
     uint16 x = link_x_coord + (GetRandomNumber() & 3) * 5;
     uint16 y = link_y_coord + (GetRandomNumber() & 3) * 5;
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 20);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 20);
     sprite_y_vel[k] = pt.y;
     sprite_x_vel[k] = pt.x;
     sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | (sign8(pt.x) ? 0 : 0x40);
@@ -12942,7 +12942,7 @@ void GoldBee_SpawnSelf(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x79, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_ai_state[j] = 1;
     sprite_delay_main[j] = 64;
     sprite_A[j] = 64;
@@ -13008,12 +13008,12 @@ void Sprite_B2_PlayerBee(int k) {
   case 1: {// activated
     sprite_ignore_projectile[k] = 1;
     Bee_HandleZ(k);
-    Sprite_PrepAndDrawSingleSmall(k);
+    SpriteDraw_SingleSmall(k);
     Bee_HandleInteractions(k);
     if (Sprite_ReturnIfInactive(k))
       return;
     Bee_Bzzt(k);
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     sprite_graphics[k] = (k ^ frame_counter) >> 1 & 1;
     if (sprite_head_dir[k])
       Sprite_SpawnSparkleGarnish(k);
@@ -13023,7 +13023,7 @@ void Sprite_B2_PlayerBee(int k) {
     }
     if (sprite_delay_aux4[k])
       return;
-    if (Sprite_CheckDamageFromPlayer(k) & kCheckDamageFromPlayer_Ne) {
+    if (Sprite_CheckDamageFromLink(k) & kCheckDamageFromPlayer_Ne) {
       Sprite_ShowMessageUnconditional(0xc8);
       sprite_ai_state[k]++;
       return;
@@ -13037,7 +13037,7 @@ void Sprite_B2_PlayerBee(int k) {
     }
     if ((k ^ frame_counter) & 7)
       return;
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, pt2.x, pt2.y, 32);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, pt2.x, pt2.y, 32);
     sprite_y_vel[k] = pt.y;
     sprite_x_vel[k] = pt.x;
     sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | (sign8(pt.x) ? 0 : 0x40);
@@ -13057,7 +13057,7 @@ void Sprite_SpawnLightning(int k) {
   int j = Sprite_SpawnDynamically(k, 0xBF, &info), i;
   if (j >= 0) {
     sound_effect_2 = 0x26;
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_A[j] = i = GetRandomNumber() & 7;
     int t = info.r0_x + (uint16)kAgahnim_Lighting_X[i];
     Sprite_SetX(j, info.r0_x + kAgahnim_Lighting_X[i]);
@@ -13106,7 +13106,7 @@ int Sprite_Agahnim_ApplyMotionBlur(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xc1, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_graphics[j] = sprite_graphics[k];
     sprite_delay_main[j] = 32;
     sprite_ignore_projectile[j] = 32;
@@ -13118,7 +13118,7 @@ int Sprite_Agahnim_ApplyMotionBlur(int k) {
 void Sprite_SpawnPhantomGanon(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xc9, &info);
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_flags2[j] = 2;
   sprite_ignore_projectile[j] = 2;
   sprite_anim_clock[j] = 1;
@@ -13324,12 +13324,12 @@ void Sprite_7A_Agahnim(int k) {
     }
     int x = sprite_x_hi[k] << 8 | sprite_C[k];
     int y = sprite_y_hi[k] << 8 | sprite_E[k];
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, sprite_G[k]);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, sprite_G[k]);
     sprite_y_vel[k] = pt.y;
     sprite_x_vel[k] = pt.x;
     if (sprite_G[k] < 64)
       sprite_G[k]++;
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     break;
   }
   case 6: 
@@ -13348,7 +13348,7 @@ void Sprite_7A_Agahnim(int k) {
       } else {
         sprite_x_vel[k] = kAgahnim_Tab5[k - 1];
         sprite_y_vel[k] += 2;
-        Sprite_Move(k);
+        Sprite_MoveXY(k);
         j = Sprite_Agahnim_ApplyMotionBlur(k);
         if (j >= 0)
           sprite_oam_flags[j] = 4;
@@ -13363,7 +13363,7 @@ void Sprite_7A_Agahnim(int k) {
         do {
           SpriteSpawnInfo info;
           j = Sprite_SpawnDynamicallyEx(k, 0x7A, &info, 2);
-          Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+          Sprite_SetSpawnedCoordinates(j, &info);
           sprite_flags3[j] = kAgahnim_Tab6[j - 1];
           sprite_anim_clock[j] = sprite_oam_flags[j] = sprite_flags3[j] & 15;
           sprite_ai_state[j] = sprite_ai_state[k];
@@ -13392,10 +13392,10 @@ void Sprite_7A_Agahnim(int k) {
     if ((uint16)(cur_sprite_x - x + 4) < 8 &&
         (uint16)(cur_sprite_y - y + 4) < 8)
       sprite_state[k] = 0;
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 0x20);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 0x20);
     sprite_y_vel[k] = pt.y;
     sprite_x_vel[k] = pt.x;
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     Sprite_Agahnim_ApplyMotionBlur(k);
     break;
   }
@@ -13473,9 +13473,9 @@ void Sprite_7B_AgahnimBalls(int k) {
   if (sprite_ai_state[k]) {
     static const uint8 kEnergyBall_Gfx[16] = {2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0};
     if (sprite_graphics[k] != 2)
-      Sprite_PrepAndDrawSingleLarge(k);
+      SpriteDraw_SingleLarge(k);
     else
-      Sprite_PrepAndDrawSingleSmall(k);
+      SpriteDraw_SingleSmall(k);
     if (Sprite_ReturnIfInactive(k))
       return;
     sprite_ignore_projectile[k] = sprite_delay_main[k];
@@ -13483,7 +13483,7 @@ void Sprite_7B_AgahnimBalls(int k) {
       sprite_state[k] = 0;
     } else if (sprite_delay_main[k] == 6) {
       sprite_x_vel[k] = sprite_y_vel[k] = 64;
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     }
     sprite_graphics[k] = kEnergyBall_Gfx[sprite_delay_main[k]];
     return;
@@ -13491,11 +13491,11 @@ void Sprite_7B_AgahnimBalls(int k) {
   if (sprite_B[k])
     SeekerEnergyBall_Draw(k);
   else
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_subtype2[k]++;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (Sprite_CheckTileCollision(k)) {
     sprite_state[k] = 0;
     if (sprite_B[k]) {
@@ -13513,15 +13513,15 @@ void Sprite_7B_AgahnimBalls(int k) {
     hb.r1_ylo = sprite_y_lo[k];
     hb.r9_yhi = sprite_y_hi[k];
     Sprite_SetupHitBox(0, &hb);
-    if (Utility_CheckIfHitBoxesOverlap(&hb)) {
+    if (CheckIfHitBoxesOverlap(&hb)) {
       AgahnimBalls_DamageAgahnim(0, 16, 0xa0);
       sprite_state[k] = 0;
       sprite_x_recoil[0] = sprite_x_vel[k];
       sprite_y_recoil[0] = sprite_y_vel[k];
     }
   } else {
-    Sprite_CheckDamageToPlayer(k);
-    if (Sprite_CheckDamageFromPlayer(k) & kCheckDamageFromPlayer_Carry) {
+    Sprite_CheckDamageToLink(k);
+    if (Sprite_CheckDamageFromLink(k) & kCheckDamageFromPlayer_Carry) {
       if (sprite_B[k]) {
         sprite_state[k] = 0;
         SpriteSfx_QueueSfx3WithPan(k, 0x36);
@@ -13542,7 +13542,7 @@ void Sprite_7B_AgahnimBalls(int k) {
   int j = Sprite_SpawnDynamically(k, 0x7B, &info);
   if (j < 0)
     return;
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_delay_main[j] = 15;
   sprite_ai_state[j] = 15;
   sprite_B[j] = sprite_B[k];
@@ -13554,13 +13554,13 @@ void Sprite_7C_GreenStalfos(int k) {
   int j = sprite_D[k];
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | kGreenStalfos_OamFlags[j];
   sprite_graphics[k] = kGreenStalfos_Gfx[j];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  j = Sprite_DirectionToFacePlayer(k, NULL);
+  j = Sprite_DirectionToFaceLink(k, NULL);
   if (kGreenStalfos_Dir[j] != link_direction_facing) {
     sprite_A[k] = 0;
     if (!((k ^ frame_counter) & 7)) {
@@ -13568,7 +13568,7 @@ void Sprite_7C_GreenStalfos(int k) {
       if (vel != 4)
         sprite_B[k]++;
       Sprite_ApplySpeedTowardsLink(k, vel);
-      sprite_D[k] = Sprite_IsToRightOfPlayer(k).a;
+      sprite_D[k] = Sprite_IsRightOfLink(k).a;
     }
   } else {
     sprite_A[k] = 1;
@@ -13577,10 +13577,10 @@ void Sprite_7C_GreenStalfos(int k) {
       if (vel)
         sprite_B[k]--;
       Sprite_ApplySpeedTowardsLink(k, vel);
-      sprite_D[k] = Sprite_IsToRightOfPlayer(k).a;
+      sprite_D[k] = Sprite_IsRightOfLink(k).a;
     }
   }
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
 }
 
 void SpikeTrap_Draw(int k) {
@@ -13607,7 +13607,7 @@ void Sprite_7D_BigSpike(int k) {
   Sprite_CheckDamageToAndFromLink(k);
   if (sprite_ai_state[k] == 0) {
     PointU8 pt;
-    sprite_D[k] = j = Sprite_DirectionToFacePlayer(k, &pt);
+    sprite_D[k] = j = Sprite_DirectionToFaceLink(k, &pt);
     if ((uint8)(pt.x + 16) < 32 || (uint8)(pt.y + 16) < 32) {
       sprite_delay_main[k] = kSpikeTrap_Delay[j];
       sprite_ai_state[k] = 1;
@@ -13619,13 +13619,13 @@ void Sprite_7D_BigSpike(int k) {
       sprite_ai_state[k] = 2;
       sprite_delay_main[k] = 96;
     }
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   } else {
     if (!sprite_delay_main[k]) {
       j = sprite_D[k];
       sprite_x_vel[k] = kSpikeTrap_Xvel2[j];
       sprite_y_vel[k] = kSpikeTrap_Yvel2[j];
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (sprite_x_lo[k] == sprite_A[k] && sprite_y_lo[k] == sprite_C[k])
         sprite_ai_state[k] = 0;
     }
@@ -13672,12 +13672,12 @@ void Firebar_Main(int k) {
       if ((uint8)(oam->x + BG2HOFS_copy2 - link_x_coord + 12) < 24 &&
           oam->y < 0xf0 && 
           (uint8)(oam->y + BG2VOFS_copy2 - link_y_coord + 4) < 16)
-        Sprite_Sprite_AttemptDamageToLinkPlusRecoil(k);
+        Sprite_AttemptDamageToLinkPlusRecoil(k);
     }
   }
 }
 
-void Sprite_GuruguruBar(int k) {
+void Sprite_7E_Firebar_Clockwise(int k) {
   static const int8 kGuruguruBar_incr[4] = {-2, 2, -1, 1};
   Firebar_Main(k);
   if (Sprite_ReturnIfInactive(k))
@@ -13711,7 +13711,7 @@ void Sprite_80_Firesnake(int k) {
   static const uint8 kWinder_OamFlags[4] = {0, 0x40, 0x80, 0xc0};
   static const int8 kWinder_Xvel[4] = {24, -24, 0, 0};
   static const int8 kWinder_Yvel[4] = {0, 0, 24, -24};
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_ReturnIfRecoiling(k))
@@ -13726,7 +13726,7 @@ void Sprite_80_Firesnake(int k) {
   Sprite_CheckDamageToAndFromLink(k);
   Firesnake_SpawnFireball(k);
   if (!sprite_wallcoll[k])
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   if (Sprite_CheckTileCollision(k))
     sprite_D[k] = kZazak_Dir2[sprite_D[k] * 2 + (GetRandomNumber() & 1)];
   int j = sprite_D[k];
@@ -13736,7 +13736,7 @@ void Sprite_80_Firesnake(int k) {
 void Sprite_81_Hover(int k) {
   static const int8 kHover_OamFlags[4] = {0x40, 0, 0x40, 0};
   sprite_obj_prio[k] |= 48;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (sprite_F[k])
@@ -13745,14 +13745,14 @@ void Sprite_81_Hover(int k) {
     return;
   Sprite_CheckDamageToAndFromLink(k);
   if (!sprite_wallcoll[k])
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   Sprite_CheckTileCollision(k);
   sprite_graphics[k] = ++sprite_subtype2[k] >> 3 & 2;
   switch(sprite_ai_state[k]) {
   case 0:  // stopped
     if (!sprite_delay_main[k]) {
       sprite_ai_state[k] = 1;
-      int j = Sprite_IsToRightOfPlayer(k).a + Sprite_IsBelowPlayer(k).a * 2;
+      int j = Sprite_IsRightOfLink(k).a + Sprite_IsBelowLink(k).a * 2;
       sprite_D[k] = j;
       sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | kHover_OamFlags[j];
       sprite_delay_main[k] = (GetRandomNumber() & 15) + 12;
@@ -13796,13 +13796,13 @@ void Sprite_82_AntifairyCircle(int k) {
   if ((sprite_y_vel[k] += kBubbleGroup_Vel[j]) == kBubbleGroup_VelTarget[j])
     sprite_B[k]++;
 
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (sprite_x_vel[k] && sprite_y_vel[k] && Sprite_CheckIfRoomIsClear()) {
     sprite_type[k] = 0x15;
     sprite_x_vel[k] = sign8(sprite_x_vel[k]) ? -16 : 16;
     sprite_y_vel[k] = sign8(sprite_y_vel[k]) ? -16 : 16;
   }
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_CheckDamageToLink(k);
 }
 
 void Eyegore_Draw(int k) {
@@ -13879,7 +13879,7 @@ void Eyegore_Main(int k) {
   case 0:  // wait until player
     if (!sprite_delay_main[k]) {
       PointU8 pt;
-      Sprite_DirectionToFacePlayer(k, &pt);
+      Sprite_DirectionToFaceLink(k, &pt);
       if ((uint8)(pt.x + 48) < 96 &&
           (uint8)(pt.y + 48) < 96) {
         sprite_ai_state[k]++;
@@ -13889,7 +13889,7 @@ void Eyegore_Main(int k) {
     break;
   case 1:  // openig eye
     if (!sprite_delay_main[k]) {
-      sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+      sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
       sprite_ai_state[k] = 2;
       sprite_delay_main[k] = kEyeGore_Opening_Delay[GetRandomNumber() & 3];
     } else {
@@ -13906,12 +13906,12 @@ void Eyegore_Main(int k) {
       sprite_graphics[k] = 0;
     } else {
       if (!((k ^ frame_counter) & 31))
-        sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+        sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
       int j = sprite_D[k];
       sprite_x_vel[k] = kFluteBoyAnimal_Xvel[j];
       sprite_y_vel[k] = kZazak_Yvel[j];
       if (!sprite_wallcoll[k])
-        Sprite_Move(k);
+        Sprite_MoveXY(k);
       Sprite_CheckTileCollision(k);
       sprite_graphics[k] = kEyeGore_Chasing_Gfx[++sprite_subtype2[k] & 12 | sprite_D[k]];
     }
@@ -13976,11 +13976,11 @@ void Goriya_Draw(int k) {
   int g = sprite_graphics[k];
   Sprite_DrawMultiple(k, &kGoriya_Dmd[kGoriyaDmdOffs[g]], kGoriyaDmdOffs[g + 1] - kGoriyaDmdOffs[g], &info);
   sprite_flags2[k]--;
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
   sprite_flags2[k]++;
 }
 
-void Sprite_Eyegore(int k) {
+void Sprite_83_GreenEyegore(int k) {
   static const int8 kGoriya_Xvel[32] = {
     0,  16, -16, 0, 0,  13, -13, 0, 0,  13, -13, 0, 0, 0, 0, 0, 
     0, -24,  24, 0, 0, -16,  16, 0, 0, -16,  16, 0, 0, 0, 0, 0, 
@@ -14018,13 +14018,13 @@ void Sprite_Eyegore(int k) {
   sprite_x_vel[k] = kGoriya_Xvel[j];
   sprite_y_vel[k] = kGoriya_Yvel[j];
   if (!sprite_wallcoll[k])
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
   Sprite_CheckDamageToAndFromLink(k);
   Sprite_CheckTileCollision(k);
   sprite_graphics[k] = kGoriya_Gfx[++sprite_subtype2[k] & 12 | sprite_D[k]];
   if (sprite_type[k] == 0x84) {
     PointU8 pt;
-    uint8 dir = Sprite_DirectionToFacePlayer(k, &pt);
+    uint8 dir = Sprite_DirectionToFaceLink(k, &pt);
     if (((uint8)(pt.x + 8) < 16 || (uint8)(pt.y + 8) < 16) && sprite_D[k] == dir) {
       if (!(sprite_A[k] & 0x1f))
         sprite_delay_aux1[k] = 16;
@@ -14045,7 +14045,7 @@ void YellowStalfos_EmancipateHead(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 2, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_z[j] = 13;
     Sprite_ApplySpeedTowardsLink(j, 16);
     sprite_delay_main[j] = 255;
@@ -14100,7 +14100,7 @@ void YellowStalfos_Draw(int k) {
   oam_cur_ptr -= 4, oam_ext_cur_ptr--;
   if (!sprite_pause[k]) {
     YellowStalfos_DrawHead(k, &info);
-    Sprite_DrawShadow(k, &info);
+    SpriteDraw_Shadow(k, &info);
   }
 }
 
@@ -14167,7 +14167,7 @@ void Sprite_85_YellowStalfos(int k) {
   case 1:  // face player
     sprite_ignore_projectile[k] = 0;
     Sprite_CheckDamageToAndFromLink(k);
-    sprite_head_dir[k] = sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+    sprite_head_dir[k] = sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
     if (!sprite_delay_main[k]) {
       sprite_ai_state[k]++;
       sprite_delay_main[k] = 127;
@@ -14210,7 +14210,7 @@ void Sprite_85_YellowStalfos(int k) {
     break;
   case 5:  // neutralized
     sprite_ignore_projectile[k] = 0;
-    Sprite_CheckDamageFromPlayer(k);
+    Sprite_CheckDamageFromLink(k);
     j = sprite_delay_main[k];
     if (!j)
       sprite_ai_state[k]--;
@@ -14250,7 +14250,7 @@ void Sprite_86_Kodongo(int k) {
   static const uint8 kKodondo_OamFlags[8] = {0x40, 0, 0, 0, 0x40, 0, 0x40, 0x40};
   static const uint8 kKodondo_FlameGfx[8] = {2, 2, 0, 5, 4, 4, 1, 6};
   int j;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_ReturnIfRecoiling(k))
@@ -14273,7 +14273,7 @@ void Sprite_86_Kodongo(int k) {
     Kodongo_SetDirection(k);
     break;
   case 1:  // move
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (Sprite_CheckTileCollision(k)) {
       sprite_D[k] ^= 1;
       Kodongo_SetDirection(k);
@@ -14324,12 +14324,12 @@ void Sprite_87_KodongoFire(int k) {
   };
 
   if (!sprite_delay_main[k]) {
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     if (Sprite_ReturnIfInactive(k))
       return;
     sprite_oam_flags[k] = sprite_oam_flags[k] & 0x3f | kFlame_OamFlags[frame_counter >> 2 & 3];
-    if (!Sprite_CheckDamageToPlayer(k)) {
-      Sprite_Move(k);
+    if (!Sprite_CheckDamageToLink(k)) {
+      Sprite_MoveXY(k);
       if (!Sprite_CheckTileCollision(k))
         return;
     }
@@ -14337,11 +14337,11 @@ void Sprite_87_KodongoFire(int k) {
     sprite_oam_flags[k] &= 63;
     SpriteSfx_QueueSfx2WithPan(k, 0x2a);
   } else {
-    if (Sprite_CheckDamageFromPlayer(k) & kCheckDamageFromPlayer_Carry && !--sprite_delay_main[k] || sprite_delay_main[k] == 1)
+    if (Sprite_CheckDamageFromLink(k) & kCheckDamageFromPlayer_Carry && !--sprite_delay_main[k] || sprite_delay_main[k] == 1)
       sprite_state[k] = 0;
     sprite_graphics[k] = kFlame_Gfx[sprite_delay_main[k] >> 3];
     Flame_Draw(k);
-    Sprite_CheckDamageToPlayer(k);
+    Sprite_CheckDamageToLink(k);
   }
 }
 
@@ -14412,7 +14412,7 @@ void Mothula_SpawnBeams(int k) {
     SpriteSpawnInfo info;
     int j = Sprite_SpawnDynamically(k, 0x89, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_y_lo[j] = info.r2_y - info.r4_z + 3;
       sprite_delay_main[j] = 16;
       sprite_ignore_projectile[j] = 16;
@@ -14455,7 +14455,7 @@ void Mothula_HandleSpikes(int k) {
   sprite_x_hi[j] = byte_7E0FB0 + 1;
   sprite_y_hi[j] = byte_7E0FB1 + 1;
   sprite_x_vel[j] = 1;
-  Sprite_Get_16_bit_Coords(j);
+  Sprite_Get16BitCoords(j);
   Sprite_CheckTileCollision(j);
   sprite_x_vel[j] = 0;
   sprite_x_lo[j] = sprite_A[j];
@@ -14529,7 +14529,7 @@ void Mothula_Main(int k) {
       }
     }
     if (!sprite_wallcoll[k])
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     Sprite_MoveZ(k);
     if (Sprite_CheckTileCollision(k))
       sprite_delay_main[k] = 0;
@@ -14557,13 +14557,13 @@ void Sprite_88_Mothula(int k) {
   Mothula_HandleSpikes(k);
 }
 void Sprite_89_MothulaBeam(int k) {
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_CheckDamageToLink(k);
   if (!(frame_counter & 1))
     sprite_oam_flags[k] ^= 0x80;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (!sprite_delay_main[k] && Sprite_CheckTileCollision(k))
     sprite_state[k] = 0;
   if ((k ^ frame_counter) & 3)
@@ -14599,11 +14599,11 @@ bool SpikeBlock_CheckStatueCollision(int k) {
 
 void Sprite_8A_SpikeBlock(int k) {
   if (!sprite_E[k]) {
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     if (Sprite_ReturnIfInactive(k))
       return;
     Sprite_CheckDamageToAndFromLink(k);
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     Sprite_CheckTileCollision(k);
     if (!sprite_delay_main[k] && (!SpikeBlock_CheckStatueCollision(k) || (sprite_wallcoll[k] & 0xf))) {
       sprite_delay_main[k] = 4;
@@ -14613,7 +14613,7 @@ void Sprite_8A_SpikeBlock(int k) {
     return;
   }
   Oam_AllocateFromRegionB(4);
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
@@ -14642,9 +14642,9 @@ void Sprite_8A_SpikeBlock(int k) {
       sprite_x_vel[k] += kSpikeBlock_XVelDelta[j];
     if (sprite_y_vel[k] != (uint8)kSpikeBlock_YVelTarget[j])
       sprite_y_vel[k] += kSpikeBlock_YVelDelta[j];
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (!sprite_delay_aux1[k]) {
-      Sprite_Get_16_bit_Coords(k);
+      Sprite_Get16BitCoords(k);
       if (Sprite_CheckTileCollision(k)) {
         sprite_ai_state[k] = 2;
         sprite_delay_aux1[k] = 64;
@@ -14656,7 +14656,7 @@ void Sprite_8A_SpikeBlock(int k) {
     int j = sprite_D[k];
     sprite_x_vel[k] = kSpikeBlock_XVel[j];
     sprite_y_vel[k] = kSpikeBlock_YVel[j];
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (sprite_x_lo[k] == sprite_A[k] && sprite_y_lo[k] == sprite_B[k]) {
       sprite_state[k] = 0;
       Dungeon_UpdateTileMapWithCommonTile(Sprite_GetX(k), Sprite_GetY(k), 2);
@@ -14694,7 +14694,7 @@ void Gibdo_Draw(int k) {
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kGibdo_Dmd[sprite_graphics[k] * 2], 2, &info);
   if (!sprite_pause[k])
-    Sprite_DrawShadow(k, &info);
+    SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_8B_Gibdo(int k) {
@@ -14727,9 +14727,9 @@ void Sprite_8B_Gibdo(int k) {
     int j = sprite_D[k];
     sprite_x_vel[k] = kGibdo_XyVel[j + 2];
     sprite_y_vel[k] = kGibdo_XyVel[j];
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     Sprite_CheckTileCollision(k);
-    if ((!sprite_delay_main[k] || sprite_wallcoll[k]) && (j = Sprite_DirectionToFacePlayer(k, NULL)) != sprite_A[k]) {
+    if ((!sprite_delay_main[k] || sprite_wallcoll[k]) && (j = Sprite_DirectionToFaceLink(k, NULL)) != sprite_A[k]) {
       sprite_A[k] = j;
       sprite_ai_state[k] = 0;
     } else {
@@ -14767,7 +14767,7 @@ void SpriteDraw_BigShadow(int k, int anim) {
   oam_cur_ptr += 16;
   oam_ext_cur_ptr += 4;
   Sprite_DrawMultiple(k, &kLargeShadow_Dmd[anim * 3], 3, NULL);
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
 }
 
 void Sprite_DrawLargeShadow2(int k) {
@@ -14788,7 +14788,7 @@ static inline int8 ArrgiSin(uint16 a, uint8 b) {
 }
 
 
-void Arrgi_Initialize(int k) {
+void Arrghus_HandlePuffs(int k) {
   static const uint16 kArrgi_Tab0[13] = {0, 0x40, 0x80, 0xc0, 0x100, 0x140, 0x180, 0x1c0, 0, 0x66, 0xcc, 0x132, 0x198};
   static const uint16 kArrgi_Tab1[13] = {0, 0, 0, 0, 0, 0, 0, 0, 0x1ff, 0x1ff, 0x1ff, 0x1ff, 0x1ff};
   static const uint8 kArrgi_Tab2[13] = {0x14, 0x14, 0x14, 0x14, 0x14, 0x14, 0x14, 0x14, 0xc, 0xc, 0xc, 0xc, 0xc};
@@ -14880,7 +14880,7 @@ void Sprite_8C_Arrghus(int k) {
     if (Sprite_ReturnIfInactive(k))
       return;
   }
-  Arrgi_Initialize(k);
+  Arrghus_HandlePuffs(k);
   overlord_x_lo[4] = 1;
   if ((sprite_hit_timer[k] & 127) == 2) {
     sprite_ai_state[k] = 3;
@@ -14890,7 +14890,7 @@ void Sprite_8C_Arrghus(int k) {
   }
   if (Sprite_ReturnIfRecoiling(k))
     return;
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_CheckDamageToLink(k);
   if (!(sprite_subtype2[k]++ & 3)) {
     if (++sprite_G[k] == 9)
       sprite_G[k] = 0;
@@ -14915,7 +14915,7 @@ void Sprite_8C_Arrghus(int k) {
       sprite_ai_state[k] = 1;
       sprite_delay_main[k] = 48;
     }
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     Sprite_ApproachTargetSpeed(k, sprite_head_dir[k], sprite_D[k]);
     break;
   case 1:  // decelerate
@@ -14938,7 +14938,7 @@ void Sprite_8C_Arrghus(int k) {
         sprite_subtype2[k] = 0;
       }
     } else {
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       Sprite_ApproachTargetSpeed(k, 0, 0);
     }
     break;
@@ -14992,8 +14992,8 @@ void Sprite_8C_Arrghus(int k) {
   case 5:  // swim frantically
     if (!sprite_delay_main[k]) {
       sprite_flags3[k] = 0;
-      Sprite_Move(k);
-      Sprite_CheckDamageFromPlayer(k);
+      Sprite_MoveXY(k);
+      Sprite_CheckDamageFromLink(k);
       if (!(frame_counter & 7)) {
         SpriteSfx_QueueSfx2WithPan(k, 0x28);
         int j = GarnishAllocLimit(sign8(sprite_y_vel[k]) ? 29 : 14);
@@ -15016,7 +15016,7 @@ void Sprite_8D_Arrghi(int k) {
   static const uint8 kArrgi_Gfx[8] = {0, 1, 2, 2, 2, 2, 2, 1};
   
   sprite_obj_prio[k] |= 0x30;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_graphics[k] = kArrgi_Gfx[++sprite_subtype2[k] >> 3 & 7];
@@ -15036,7 +15036,7 @@ void Sprite_8D_Arrghi(int k) {
     sprite_delay_main[k] = 32;
   }
   if (!sprite_delay_main[k])
-    Sprite_CheckDamageToPlayer(k);
+    Sprite_CheckDamageToLink(k);
 
   if (!sprite_ai_state[k]) {
     sprite_x_lo[k] = overlord_x_lo[k + 7];
@@ -15045,11 +15045,11 @@ void Sprite_8D_Arrghi(int k) {
     sprite_y_hi[k] = overlord_gen3[k + 7];
     return;
   }
-  Sprite_CheckDamageFromPlayer(k);
+  Sprite_CheckDamageFromLink(k);
   if (!((k ^ frame_counter) & 3)) {
     uint16 x = overlord_y_lo[k + 7] << 8 | overlord_x_lo[k + 7];
     uint16 y = overlord_gen3[k + 7] << 8 | overlord_gen1[k + 7];
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 4);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 4);
     sprite_y_vel[k] = pt.y;
     sprite_x_vel[k] = pt.x;
     if ((uint8)(sprite_x_lo[k] - overlord_x_lo[k + 7] + 8) < 16 && (uint8)(sprite_y_lo[k] - overlord_gen1[k + 7] + 8) < 16) {
@@ -15058,7 +15058,7 @@ void Sprite_8D_Arrghi(int k) {
       sprite_flags3[k] |= 0x40;
     }
   }
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   
 }
 
@@ -15075,7 +15075,7 @@ void SpritePrep_Arrghi(int k) {
   if (k == 13) {
     overlord_x_lo[2] = 0;
     overlord_x_lo[3] = 0;
-    Arrgi_Initialize(0);
+    Arrghus_HandlePuffs(0);
   }
   sprite_x_lo[k] = overlord_x_lo[k + 7];
   sprite_x_hi[k] = overlord_y_lo[k + 7];
@@ -15102,7 +15102,7 @@ void Terrorpin_CheckForHammer(int k) {
     SpriteHitBox hb;
     Player_SetupActionHitBox(&hb);
     Terrorpin_SetUpHammerHitBox(k, &hb);
-    if (Utility_CheckIfHitBoxesOverlap(&hb)) {
+    if (CheckIfHitBoxesOverlap(&hb)) {
       sprite_x_vel[k] = -sprite_x_vel[k];
       sprite_y_vel[k] = -sprite_y_vel[k];
       sprite_delay_aux2[k] = 32;
@@ -15121,21 +15121,21 @@ void Sprite_8E_Terrorpin(int k) {
   static const int8 kTerrorpin_Yvel[8] = {0, 0, 8, -8, 0, 0, 12, -12};
   static const uint8 kTerrorpin_Oamflags[2] = {0, 0x40};
   static const int8 kTerrorpin_Overturned_Xvel[2] = {8, -8};
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   Sprite_CheckTileCollision(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (Sprite_ReturnIfRecoiling(k))
     return;
   if (!sprite_delay_aux2[k])
-    Sprite_CheckDamageFromPlayer(k);
+    Sprite_CheckDamageFromLink(k);
   Terrorpin_CheckForHammer(k);
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   switch (sprite_B[k]) {
   case 0:  // upright
     if (!sprite_delay_aux4[k]) {
       sprite_delay_aux4[k] = (GetRandomNumber() & 31) + 32;
-      sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+      sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
     }
     j = sprite_D[k] + sprite_G[k];
     sprite_x_vel[k] = kTerrorpin_Xvel[j];
@@ -15148,7 +15148,7 @@ void Sprite_8E_Terrorpin(int k) {
     sprite_graphics[k] = frame_counter >> (sprite_G[k] ? 2 : 3) & 1;
     sprite_flags3[k] |= 64;
     sprite_defl_bits[k] = 4;
-    Sprite_CheckDamageToPlayer(k);
+    Sprite_CheckDamageToLink(k);
     break;
   case 1:  // overturned
     sprite_flags3[k] &= 191;
@@ -15199,7 +15199,7 @@ void Zol_Draw(int k) {
     uint8 bak1 = sprite_oam_flags[k];
     sprite_oam_flags[k] = bak1 ^ kZol_OamFlags[gfx];
     sprite_graphics[k] = gfx + ((sprite_oam_flags[k] & 1 ^ 1) << 2);
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     sprite_graphics[k] = gfx;
     sprite_oam_flags[k] = bak1;
   } else {
@@ -15237,7 +15237,7 @@ void Sprite_8F_Blob(int k) {
     return;
   
   if (sprite_ai_state[k] >= 2) {
-    Sprite_CheckDamageFromPlayer(k);
+    Sprite_CheckDamageFromLink(k);
   }
   if (Sprite_ReturnIfRecoiling(k))
     return;
@@ -15246,7 +15246,7 @@ void Sprite_8F_Blob(int k) {
     uint8 bak = sprite_flags4[k];
     sprite_flags4[k] |= 9;
     sprite_flags2[k] |= 0x80;
-    uint8 t = Sprite_CheckDamageToPlayer(k);
+    uint8 t = Sprite_CheckDamageToLink(k);
     sprite_flags4[k] = bak;
     if (t) {
       sprite_ai_state[k]++;
@@ -15273,8 +15273,8 @@ void Sprite_8F_Blob(int k) {
   }
   case 2: { // falling
     if (sprite_delay_main[k] == 0) {
-      Sprite_CheckDamageFromPlayer(k);
-      Sprite_Move(k);
+      Sprite_CheckDamageFromLink(k);
+      Sprite_MoveXY(k);
       Sprite_CheckTileCollision(k);
       uint8 oldz = sprite_z[k];
       Sprite_MoveZ(k);
@@ -15301,7 +15301,7 @@ void Sprite_8F_Blob(int k) {
     break;
   }
   case 3:  // active
-    Sprite_CheckDamageToPlayer(k);
+    Sprite_CheckDamageToLink(k);
     if (!sprite_delay_aux1[k]) {
       Sprite_ApplySpeedTowardsLink(k, 48);
       sprite_delay_aux1[k] = GetRandomNumber() & 63 | 96;
@@ -15310,7 +15310,7 @@ void Sprite_8F_Blob(int k) {
     if (!sprite_delay_aux2[k]) {
       sprite_subtype2[k]++;
       if (!(sprite_subtype2[k] & 14 | sprite_wallcoll[k])) {
-        Sprite_Move(k);
+        Sprite_MoveXY(k);
         if (++sprite_G[k] == sprite_head_dir[k]) {
           sprite_G[k] = 0;
           sprite_delay_aux2[k] = (GetRandomNumber() & 31) + 64;
@@ -15365,7 +15365,7 @@ void Sprite_90_Wallmaster(int k) {
       return;
     }
   } else {
-    Sprite_CheckDamageFromPlayer(k);
+    Sprite_CheckDamageFromLink(k);
   }
   switch(sprite_ai_state[k]) {
   case 0: {  // Descend
@@ -15386,7 +15386,7 @@ void Sprite_90_Wallmaster(int k) {
       sprite_ai_state[k] = 2;
 
     sprite_graphics[k] = (sprite_delay_main[k] & 0x20) ? 0 : 1;
-    if (Sprite_CheckDamageToPlayer(k)) {
+    if (Sprite_CheckDamageToLink(k)) {
       sprite_A[k] = 1;
       sprite_flags3[k] = 64;
       SpriteSfx_QueueSfx3WithPan(k, 0x2a);
@@ -15493,7 +15493,7 @@ void Sprite_91_StalfosKnight(int k) {
     sprite_ignore_projectile[k] = 9;
     uint8 bak0 = sprite_flags2[k];
     sprite_flags2[k] |= 128;
-    bool flag = Sprite_CheckDamageToPlayer(k);
+    bool flag = Sprite_CheckDamageToLink(k);
     sprite_flags2[k] = bak0;
     if (flag) {
       sprite_z[k] = 144;
@@ -15535,7 +15535,7 @@ void Sprite_91_StalfosKnight(int k) {
   case 3:  // 
     Sprite_CheckDamageToAndFromLink(k);
     if (sprite_delay_main[k] == sprite_B[k]) {
-      sprite_head_dir[k] = Sprite_IsToRightOfPlayer(k).a;
+      sprite_head_dir[k] = Sprite_IsRightOfLink(k).a;
       sprite_ai_state[k] = 4;
       sprite_delay_main[k] = 32;
     } else {
@@ -15558,7 +15558,7 @@ void Sprite_91_StalfosKnight(int k) {
   case 5:  // 
     Sprite_CheckDamageToAndFromLink(k);
     if (sprite_delay_aux1[k] == 0) {
-      Sprite_MoveXyz(k);
+      Sprite_MoveXYZ(k);
       Sprite_CheckTileCollision(k);
       if (!sign8(sprite_z_vel[k] + 64))
         sprite_z_vel[k] -= 2;
@@ -15574,7 +15574,7 @@ void Sprite_91_StalfosKnight(int k) {
       if (sprite_delay_aux1[k] == 1) {
         sprite_z_vel[k] = 48;
         Sprite_ApplySpeedTowardsLink(k, 16);
-        sprite_head_dir[k] = Sprite_IsToRightOfPlayer(k).a;
+        sprite_head_dir[k] = Sprite_IsRightOfLink(k).a;
         SpriteSfx_QueueSfx3WithPan(k, 0x13);
       }
       sprite_C[k] = 1;
@@ -15582,7 +15582,7 @@ void Sprite_91_StalfosKnight(int k) {
     }
     break;
   case 6:  // 
-    Sprite_MoveXyz(k);
+    Sprite_MoveXYZ(k);
     Sprite_CheckTileCollision(k);
     if (!sign8(sprite_z_vel[k] + 64))
       sprite_z_vel[k] -= 2;
@@ -15641,12 +15641,12 @@ void Sprite_92_HelmasaurKing(int k) {
   if (sign8(sprite_C[k])) {
     if (sprite_delay_main[k] == 1)
       sprite_state[k] = 0;
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     if (Sprite_ReturnIfInactive(k))
       return;
     if (!(frame_counter & 7 | sprite_delay_aux1[k]))
       sprite_oam_flags[k] ^= 0x40;
-    Sprite_MoveXyz(k);
+    Sprite_MoveXYZ(k);
     sprite_z_vel[k] -= 2;
     if (sign8(sprite_z[k])) {
       sprite_z[k] = 0;
@@ -15697,7 +15697,7 @@ void Sprite_92_HelmasaurKing(int k) {
       HelmasaurKing_ChipAwayAtMask(k);
   }
   sprite_E[k] = sprite_C[k];
-  Sprite_CheckDamageFromPlayer(k);
+  Sprite_CheckDamageFromLink(k);
   HelmasaurKing_SwingTail(k);
   HelmasaurKing_AttemptDamage(k);
   HelmasaurKing_CheckMaskDamageFromHammer(k);
@@ -15770,7 +15770,7 @@ void HelmasaurKing_HandleMovement(int k) {
     if (!(++sprite_subtype2[k] & 15))
       sound_effect_1 = 0x21;
   } while (--n);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
 }
 
 bool HelmasaurKing_MaybeFireball(int k) {
@@ -15840,7 +15840,7 @@ void HelmasaurKing_SwingTail(int k) {
   } else {
     if (!(overlord_gen2[0] | sprite_delay_aux3[k])) {
       sprite_head_dir[k] = overlord_gen1[6] & 1;
-      uint8 dir = Sprite_IsToRightOfPlayer(k).a ^ 1;
+      uint8 dir = Sprite_IsRightOfLink(k).a ^ 1;
       if (dir == sprite_head_dir[k]) {
         sprite_anim_clock[k] = 2;
         sound_effect_2 = Sprite_CalculateSfxPan(k) | 0x26;
@@ -15858,7 +15858,7 @@ void HelmasaurKing_CheckMaskDamageFromHammer(int k) {
   sprite_y_lo[k] += 8;
   Sprite_SetupHitBox(k, &hb);
   sprite_y_lo[k] = bak;
-  if (Utility_CheckIfHitBoxesOverlap(&hb)) {
+  if (CheckIfHitBoxesOverlap(&hb)) {
     sprite_health[k]--;
     sound_effect_2 = 0x21;
     ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, 0x30);
@@ -15878,7 +15878,7 @@ void HelmasaurKing_AttemptDamage(int k) {
   if (!(frame_counter & 7) && 
       (uint16)(link_x_coord - cur_sprite_x + 36) < 72 && 
       (uint16)(link_y_coord - cur_sprite_y + 40) < 64)
-    Sprite_Sprite_AttemptDamageToLinkPlusRecoil(k);
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
 }
 
 void HelmasaurKing_ChipAwayAtMask(int k) {
@@ -15930,7 +15930,7 @@ void HelmasaurKing_SpitFireball(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x70, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     Sprite_SetY(j, info.r2_y + 28);
     sprite_delay_main[j] = 32;
     sprite_ignore_projectile[j] = 32;
@@ -16005,7 +16005,7 @@ void KingHelmasaur_CheckBombDamage(int k, int j) {
   hb.r1_ylo = y, hb.r9_yhi = y >> 8;
   hb.r2 = 2;
   hb.r3 = 15;
-  if (Utility_CheckIfHitBoxesOverlap(&hb)) {
+  if (CheckIfHitBoxesOverlap(&hb)) {
     ancilla_x_vel[j] = -ancilla_x_vel[j];
     ancilla_y_vel[j] = (int8)-ancilla_y_vel[j] >> 1;
     sprite_delay_aux4[k] = 32;
@@ -16139,7 +16139,7 @@ void KingHelmasaur_OperateTail(int k, PrepOamCoordsRet *info) {
   }
 
   if (is_hit && !flag_block_link_menu)
-    Sprite_Sprite_AttemptDamageToLinkPlusRecoil(k);
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
   Sprite_CorrectOamEntries(k, 16, 2);
   Sprite_PrepOamCoordOrDoubleRet(k, info);
   tmp_counter = 16;
@@ -16181,7 +16181,7 @@ void Sprite_93_Bumper(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_CheckTileCollision(k);
-  if (!link_cape_mode && Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (!link_cape_mode && Sprite_CheckDamageToLink_same_layer(k)) {
     Link_CancelDash();
     sprite_delay_main[k] = 32;
     ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, 0x30);
@@ -16199,7 +16199,7 @@ void Sprite_93_Bumper(int k) {
     int x = Sprite_GetX(j), y = Sprite_GetY(j);
     if ((uint16)(cur_sprite_x - x + 16) < 32 && (uint16)(cur_sprite_y - y + 16) < 32) {
       sprite_F[j] = 15;
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 0x40);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 0x40);
       sprite_y_recoil[j] = pt.y;
       sprite_x_recoil[j] = pt.x;
       sprite_delay_main[k] = 32;
@@ -16221,7 +16221,7 @@ void FlyingTile_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kFlyingTile_Dmd[sprite_graphics[k] * 4], 4, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_94_Tile(int k) {
@@ -16259,7 +16259,7 @@ lbl_b:
     if (sprite_delay_main[k] && (sprite_delay_main[k] & 3) == 0)
       Sprite_ApplySpeedTowardsLink(k, 32);
     if (!Sprite_CheckDamageToAndFromLink(k)) {
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       cur_sprite_y -= sprite_z[k];
       if (!Sprite_CheckTileCollision(k))
         goto lbl_b;
@@ -16305,9 +16305,9 @@ void Pirogusu_Draw(int k) {
   sprite_graphics[k] = kPirogusu_Gfx[j];
   if (j < 4) {
     cur_sprite_x += 4, cur_sprite_y += 4;
-    Sprite_PrepAndDrawSingleSmall(k);
+    SpriteDraw_SingleSmall(k);
   } else {
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
   }
 }
 
@@ -16347,13 +16347,13 @@ void Sprite_94_Pirogusu(int k) {
       int j = sprite_D[k];
       sprite_x_vel[k] = kPirogusu_XYvel[j + 2];
       sprite_y_vel[k] = kPirogusu_XYvel[j];
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     }
     break;
   }
   case 2: {  // splash into play
     Sprite_CheckDamageToAndFromLink(k);
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     int j = sprite_D[k];
     sprite_x_vel[k] += kPirogusu_XYvel2[j];
     sprite_y_vel[k] += kPirogusu_XYvel2[j + 2];
@@ -16372,7 +16372,7 @@ void Sprite_94_Pirogusu(int k) {
     sprite_A[k] = kPirogusu_A2[frame_counter >> 2 & 1 | sprite_D[k] << 1] + 8;
     if (!sprite_delay_aux1[k]) {
       Pirogusu_SpawnSplash(k);
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (Sprite_CheckTileCollision(k) & 15) {
         static const uint8 kPirogusu_Dir[8] = {2, 3, 2, 3, 0, 1, 0, 1};
         sprite_D[k] = kPirogusu_Dir[sprite_D[k] << 1 | GetRandomNumber() & 1];
@@ -16399,12 +16399,12 @@ void LaserBeam_BuildUpGarnish(int k) {
 }
 
 void Sprite_LaserBeam(int k) {
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   LaserBeam_BuildUpGarnish(k);
-  Sprite_Move(k);
-  Sprite_CheckDamageToPlayerSameLayer(k);
+  Sprite_MoveXY(k);
+  Sprite_CheckDamageToLink_same_layer(k);
   if (!sprite_delay_main[k] && Sprite_CheckTileCollision(k)) {
     sprite_state[k] = 0;
     SpriteSfx_QueueSfx3WithPan(k, 0x26);
@@ -16468,7 +16468,7 @@ void LaserEye_Draw(int k) {
   Sprite_DrawMultiple(k, &kLaserEye_Dmd[(sprite_graphics[k] + sprite_D[k] * 2) * 3], 3, NULL);
 }
 
-void Sprite_LaserEye(int k) {
+void Sprite_95_LaserEyeLeft(int k) {
   static const uint8 kLaserEye_Dirs[4] = {2, 3, 0, 1};
   if (sprite_A[k]) {
     Sprite_LaserBeam(k);
@@ -16558,7 +16558,7 @@ void Pengator_Draw(int k) {
     oam_cur_ptr += 8, oam_ext_cur_ptr += 2;
     Sprite_DrawMultiple(k, &kPengator_Dmd1[i * 2], 2, &info);
   }
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_99_Pengator(int k) {
@@ -16575,7 +16575,7 @@ void Sprite_99_Pengator(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   sprite_z_vel[k] -= 2;
   if (sign8(sprite_z[k])) {
     sprite_z_vel[k] = 0;
@@ -16584,7 +16584,7 @@ void Sprite_99_Pengator(int k) {
   Sprite_CheckTileCollision(k);
   switch(sprite_ai_state[k]) {
   case 0:  // face player
-    sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+    sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
     sprite_ai_state[k] = 1;
     break;
   case 1:  // speedup
@@ -16661,7 +16661,7 @@ void Kyameron_Draw(int k) {
   if (j < 12) {
     uint8 bak = sprite_oam_flags[k];
     sprite_oam_flags[k] = sprite_oam_flags[k] & 0x3f | kKyameron_OamFlags[j];
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     sprite_oam_flags[k] = bak;
   } else {
     Sprite_DrawMultiple(k, &kKyameron_Dmd[(j - 12) * 4], 4, NULL);
@@ -16708,7 +16708,7 @@ void Sprite_9A_Kyameron(int k) {
     int j = sprite_delay_main[k];
     if (j == 0) {
       sprite_ai_state[k] = 3;
-      j = Sprite_IsBelowPlayer(k).a * 2 + Sprite_IsToRightOfPlayer(k).a;
+      j = Sprite_IsBelowLink(k).a * 2 + Sprite_IsRightOfLink(k).a;
       sprite_x_vel[k] = kKyameron_Xvel[j];
       sprite_y_vel[k] = kKyameron_Yvel[j];
     } else {
@@ -16721,7 +16721,7 @@ void Sprite_9A_Kyameron(int k) {
   case 3: {  // moving
     sprite_ignore_projectile[k] = 0;
     if (!Sprite_CheckDamageToAndFromLink(k)) {
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       int j = Sprite_CheckTileCollision(k);
       if (j & 3) {
         sprite_x_vel[k] = -sprite_x_vel[k];
@@ -16781,8 +16781,8 @@ void Sprite_Wizzbeam(int k) {
   sprite_oam_flags[k] ^= 6;
   sprite_subtype2[k]++;
   if (!sprite_ai_state[k])
-    Sprite_CheckDamageToPlayer(k);
-  Sprite_Move(k);
+    Sprite_CheckDamageToLink(k);
+  Sprite_MoveXY(k);
   if (Sprite_CheckTileCollision(k))
     sprite_state[k] = 0;
 }
@@ -16863,7 +16863,7 @@ void Sprite_9B_Wizzrobe(int k) {
         static const uint8 kWizzrobe_Cloak_Gfx[4] = {4, 2, 0, 6};
         sprite_ai_state[k] = 1;
         sprite_delay_main[k] = 63;
-        sprite_D[k] = j = Sprite_DirectionToFacePlayer(k, NULL);
+        sprite_D[k] = j = Sprite_DirectionToFaceLink(k, NULL);
         sprite_graphics[k] = kWizzrobe_Cloak_Gfx[j];
       } else {
         sprite_state[k] = 0;
@@ -16905,18 +16905,18 @@ void Sprite_9B_Wizzrobe(int k) {
 void Zoro(int k) {
   if (!sprite_C[k]) {
     sprite_C[k]++;
-    if (Sprite_IsBelowPlayer(k).a != 0) {
+    if (Sprite_IsBelowLink(k).a != 0) {
       sprite_state[k] = 0;
       return;
     }
   }
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
   sprite_graphics[k] = ++sprite_subtype2[k] >> 1 & 1;
   sprite_x_vel[k] = kFluteBoyAnimal_Xvel[sprite_subtype2[k] >> 2 & 1];
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (!sprite_delay_main[k] && Sprite_CheckTileCollision(k))
     sprite_state[k] = 0;
 
@@ -17024,7 +17024,7 @@ void Babasu(int k) {
   case 3: { // scurry across
     static const uint8 kBabusu_Scurry_Gfx[4] = {18, 14, 12, 16};
     Sprite_CheckDamageToAndFromLink(k);
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     sprite_graphics[k] = (frame_counter >> 1 & 1) + kBabusu_Scurry_Gfx[sprite_D[k]];
     if (!sprite_delay_main[k] && Sprite_CheckTileCollision(k)) {
       sprite_D[k] ^= 1;
@@ -17035,7 +17035,7 @@ void Babasu(int k) {
   }
 }
 
-void Sprite_Zoro(int k) {
+void Sprite_9C_Zoro(int k) {
   if (sprite_E[k])
     Zoro(k);
   else
@@ -17081,7 +17081,7 @@ void Sprite_9E_HauntedGroveOstritch(int k) {
     }
     break;
   case 1:  // run away
-    Sprite_MoveXyz(k);
+    Sprite_MoveXYZ(k);
     sprite_z_vel[k] -= 2;
     if (sign8(sprite_z[k])) {
       sprite_z_vel[k] = 32;
@@ -17101,7 +17101,7 @@ static const uint8 kFluteBoyAnimal_Gfx[3] = {0, 1, 2};
 
 void Sprite_9F_HauntedGroveRabbit(int k) {
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | kFluteBoyAnimal_OamFlags[sprite_D[k]];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   switch (sprite_ai_state[k]) {
   case 0:  // wait
     sprite_graphics[k] = 3;
@@ -17113,7 +17113,7 @@ void Sprite_9F_HauntedGroveRabbit(int k) {
     }
     break;
   case 1:  // run
-    Sprite_MoveXyz(k);
+    Sprite_MoveXYZ(k);
     sprite_z_vel[k]-=3;
     if (sign8(sprite_z[k])) {
       sprite_z_vel[k] = 24;
@@ -17149,9 +17149,9 @@ void Sprite_A0_HauntedGroveBird(int k) {
   oam_cur_ptr += 4;
   oam_ext_cur_ptr++;
   sprite_flags2[k]--;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   sprite_flags2[k]++;
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   switch (sprite_ai_state[k]) {
   case 0:  // wait
     sprite_graphics[k] = (frame_counter & 0x18) ? 0 : 3;
@@ -17248,7 +17248,7 @@ void Sprite_A1_Freezor(int k) {
   switch(sprite_ai_state[k]) {
   case 0:  // stasis
     sprite_ignore_projectile[k]++;
-    if ((uint8)(Sprite_IsToRightOfPlayer(k).b + 16) < 32) {
+    if ((uint8)(Sprite_IsRightOfLink(k).b + 16) < 32) {
       sprite_ai_state[k] = 1;
       sprite_delay_main[k] = 32;
     }
@@ -17274,19 +17274,19 @@ void Sprite_A1_Freezor(int k) {
     static const int8 kFreezor_Yvel[4] = {0, 0, 18, -18};
     static const uint8 kFreezor_Moving_Gfx[4] = {1, 2, 1, 3};
     static const int8 kFreezor_Sparkle_X[8] = {-4, -2, 0, 2, 4, 6, 8, 10};
-    Sprite_CheckDamageToPlayer(k);
-    if (Sprite_CheckDamageFromPlayer(k))
+    Sprite_CheckDamageToLink(k);
+    if (Sprite_CheckDamageFromLink(k))
       sprite_hit_timer[k] = 0;
     if (sprite_delay_aux1[k] && !((k ^ frame_counter) & 7)) {
       Sprite_GarnishSpawn_Sparkle(k, kFreezor_Sparkle_X[GetRandomNumber() & 7], -4);
     }
     if (!sprite_delay_main[k])
-      sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+      sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
     int j = sprite_D[k];
     sprite_x_vel[k] = kFreezor_Xvel[j];
     sprite_y_vel[k] = kFreezor_Yvel[j];
     if (!(sprite_wallcoll[k] & 15))
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
     Sprite_CheckTileCollision(k);
     sprite_graphics[k] = kFreezor_Moving_Gfx[(k ^ frame_counter) >> 2 & 3];
     break;
@@ -17307,12 +17307,12 @@ void Sprite_A3_KholdstareShell(int k) {
   if (Sprite_ReturnIfPaused(k))
     return;
   PointU8 pt;
-  Sprite_DirectionToFacePlayer(k, &pt);
+  Sprite_DirectionToFaceLink(k, &pt);
   if ((uint8)(pt.x + 32) < 64 && (uint8)(pt.y + 32) < 64) {
     Sprite_NullifyHookshotDrag();
     Sprite_RepelDash();
   }
-  Sprite_CheckDamageFromPlayer(k);
+  Sprite_CheckDamageFromLink(k);
   if (sprite_ai_state[k] == 0) {
     if (sprite_state[k] == 6) {
       sprite_flags3[k] = 0xc0;
@@ -17411,7 +17411,7 @@ void Sprite_A2_Kholdstare(int k) {
     sprite_A[k] = Sprite_ConvertVelocityToAngle(pt.x, pt.y);
   }
 
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   switch(sprite_ai_state[k]) {
   case 0:  // Accelerate
     Sprite_CheckDamageToAndFromLink(k);
@@ -17471,7 +17471,7 @@ check_coll:
         j = Sprite_SpawnDynamicallyEx(k, 0xa2, &info, 4);
         assert(j >= 0);
         if (j >= 0) {
-          Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+          Sprite_SetSpawnedCoordinates(j, &info);
           sprite_z_vel[j] = kKholdstare_Triplicate_Tab0[i];
           sprite_z_subpos[j] = kKholdstare_Triplicate_Tab1[i];
           sprite_delay_main[j] = 32;
@@ -17508,7 +17508,7 @@ void IceBall_Split(int k) {
     SpriteSpawnInfo info;
     int j = Sprite_SpawnDynamically(k, 0xa4, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_ai_state[j] = 1;
       sprite_graphics[j] = 1;
       sprite_C[j] = 1;
@@ -17533,7 +17533,7 @@ void Sprite_A4_FallingIce(int k) {
 
   sprite_ignore_projectile[k] = 1;
   sprite_obj_prio[k] = 0x30;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (!sprite_ai_state[k])
     sprite_flags3[k] ^= 16;
   if (Sprite_ReturnIfInactive(k))
@@ -17545,8 +17545,8 @@ void Sprite_A4_FallingIce(int k) {
     return;
   }
 
-  Sprite_Move(k);
-  if (!sprite_ai_state[k] || (Sprite_CheckDamageToPlayer(k), !Sprite_CheckTileCollision(k))) {
+  Sprite_MoveXY(k);
+  if (!sprite_ai_state[k] || (Sprite_CheckDamageToLink(k), !Sprite_CheckTileCollision(k))) {
     uint8 old_z = sprite_z[k];
     Sprite_MoveZ(k);
     if (!sign8(sprite_z_vel[k] + 64))
@@ -17587,9 +17587,9 @@ void Sprite_StalfosBone(int k) {
   StalfosBone_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_CheckDamageToLink(k);
   sprite_subtype2[k]++;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (!sprite_delay_main[k] && Sprite_CheckTileCollision(k)) {
     sprite_state[k] = 0;
     Sprite_PlaceWeaponTink(k);
@@ -17605,7 +17605,7 @@ int Sprite_SpawnFirePhlegm(int k) {
   int j = Sprite_SpawnDynamically(k, 0xa5, &info);
   if (j >= 0) {
     SpriteSfx_QueueSfx3WithPan(k, 0x5);
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     int i = sprite_D[k];
     Sprite_SetX(j, info.r0_x + kSpawnFirePhlegm_X[i]);
     Sprite_SetY(j, info.r2_y + kSpawnFirePhlegm_Y[i]);
@@ -17630,7 +17630,7 @@ void Stalfos_ThrowBone(int k) {
   int j = Sprite_SpawnDynamically(k, 0xa7, &info);
   if (j >= 0) {
     sprite_A[j] = 1;
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     Sprite_ApplySpeedTowardsLink(j, 32);
     sprite_flags2[j] = 0x21;
     sprite_ignore_projectile[j] = 33;
@@ -17645,7 +17645,7 @@ void Stalfos_ThrowBone(int k) {
 }
 
 
-void Sprite_Zazak(int k);
+void Sprite_Zazak_Main(int k);
 void Stalfos_Skellington(int k);
 void Stalfos_Draw(int k);
 
@@ -17686,7 +17686,7 @@ void Stalfos_Skellington(int k) {
       player_oam_y_offset != 0x80 &&
       !(sprite_z[k] | sprite_pause[k]) &&
       sprite_floor[k] == link_is_on_lower_level) {
-    uint8 dir = Sprite_DirectionToFacePlayer(k, NULL);
+    uint8 dir = Sprite_DirectionToFaceLink(k, NULL);
     if (!link_is_running) {
       if (button_b_frames >= 0x90)
         goto if_1;
@@ -17706,7 +17706,7 @@ if_1:
   }
 endif_1:
   if (sprite_z[k] == 0) {
-    Sprite_Zazak(k);
+    Sprite_Zazak_Main(k);
     return;
   }
   sprite_graphics[k] = kStalfos_AnimState2[sprite_D[k]];
@@ -17723,7 +17723,7 @@ endif_1:
     sprite_x_vel[k] = 0;
   if (t & 12)
     sprite_y_vel[k] = 0;
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   sprite_z_vel[k] -= 2;
   if (sign8(sprite_z[k] - 1)) {
     sprite_z[k] = 0;
@@ -17789,7 +17789,7 @@ void Stalfos_Draw(int k) {
     oam->charnum = kStalfos_Char[i];
     oam->flags = (oam->flags & ~0x70) | kStalfos_Flags[i];
   }
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Zazak_Draw(int k) {
@@ -17829,7 +17829,7 @@ void Zazak_Draw(int k) {
   OamEnt *oam = GetOamCurPtr();
   oam->charnum = kZazak_Char[i];
   oam->flags = (oam->flags & ~0x40) | kZazak_Flags[i];
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void FirePhlegm_Draw(int k) {
@@ -17854,7 +17854,7 @@ void FirePhlegm_Draw(int k) {
   Sprite_DrawMultiple(k, &kFirePhlegm_Dmd[sprite_D[k] * 4 + sprite_graphics[k] * 2], 2, NULL);
 }
 
-void Sprite_Zazak(int k) {
+void Sprite_Zazak_Main(int k) {
   static const uint8 kStalfos_AnimState1[8] = {6, 4, 0, 2, 7, 5, 1, 3};
   static const uint8 kStalfos_Delay[4] = {16, 32, 64, 32};
   
@@ -17864,8 +17864,8 @@ void Sprite_Zazak(int k) {
     if (Sprite_ReturnIfInactive(k))
       return;
     sprite_graphics[k] = frame_counter >> 1 & 1;
-    Sprite_CheckDamageToPlayer(k);
-    Sprite_Move(k);
+    Sprite_CheckDamageToLink(k);
+    Sprite_MoveXY(k);
     if (Sprite_CheckTileCollision(k)) {
       sprite_state[k] = 0;
       Sprite_PlaceRupulseSpark_2(k);
@@ -17877,7 +17877,7 @@ void Sprite_Zazak(int k) {
     sprite_ai_state[k] = 0;
     sprite_delay_main[k] = 32;
     Sprite_ZeroVelocity_XY(k);
-    sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL);
+    sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL);
   }
   if (t == 1) {
     Stalfos_ThrowBone(k);
@@ -17893,7 +17893,7 @@ void Sprite_Zazak(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_CheckTileCollision(k);
   switch (sprite_ai_state[k]) {
   case 0:  // walk then track head
@@ -17917,7 +17917,7 @@ void Sprite_Zazak(int k) {
         }
         return;
       } else if (sprite_type[k] == 0xa6 &&
-                 sprite_D[k] == Sprite_DirectionToFacePlayer(k, NULL) &&
+                 sprite_D[k] == Sprite_DirectionToFaceLink(k, NULL) &&
                  sprite_floor[k] == link_is_on_lower_level) {
         sprite_ai_state[k] = 2;
         sprite_delay_main[k] = 48;
@@ -17931,7 +17931,7 @@ void Sprite_Zazak(int k) {
     sprite_ai_state[k] = 0;
     if (++sprite_C[k] == 4) {
       sprite_C[k] = 0;
-      sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL);
+      sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL);
       sprite_delay_main[k] = 24;
     }
     sprite_y_vel[k] = sprite_x_vel[k] = 0;
@@ -18016,20 +18016,20 @@ void Bomber_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kBomber_Dmd[sprite_graphics[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
-void Sprite_Bomber(int k) {
+void Sprite_A8_GreenZirro(int k) {
   static const uint8 kBomber_Gfx[4] = {9, 10, 8, 7};
 
   sprite_obj_prio[k] = 0x30;
   if (sprite_A[k]) {
     switch (sprite_ai_state[k]) {
     case 0: // bomberpellet falling
-      Sprite_PrepAndDrawSingleSmall(k);
+      SpriteDraw_SingleSmall(k);
       if (Sprite_ReturnIfInactive(k))
         return;
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       Sprite_MoveZ(k);
       sprite_z_vel[k] -= 2;
       if (sign8(sprite_z[k])) {
@@ -18046,7 +18046,7 @@ void Sprite_Bomber(int k) {
         return;
       if (!(frame_counter & 3))
         sprite_delay_main[k]++;
-      Sprite_CheckDamageToPlayer(k);
+      Sprite_CheckDamageToLink(k);
       break;
     }
     return;
@@ -18071,7 +18071,7 @@ void Sprite_Bomber(int k) {
   }
   Sprite_MoveZ(k);
   PointU8 pt;
-  Sprite_DirectionToFacePlayer(k, &pt);
+  Sprite_DirectionToFaceLink(k, &pt);
   if ((uint8)(pt.x + 40) < 80 && (uint8)(pt.y + 40) < 80 && player_oam_y_offset != 0x80 &&
       (link_is_running || sign8(button_b_frames - 9))) {
     ProjectSpeedRet pp = Sprite_ProjectSpeedTowardsLink(k, 0x30);
@@ -18092,7 +18092,7 @@ void Sprite_Bomber(int k) {
       if (sprite_B[k] == 3) {
         sprite_B[k] = 0;
         sprite_delay_main[k] = 48;
-        j = kBomber_Tab0[Sprite_DirectionToFacePlayer(k, NULL)];
+        j = kBomber_Tab0[Sprite_DirectionToFaceLink(k, NULL)];
       } else {
         j = GetRandomNumber();
         sprite_delay_main[k] = j & 0x1f | 0x20;
@@ -18109,9 +18109,9 @@ void Sprite_Bomber(int k) {
       if (sprite_type[k] == 0xa8)
         sprite_delay_aux1[k] = 16;
     } else {
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
 set_dir:
-      sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+      sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
       sprite_graphics[k] = sprite_D[k] << 1 | ++sprite_subtype2[k] >> 3 & 1;
     }
     break;
@@ -18119,7 +18119,7 @@ set_dir:
     if (!sprite_delay_main[k])
       sprite_ai_state[k] = 0;
     sprite_subtype2[k] += 2;
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     goto set_dir;
   }
 }
@@ -18201,7 +18201,7 @@ void Pikit_Draw(int k) {
   Sprite_DrawMultiple(k, &kPikit_Dmd[sprite_graphics[k] * 2], 2, &info);
   uint8 bak = sprite_flags2[k];
   sprite_flags2[k] -= 6;
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
   sprite_flags2[k] = bak;
   SpriteDraw_Pikit_Loot(k, &info);
 }
@@ -18234,7 +18234,7 @@ void Sprite_AA_Pikit(int k) {
       sprite_ai_state[k]++;
       if (++sprite_C[k] == 4) {
         sprite_C[k] = 0;
-        j = Sprite_DirectionToFacePlayer(k, NULL);
+        j = Sprite_DirectionToFaceLink(k, NULL);
       } else {
         j = GetRandomNumber() & 3;
       }
@@ -18245,7 +18245,7 @@ void Sprite_AA_Pikit(int k) {
     sprite_graphics[k] = ++sprite_subtype2[k] >> 3 & 1;
     break;
   case 1:  // finish jump then attack
-    Sprite_MoveXyz(k);
+    Sprite_MoveXYZ(k);
     Sprite_CheckTileCollision(k);
     sprite_z_vel[k]--;
     sprite_z_vel[k]--;
@@ -18253,7 +18253,7 @@ void Sprite_AA_Pikit(int k) {
       sprite_z[k] = 0;
       sprite_z_vel[k] = 0;
       PointU8 pt;
-      Sprite_DirectionToFacePlayer(k, &pt);
+      Sprite_DirectionToFaceLink(k, &pt);
       if ((uint8)(pt.x + 48) < 96 && (uint8)(pt.y + 48) < 96) {
         sprite_ai_state[k]++;
         ProjectSpeedRet pp = Sprite_ProjectSpeedTowardsLink(k, 31);
@@ -18408,29 +18408,29 @@ void SpawnApple(int k) {
   int j = Sprite_SpawnDynamically(k, 0xac, &info);
   if (j < 0)
     return;
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_ai_state[j] = 1;
   sprite_A[j] = 255;
   sprite_z[j] = 8;
   sprite_z_vel[j] = 22;
   uint16 x = info.r0_x & ~0xff | GetRandomNumber();
   uint16 y = info.r2_y & ~0xff | GetRandomNumber();
-  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 10);
+  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 10);
   sprite_x_vel[j] = pt.x;
   sprite_y_vel[j] = pt.y;
 }
 
 void Sprite_Apple(int k) {
   if (sprite_A[k] >= 16 || frame_counter & 2)
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (sprite_A[k] == 0) {
     sprite_state[k] = 0;
     return;
   }
-  Sprite_MoveXyz(k);
-  if (Sprite_CheckDamageToPlayer(k)) {
+  Sprite_MoveXYZ(k);
+  if (Sprite_CheckDamageToLink(k)) {
     SpriteSfx_QueueSfx3WithPan(k, 0xb);
     link_hearts_filler += 8;
     sprite_state[k] = 0;
@@ -18530,7 +18530,7 @@ void Sprite_AD_OldMan(int k) {
     switch (sprite_ai_state[k]) {
     case 0: // supplicate
       Sprite_TrackBodyToHead(k);
-      sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+      sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
       j = Sprite_ShowMessageOnContact(k, 0x9c);
       if (j & 0x100) {
         sprite_D[k] = sprite_head_dir[k] = j;
@@ -18547,7 +18547,7 @@ void Sprite_AD_OldMan(int k) {
     }
     break;
   case 1: // entering domicile
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     switch(sprite_ai_state[k]) {
     case 0:  // grant mirror
       sprite_ai_state[k]++;
@@ -18576,7 +18576,7 @@ void Sprite_AD_OldMan(int k) {
         sprite_ai_state[k]++;
         sprite_y_vel[k] = sprite_x_vel[k] = 0;
       } else {
-        ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 8);
+        ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 8);
         sprite_y_vel[k] = pt.y;
         sprite_x_vel[k] = pt.x;
         sprite_graphics[k] = (k ^ frame_counter) >> 3 & 1;
@@ -18625,7 +18625,7 @@ void Pipe_HandlePlayerMovement(uint8 dir) {
   HandleIndoorCameraAndDoors();
 }
 
-void Sprite_Pipe(int k) {
+void Sprite_AE_Pipe_Down(int k) {
   static const uint8 kPipe_Dirs[4] = {8, 4, 2, 1};
 
   uint8 t;
@@ -18646,10 +18646,10 @@ void Sprite_Pipe(int k) {
     sprite_E[k] = t;
     sprite_head_dir[k] = sprite_D[k];
     SomariaPlatformAndPipe_HandleMovement(k);
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     break;
   case 2:  // wait for player
-    if (alt_sprite_spawned_flag[0] == 255 && Sprite_CheckDamageToPlayerIgnoreLayer(k)) {
+    if (alt_sprite_spawned_flag[0] == 255 && Sprite_CheckDamageToLink_ignore_layer(k)) {
       if (!Pipe_ValidateEntry()) {
         sprite_graphics[k]++;
         sprite_delay_aux1[k] = 4;
@@ -18694,7 +18694,7 @@ void Sprite_Pipe(int k) {
           SomariaPlatform_HandleDrag(k);
         }
       }
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       uint16 x = Sprite_GetX(k) - 8;
       uint16 y = Sprite_GetY(k) - 14;
       if (x != link_x_coord)
@@ -18735,7 +18735,7 @@ void Sprite_B3_PedestalPlaque(int k) {
 
   link_position_mode &= ~0x20;
   if (BYTE(overworld_screen_index) != 48) {
-    if (link_direction_facing || !Sprite_CheckDamageToPlayerSameLayer(k))
+    if (link_direction_facing || !Sprite_CheckDamageToLink_same_layer(k))
       return;
     if (hud_cur_item != 15 || !(filtered_joypad_H & 0x40)) {
       if (!(filtered_joypad_L & 0x80))
@@ -18748,7 +18748,7 @@ void Sprite_B3_PedestalPlaque(int k) {
       Sprite_ShowMessageUnconditional(0xb7);
     }
   } else {
-    if (link_direction_facing || !Sprite_CheckDamageToPlayerSameLayer(k))
+    if (link_direction_facing || !Sprite_CheckDamageToLink_same_layer(k))
       return;
     if (hud_cur_item != 15 || !(filtered_joypad_H & 0x40)) {
       if (!(filtered_joypad_L & 0x80))
@@ -18766,7 +18766,7 @@ void Sprite_B3_PedestalPlaque(int k) {
   }
 }
 void Sprite_B4_PurpleChest(int k) {
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (!sprite_ai_state[k]) {
@@ -18806,7 +18806,7 @@ void BombShopEntity_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kBombShopEntity_Dmd[sprite_subtype2[k] * 2 + sprite_graphics[k]], 1, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 
 }
 void Sprite_BombShop_Clerk(int k) {
@@ -18836,7 +18836,7 @@ void Sprite_BombShop_Clerk(int k) {
 bool ShopItem_CheckForAPress(int k) {
   if (!(filtered_joypad_L & 0x80))
     return false;
-  return Sprite_CheckDamageToPlayerSameLayer(k);
+  return Sprite_CheckDamageToLink_same_layer(k);
 }
 
 void ShopItem_PlayBeep(int k) {
@@ -18907,7 +18907,7 @@ void Sprite_BombShop_SuperBomb(int k) {
 void Sprite_BombShop_Huff(int k) {
   static const uint8 kSnoutPutt_Dmd[4] = {4, 0x44, 0xc4, 0x84};
   Oam_AllocateFromRegionC(4);
-  Sprite_PrepAndDrawSingleSmall(k);
+  SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_oam_flags[k] &= 0x30;
@@ -18935,7 +18935,7 @@ void Kiki_LyingInwait(int k) {
     return;
   if (save_ow_event_info[BYTE(overworld_screen_index)] & 0x20)
     return;
-  if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+  if (Sprite_CheckDamageToLink_same_layer(k)) {
     savegame_tagalong = 10;
     tagalong_var5 = 0;
     LoadFollowerGraphics();
@@ -19003,11 +19003,11 @@ bool Kiki_Draw(int k) {
     BYTE(dma_var7) = kKikiDma[j * 2 + 1];
     Sprite_DrawMultiple(k, &kKiki_Dmd1[j * 2], 2, &info);
     if (!sprite_pause[k])
-      Sprite_DrawShadow(k, &info);
+      SpriteDraw_Shadow(k, &info);
   } else {
     Sprite_DrawMultiple(k, &kKiki_Dmd2[sprite_graphics[k] * 6], 6, &info);
     if (!sprite_pause[k])
-      Sprite_DrawShadow(k, &info);
+      SpriteDraw_Shadow(k, &info);
   }
 
   return ((info.x | info.y) & 0xff00) != 0;
@@ -19018,7 +19018,7 @@ void Kiki_OfferEntranceService(int k) {
   Kiki_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   sprite_z_vel[k]--;
   if (sign8(sprite_z[k])) {
     sprite_z_vel[k] = 0;
@@ -19056,7 +19056,7 @@ void Kiki_OfferEntranceService(int k) {
       SpriteSfx_QueueSfx2WithPan(k, 0x21);
       return;
     }
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, kKiki_Leave_X[j], kKiki_Leave_Y[j], 9);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, kKiki_Leave_X[j], kKiki_Leave_Y[j], 9);
     sprite_x_vel[k] = pt.x;
     sprite_y_vel[k] = pt.y;
     break;
@@ -19120,7 +19120,7 @@ void Kiki_OfferInitialService(int k) {
     Kiki_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   sprite_z_vel[k]--;
   if (sign8(sprite_z[k])) {
     sprite_z_vel[k] = 0;
@@ -19147,7 +19147,7 @@ void Kiki_OfferInitialService(int k) {
     break;
   case 2: {
     sprite_ai_state[k]++;
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, 0xc45, 0x6fe, 9);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, 0xc45, 0x6fe, 9);
     sprite_y_vel[k] = pt.y;
     sprite_x_vel[k] = pt.x;
     sprite_D[k] = (pt.x >> 7) ^ 3;
@@ -19182,12 +19182,12 @@ void Kiki_Flee(int k) {
   if (flag)
     sprite_state[k] = 0;
   sprite_z_vel[k]-=2;
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   if (sign8(sprite_z[k])) {
     sprite_z[k] = 0;
     sprite_z_vel[k] = GetRandomNumber() & 15 | 16;
   }
-  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, 0xcf5, 0x6fe, 16);
+  ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, 0xcf5, 0x6fe, 16);
   sprite_x_vel[k] = pt.x << 1;
   sprite_y_vel[k] = pt.y << 1;
   tagalong_event_flags &= ~3;
@@ -19210,7 +19210,7 @@ void Sprite_B7_BlindMaiden(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_TrackBodyToHead(k);
-  sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+  sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
   if (!sprite_ai_state[k]) {
     if (Sprite_ShowMessageOnContact(k, 0x122) & 0x100)
       sprite_ai_state[k] = 1;
@@ -19269,13 +19269,13 @@ void PinkBall_Distress(int k) {
 
 
 void Sprite_PinkBall(int k) {
-  OAM_AllocateDeferToPlayer(k);
-  Sprite_PrepAndDrawSingleLarge(k);
+  Oam_AllocateDeferToPlayer(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   PinkBall_HandleMessage(k);
   sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x80 | sprite_head_dir[k];
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   int t = Sprite_CheckTileCollision(k);
   if (t) {
     if (!(t & 3)) {
@@ -19305,7 +19305,7 @@ play_sound:
       if (!((k ^ frame_counter) & 0x3f)) {
         uint16 x = (link_x_coord & 0xff00) | GetRandomNumber();
         uint16 y = (link_y_coord & 0xff00) | GetRandomNumber();
-        ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 8);
+        ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 8);
         sprite_B[k] = pt.x;
         sprite_A[k] = pt.y;
         if (pt.y) {
@@ -19348,7 +19348,7 @@ void Bully_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kBully_Dmd[sprite_D[k] * 4 + sprite_graphics[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 
 }
 
@@ -19357,7 +19357,7 @@ void Sprite_Bully(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Bully_HandleMessage(k);
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   int t = Sprite_CheckTileCollision(k), j;
   if (t) {
     if (!(t & 3))
@@ -19370,7 +19370,7 @@ void Sprite_Bully(int k) {
     sprite_graphics[k] = (k ^ frame_counter) >> 3 & 1;
     int j = sprite_head_dir[k];
     if (!((k ^ frame_counter) & 0x1f)) {
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, Sprite_GetX(j), Sprite_GetY(j), 14);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, Sprite_GetX(j), Sprite_GetY(j), 14);
       sprite_y_vel[k] = pt.y;
       sprite_x_vel[k] = pt.x;
       if (pt.x)
@@ -19412,7 +19412,7 @@ void Sprite_B9_BullyAndPinkBall(int k) {
   case 2: Sprite_Bully(k); return;
   }
 }
-void Sprite_Whirlpool(int k) {
+void Sprite_BA_Whirlpool(int k) {
   static const uint8 kWhirlpool_OamFlags[4] = {0, 0x40, 0xc0, 0x80};
 
   if (BYTE(overworld_screen_index) == 0x1b) {
@@ -19435,10 +19435,10 @@ void Sprite_Whirlpool(int k) {
     sprite_oam_flags[k] = (sprite_oam_flags[k] & 0x3f) | kWhirlpool_OamFlags[frame_counter >> 3 & 3];
     Oam_AllocateFromRegionB(4);
     cur_sprite_x -= 5;
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     if (Sprite_ReturnIfInactive(k))
       return;
-    if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+    if (Sprite_CheckDamageToLink_same_layer(k)) {
       if (sprite_A[k] == 0) {
         submodule_index = 46;
         subsubmodule_index = 0;
@@ -19458,13 +19458,13 @@ void Shopkeeper_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kShopkeeper_Dmd[sprite_graphics[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Shopkeeper_StandardClerk(int k) {
   if (is_in_dark_world) {
-    OAM_AllocateDeferToPlayer(k);
-    Sprite_PrepAndDrawSingleLarge(k);
+    Oam_AllocateDeferToPlayer(k);
+    SpriteDraw_SingleLarge(k);
     if (Sprite_ReturnIfInactive(k))
       return;
     sprite_oam_flags[k] = (sprite_oam_flags[k] & 63) | (frame_counter << 3 & 64);
@@ -19492,8 +19492,8 @@ bool ShopItem_HandleCost(int amt) {
 }
 
 void ChestGameGuy(int k) {
-  OAM_AllocateDeferToPlayer(k);
-  Sprite_PrepAndDrawSingleLarge(k);
+  Oam_AllocateDeferToPlayer(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_BehaveAsBarrier(k);
@@ -19558,17 +19558,17 @@ void Thief_Draw(int k) {
     int j = sprite_head_dir[k];
     oam->charnum = kThief_DrawChar[j];
     oam->flags = (oam->flags & ~0x40) | kThief_DrawFlags[j];
-    Sprite_DrawShadow(k, &info);
+    SpriteDraw_Shadow(k, &info);
   }
 }
 
 void NiceThief_Animate(int k) {
   if (!(frame_counter & 3)) {
     sprite_graphics[k] = 2;
-    uint8 dir = Sprite_DirectionToFacePlayer(k, NULL);
+    uint8 dir = Sprite_DirectionToFaceLink(k, NULL);
     sprite_head_dir[k] = (dir == 3) ? 2 : dir;
   }
-  OAM_AllocateDeferToPlayer(k);
+  Oam_AllocateDeferToPlayer(k);
   Thief_Draw(k);
 }
 
@@ -19598,7 +19598,7 @@ void NiceThiefWithGift(int k) {
 }
 
 void MiniChestGameGuy(int k) {
-  sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+  sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
   sprite_graphics[k] = 0;
   MazeGameGuy_Draw(k);
   if (Sprite_ReturnIfInactive(k))
@@ -19725,7 +19725,7 @@ void ShopItem_MakeShieldsDeflect(int k) {
   sprite_flags[k] = 8;
   sprite_defl_bits[k] = 4;
   sprite_flags4[k] = 0x1c;
-  Sprite_CheckDamageFromPlayer(k);
+  Sprite_CheckDamageFromLink(k);
   sprite_flags4[k] = 0xa;
 }
 
@@ -19850,7 +19850,7 @@ void ShopItem_Bee(int k) {
   }
 }
 
-void Sprite_ShopKeeper(int k) {
+void Sprite_BB_Shopkeeper(int k) {
   switch (sprite_subtype2[k]) {
   case 0: Shopkeeper_StandardClerk(k); break;
   case 1: ChestGameGuy(k); break;
@@ -19879,7 +19879,7 @@ void DrinkingGuy_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kDrinkingGuy_Dmd[sprite_graphics[k] * 3], 3, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_BC_Drunkard(int k) {
@@ -19899,7 +19899,7 @@ void Vitreous_Animate(int k, uint8 a) {
   if (a == 0x40 || a == 0x41 || a == 0x42)
     Sprite_SpawnLightning(k);
   sprite_graphics[k] = 0;
-  PairU8 pair = Sprite_IsToRightOfPlayer(k);
+  PairU8 pair = Sprite_IsRightOfLink(k);
   if ((uint8)(pair.b + 16) >= 32)
     sprite_graphics[k] = kVitreous_Animate_Gfx[pair.a];
 }
@@ -20001,7 +20001,7 @@ void Sprite_BD_Vitreous(int k) {
       sprite_x_vel[k] = kVitreous_Xvel[(sprite_delay_main[k] & 2) >> 1];
       Sprite_MoveX(k);
     } else {
-      Sprite_MoveXyz(k);
+      Sprite_MoveXYZ(k);
       Sprite_CheckTileCollision(k);
       sprite_z_vel[k] -= 2;
       if (sign8(sprite_z[k])) {
@@ -20020,14 +20020,14 @@ void Sprite_BE_VitreousEye(int k) {
   int j = sprite_subtype2[k] >> 4 & 3;
   cur_sprite_x += kSprite_Vitreolus_Dx[j];
   cur_sprite_y += kSprite_Vitreolus_Dy[j];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_subtype2[k]++;
   if (sprite_graphics[k])
     return;
-  Sprite_CheckDamageFromPlayer(k);
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_CheckDamageFromLink(k);
+  Sprite_CheckDamageToLink(k);
   if (sprite_F[k] == 14)
     sprite_F[k] = 5;
   switch (sprite_ai_state[k]) {
@@ -20043,11 +20043,11 @@ void Sprite_BE_VitreousEye(int k) {
     if (!((k ^ frame_counter) & 1)) {
       uint16 x = sprite_head_dir[k] << 8 | sprite_G[k];
       uint16 y = sprite_subtype[k] << 8 | sprite_anim_clock[k];
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 16);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 16);
       sprite_x_vel[k] = pt.x;
       sprite_y_vel[k] = pt.y;
     }
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if ((uint8)(sprite_G[k] - sprite_x_lo[k] + 4) < 8 && (uint8)(sprite_anim_clock[k] - sprite_y_lo[k] + 4) < 8)
       sprite_ai_state[k] = 2;
     break;
@@ -20057,11 +20057,11 @@ void Sprite_BE_VitreousEye(int k) {
     if (!((k ^ frame_counter) & 1)) {
       uint16 x = sprite_A[k] | sprite_B[k] << 8;
       uint16 y = sprite_C[k] | sprite_D[k] << 8;
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 16);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 16);
       sprite_x_vel[k] = pt.x;
       sprite_y_vel[k] = pt.y;
     }
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if ((uint8)(sprite_A[k] - sprite_x_lo[k] + 4) < 8 && (uint8)(sprite_C[k] - sprite_y_lo[k] + 4) < 8) {
       sprite_x_lo[k] = sprite_A[k];
       sprite_x_hi[k] = sprite_B[k];
@@ -20138,7 +20138,7 @@ void Sprite_BF_Lightning(int k) {
   int j = sprite_A[k];
   sprite_oam_flags[k] = sprite_oam_flags[k] & 0xb1 | kSpriteLightning_OamFlags[j] | frame_counter << 1 & 14;
   sprite_graphics[k] = kSpriteLightning_Gfx[j] + (BYTE(dungeon_room_index2) == 0x20 ? 4 : 0);
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   if (sprite_delay_main[k])
@@ -20210,7 +20210,7 @@ void Catfish_SpawnPlop(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xec, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_state[j] = 3;
     sprite_delay_main[j] = 15;
     sprite_ai_state[j] = 0;
@@ -20223,7 +20223,7 @@ void Catfish_RegurgitateMedallion(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xc0, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_x_vel[j] = 24;
     sprite_z_vel[j] = 48;
     sprite_A[j] = 17;
@@ -20272,7 +20272,7 @@ void Catfish_BigFish(int k) {
   case 2: { // Emerge
     static const uint8 kGreatCatfish_Emerge_Gfx[16] = {1, 2, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 0, 0, 0, 0};
     sprite_subtype2[k]++;
-    Sprite_MoveXyz(k);
+    Sprite_MoveXYZ(k);
     sprite_z_vel[k] -= 2;
     if (sprite_z_vel[k] == (uint8)(-48))
       Catfish_SpawnPlop(k);
@@ -20319,8 +20319,8 @@ void Catfish_BigFish(int k) {
 
 void Sprite_Catfish_QuakeMedallion(int k) {
   if (!sprite_z[k]) {
-    Sprite_SpriteDraw_WaterRipple_WithOamAdjust(k);
-    if (!submodule_index && Sprite_CheckDamageToPlayerSameLayer(k)) {
+    SpriteDraw_WaterRipple_WithOamAdjust(k);
+    if (!submodule_index && Sprite_CheckDamageToLink_same_layer(k)) {
       sprite_state[k] = 0;
       item_receipt_method = 0;
       Link_ReceiveItem(sprite_A[k], 0);
@@ -20328,10 +20328,10 @@ void Sprite_Catfish_QuakeMedallion(int k) {
   }
   if (sprite_delay_aux3[k])
     Oam_AllocateFromRegionC(8);
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   sprite_z_vel[k] -= 2;
   if (sign8(sprite_z[k])) {
     sprite_z[k] = 0;
@@ -20645,7 +20645,7 @@ void Boulder_OutdoorsMain(int k) {
     return;
   sprite_subtype2[k] -= sprite_D[k];
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   sprite_z_vel[k]-=2;
   if (sign8(sprite_z[k])) {
     sprite_z[k] = 0;
@@ -20666,15 +20666,15 @@ void Sprite_C2_Boulder(int k) {
     return;
   }
   if (byte_7E0FC6 < 3)
-    Sprite_PrepAndDrawSingleSmall(k);
+    SpriteDraw_SingleSmall(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_oam_flags[k] = frame_counter << 2 & 0xc0;
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   if ((k ^ frame_counter) & 3)
     return;
   if ((uint16)(cur_sprite_x - link_x_coord + 4) < 16 && (uint16)(cur_sprite_y - link_y_coord - 4) < 12)
-    Sprite_Sprite_AttemptDamageToLinkPlusRecoil(k);
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
   if (!((k ^ frame_counter) & 3) && Sprite_CheckTileCollision(k))
     sprite_state[k] = 0;
 }
@@ -20723,7 +20723,7 @@ void Gibo_Draw(int k) {
     uint8 bak1 = sprite_oam_flags[k];
     sprite_oam_flags[k] = kGibo_OamFlags[sprite_anim_clock[k] >> 2 & 3] | 
                           kGibo_OamFlags2[sprite_delay_aux1[k] >> 2 & 1];
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     sprite_oam_flags[k] = bak1;
     sprite_flags2[k] = bak0;
   }
@@ -20740,13 +20740,13 @@ void Sprite_C3_Gibo(int k) {
     }
   }
   if (sprite_B[k]) {
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     if (Sprite_ReturnIfInactive(k))
       return;
     Sprite_CheckDamageToAndFromLink(k);
     sprite_oam_flags[k] = sprite_oam_flags[k] & 0x3f | kGibo_OamFlags[++sprite_subtype2[k] >> 2 & 3];
     if (sprite_delay_main[k]) {
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       Sprite_BounceFromTileCollision(k);
     }
     return;
@@ -20764,8 +20764,8 @@ void Sprite_C3_Gibo(int k) {
   }
   sprite_subtype2[k] = frame_counter >> 3 & 3;
   if (!(frame_counter & 63))
-    sprite_D[k] = Sprite_IsToRightOfPlayer(k).a << 2;
-  Sprite_CheckDamageToPlayer(k);  // original destroys y which is a bug
+    sprite_D[k] = Sprite_IsRightOfLink(k).a << 2;
+  Sprite_CheckDamageToLink(k);  // original destroys y which is a bug
   switch(sprite_ai_state[k]) {
   case 0:  // expel nucleus
     if (sprite_delay_main[k] == 0) {
@@ -20777,7 +20777,7 @@ void Sprite_C3_Gibo(int k) {
       if (j >= 0) {
         static const int8 kGibo_Xvel[8] = {16, 16, 0, -16, -16, -16, 0, 16};
         static const int8 kGibo_Yvel[8] = {0, 0, 16, -16, 16, 16, -16, -16};
-        Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+        Sprite_SetSpawnedCoordinates(j, &info);
         sprite_head_dir[k] = j;
         sprite_flags2[j] = 1;
         sprite_B[j] = 1;
@@ -20787,7 +20787,7 @@ void Sprite_C3_Gibo(int k) {
         sprite_delay_main[j] = 48;
         if (++sprite_C[k] == 3) {
           sprite_C[k] = 0;
-          i = Sprite_DirectionToFacePlayer(k, NULL);
+          i = Sprite_DirectionToFaceLink(k, NULL);
         } else {
           i = GetRandomNumber() & 7;
         }
@@ -20815,11 +20815,11 @@ void Sprite_C3_Gibo(int k) {
         sprite_delay_main[k] = (GetRandomNumber() & 31) + 32;
         return;
       }
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 16);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 16);
       sprite_x_vel[k] = pt.x;
       sprite_y_vel[k] = pt.y;
     }
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     break;
   }
 }
@@ -20828,7 +20828,7 @@ int Sprite_SpawnBomb(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x4a, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     Sprite_TransmuteToBomb(j);
     sprite_delay_aux1[j] = 80;
     sprite_x_vel[j] = 24;
@@ -20902,7 +20902,7 @@ void Sprite_C6_4WayShooter(int k) {
     if (j >= 0) {
       sprite_defl_bits[j] |= 8;
       sprite_bump_damage[j] = 4;
-      int i = Sprite_DirectionToFacePlayer(j, NULL);
+      int i = Sprite_DirectionToFaceLink(j, NULL);
       sprite_x_vel[j] = kFireballJunction_XYvel[i + 2];
       sprite_y_vel[j] = kFireballJunction_XYvel[i];
       Sprite_SetX(j, Sprite_GetX(j) + kFireballJunction_X[i]);
@@ -20929,16 +20929,16 @@ void Hokbok_Draw(int k) {
     bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
     y -= d;
   }
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_C7_Pokey(int k) {
   if (sprite_C[k]) {
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
     if (Sprite_ReturnIfInactive(k))
       return;
     Sprite_CheckDamageToAndFromLink(k);
-    Sprite_MoveXyz(k);
+    Sprite_MoveXYZ(k);
     sprite_z_vel[k] -= 2;
     if (sign8(sprite_z[k])) {
       sprite_z_vel[k] = 16;
@@ -20969,7 +20969,7 @@ void Sprite_C7_Pokey(int k) {
     SpriteSpawnInfo info;
     int j = Sprite_SpawnDynamically(k, 0xc7, &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_C[j] = 1;
       sprite_health[j] = 1;
       sprite_x_vel[j] = sprite_x_recoil[k];
@@ -20991,7 +20991,7 @@ void Sprite_C7_Pokey(int k) {
     }
     break;
   case 1:
-    Sprite_MoveXyz(k);
+    Sprite_MoveXYZ(k);
     sprite_z_vel[k] -= 2;
     if (sign8(sprite_z[k])) {
       sprite_z[k] = 0;
@@ -21038,8 +21038,8 @@ void Sprite_FairyCloud(int k) {
   case 0:
     sprite_A[k] = 0;
     Sprite_ApplySpeedTowardsLink(k, 8);
-    Sprite_Move(k);
-    Sprite_Get_16_bit_Coords(k);
+    Sprite_MoveXY(k);
+    Sprite_Get16BitCoords(k);
     if ((uint16)(link_x_coord - cur_sprite_x + 3) < 6 &&
         (uint16)(link_y_coord - cur_sprite_y + 11) < 6) {
       WORD(link_hearts_filler) += 0xa0;
@@ -21086,7 +21086,7 @@ void BigFaerie_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kBigFaerie_Dmd[sprite_graphics[k] * 4], 4, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_BigFairy(int k) {
@@ -21110,7 +21110,7 @@ void Sprite_BigFairy(int k) {
   case 0:  // await close player
     FaerieCloud_Draw(k);
     sprite_A[k] = 1;
-    Sprite_DirectionToFacePlayer(k, &pt);
+    Sprite_DirectionToFaceLink(k, &pt);
     if ((uint8)(pt.x + 0x30) < 0x60 && (uint8)(pt.y + 0x30) < 0x60) {
       Link_CancelDash();
       sprite_ai_state[k] = 1;
@@ -21119,7 +21119,7 @@ void Sprite_BigFairy(int k) {
       flag_is_link_immobilized = 1;
       SpriteSpawnInfo info;
       int j = Sprite_SpawnDynamically(k, 0xC8, &info);
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       sprite_head_dir[j] = 1;
       sprite_y_lo[j] -= sprite_z[k];
       sprite_z[j] = 0;
@@ -21148,7 +21148,7 @@ void Tektite_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kTektite_Dmd[sprite_graphics[k] * 2], 2, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_Tektite(int k) {
@@ -21162,7 +21162,7 @@ void Sprite_Tektite(int k) {
   if (Sprite_ReturnIfRecoiling(k))
     return;
   Sprite_CheckDamageToAndFromLink(k);
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   Sprite_BounceFromTileCollision(k);
   sprite_z_vel[k] -= 1;
   if (sign8(sprite_z[k])) {
@@ -21175,7 +21175,7 @@ void Sprite_Tektite(int k) {
     static const int8 kTektite_Xvel[4] = {16, -16, 16, -16};
     static const int8 kTektite_Yvel[4] = {16, 16, -16, -16};
     PointU8 pt;
-    j = Sprite_DirectionToFacePlayer(k, &pt);
+    j = Sprite_DirectionToFaceLink(k, &pt);
     if ((uint8)(pt.x + 40) < 80 && (uint8)(pt.y + 40) < 80 && player_oam_y_offset != 0x80 &&
         !(sprite_z[k] | sprite_pause[k]) && link_is_on_lower_level == sprite_floor[k] && j != kTektite_Dir[link_direction_facing >> 1]) {
       ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, 32);
@@ -21193,7 +21193,7 @@ void Sprite_Tektite(int k) {
         sprite_ai_state[k]++;
         sprite_delay_main[k] = (GetRandomNumber() & 63) + 48;
         sprite_z_vel[k] = 12;
-        j = Sprite_IsBelowPlayer(k).a * 2 + Sprite_IsToRightOfPlayer(k).a;
+        j = Sprite_IsBelowLink(k).a * 2 + Sprite_IsRightOfLink(k).a;
       } else {
         sprite_z_vel[k] = (GetRandomNumber() & 7) + 24;
         j = GetRandomNumber() & 3;
@@ -21307,13 +21307,13 @@ void Sprite_PhantomGanon(int k) {
         if (sprite_x_vel[k] == 0)
           SpriteSfx_QueueSfx3WithPan(k, 0x1e);
       }
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, link_x_coord & 0xff00 | 0x78, link_y_coord & 0xff00 | 0x50, 5);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, link_x_coord & 0xff00 | 0x78, link_y_coord & 0xff00 | 0x50, 5);
       uint8 xvel = sprite_x_vel[k], yvel = sprite_y_vel[k];
       sprite_x_vel[k] = xvel + pt.x, sprite_y_vel[k] = yvel + pt.y;
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       sprite_x_vel[k] = xvel, sprite_y_vel[k] = yvel;
     } else {
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (sprite_x_vel[k] != 64) {
         sprite_x_vel[k]++;
         sprite_y_vel[k]--;
@@ -21330,7 +21330,7 @@ void FireBat_Animate(int k) {
 
 void FireBat_Move(int k) {
   FireBat_Animate(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   if (sprite_subtype2[k] & 7)
     return;
   int j = Garnish_FlameTrail(k, true);
@@ -21367,8 +21367,8 @@ void Sprite_SpiralFireBat(int k) {
   {
     uint16 x = sprite_A[k] | sprite_B[k] << 8;
     uint16 y = sprite_C[k] | sprite_E[k] << 8;
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 2);
-    ProjectSpeedRet pt2 = Sprite_ProjectSpeedTowardsEntity(k, x, y, 80);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 2);
+    ProjectSpeedRet pt2 = Sprite_ProjectSpeedTowardsLocation(k, x, y, 80);
     sprite_x_vel[k] = pt2.y - pt.x;
     sprite_y_vel[k] = -pt2.x - pt.y;
   }
@@ -21388,7 +21388,7 @@ void Sprite_FireBat_Launched(int k) {
   FireBat_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_CheckDamageToPlayer(k);
+  Sprite_CheckDamageToLink(k);
   switch (sprite_ai_state[k]) {
   case 0:
     GetPositionRelativeToTheGreatOverlordGanon(k);
@@ -21403,7 +21403,7 @@ void Sprite_FireBat_Launched(int k) {
     sprite_graphics[k] = ++sprite_subtype2[k] >> 2 & 1;
     break;
   case 2:
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     sprite_defl_bits[k] = 64;
     if (sprite_delay_aux1[k] == 0) {
       if (sprite_delay_main[k] == 0) {
@@ -21506,7 +21506,7 @@ void ChainChomp_Draw(int k) {
   int j = sprite_D[k];
   sprite_graphics[k] = kChainChomp_Gfx[j];
   sprite_oam_flags[k] = sprite_oam_flags[k] & 0x3f | kChainChomp_OamFlags[j];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   OamEnt *oam = GetOamCurPtr() + 1;
   uint8 flags = sprite_oam_flags[k] ^ sprite_obj_prio[k];
   int r8 = (sprite_delay_aux1[k] & 1) + 4;
@@ -21530,13 +21530,13 @@ void Sprite_CA_ChainChomp(int k) {
   ChainChomp_HandleLeash(k);
   if (!((k ^ frame_counter) & 3) && (sprite_x_vel[k] | sprite_y_vel[k]))
     sprite_D[k] = Sprite_ConvertVelocityToAngle(sprite_x_vel[k], sprite_y_vel[k]) & 0xf;
-  Sprite_MoveXyz(k);
+  Sprite_MoveXYZ(k);
   sprite_z_vel[k] -= 2;
   if (sign8(sprite_z[k])) {
     sprite_z[k] = 0;
     sprite_z_vel[k] = 0;
   }
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
   uint16 x = sprite_A[k] | sprite_B[k] << 8;
   uint16 y = sprite_C[k] | sprite_G[k] << 8;
   sprite_anim_clock[k] = (uint16)(cur_sprite_x - x + 48) < 96 && (uint16)(cur_sprite_y - y + 48) < 96;
@@ -21578,10 +21578,10 @@ void Sprite_CA_ChainChomp(int k) {
     if (!sprite_anim_clock[k]) {
       uint16 x = sprite_A[k] | sprite_B[k] << 8;
       uint16 y = sprite_C[k] | sprite_G[k] << 8;
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 16);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 16);
       sprite_x_vel[k] = pt.x;
       sprite_y_vel[k] = pt.y;
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       sprite_delay_main[k] = 12;
     }
     break;
@@ -21589,7 +21589,7 @@ void Sprite_CA_ChainChomp(int k) {
     if (!sprite_anim_clock[k]) {
       sprite_x_vel[k] = -sprite_x_vel[k];
       sprite_y_vel[k] = -sprite_y_vel[k];
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       sprite_x_vel[k] = sprite_y_vel[k] = 0;
       sprite_ai_state[k] = 3;
       sprite_delay_aux1[k] = 48;
@@ -21634,7 +21634,7 @@ void Sprite_Trinexx_CheckDamageToFlashingSegment(int k) {
   Sprite_SetY(k, cur_sprite_y);
   sprite_defl_bits[k] = 0x80;
   sprite_flags3[k] = 0;
-  Sprite_CheckDamageFromPlayer(k);
+  Sprite_CheckDamageFromLink(k);
   sprite_defl_bits[k] = 0x84;
   sprite_flags3[k] = 0x40;
   Sprite_SetX(k, old_x);
@@ -21684,7 +21684,7 @@ void Sprite_TrinexxD_Draw(int k) {
     }
     sprite_graphics[k] = kSprite_TrinexxD_Gfx2[i];
     if (sprite_graphics[k] != 3) {
-      Sprite_PrepAndDrawSingleLarge(k);
+      SpriteDraw_SingleLarge(k);
     } else {
       sprite_graphics[k] = 8;
       SpriteDraw_TrinexxRockHead(k, &info);
@@ -21740,7 +21740,7 @@ void Sprite_Trinexx_FinalPhase(int k) {
     if (sprite_ai_state[k] == 0)
       sprite_ai_state[k] = 2;
   }
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_CheckDamageToAndFromLink(k);
   switch(sprite_ai_state[k]) {
   case 0:
@@ -21748,7 +21748,7 @@ void Sprite_Trinexx_FinalPhase(int k) {
       sprite_ai_state[k] = 1;
       sprite_delay_main[k] = 192;
     }
-    Sprite_Get_16_bit_Coords(k);
+    Sprite_Get16BitCoords(k);
     if (Sprite_CheckTileCollision(k)) {
       sprite_D[k] = sprite_D[k] + 1 & 3;
       sprite_delay_aux1[k] = 8;
@@ -21995,7 +21995,7 @@ void Sprite_CB_TrinexxRockHead(int k) {
   Trinexx_HandleShellCollision(k);
   Sprite_CheckDamageToAndFromLink(k);
   if (!(frame_counter & 63)) {
-    PairU8 pair = Sprite_IsToRightOfPlayer(k);
+    PairU8 pair = Sprite_IsRightOfLink(k);
     sprite_graphics[k] = (uint8)(pair.b + 24) < 48 ? 0 : pair.a ? 1 : 7;
   }
   if (overlord_x_lo[6]) {
@@ -22029,20 +22029,20 @@ void Sprite_CB_TrinexxRockHead(int k) {
     }
     break;
   case 1: {
-    if (sprite_subtype[k] == 0xff && (sprite_delay_main[k] == 0 || Sprite_IsBelowPlayer(k).a == 0)) {
+    if (sprite_subtype[k] == 0xff && (sprite_delay_main[k] == 0 || Sprite_IsBelowLink(k).a == 0)) {
       sprite_subtype[k] = 0;
       sprite_ai_state[k] = 0;
       sprite_delay_main[k] = 48;
     } else {
       uint16 x = sprite_x_hi[k] << 8 | overlord_x_lo[0];
       uint16 y = sprite_y_hi[k] << 8 | overlord_x_lo[1];
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, sign8(sprite_subtype[k]) ? 16 : 8);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, sign8(sprite_subtype[k]) ? 16 : 8);
       sprite_x_vel[k] = pt.x;
       sprite_y_vel[k] = pt.y;
 
       uint8 bakx = sprite_x_lo[k];
       uint8 baky = sprite_y_lo[k];
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       dung_floor_y_vel = (int8)(baky - sprite_y_lo[k]);
       dung_floor_x_vel = (int8)(bakx - sprite_x_lo[k]);
 
@@ -22074,7 +22074,7 @@ void Sprite_CB_TrinexxRockHead(int k) {
     }
     break;
   case 3:
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (!sprite_delay_main[k]) {
       Trinexx_RestoreXY(k);
       sprite_ai_state[k] = 0;
@@ -22093,7 +22093,7 @@ void Sidenexx_ExhaleDanger(int k) {
     for (int i = 0; i < 2; i++) {
       int j = Sprite_SpawnDynamically(k, 0xcd, &info);
       if (j >= 0) {
-        Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+        Sprite_SetSpawnedCoordinates(j, &info);
         sprite_C[j] = i ? 1 : -2;
         SpriteSfx_QueueSfx3WithPan(k, 0x19);
         sprite_ignore_projectile[j] = sprite_E[j] = 1;
@@ -22106,7 +22106,7 @@ void Sidenexx_ExhaleDanger(int k) {
   } else {
     int j = Sprite_SpawnDynamically(k, sprite_type[k], &info);
     if (j >= 0) {
-      Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+      Sprite_SetSpawnedCoordinates(j, &info);
       SpriteSfx_QueueSfx2WithPan(k, 0x2a);
       sprite_ignore_projectile[j] = sprite_E[j] = 1;
       sprite_y_vel[j] = 24;
@@ -22147,7 +22147,7 @@ void TrinexxHead_Draw(int k) {
   sprite_x_hi[k] = sprite_B[k];
   sprite_y_lo[k] = sprite_C[k];
   sprite_y_hi[k] = sprite_G[k];
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
   PrepOamCoordsRet info;
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
@@ -22361,7 +22361,7 @@ void Sprite_CD_SpawnGarnish(int k) {
 
 void Sprite_CC_CD_Common(int k) {
   if (!(frame_counter & 3)) {
-    int m = Sprite_IsToRightOfPlayer(k).a ? -1 : 1;
+    int m = Sprite_IsRightOfLink(k).a ? -1 : 1;
     if (sprite_x_vel[k] != (uint8)(m * 16))
       sprite_x_vel[k] += m;
   }
@@ -22378,7 +22378,7 @@ void Sprite_CC(int k) {
   Sprite_PrepOamCoord(k, &info);
   if (Sprite_ReturnIfInactive(k))
     return;
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   Sprite_TrinexxFire_AddFireGarnish(k);
   Sprite_CC_CD_Common(k);
 }
@@ -22394,7 +22394,7 @@ void Sprite_CD(int k) {
     return;
   uint8 old_xvel = sprite_x_vel[k];
   sprite_x_vel[k] += sprite_C[k];
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   sprite_x_vel[k] = old_xvel;
   Sprite_CD_SpawnGarnish(k);
   Sprite_CC_CD_Common(k);
@@ -22469,7 +22469,7 @@ void Sprite_Blind_Head(int k) {
   static const int8 kBlindHead_XvelLimit[2] = {32, -32};
 
   sprite_obj_prio[k] |= 48;
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   OamEnt *oam = GetOamCurPtr();
   int j = sprite_head_dir[k];
   oam->charnum = kBlindHead_Draw_Char[j];
@@ -22507,14 +22507,14 @@ void Sprite_Blind_Head(int k) {
   if ((sprite_y_lo[k] & ~1) == kBlindHead_YposLimit[j])
     sprite_anim_clock[k]++;
   if (!sprite_F[k])
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
 }
 
 void Blind_SpawnHead(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xce, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_flags3[j] = 0x5b;
     sprite_oam_flags[j] = 0x5b & 15;
     sprite_defl_bits[j] = 4;
@@ -22559,7 +22559,7 @@ void Sprite_BlindLaser(int k) {
       sprite_state[k] = 0;
     return;
   }
-  Sprite_CheckDamageToPlayerSameLayer(k);
+  Sprite_CheckDamageToLink_same_layer(k);
   Sprite_SetX(k, Sprite_GetX(k) + (int8)sprite_x_vel[k]);
   Sprite_SetY(k, Sprite_GetY(k) + (int8)sprite_y_vel[k]);
   if (Sprite_CheckTileCollision(k))
@@ -22574,7 +22574,7 @@ void Blind_SpawnLaser(int k) {
   int j = Sprite_SpawnDynamically(k, 0xce, &info), i;
   if (j >= 0) {
     sound_effect_2 = Sprite_CalculateSfxPan(k) | 0x26;
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_x_lo[j] = info.r0_x + 4;
     sprite_head_dir[j] = i = sprite_head_dir[k];
     sprite_x_vel[j] = kBlind_Laser_Xvel[i];
@@ -22944,7 +22944,7 @@ void Sprite_Blind_Blind_Blind(int k) {
     static const uint8 kBlind_Oscillate_XPosTarget[2] = {164, 76};
     Blind_CheckBumpDamage(k);
     Blind_Animate(k);
-    if ((!(sprite_subtype2[k] & 127) && Sprite_IsBelowPlayer(k).a + 2 != sprite_D[k] || sprite_delay_main[k] == 0) && sprite_x_lo[k] < 0x78) {
+    if ((!(sprite_subtype2[k] & 127) && Sprite_IsBelowLink(k).a + 2 != sprite_D[k] || sprite_delay_main[k] == 0) && sprite_x_lo[k] < 0x78) {
       sprite_C[k]++;
       sprite_y_vel[k] &= ~1;
       sprite_x_vel[k] &= ~1;
@@ -22960,11 +22960,11 @@ void Sprite_Blind_Blind_Blind(int k) {
       sprite_x_vel[k] += j ? -1 : 1;
     if ((sprite_x_lo[k] & ~1) == kBlind_Oscillate_XPosTarget[j])
       sprite_G[k]++;
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (sprite_wallcoll[k]) {
       Blind_FireballFlurry(k, sprite_wallcoll[k]);
     } else if (!(sprite_subtype2[k] & 7)) {
-      Sprite_Sprite_SpawnProbeAlways(k, sprite_head_dir[k] << 2);
+      Sprite_SpawnProbeAlways(k, sprite_head_dir[k] << 2);
     }
     break;
   }
@@ -22984,7 +22984,7 @@ void Sprite_Blind_Blind_Blind(int k) {
         sprite_C[k]++;
         sprite_B[k] = sprite_D[k] - 1;
       }
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       Blind_Decelerate_X(k);
     }
     break;
@@ -23052,7 +23052,7 @@ void Sprite_CE_Blind(int k) {
 ProjectSpeedRet Swamola_ProjectVelocityTowardsTarget(int k) {
   uint16 x = swamola_target_x_hi[k] << 8 | swamola_target_x_lo[k];
   uint16 y = swamola_target_y_hi[k] << 8 | swamola_target_y_lo[k];
-  return Sprite_ProjectSpeedTowardsEntity(k, x, y, 15);
+  return Sprite_ProjectSpeedTowardsLocation(k, x, y, 15);
 }
 
 void SwamolaRipples_Draw(int k) {
@@ -23082,7 +23082,7 @@ void Swamola_SpawnRipples(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xcf, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_ai_state[j] = 128;
     sprite_delay_main[j] = 32;
     sprite_oam_flags[j] = 4;
@@ -23099,7 +23099,7 @@ void Swamola_Draw(int k) {
   int j = Sprite_ConvertVelocityToAngle(sprite_x_vel[k], sprite_y_vel[k] + sprite_z_vel[k]);
   sprite_graphics[k] = kSwamola_Gfx[j];
   sprite_oam_flags[k] = sprite_oam_flags[k] & 63 | kSwamola_Draw_OamFlags[j];
-  Sprite_PrepAndDrawSingleLarge(k);
+  SpriteDraw_SingleLarge(k);
   j = (sprite_subtype2[k] & 0x1f) + k * 32;
   swamola_x_lo[j] = sprite_x_lo[k];
   swamola_x_hi[j] = sprite_x_hi[k];
@@ -23114,7 +23114,7 @@ void Swamola_Draw(int k) {
     cur_sprite_x = swamola_x_hi[j] << 8 | swamola_x_lo[j];
     cur_sprite_y = swamola_y_hi[j] << 8 | swamola_y_lo[j];
     oam_cur_ptr += delta * 4, oam_ext_cur_ptr += delta;
-    Sprite_PrepAndDrawSingleLarge(k);
+    SpriteDraw_SingleLarge(k);
   }
   byte_7E0FB6 = 4;
 }
@@ -23132,14 +23132,14 @@ void Sprite_CF_Swamola(int k) {
     }
     Swamola_Draw(k);
   }
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
   if (Sprite_ReturnIfInactive(k))
     return;
   sprite_subtype2[k]++;
   Sprite_CheckDamageToAndFromLink(k);
   uint8 old_vel = sprite_y_vel[k];
   sprite_y_vel[k] += sprite_z_vel[k];
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   sprite_y_vel[k] = old_vel;
   switch(sprite_ai_state[k]) {
   case 0: {  // emerge
@@ -23257,7 +23257,7 @@ void Lynel_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiple(k, &kLynel_Dmd[sprite_graphics[k] * 3], 3, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 
@@ -23269,7 +23269,7 @@ void Sprite_D0_Lynel(int k) {
     return;
   if (Sprite_ReturnIfRecoiling(k))
     return;
-  sprite_D[k] = Sprite_DirectionToFacePlayer(k, NULL);
+  sprite_D[k] = Sprite_DirectionToFaceLink(k, NULL);
   Sprite_CheckDamageToAndFromLink(k);
   switch(sprite_ai_state[k]) {
   case 0:  // target
@@ -23293,11 +23293,11 @@ void Sprite_D0_Lynel(int k) {
         uint16 y = sprite_C[k] | sprite_E[k] << 8;
         if ((uint16)(x - cur_sprite_x + 5) < 10 && (uint16)(y - cur_sprite_y + 5) < 10)
           goto incr_state;
-        ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 24);
+        ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 24);
         sprite_x_vel[k] = pt.x;
         sprite_y_vel[k] = pt.y;
       }
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (Sprite_CheckTileCollision(k))
         goto incr_state;
       sprite_graphics[k] = kLynel_Gfx[++sprite_subtype2[k] & 4 | sprite_D[k]];
@@ -23351,7 +23351,7 @@ void Sprite_Chimney(int k) {
     int j = Sprite_SpawnDynamically(k, 0xd1, &info);
     if (j < 0)
       return;
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     int t = (uint8)info.r0_x + 8;
     sprite_x_lo[j] = t;
     sprite_y_lo[j] = info.r2_y + 4 + (t >> 8);
@@ -23366,7 +23366,7 @@ void Sprite_Chimney(int k) {
     ChimneySmoke_Draw(k);
     if (Sprite_ReturnIfInactive(k))
       return;
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (!(++sprite_subtype2[k] & 7)) {
       int j = sprite_D[k] & 1;
       sprite_x_vel[k] += j ? -1 : 1;
@@ -23405,13 +23405,13 @@ void Sprite_BunnyBeam(int k) {
     return;
   if (!sprite_delay_main[k]) {
     sprite_bump_damage[k] = 0x30;
-    if (Sprite_CheckDamageToPlayer(k)) {
+    if (Sprite_CheckDamageToLink(k)) {
       sprite_state[k] = 0;
       link_timer_tempbunny = 256;
     }
     if (link_is_on_lower_level == sprite_floor[k])
       Sprite_ApplySpeedTowardsLink(k, 16);
-    Sprite_Move(k);
+    Sprite_MoveXY(k);
     if (Sprite_CheckTileCollision(k)) {
       sprite_state[k] = 0;
       Sprite_SpawnPoofGarnish(k);
@@ -23469,7 +23469,7 @@ void Fish_Draw(int k) {
   int j = sprite_z[k] >> 2;
   oam_cur_ptr += 8, oam_ext_cur_ptr += 2;
   Sprite_DrawMultiple(k, &kFish_Dmd2[((j >= 2) ? 2 : j) * 3], 3, &info);
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
 }
 
 void Sprite_D2_FloppingFish(int k) {
@@ -23503,7 +23503,7 @@ void Sprite_D2_FloppingFish(int k) {
   case 1:  // flop around
     Sprite_CheckIfLifted_permissive(k);
     Sprite_BounceFromTileCollision(k);
-    Sprite_MoveXyz(k);
+    Sprite_MoveXYZ(k);
     sprite_z_vel[k] -= 2;
     if (sign8(sprite_z[k])) {
       sprite_z[k] = 0;
@@ -23549,7 +23549,7 @@ void Sprite_D2_FloppingFish(int k) {
         SpriteSpawnInfo info;
         int j = Sprite_SpawnDynamically(k, 0xdb, &info);
         if (j >= 0) {
-          Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+          Sprite_SetSpawnedCoordinates(j, &info);
           Sprite_SetX(j, info.r0_x + 4);
           sprite_stunned[j] = 255;
           sprite_z_vel[j] = 48;
@@ -23564,8 +23564,8 @@ void Sprite_D2_FloppingFish(int k) {
   case 4:  // wiggle
     if (!sprite_z[k])
       sprite_ai_state[k] = 1;
-    Sprite_Move(k);
-    ThrownSprite_TileAndPeerInteraction(k);
+    Sprite_MoveXY(k);
+    ThrownSprite_TileAndSpriteInteraction(k);
     break;
   }
 }
@@ -23583,7 +23583,7 @@ void Stal_Draw(int k) {
   int n = sprite_ai_state[k] ? 2 : 1;
   Sprite_DrawMultiple(k, &kStal_Dmd[sprite_graphics[k] * 2], n, &info);
   if (sprite_ai_state[k])
-    Sprite_DrawShadow(k, &info);
+    SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_D3_Stal(int k) {
@@ -23600,7 +23600,7 @@ void Sprite_D3_Stal(int k) {
   switch(sprite_ai_state[k]) {
   case 0: // dormant
     sprite_ignore_projectile[k] = 1;
-    if (Sprite_CheckDamageToPlayerSameLayer(k)) {
+    if (Sprite_CheckDamageToLink_same_layer(k)) {
       Sprite_NullifyHookshotDrag();
       Sprite_RepelDash();
       if (!sprite_delay_main[k]) {
@@ -23622,7 +23622,7 @@ void Sprite_D3_Stal(int k) {
     break;
   case 1: // active
     Sprite_CheckDamageToAndFromLink(k);
-    Sprite_MoveXyz(k);
+    Sprite_MoveXYZ(k);
     Sprite_CheckTileCollision(k);
     sprite_z_vel[k]-=2;
     if (sign8(sprite_z[k])) {
@@ -23643,7 +23643,7 @@ bool Landmine_CheckDetonationFromHammer(int k) {
   SpriteHitBox hb;
   Player_SetupActionHitBox(&hb);
   Sprite_SetupHitBox(k, &hb);
-  return Utility_CheckIfHitBoxesOverlap(&hb);
+  return CheckIfHitBoxesOverlap(&hb);
 }
 
 void Sprite_TransmuteToBomb(int k) {
@@ -23675,7 +23675,7 @@ void Sprite_D4_Landmine(int k) {
   if (!Landmine_CheckDetonationFromHammer(k)) {
     if (!sprite_delay_main[k]) {
       sprite_oam_flags[k] = 4;
-      if (Sprite_CheckDamageToPlayer(k))
+      if (Sprite_CheckDamageToLink(k))
         sprite_delay_main[k] = 8;
       return;
     }
@@ -23711,7 +23711,7 @@ void DiggingGameGuy_Draw(int k) {
   };
   PrepOamCoordsRet info;
   Sprite_DrawMultiplePlayerDeferred(k, &kDiggingGameGuy_Dmd[sprite_graphics[k] * 3], 3, &info);
-  Sprite_DrawShadow(k, &info);
+  SpriteDraw_Shadow(k, &info);
 }
 
 void Sprite_D5_DigGameGuy(int k) {
@@ -23719,11 +23719,11 @@ void Sprite_D5_DigGameGuy(int k) {
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_BehaveAsBarrier(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   sprite_x_vel[k] = 0;
   switch(sprite_ai_state[k]) {
   case 0:  // intro
-    if ((uint8)(sprite_y_lo[k] + 7) < BYTE(link_y_coord) && Sprite_DirectionToFacePlayer(k, NULL) == 2) {
+    if ((uint8)(sprite_y_lo[k] + 7) < BYTE(link_y_coord) && Sprite_DirectionToFaceLink(k, NULL) == 2) {
       if (savegame_tagalong == 0) {
         if (Sprite_ShowSolicitedMessage(k, 0x187) & 0x100)
           sprite_ai_state[k]++;
@@ -23793,7 +23793,7 @@ void Ganon_Func1(int k, int t) {
   if (j < 0)
     return;
   SpriteSfx_QueueSfx2WithPan(k, 0x2a);
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_ignore_projectile[j] = sprite_anim_clock[j] = t;
   sprite_oam_flags[j] = 3;
   sprite_flags3[j] = 0x40;
@@ -23909,7 +23909,7 @@ void Ganon_SpawnSpiralBat(int k) {
   int j = Sprite_SpawnDynamicallyEx(k, 0xc9, &info, 8);
   if (j < 0)
     return;
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_anim_clock[j] = 4;
   sprite_oam_flags[j] = 3;
   sprite_flags3[j] = 0x40;
@@ -24073,7 +24073,7 @@ void Trident_Draw(int k) {
   sprite_obj_prio[k] &= ~0xf;
   Sprite_DrawMultiple(k, &kTrident_Dmd[(g - 1) * 5], 5, NULL);
   sprite_obj_prio[k] = bak;
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
 }
 
 void Ganon_Draw(int k) {
@@ -24131,10 +24131,10 @@ void Ganon_Draw(int k) {
   sprite_obj_prio[k] = 48;
   Sprite_DrawMultiple(k, &kLargeShadow_Dmd[frame * 3], 3, NULL);
   sprite_oam_flags[k] = bak;
-  Sprite_Get_16_bit_Coords(k);
+  Sprite_Get16BitCoords(k);
 }
 
-void Sprite_Ganon(int k) {
+void Sprite_D6_Ganon(int k) {
   int j;
   
   if (sign8(sprite_ai_state[k])) {
@@ -24173,7 +24173,7 @@ void Sprite_Ganon(int k) {
   else if (sprite_delay_aux2[k] == 16)
     Ganon_ExtinguishTorch_adjust_translucency();
 
-  PairU8 pair = Sprite_IsToRightOfPlayer(k);
+  PairU8 pair = Sprite_IsRightOfLink(k);
   static const uint8 kGanon_HeadDir0[2] = { 2, 0 };
   sprite_head_dir[k] = (uint8)(pair.b + 32) < 64 ? 1 : kGanon_HeadDir0[pair.a];
 
@@ -24293,9 +24293,9 @@ void Sprite_Ganon(int k) {
         sprite_delay_main[k] = 104;
       }
     } else {
-      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 32);
+      ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 32);
       Sprite_ApproachTargetSpeed(k, pt.x, pt.y);
-      Sprite_Move(k);
+      Sprite_MoveXY(k);
       if (sprite_delay_main[k] == 0 || frame_counter & 1) {
         sprite_graphics[k] = 255;
         return;
@@ -24306,7 +24306,7 @@ void Sprite_Ganon(int k) {
         SpriteSpawnInfo info;
         int j = Sprite_SpawnDynamically(k, 0xd6, &info);
         if (j >= 0) {
-          Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+          Sprite_SetSpawnedCoordinates(j, &info);
           sprite_ignore_projectile[j] = 24;
           sprite_delay_main[j] = 24;
           sprite_ai_state[j] = 255;
@@ -24520,7 +24520,7 @@ void Sprite_GanonTrident(int k) {
     return;
   Sprite_CheckDamageToAndFromLink(k);
   SwishEvery16Frames(k);
-  Sprite_Move(k);
+  Sprite_MoveXY(k);
   sprite_G[k] = kGanon_G_Func2[--sprite_subtype2[k] >> 2 & 7];
   if (sprite_delay_main[k]) {
     if (sprite_delay_main[k] & 1)
@@ -24535,7 +24535,7 @@ void Sprite_GanonTrident(int k) {
       sprite_ai_state[0] = 3;
       sprite_delay_main[0] = 16;
     }
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsEntity(k, x, y, 32);
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, x, y, 32);
     Sprite_ApproachTargetSpeed(k, pt.x, pt.y);
   }
 }
@@ -24553,13 +24553,13 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_01_Vulture_bounce,
   &Sprite_02_StalfosHead,
   NULL,
-  &Sprite_PullSwitch,
-  &Sprite_PullSwitch,
-  &Sprite_PullSwitch,
-  &Sprite_PullSwitch,
-  &Sprite_Octorock,
+  &Sprite_PullSwitch_bounce,
+  &Sprite_PullSwitch_bounce,
+  &Sprite_PullSwitch_bounce,
+  &Sprite_PullSwitch_bounce,
+  &Sprite_08_Octorok,
   &Sprite_09_Moldorm_bounce,
-  &Sprite_Octorock,
+  &Sprite_08_Octorok,
   &Sprite_0B_Cucco,
   &Sprite_0C_OctorokStone,
   &Sprite_0D_Buzzblob,
@@ -24570,9 +24570,9 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_12_Moblin,
   &Sprite_13_MiniHelmasaur,
   &Sprite_14_ThievesTownGrate_bounce,
-  &Sprite_Bubble,
+  &Sprite_15_Antifairy,
   &Sprite_16_Elder_bounce,
-  &Sprite_CoveredRupeeCrab,
+  &Sprite_17_Hoarder,
   &Sprite_18_MiniMoldorm,
   &Sprite_19_Poe,
   &Sprite_1A_Smithy,
@@ -24584,8 +24584,8 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_20_Sluggula,
   &Sprite_21_WaterSwitch,
   &Sprite_22_Ropa,
-  &Sprite_BlueBari,
-  &Sprite_BlueBari,
+  &Sprite_23_RedBari,
+  &Sprite_23_RedBari,
   &Sprite_25_TalkingTree_bounce,
   &Sprite_26_HardhatBeetle,
   &Sprite_27_Deadrock,
@@ -24611,14 +24611,14 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_DashItem,
   &Sprite_TroughBoy,
   &Sprite_OldSnitchLady,
-  &Sprite_CoveredRupeeCrab,
+  &Sprite_17_Hoarder,
   &Sprite_TutorialGuardOrBarrier_bounce,
   &Sprite_TutorialGuardOrBarrier_bounce,
 
   // Trampoline 48 entries
-  &Sprite_Soldier,
-  &Sprite_Soldier,
-  &Sprite_Soldier,
+  &Sprite_41_BlueGuard,
+  &Sprite_41_BlueGuard,
+  &Sprite_41_BlueGuard,
   &Sprite_44_BluesainBolt,
   &Sprite_45_UsainBolt,
   &Sprite_46_BlueArcher,
@@ -24629,8 +24629,8 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_4B_GreenKnifeGuard,
   &Sprite_4C_Geldman,
   &Sprite_4D_Toppo,
-  &Sprite_Bot,
-  &Sprite_Bot,
+  &Sprite_4E_Popo,
+  &Sprite_4E_Popo,
   &Sprite_50_Cannonball,
   &Sprite_51_ArmosStatue,
   &Sprite_52_KingZora,
@@ -24642,21 +24642,21 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_58_Crab,
   &Sprite_59_LostWoodsBird,
   &Sprite_5A_LostWoodsSquirrel,
-  &Sprite_Spark,
-  &Sprite_Spark,
-  &Sprite_SpikeRoller,
-  &Sprite_SpikeRoller,
-  &Sprite_SpikeRoller,
-  &Sprite_SpikeRoller,
+  &Sprite_5B_Spark_Clockwise,
+  &Sprite_5B_Spark_Clockwise,
+  &Sprite_5D_Roller_VerticalDownFirst,
+  &Sprite_5D_Roller_VerticalDownFirst,
+  &Sprite_5D_Roller_VerticalDownFirst,
+  &Sprite_5D_Roller_VerticalDownFirst,
   &Sprite_61_Beamos,
   &Sprite_62_MasterSword,
   &Sprite_63_DebirandoPit,
   &Sprite_64_Debirando,
   &Sprite_65_ArcheryGame,
-  &Sprite_WallCannon,
-  &Sprite_WallCannon,
-  &Sprite_WallCannon,
-  &Sprite_WallCannon,
+  &Sprite_66_WallCannonVerticalLeft,
+  &Sprite_66_WallCannonVerticalLeft,
+  &Sprite_66_WallCannonVerticalLeft,
+  &Sprite_66_WallCannonVerticalLeft,
   &Sprite_6A_BallNChain,
   &Sprite_CannonTrooper,
   &Sprite_6C_MirrorPortal,
@@ -24670,8 +24670,8 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_73_UncleAndPriest_bounce,
   &Sprite_RunningMan,
   &Sprite_BottleVendor,
-  &Sprite_Zelda,
-  &Sprite_Bubble,
+  &Sprite_76_Zelda,
+  &Sprite_15_Antifairy,
   &Sprite_78_MrsSahasrahla_bounce,
 
   // Trampoline 68 entries
@@ -24680,13 +24680,13 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_7B_AgahnimBalls,
   &Sprite_7C_GreenStalfos,
   &Sprite_7D_BigSpike,
-  &Sprite_GuruguruBar,
-  &Sprite_GuruguruBar,
+  &Sprite_7E_Firebar_Clockwise,
+  &Sprite_7E_Firebar_Clockwise,
   &Sprite_80_Firesnake,
   &Sprite_81_Hover,
   &Sprite_82_AntifairyCircle,
-  &Sprite_Eyegore,
-  &Sprite_Eyegore,
+  &Sprite_83_GreenEyegore,
+  &Sprite_83_GreenEyegore,
   &Sprite_85_YellowStalfos,
   &Sprite_86_Kodongo,
   &Sprite_87_KodongoFire,
@@ -24703,15 +24703,15 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_92_HelmasaurKing,
   &Sprite_93_Bumper,
   &Sprite_94_Pirogusu,
-  &Sprite_LaserEye,
-  &Sprite_LaserEye,
-  &Sprite_LaserEye,
-  &Sprite_LaserEye,
+  &Sprite_95_LaserEyeLeft,
+  &Sprite_95_LaserEyeLeft,
+  &Sprite_95_LaserEyeLeft,
+  &Sprite_95_LaserEyeLeft,
   &Sprite_99_Pengator,
   &Sprite_9A_Kyameron,
   &Sprite_9B_Wizzrobe,
-  &Sprite_Zoro,
-  &Sprite_Zoro,
+  &Sprite_9C_Zoro,
+  &Sprite_9C_Zoro,
   &Sprite_9E_HauntedGroveOstritch,
   &Sprite_9F_HauntedGroveRabbit,
   &Sprite_A0_HauntedGroveBird,
@@ -24719,19 +24719,19 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_A2_Kholdstare,
   &Sprite_A3_KholdstareShell,
   &Sprite_A4_FallingIce,
-  &Sprite_Zazak,
-  &Sprite_Zazak,
+  &Sprite_Zazak_Main,
+  &Sprite_Zazak_Main,
   &Sprite_A7_Stalfos,
-  &Sprite_Bomber,
-  &Sprite_Bomber,
+  &Sprite_A8_GreenZirro,
+  &Sprite_A8_GreenZirro,
   &Sprite_AA_Pikit,
   &Sprite_AB_CrystalMaiden,
   &Sprite_AC_Apple,
   &Sprite_AD_OldMan,
-  &Sprite_Pipe,
-  &Sprite_Pipe,
-  &Sprite_Pipe,
-  &Sprite_Pipe,
+  &Sprite_AE_Pipe_Down,
+  &Sprite_AE_Pipe_Down,
+  &Sprite_AE_Pipe_Down,
+  &Sprite_AE_Pipe_Down,
   &Sprite_B2_PlayerBee,
   &Sprite_B3_PedestalPlaque,
   &Sprite_B4_PurpleChest,
@@ -24740,8 +24740,8 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_B7_BlindMaiden,
   &Sprite_B8_DialogueTester,
   &Sprite_B9_BullyAndPinkBall,
-  &Sprite_Whirlpool,
-  &Sprite_ShopKeeper,
+  &Sprite_BA_Whirlpool,
+  &Sprite_BB_Shopkeeper,
   &Sprite_BC_Drunkard,
 
   // Trampoline 4, starts at 187, 27 entries
@@ -24770,24 +24770,24 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_D3_Stal,
   &Sprite_D4_Landmine,
   &Sprite_D5_DigGameGuy,
-  &Sprite_Ganon,
-  &Sprite_Ganon,
+  &Sprite_D6_Ganon,
+  &Sprite_D6_Ganon,
   
   &Sprite_D8_Heart,
-  &Sprite_ItemPickup,
-  &Sprite_ItemPickup,
-  &Sprite_ItemPickup,
-  &Sprite_ItemPickup,
-  &Sprite_ItemPickup,
-  &Sprite_ItemPickup,
-  &Sprite_ItemPickup,
-  &Sprite_ItemPickup,
-  &Sprite_ItemPickup,
-  &Sprite_ItemPickup,
+  &Sprite_D9_GreenRupee,
+  &Sprite_D9_GreenRupee,
+  &Sprite_D9_GreenRupee,
+  &Sprite_D9_GreenRupee,
+  &Sprite_D9_GreenRupee,
+  &Sprite_D9_GreenRupee,
+  &Sprite_D9_GreenRupee,
+  &Sprite_D9_GreenRupee,
+  &Sprite_D9_GreenRupee,
+  &Sprite_D9_GreenRupee,
   &Sprite_E3_Fairy,
-  &Sprite_Key,
-  &Sprite_Key,
-  &Sprite_ItemPickup,
+  &Sprite_E4_SmallKey,
+  &Sprite_E4_SmallKey,
+  &Sprite_D9_GreenRupee,
   &Sprite_Mushroom,
   &Sprite_FakeSword,
   &Sprite_PotionShop,
@@ -25009,7 +25009,7 @@ void SpritePrep_Adults(int k) {
   sprite_ignore_projectile[k]++;
   sprite_subtype2[k] = FindInByteArray(kHumanMultiTypes, BYTE(dungeon_room_index), 3);
 }
-void SpritePrep_MadBatter(int k) {
+void SpritePrep_MagicBat(int k) {
   sprite_x_lo[k] += 8;
   sprite_ignore_projectile[k]++;
 }
@@ -25131,7 +25131,7 @@ void SpritePrep_StandardGuard(int k) {
   }
   sprite_ai_state[k] = 1;
   sprite_delay_main[k] = 112;
-  sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL);
+  sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL);
   SpritePrep_TrooperAndArcherSoldier(k);
 }
 void SpritePrep_TrooperAndArcherSoldier(int k) {
@@ -25225,7 +25225,7 @@ void SpritePrep_DesertStatue(int k) {
 }
 
 void SpritePrep_LostWoodsSquirrel(int k) {
-  sprite_x_vel[k] = Sprite_IsToRightOfPlayer(k).a ? -16 : 16;
+  sprite_x_vel[k] = Sprite_IsRightOfLink(k).a ? -16 : 16;
   sprite_ignore_projectile[k] = sprite_y_vel[k] = sign8(byte_7E069E[0]) ? 4 : -4;
 }
 
@@ -25275,7 +25275,7 @@ void SpritePrep_DebirandoPit(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0x64, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_delay_main[j] = 96;
     sprite_head_dir[k] = j;
     sprite_G[j] = sprite_G[k];
@@ -25365,7 +25365,7 @@ void SpritePrep_UncleAndPriest_bounce(int k) {
       sprite_graphics[k] = 0;
       j = 0;
     } else {
-      sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+      sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
       if (savegame_tagalong == 1) {
         sram_progress_flags |= 0x4;
         save_ow_event_info[0x1b] |= 0x20;
@@ -25406,7 +25406,7 @@ void SpritePrep_Zelda_bounce(int k) {
     return;
   }
   sprite_ignore_projectile[k]++;
-  sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFacePlayer(k, NULL) ^ 3;
+  sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
   uint8 bak0 = savegame_tagalong;
   savegame_tagalong = 1;
   LoadFollowerGraphics();
@@ -25430,7 +25430,7 @@ void SpritePrep_Zelda_bounce(int k) {
 
 void SpritePrep_MrsSahasrahla(int k) {
   sprite_y_lo[k] += 8;
-  SpritePrep_MadBatter(k);
+  SpritePrep_MagicBat(k);
 }
 void SpritePrep_OverworldBonkItem(int k) {
   sprite_E[k]++;
@@ -25562,7 +25562,7 @@ void SpritePrep_HauntedGroveOstritch(int k) {
   sprite_ignore_projectile[k]++;
 }
 void SpritePrep_HauntedGroveAnimal(int k) {
-  sprite_D[k] = Sprite_IsToRightOfPlayer(k).a;
+  sprite_D[k] = Sprite_IsRightOfLink(k).a;
   SpritePrep_HauntedGroveOstritch(k);
 }
 
@@ -25681,7 +25681,7 @@ void SpawnBully(int k) {
   SpriteSpawnInfo info;
   int j = Sprite_SpawnDynamically(k, 0xB9, &info);
   if (j >= 0) {
-    Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+    Sprite_SetSpawnedCoordinates(j, &info);
     sprite_subtype2[j] = 2;
     sprite_head_dir[j] = k;
     sprite_ignore_projectile[j] = 1;
@@ -25770,7 +25770,7 @@ void CutsceneAgahnim_SpawnZeldaOnAltar(int k) {
   int j = Sprite_SpawnDynamically(k, 0xc1, &info);
   sprite_A[j] = 1;
   sprite_ignore_projectile[j] = 1;
-  Sprite_Sprite_SetSpawnedCoordinates(j, &info);
+  Sprite_SetSpawnedCoordinates(j, &info);
   sprite_y_lo[j] = info.r2_y + 40;
   sprite_flags2[j] = 0;
   sprite_oam_flags[j] = 12;
@@ -25986,7 +25986,7 @@ static HandlerFuncK *const kSpritePrep_Main[243] = {
   &SpritePrep_Antifairy,
   &SpritePrep_Sage,
   &SpritePrep_DoNothingA,
-  &SpritePrep_Moldorm,
+  &SpritePrep_MiniMoldorm_bounce,
   &SpritePrep_Poe,
   &SpritePrep_Smithy,
   &SpritePrep_DoNothingA,
@@ -26006,7 +26006,7 @@ static HandlerFuncK *const kSpritePrep_Main[243] = {
   &SpritePrep_Adults,
   &SpritePrep_IgnoreProjectiles,
   &SpritePrep_Hobo,
-  &SpritePrep_MadBatter,
+  &SpritePrep_MagicBat,
   &SpritePrep_IgnoreProjectiles,
   &SpritePrep_FluteKid,
   &SpritePrep_IgnoreProjectiles,
@@ -26020,7 +26020,7 @@ static HandlerFuncK *const kSpritePrep_Main[243] = {
   &SpritePrep_IgnoreProjectiles,
   &SpritePrep_DoNothingA,
   &SpritePrep_Locksmith,
-  &SpritePrep_MadBatter,
+  &SpritePrep_MagicBat,
   &SpritePrep_BonkItem,
   &SpritePrep_IgnoreProjectiles,
   &SpritePrep_Snitch_bounce_1,

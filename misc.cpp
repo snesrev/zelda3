@@ -90,11 +90,11 @@ static uint8 PlaySfx_SetPan(uint8 a) {
   return a | Link_CalculateSfxPan();
 }
 
-uint8 PlaySfx_Set2(uint8 a) {
+uint8 Ancilla_Sfx2_Near(uint8 a) {
   return sound_effect_1 = PlaySfx_SetPan(a);
 }
 
-void PlaySfx_Set3(uint8 a) {
+void Ancilla_Sfx3_Near(uint8 a) {
   sound_effect_2 = PlaySfx_SetPan(a);
 }
 
@@ -214,7 +214,7 @@ static const int8 kValueToGiveItemTo[76] = {
 };
 
 void AncillaAdd_ItemReceipt(uint8 ain, uint8 yin, int chest_pos) {
-  int ancilla = Ancilla_AddAncilla(ain, yin);
+  int ancilla = AncillaAdd_AddAncilla_Bank09(ain, yin);
   if (ancilla < 0)
     return;
 
@@ -554,7 +554,7 @@ void Dungeon_StartVictorySpin() {
     return;
   flag_is_link_immobilized = 0;
   link_direction_facing = 2;
-  Link_SetSpinAttacking();
+  Link_AnimateVictorySpin();
   Ancilla_TerminateSelectInteractives(0);
   AncillaAdd_VictorySpin();
   submodule_index++;
@@ -660,7 +660,7 @@ static void KillAghanim_Func6() {
   }
 }
 static void KillAghanim_Func7() {
-  Messaging_Text();
+  RenderText();
   if (!submodule_index) {
     overworld_map_state = 0;
     sound_effect_ambient = 5;
@@ -676,7 +676,7 @@ static void KillAghanim_Func7() {
   }
 }
 static void KillAghanim_Func8() {
-  Messaging_Text();
+  RenderText();
   if (!submodule_index) {
     subsubmodule_index = 32;
     submodule_index = 12;
@@ -771,20 +771,20 @@ void Module17_SaveAndQuit() {
 void Module1A_Credits();
 
 static PlayerHandlerFunc *const kMainRouting[28] = {
-  &Module_Intro,
+  &Module00_Intro,
   &Module01_FileSelect,
   &Module02_CopyFile,
-  &Module_EraseFile,
-  &Module_NamePlayer,
+  &Module03_KILLFile,
+  &Module04_NameFile,
 
   &Module05_LoadFile,
   &Module_PreDungeon,
   &Module07_Dungeon,
-  &Module_PreOverworld,
-  &Module_Overworld,
+  &Module08_OverworldLoad,
+  &Module09_Overworld,
 
-  &Module_PreOverworld,
-  &Module_Overworld,
+  &Module08_OverworldLoad,
+  &Module09_Overworld,
   &Module_Unknown0,
   &Module_Unknown1,
   &Module0E_Interface,

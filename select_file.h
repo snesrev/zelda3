@@ -3,5 +3,5 @@
 
 void Module01_FileSelect();
 void Module02_CopyFile();
-void Module_EraseFile();
-void Module_NamePlayer();
+void Module03_KILLFile();
+void Module04_NameFile();

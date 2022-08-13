@@ -1111,12 +1111,12 @@ void Overworld_LoadAmbientOverlay() {
   Overworld_LoadAmbientOverlay(false);
 }
 
-void Overworld_LoadAmbientOverlayAndMapData() {
+void Overworld_LoadAndBuildScreen() {
   Overworld_LoadAmbientOverlay(true);
 }
 
 void Module08_02_LoadAndAdvance() {
-  Overworld_LoadAmbientOverlayAndMapData();
+  Overworld_LoadAndBuildScreen();
   main_module_index = 16;
   submodule_index = 0;
   subsubmodule_index = 0;
@@ -2680,7 +2680,7 @@ void FluteMenu_LoadTransport() {
 }
 
 void FluteMenu_LoadSelectedScreenPalettes() {
-  Overworld_LoadAreaPalettes();
+  OverworldLoadScreensPaletteSet();
   uint8 sc = overworld_screen_index;
   Overworld_LoadPalettes(kOverworldBgPalettes[sc], overworld_sprite_palettes[sc]);
   Palette_SetOwBgColor();
@@ -2698,7 +2698,7 @@ void Overworld_StartMosaicTransition() {
     ResetTransitionPropsAndAdvance_ResetInterface();
     break;
   case 1:
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     break;
   default:
     INIDISP_copy = 0x80;
@@ -2831,7 +2831,7 @@ void OverworldMosaicTransition_LoadSpriteGraphicsAndSetMosaic() {
   subsubmodule_index++;
 }
 
-void Overworld_Func16() {
+void Module09_FadeBackInFromMosaic() {
   Overworld_ResetMosaicDown();
   switch (subsubmodule_index) {
   case 0: {
@@ -2842,7 +2842,7 @@ void Overworld_Func16() {
   }
   case 1:
     Graphics_IncrementalVRAMUpload();
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     break;
   default:
     last_music_control = music_unk1;
@@ -2887,7 +2887,7 @@ void Overworld_Func1C() {
     break;
   case 1:
     Graphics_IncrementalVRAMUpload();
-    ApplyPaletteFilter();
+    ApplyPaletteFilter_bounce();
     break;
   default:
     if (BYTE(overworld_screen_index) < 0x80)
@@ -3039,7 +3039,7 @@ void MirrorBonk_RecoverChangedTiles() {
   }
 }
 
-void LoadEnemyDamageData() {
+void DecompressEnemyDamageSubclasses() {
   uint8 *tmp = &g_ram[0x14000];
   memcpy(tmp, kEnemyDamageData, sizeof(kEnemyDamageData));
   for (int i = 0; i < 0x1000; i += 2) {
@@ -3080,7 +3080,7 @@ void MirrorWarp_LoadSpritesAndColors() {
   map16_load_var2 = bak3;
   map16_load_dst_off = bak2;
   map16_load_src_off = bak1;
-  Overworld_LoadAreaPalettes();
+  OverworldLoadScreensPaletteSet();
   uint8 sc = overworld_screen_index;
   Overworld_LoadPalettes(kOverworldBgPalettes[sc], overworld_sprite_palettes[sc]);
   Palette_SpecialOw();
@@ -3103,7 +3103,7 @@ void MirrorWarp_LoadSpritesAndColors() {
     Sprite_InitializeMirrorPortal();
 }
 
-void Module09_MirrorWarp() {
+void MirrorWarp_Main() {
   nmi_disable_core_updates++;
   switch (subsubmodule_index) {
   case 0:
@@ -3236,7 +3236,7 @@ void RecoverPositionAfterDrowning() {
   }
 }
 
-void Overworld_Func2A() {
+void Module09_2A_RecoverFromDrowning() {
   // this is called for example when entering water without swim capability
   switch (subsubmodule_index) {
   case 0:  Module09_2A_00_ScrollToLand(); break;
@@ -3377,7 +3377,7 @@ static PlayerHandlerFunc *const kOverworldSubmodules[48] = {
   &Overworld_StartScrollTransition,
   &Overworld_RunScrollTransition,
   &Overworld_EaseOffScrollTransition,
-  &Overworld_Func16,
+  &Module09_FadeBackInFromMosaic,
 
   &Overworld_StartMosaicTransition,
   &Overworld_Func18,
@@ -3392,23 +3392,23 @@ static PlayerHandlerFunc *const kOverworldSubmodules[48] = {
   &Overworld_LoadOverlays2,
   &Overworld_LoadAmbientOverlay,
   &Overworld_Func22,
-  &Module09_MirrorWarp,
+  &MirrorWarp_Main,
   &Overworld_StartMosaicTransition,
   &Overworld_LoadOverlays,
   &Module09_LoadAuxGFX,
   &Overworld_FinishTransGfx,
-  &Overworld_LoadAmbientOverlayAndMapData,
-  &Overworld_Func16,
-  &Overworld_Func2A,
+  &Overworld_LoadAndBuildScreen,
+  &Module09_FadeBackInFromMosaic,
+  &Module09_2A_RecoverFromDrowning,
   &Overworld_Func2B,
-  &Module09_MirrorWarp,
+  &MirrorWarp_Main,
   &Overworld_WeathervaneExplosion,
   &Overworld_Func2E,
   &Overworld_Func2F,
 };
 
 
-void Module_Overworld() {
+void Module09_Overworld() {
   kOverworldSubmodules[submodule_index]();
 
   int bg2x = BG2HOFS_copy2;
@@ -3514,7 +3514,7 @@ setsong:
   buffer_for_playing_songs = xt;
   DecompressAnimatedOverworldTiles(ow_anim_tiles);
   InitializeTilesets();
-  Overworld_LoadAreaPalettes();
+  OverworldLoadScreensPaletteSet();
   Overworld_LoadPalettes(kOverworldBgPalettes[sc], overworld_sprite_palettes[sc]);
   Palette_SetOwBgColor();
   if (main_module_index == 8) {
@@ -3566,7 +3566,7 @@ static PlayerHandlerFunc *const kModule_PreOverworld[3] = {
 };
 
 
-void Module_PreOverworld() {
+void Module08_OverworldLoad() {
   kModule_PreOverworld[submodule_index]();
 }
 
@@ -4041,7 +4041,7 @@ void Overworld_AlterWeathervane() {
 }
 
 
-uint8 Overworld_LiftableTiles(Point16U *pt_arg) {
+uint8 Overworld_HandleLiftableTiles(Point16U *pt_arg) {
   uint16 pos = Overworld_GetLinkMap16Coords(pt_arg);
   Point16U pt = *pt_arg;
   uint16 a = overworld_tileattr[pos >> 1], y;

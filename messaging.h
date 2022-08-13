@@ -6,7 +6,7 @@ void Module1B_SpawnSelect();
 void Overworld_LoadOverlayAndMap();
 void FluteMenu_LoadSelectedScreen();
 void BirdTravel_Finish_Doit();
-void Messaging_Text();
+void RenderText();
 void SaveGameFile();
 void Text_GenerateMessagePointers();
 void CopySaveToWRAM();
