@@ -13,6 +13,12 @@ It uses the PPU and DSP implementation from LakeSnes. Additionally, it can be co
 
 I got much assistance from spannierism's Zelda 3 JP disassembly and the other ones that documented loads of function names and variables.
 
+## Checking out
+
+This project makes use of submodules, and as such requires use of the `--recursive` option when running git clone.
+
+Alternatively, if you missed this step, you can run `git submodule update --init --recursive` to fetch the submodules later.
+
 ## Compiling
 
 Put the ROM in tables/zelda3.sfc
@@ -25,16 +31,24 @@ Run `python extract_resources.py` to extract resources from the ROM into a more 
 
 Run `python compile_resources.py` to produce .h files that gets included by the C++ code.
 
-### Windows
-Build the .sln file with Visual Studio
+### Microsoft Visual Studio:
 
-### Linux
-`apt install libsdl2-dev`
+Open the project using the "Open Folder" option of Visual Studio. MSVC will detect the CMakeLists file automatically.
+Select "zelda3.exe" as your startup item, and then you can compile and run with a single click.
 
-Make sure you are in the root directory.
+Alternatively, you could install CMake separately,and use that to generate a standard MSVC solution.
 
-`clang++ -I/usr/include/SDL2 -lSDL2 -O2 -ozelda3 *.cpp snes/*.cpp`
+### Unix/Linux/BSD or Windows with MinGW/MSYS2
 
+Make sure the cmake package installed and run the following commands:
+
+```
+mkdir build
+cd build
+cmake .. && make
+```
+
+The zelda3 binary will now be in the build directory.
 
 ## Usage and controls
 
