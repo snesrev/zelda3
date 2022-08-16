@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.13)
 project(zelda3)
 
-add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/3rdparty/SDL2" EXCLUDE_FROM_ALL)
+add_subdirectory("${CMAKE_CURRENT_LIST_DIR}/3rdparty/sdl2" EXCLUDE_FROM_ALL)
 
 set(SOURCE_FILES
         ancilla.cpp
