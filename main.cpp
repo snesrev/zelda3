@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <vector>
 
 #include <SDL.h>
 
@@ -31,7 +32,40 @@ static bool loadRom(char* name, Snes* snes);
 static bool checkExtention(const char* name, bool forZip);
 static void playAudio(Snes *snes, SDL_AudioDeviceID device, int16_t* audioBuffer);
 static void renderScreen(SDL_Renderer* renderer, SDL_Texture* texture);
+static void handleInputPad(int button, bool pressed);
 static void handleInput(int keyCode, int modCode, bool pressed);
+
+struct Gamepad {
+  int deviceId;
+  SDL_GameController* handle;
+};
+
+std::vector<Gamepad> gamepads;
+
+void gamepadAdded(int device_id) {
+  auto handle = SDL_GameControllerOpen(device_id);
+  if (!handle) return;
+
+  Gamepad pad;
+  pad.handle = handle;
+  pad.deviceId = device_id;
+  gamepads.push_back(pad);
+}
+
+void gamepadRemoved(int device_id) {
+  for (auto it = gamepads.begin(); it != gamepads.end(); ++it) {
+    if (it->deviceId == device_id) {
+      gamepads.erase(it);
+      return;
+    }
+  }
+}
+
+void gamepadInit() {
+  for (int i = 0; i < SDL_NumJoysticks(); ++i) {
+    if (SDL_IsGameController(i)) gamepadAdded(i);
+  }
+}
 
 int input1_current_state;
 
@@ -48,7 +82,7 @@ void setButtonState(int button, bool pressed) {
 #undef main
 int main(int argc, char** argv) {
   // set up SDL
-  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
     printf("Failed to init SDL: %s\n", SDL_GetError());
     return 1;
   }
@@ -114,9 +148,23 @@ int main(int argc, char** argv) {
 
   printf("%d\n", *(int *)snes->cart->ram);
 
+  gamepadInit();
+
   while(running) {
     while(SDL_PollEvent(&event)) {
       switch(event.type) {
+        case SDL_CONTROLLERDEVICEADDED:
+            gamepadAdded(event.cdevice.which);
+            break;
+        case SDL_CONTROLLERDEVICEREMOVED:
+            gamepadRemoved(event.cdevice.which);
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+            handleInputPad(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
+            break;
+        case SDL_CONTROLLERBUTTONUP:
+            handleInputPad(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
+            break;
         case SDL_KEYDOWN: {
           switch(event.key.keysym.sym) {
             case SDLK_e:
@@ -290,6 +338,24 @@ static void handleInput(int keyCode, int keyMod, bool pressed) {
           keyCode - SDLK_F1);
       }
       break;
+  }
+}
+
+
+static void handleInputPad(int button, bool pressed) {
+  switch (button) {
+    case SDL_CONTROLLER_BUTTON_A: setButtonState(0, pressed); break;
+    case SDL_CONTROLLER_BUTTON_X: setButtonState(1, pressed); break;
+    case SDL_CONTROLLER_BUTTON_BACK: setButtonState(2, pressed); break;
+    case SDL_CONTROLLER_BUTTON_START: setButtonState(3, pressed); break;
+    case SDL_CONTROLLER_BUTTON_DPAD_UP: setButtonState(4, pressed); break;
+    case SDL_CONTROLLER_BUTTON_DPAD_DOWN: setButtonState(5, pressed); break;
+    case SDL_CONTROLLER_BUTTON_DPAD_LEFT: setButtonState(6, pressed); break;
+    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: setButtonState(7, pressed); break;
+    case SDL_CONTROLLER_BUTTON_B: setButtonState(8, pressed); break;
+    case SDL_CONTROLLER_BUTTON_Y: setButtonState(9, pressed); break;
+    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: setButtonState(10, pressed); break;
+    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: setButtonState(11, pressed); break;
   }
 }
 
