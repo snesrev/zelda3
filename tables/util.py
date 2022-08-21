@@ -3,7 +3,7 @@ import sys
 import hashlib
 
 class LoadedRom:
-  def __init__(self, name = 'zelda3.sfc'):
+  def __init__(self, name):
     self.ROM = open(name, 'rb').read()
     hash = hashlib.sha256(self.ROM).hexdigest() 
     if hash != '66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb':

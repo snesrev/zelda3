@@ -201,8 +201,8 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-extern struct Ppu *GetPpuForRendering();
-extern struct Dsp *GetDspForRendering();
+extern Ppu *GetPpuForRendering();
+extern Dsp *GetDspForRendering();
 
 static void playAudio(Snes *snes, SDL_AudioDeviceID device, int16_t* audioBuffer) {
   // generate enough samples

@@ -1,5 +1,6 @@
 #pragma once
-
+#ifndef DSP_REGS_H
+#define DSP_REGS_H
 enum DspReg {
   V0VOLL = 0,
   V0VOLR = 1,
@@ -106,3 +107,4 @@ enum DspReg {
   EDL = 0x7D,
   FIR7 = 0x7F,
 };
+#endif

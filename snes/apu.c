@@ -31,8 +31,6 @@ void apu_free(Apu* apu) {
 }
 
 void apu_saveload(Apu *apu, SaveLoadFunc *func, void *ctx) {
-  size_t size = sizeof(struct Apu2);
-  size_t size2 = offsetof(Apu, hist);
   func(ctx, apu->ram, offsetof(Apu, hist) - offsetof(Apu, ram));
   dsp_saveload(apu->dsp, func, ctx);
   spc_saveload(apu->spc, func, ctx);
@@ -157,7 +155,7 @@ void apu_cpuWrite(Apu* apu, uint16_t adr, uint8_t val) {
       int i = apu->hist.count;
       if (i != 256) {
         apu->hist.count = i + 1;
-        apu->hist.addr[i] = (DspReg)apu->dspAdr;
+        apu->hist.addr[i] = (enum DspReg)apu->dspAdr;
         apu->hist.val[i] = val;
       }
       if(apu->dspAdr < 0x80) dsp_write(apu->dsp, apu->dspAdr, val);

@@ -13108,9 +13108,9 @@ void FortuneTeller_PerformPseudoScience(int k) {  // 8dc849
   if (link_sword_type < 4) ADD_MSG(13);
   ADD_MSG(14);
   ADD_MSG(15);
+  int j;
 done:
-
-  int j = ((sram_progress_flags ^= 0x40) & 0x40) != 0;
+  j = ((sram_progress_flags ^= 0x40) & 0x40) != 0;
   Sprite_ShowMessageUnconditional(kFortuneTeller_Readings[slots[j]]);
 }
 
@@ -21258,8 +21258,8 @@ void Sprite_9A_Kyameron(int k) {  // 9e9e7b
     sprite_ai_state[k] = 4;
     sprite_delay_main[k] = 15;
     SpriteSfx_QueueSfx2WithPan(k, 0x28);
-skip_sound:
     static const uint8 kKyameron_Moving_Gfx[4] = {3, 2, 1, 0};
+skip_sound:
     sprite_graphics[k] = kKyameron_Moving_Gfx[++sprite_subtype2[k] >> 3 & 3];
     if (!((k ^ frame_counter) & 7)) {
       uint16 x = (GetRandomNumber() & 0xf) - 4;
@@ -24935,6 +24935,7 @@ void OldMan_EnableCutscene() {  // 9ee989
 }
 
 void Sprite_AD_OldMan(int k) {  // 9ee992
+  static const uint16 kOldMountainManMsgs[3] = {0x9e, 0x9f, 0xa0};
   int j;
   OldMountainMan_Draw(k);
   if (Sprite_ReturnIfInactive(k))
@@ -25006,7 +25007,6 @@ void Sprite_AD_OldMan(int k) {  // 9ee992
     }
     break;
   case 2: // sitting at home
-    static const uint16 kOldMountainManMsgs[3] = {0x9e, 0x9f, 0xa0};
     Sprite_BehaveAsBarrier(k);
     if (sprite_ai_state[k]) {
       link_hearts_filler = 160;

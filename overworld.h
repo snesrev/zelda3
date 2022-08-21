@@ -96,7 +96,7 @@ void Overworld_LoadBirdTravelPos(int k);
 void FluteMenu_LoadSelectedScreenPalettes();
 void FindPartnerWhirlpoolExit();
 void Overworld_LoadAmbientOverlay(bool load_map_data);
-void Overworld_LoadAmbientOverlay();
+void Overworld_LoadAmbientOverlayFalse();
 void Overworld_LoadAndBuildScreen();
 void Module08_02_LoadAndAdvance();
 void Overworld_DrawQuadrantsAndOverlays();

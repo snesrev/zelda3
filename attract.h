@@ -1,8 +1,8 @@
 #pragma once
-struct AttractOamInfo {
+typedef struct AttractOamInfo {
   int8 x, y;
   uint8 c, f, e;
-};
+} AttractOamInfo;
 
 
 extern const uint16 kMapMode_Zooms1[224];

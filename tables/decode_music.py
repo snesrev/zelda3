@@ -463,8 +463,8 @@ def extract_sound_data(rom):
   print_song('ending', open('sound_ending.txt', 'w'))
 
 if __name__ == "__main__":
-  ROM = util.LoadedRom()
-  song = sys.argv[1]
+  ROM = util.LoadedRom(sys.argv[1])
+  song = sys.argv[2]
 
   load_song(ROM, song)
   print_song(song, sys.stdout)

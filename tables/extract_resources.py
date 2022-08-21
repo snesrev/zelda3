@@ -10,7 +10,7 @@ import os
 
 PATH=''
 
-ROM = util.LoadedRom()
+ROM = util.LoadedRom(sys.argv[1])
 
 get_byte = ROM.get_byte
 get_word = ROM.get_word

@@ -4,20 +4,19 @@
 #include "nmi.h"
 #include "poly.h"
 #include "attract.h"
-#include "spc_player.h"
 #include "snes/ppu.h"
 
 ZeldaEnv g_zenv;
 // These point to the rewritten instance of the emu.
 uint8 g_ram[131072];
-struct SimpleHdma {
+typedef struct SimpleHdma {
   const uint8 *table;
   const uint8 *indir_ptr;
   uint8 rep_count;
   uint8 mode;
   uint8 ppu_addr;
   uint8 indir_bank;
-};
+} SimpleHdma;
 void SimpleHdma_Init(SimpleHdma *c, DmaChannel *dc);
 void SimpleHdma_DoLine(SimpleHdma *c);
 
@@ -34,6 +33,11 @@ static const uint8 bAdrOffsets[8][4] = {
 static const uint8 transferLength[8] = {
   1, 2, 2, 4, 4, 4, 2, 4
 };
+const uint16 kUpperBitmasks[] = { 0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100, 0x80, 0x40, 0x20, 0x10, 8, 4, 2, 1 };
+const uint8 kLitTorchesColorPlus[] = {31, 8, 4, 0};
+const uint8 kDungeonCrystalPendantBit[13] = {0, 0, 4, 2, 0, 16, 2, 1, 64, 4, 1, 32, 8};
+const int8 kGetBestActionToPerformOnTile_x[4] = { 7, 7, -3, 16 };
+const int8 kGetBestActionToPerformOnTile_y[4] = { 6, 24, 12, 12 };
 #define AT_WORD(x) (uint8)(x), (x)>>8
 // direct
 static const uint8 kAttractDmaTable0[13] = {0x20, AT_WORD(0x00ff), 0x50, AT_WORD(0xe018), 0x50, AT_WORD(0xe018), 1, AT_WORD(0x00ff), 0};
@@ -181,7 +185,7 @@ void ZeldaDrawPpuFrame() {
 }
 
 void HdmaSetup(uint32 addr6, uint32 addr7, uint8 transfer_unit, uint8 reg6, uint8 reg7, uint8 indirect_bank) {
-  struct Dma *dma = g_zenv.dma;
+  Dma *dma = g_zenv.dma;
   if (addr6) {
     dma_write(dma, DMAP6, transfer_unit);
     dma_write(dma, BBAD6, reg6);

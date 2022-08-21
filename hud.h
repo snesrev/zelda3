@@ -6,9 +6,8 @@
 
 
 
-
-
-extern const uint16 *const kHudItemBoxGfxPtrs[];
+typedef uint16 gfx[4];
+extern const gfx * kHudItemBoxGfxPtrs[];
 void Hud_RefreshIcon();
 uint8 CheckPalaceItemPosession();
 void Hud_GotoPrevItem();

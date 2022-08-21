@@ -1,5 +1,6 @@
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #pragma once
 
 typedef uint8_t uint8;
@@ -29,48 +30,43 @@ static inline uint8 abs8(uint8 t) { return sign8(t) ? -t : t; }
 
 static inline uint16 swap16(uint16 v) { return (v << 8) | (v >> 8); }
 
-struct Point16U {
+typedef struct Point16U {
   uint16 x, y;
-};
-struct PointU8 {
+} Point16U;
+typedef struct PointU8 {
   uint8 x, y;
-};
-
-struct Pair16U {
+} PointU8;
+typedef struct Pair16U {
   uint16 a, b;
-};
+} Pair16U;
 
-struct PairU8 {
+typedef struct PairU8 {
   uint8 a, b;
-};
+} PairU8;
 
-struct ProjectSpeedRet {
+typedef struct ProjectSpeedRet {
   uint8 x, y;
   uint8 xdiff, ydiff;
-};
+} ProjectSpeedRet;
 
-struct OamEnt {
+typedef struct OamEnt {
   uint8 x, y, charnum, flags;
-};
+} OamEnt;
 
-struct UploadVram_Row {
+typedef struct UploadVram_Row {
   uint16 col[32];
-};
+} UploadVram_Row;
 
-struct UploadVram_32x32 {
+typedef struct UploadVram_32x32 {
   UploadVram_Row row[32];
-};
+} UploadVram_32x32;
 
-struct UploadVram_3 {
+typedef struct UploadVram_3 {
   uint8 pad[256];
   uint16 data[4];
-};
+} UploadVram_3;
 
-union UploadVram {
-  UploadVram_3 t3;
-};
-
-#define uvram (*(UploadVram*)(&g_ram[0x1000]))
+#define uvram (*(UploadVram_3*)(&g_ram[0x1000]))
 
 typedef void PlayerHandlerFunc();
 typedef void HandlerFuncK(int k);

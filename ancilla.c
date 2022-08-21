@@ -102,10 +102,10 @@ static const uint8 kBombosBlasts_Tab[72] = {
 };
 static const uint8 kQuake_Tab1[5] = {0x17, 0x16, 0x17, 0x16, 0x10};
 static const uint8 kQuakeDrawGroundBolts_Char[15] = { 0x40, 0x42, 0x44, 0x46, 0x48, 0x4a, 0x4c, 0x4e, 0x60, 0x62, 0x64, 0x66, 0x68, 0x6a, 0x63 };
-struct QuakeItem {
+typedef struct QuakeItem {
   int8 x, y;
   uint8 f;
-};
+} QuakeItem;
 static const QuakeItem kQuakeItems[] = {
   {0, -16, 0x00},
   {0, -16, 0x01},
@@ -3273,13 +3273,13 @@ endif_7:
     hookshot_effect_index = k;
   }
 
-do_draw:
   static const int8 kHookShot_Move_X[4] = {0, 0, 8, -8};
   static const int8 kHookShot_Move_Y[4] = {8, -9, 0, 0};
   static const uint8 kHookShot_Draw_Flags[12] = {0, 0, 0xff, 0x80, 0x80, 0xff, 0x40, 0xff, 0x40, 0, 0xff, 0};
   static const uint8 kHookShot_Draw_Char[12] = {9, 0xa, 0xff, 9, 0xa, 0xff, 9, 0xff, 0xa, 9, 0xff, 0xa};
 
   Point16U info;
+do_draw:
   Ancilla_PrepOamCoord(k, &info);
   if (ancilla_L[k])
     oam_priority_value = 0x3000;
@@ -3640,8 +3640,8 @@ skipit:;
     ancilla_arr3[k] = kReceiveItem_Tab4[a];
     WriteTo4BPPBuffer_at_7F4000(kReceiveItem_Tab5[a]);
   }
-endif_12:
   Point16U pt;
+endif_12:
   Ancilla_PrepAdjustedOamCoord(k, &pt);
   Ancilla_ReceiveItem_Draw(k, pt.x, pt.y);
 }
@@ -4032,9 +4032,9 @@ lbl_else:
       return;
     }
   }
+  uint8 astep;
 label_b:
 
-  uint8 astep;
 
   astep = ancilla_step[k];
   if (astep != 0)
@@ -4056,8 +4056,8 @@ label_b:
     AncillaDraw_GTCutsceneCrystal(oam, x, y);
     oam++;
   }
-label_a:
   Point16U info;
+label_a:
   Ancilla_PrepAdjustedOamCoord(k, &info);
 
   breaktowerseal_base_sparkle_x_lo[7] = info.x;

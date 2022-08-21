@@ -7,14 +7,13 @@
 #include "nmi.h"
 #include "poly.h"
 #include "attract.h"
-#include "spc_player.h"
 
 #include "snes/snes.h"
 #include "snes/cpu.h"
 #include "snes/cart.h"
 #include "tracing.h"
 
-#include <vector>
+//#include <vector>
 
 Snes *g_snes;
 Cpu *g_cpu;
@@ -23,23 +22,23 @@ uint8 g_emulated_ram[0x20000];
 
 void SaveLoadSlot(int cmd, int which);
 
-//uint8 *GetPtr(uint32 addr) {
-//  Cart *cart = g_snes->cart;
-//  return &cart->rom[(((addr >> 16) << 15) | (addr & 0x7fff)) & (cart->romSize - 1)];
-//}
+uint8 *GetPtr(uint32 addr) {
+  Cart *cart = g_snes->cart;
+  return &cart->rom[(((addr >> 16) << 15) | (addr & 0x7fff)) & (cart->romSize - 1)];
+}
 
-//extern "C" uint8 *GetCartRamPtr(uint32 addr) {
-//  Cart *cart = g_snes->cart;
-//  return &cart->ram[addr];
-//}
+uint8 *GetCartRamPtr(uint32 addr) {
+  Cart *cart = g_snes->cart;
+  return &cart->ram[addr];
+}
 
-struct Snapshot {
+typedef struct Snapshot {
   uint16 a, x, y, sp, dp, pc;
   uint8 k, db, flags;
   uint8 ram[0x20000];
   uint16 vram[0x8000];
   uint16 sram[0x2000];
-};
+} Snapshot;
 
 static Snapshot g_snapshot_mine, g_snapshot_theirs, g_snapshot_before;
 
@@ -299,16 +298,21 @@ Dsp *GetDspForRendering() {
   return g_zenv.player->dsp;
 }
 
+typedef struct AllocContext {
+  uint8* data;
+  uint32 size;
+} AllocContext;
 
-void saveFunc(void *ctx, void *data, size_t data_size) {
-  std::vector<uint8> *vec = (std::vector<uint8> *)ctx;
-  vec->resize(vec->size() + data_size);
-  memcpy(vec->data() + vec->size() - data_size, data, data_size);
+void saveFunc(void *_ctx, void *data, size_t data_size) {
+  AllocContext *ctx = (AllocContext*)_ctx;
+  ctx->data = realloc(ctx->data, ctx->size + data_size);
+  memcpy(ctx->data + ctx->size, data, data_size);
+  ctx->size += data_size;
 }
 
-struct LoadFuncState {
+typedef struct LoadFuncState {
   uint8 *p, *pend;
-};
+} LoadFuncState;
 
 void loadFunc(void *ctx, void *data, size_t data_size) {
   LoadFuncState *st = (LoadFuncState *)ctx;
@@ -354,10 +358,7 @@ void CopyStateAfterSnapshotRestore(bool is_reset) {
     }
   }
 }
-
-std::vector<uint8> SaveSnesState() {
-  std::vector<uint8> data;
-
+void SaveSnesState(AllocContext *ctx) {
   MakeSnapshot(&g_snapshot_before);
 
   // Copy from my state into the emulator
@@ -369,45 +370,26 @@ std::vector<uint8> SaveSnesState() {
   memcpy(g_snes->apu->dsp->ram, g_zenv.player->dsp->ram, sizeof(Dsp) - offsetof(Dsp, ram));
   memcpy(g_snes->dma->channel, g_zenv.dma->channel, sizeof(Dma) - offsetof(Dma, channel));
 
-  snes_saveload(g_snes, &saveFunc, &data);
-
+  snes_saveload(g_snes, &saveFunc, ctx);
 
   RestoreSnapshot(&g_snapshot_before);
-  return data;
 }
 
+uint16 last_inputs_ = 0;
+uint32 frames_since_last_ = 0;
+uint32 total_frames_ = 0;
 
-class StateRecorder {
-public:
-  StateRecorder() : last_inputs_(0), frames_since_last_(0), total_frames_(0), replay_mode_(false) {}
-  void Record(uint16 inputs);
-  void RecordPatchByte(uint32 addr, const uint8 *value, int num);
+// For replay
+uint32 replay_pos_;
+uint32 replay_frame_counter_;
+uint32 replay_next_cmd_at_;
+uint8 replay_cmd_;
+bool replay_mode_ = false;
 
-  void Load(FILE *f, bool replay_mode);
-  void Save(FILE *f);
-
-  uint16 ReadNextReplayState();
-  bool is_replay_mode() { return replay_mode_;  }
-
-  void MigrateToBaseSnapshot();
-private:
-
-  void RecordJoypadBit(int command);
-  void AppendByte(uint8 v);
-  void AppendVl(uint32 v);
-
-  uint16 last_inputs_;
-  uint32 frames_since_last_;
-  uint32 total_frames_;
-
-  // For replay
-  uint32 replay_pos_, replay_frame_counter_, replay_next_cmd_at_;
-  uint8 replay_cmd_;
-  bool replay_mode_;
-
-  std::vector<uint8> log_;
-  std::vector<uint8> base_snapshot_;
-};
+uint8* log_ = NULL;
+uint32 log_size = 0;
+uint8* base_snapshot_ = NULL;
+uint32 base_snapshot_size = 0;
 
 uint32 RamChecksum() {
   uint64_t cksum = 0, cksum2 = 0;
@@ -418,33 +400,34 @@ uint32 RamChecksum() {
   return cksum ^ (cksum >> 32) ^ cksum2 ^ (cksum2 >> 32);
 }
 
-void StateRecorder::AppendByte(uint8 v) {
-  log_.push_back(v);
+void StateRecorderAppendByte(uint8 v) {
+  log_ = realloc(log_, log_size + sizeof(v));
+  log_[log_size] = v;
   printf("%.2x ", v);
 }
 
-void StateRecorder::AppendVl(uint32 v) {
+void StateRecorderAppendVl(uint32 v) {
   for (; v >= 255; v -= 255)
-    AppendByte(255);
-  AppendByte(v);
+    StateRecorderAppendByte(255);
+  StateRecorderAppendByte(v);
 }
 
-void StateRecorder::RecordJoypadBit(int command) {
+void StateRecorderRecordJoypadBit(int command) {
   int frames = frames_since_last_;
-  AppendByte(command << 4 | (frames < 15 ? frames : 15));
+  StateRecorderAppendByte(command << 4 | (frames < 15 ? frames : 15));
   if (frames >= 15)
-    AppendVl(frames - 15);
+    StateRecorderAppendVl(frames - 15);
   frames_since_last_ = 0;
 }
 
-void StateRecorder::Record(uint16 inputs) {
+void StateRecorderRecord(uint16 inputs) {
   uint16 diff = inputs ^ last_inputs_;
   if (diff != 0) {
     last_inputs_ = inputs;
     printf("0x%.4x %d: ", diff, frames_since_last_);
     for (int i = 0; i < 12; i++) {
       if ((diff >> i) & 1)
-        RecordJoypadBit(i);
+        StateRecorderRecordJoypadBit(i);
     }
     printf("\n");
   }
@@ -452,7 +435,7 @@ void StateRecorder::Record(uint16 inputs) {
   total_frames_++;
 }
 
-void StateRecorder::RecordPatchByte(uint32 addr, const uint8 *value, int num) {
+void StateRecorderRecordPatchByte(uint32 addr, const uint8 *value, int num) {
   assert(addr < 0x20000);
   printf("%d: PatchByte(0x%x, 0x%x. %d): ", frames_since_last_, addr, *value, num);
 
@@ -460,34 +443,36 @@ void StateRecorder::RecordPatchByte(uint32 addr, const uint8 *value, int num) {
 
   int lq = (num - 1) <= 3 ? (num - 1) : 3;
 
-  AppendByte(0xc0 | (frames != 0 ? 1 : 0) | (addr & 0x10000 ? 2 : 0) | lq << 2);
+  StateRecorderAppendByte(0xc0 | (frames != 0 ? 1 : 0) | (addr & 0x10000 ? 2 : 0) | lq << 2);
   if (frames != 0)
-    AppendVl(frames - 1);
+    StateRecorderAppendVl(frames - 1);
   if (lq == 3)
-    AppendVl(num - 1 - 3);
+    StateRecorderAppendVl(num - 1 - 3);
 
   frames_since_last_ = 0;
-  AppendByte(addr >> 8);
-  AppendByte(addr);
+  StateRecorderAppendByte(addr >> 8);
+  StateRecorderAppendByte(addr);
   for(int i = 0; i < num; i++)
-    AppendByte(value[i]);
+    StateRecorderAppendByte(value[i]);
   printf("\n");
 }
 
-void StateRecorder::Load(FILE *f, bool replay_mode) {
+void StateRecorderLoad(FILE *f, bool replay_mode) {
   uint32 hdr[8] = { 0 };
   fread(hdr, 8, 4, f);
 
   assert(hdr[0] == 1);
 
   total_frames_ = hdr[1];
-  log_.resize(hdr[2]);
-  fread(log_.data(), 1, hdr[2], f);
+  log_size = hdr[2];
+  log_ = realloc(log_, log_size);
+  fread(log_, 1, log_size, f);
   last_inputs_ = hdr[3];
   frames_since_last_ = hdr[4];
 
-  base_snapshot_.resize((hdr[5] & 1) ? hdr[6] : 0);
-  fread(base_snapshot_.data(), 1, base_snapshot_.size(), f);
+  base_snapshot_size = (hdr[5] & 1) ? hdr[6] : 0;
+  base_snapshot_ = realloc(base_snapshot_, base_snapshot_size);
+  fread(base_snapshot_, 1, base_snapshot_size, f);
 
   bool is_reset = false;
   replay_mode_ = replay_mode;
@@ -499,8 +484,8 @@ void StateRecorder::Load(FILE *f, bool replay_mode) {
     replay_cmd_ = 0xff;
     // Load snapshot from |base_snapshot_|, or reset if empty.
 
-    if (base_snapshot_.size()) {
-      LoadFuncState state = { base_snapshot_.data(), base_snapshot_.data() + base_snapshot_.size() };
+    if (base_snapshot_size) {
+      LoadFuncState state = { base_snapshot_, base_snapshot_ + base_snapshot_size };
       snes_saveload(g_snes, &loadFunc, &state);
       assert(state.p == state.pend);
     } else {
@@ -509,50 +494,52 @@ void StateRecorder::Load(FILE *f, bool replay_mode) {
       is_reset = true;
     }
   } else {
-    std::vector<uint8> data;
-    data.resize(hdr[6]);
-    fread(data.data(), 1, data.size(), f);
+    AllocContext context = {malloc(hdr[6]), hdr[6]};
+    fread(context.data, 1, context.size, f);
 
-    LoadFuncState state = { data.data(), data.data() + data.size() };
+    LoadFuncState state = { context.data, context.data + context.size };
     snes_saveload(g_snes, &loadFunc, &state);
     assert(state.p == state.pend);
   }
   CopyStateAfterSnapshotRestore(is_reset);
 }
 
-void StateRecorder::Save(FILE *f) {
+void StateRecorderSave(FILE *f) {
   uint32 hdr[8] = { 0 };
-
-  std::vector<uint8> data = SaveSnesState();
-  assert(base_snapshot_.size() == 0 || base_snapshot_.size() == data.size());
+  AllocContext context = {};
+  SaveSnesState(&context);
+  assert(base_snapshot_size == 0 || base_snapshot_size == context.size);
 
   hdr[0] = 1;
   hdr[1] = total_frames_;
-  hdr[2] = log_.size();
+  hdr[2] = log_size;
   hdr[3] = last_inputs_;
   hdr[4] = frames_since_last_;
-  hdr[5] = (base_snapshot_.size() ? 1 : 0);
-  hdr[6] = data.size();
+  hdr[5] = base_snapshot_size ? 1 : 0;
+  hdr[6] = context.size;
 
   fwrite(hdr, 8, 4, f);
-  fwrite(log_.data(), 1, log_.size(), f);
-  fwrite(base_snapshot_.data(), 1, base_snapshot_.size(), f);
-  fwrite(data.data(), 1, data.size(), f);
+  fwrite(log_, 1, log_size, f);
+  fwrite(base_snapshot_, 1, base_snapshot_size, f);
+  fwrite(context.data, 1, context.size, f);
 }
 
-void StateRecorder::MigrateToBaseSnapshot() {
+void StateRecorderMigrateToBaseSnapshot() {
   printf("Migrating to base snapshot!\n");
-  std::vector<uint8> data = SaveSnesState();
-  base_snapshot_ = std::move(data);
+  AllocContext context;
+  SaveSnesState(&context);
+  base_snapshot_ = context.data;
+  base_snapshot_size = context.size;
 
   replay_mode_ = false;
   frames_since_last_ = 0;
   last_inputs_ = 0;
   total_frames_ = 0;
-  log_.clear();
+  log_size = 0;
+  log_ = realloc(log_, log_size);
 }
 
-uint16 StateRecorder::ReadNextReplayState() {
+uint16 StateRecorderReadNextReplayState() {
   assert(replay_mode_);
   while (frames_since_last_ >= replay_next_cmd_at_) {
     frames_since_last_ = 0;
@@ -576,7 +563,7 @@ uint16 StateRecorder::ReadNextReplayState() {
         assert(0);
       }
     }
-    if (replay_pos_ >= log_.size()) {
+    if (replay_pos_ >= log_size) {
       replay_cmd_ = 0xff;
       replay_next_cmd_at_ = 0xffffffff;
       break;
@@ -599,7 +586,6 @@ uint16 StateRecorder::ReadNextReplayState() {
   return last_inputs_;
 }
 
-StateRecorder input_recorder;
 static int frame_ctr;
 
 bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
@@ -611,17 +597,17 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
   }
 
   // Either copy state or apply state
-  if (input_recorder.is_replay_mode()) {
-    input_state = input_recorder.ReadNextReplayState();
+  if (replay_mode_) {
+    input_state = StateRecorderReadNextReplayState();
   } else {
-    input_recorder.Record(input_state);
+    StateRecorderRecord(input_state);
     turbo = false;
 
     // This is whether APUI00 is true or false, this is used by the ancilla code.
     uint8 apui00 = g_zenv.player->port_to_snes[0] != 0;
     if (apui00 != g_ram[0x648]) {
       g_emulated_ram[0x648] = g_ram[0x648] = apui00;
-      input_recorder.RecordPatchByte(0x648, &apui00, 1);
+      StateRecorderRecordPatchByte(0x648, &apui00, 1);
     }
   }
 
@@ -733,7 +719,6 @@ void PatchRom(uint8_t *rom) {
     .9B:C049 85 00                 mov.w   R0, A
     .9B:C04B 68                    pop     A
     .9B:C04C 85 02                 mov.w   R2, A
-
     */
     uint8_t *tp = rom + 0x6ffd8;
     *tp++ = 0xa5; *tp++ = 0x00; *tp++ = 0x48;
@@ -841,34 +826,20 @@ void SaveLoadSlot(int cmd, int which) {
       cmd==kSaveLoad_Save ? "Saving" : cmd==kSaveLoad_Load ? "Loading" : "Replaying", which);
 
     if (cmd != kSaveLoad_Save)
-      input_recorder.Load(f, cmd == kSaveLoad_Replay);
+      StateRecorderLoad(f, cmd == kSaveLoad_Replay);
     else
-      input_recorder.Save(f);
+      StateRecorderSave(f);
 
     fclose(f);
   }
 }
-
-class PatchRamByteBatch {
-public:
-  PatchRamByteBatch() : count_(0), addr_(0) {}
-  ~PatchRamByteBatch();
-  void Patch(uint32 addr, uint8 value);
-
-private:
-  uint32 count_, addr_;
-  uint8 vals_[256];
-};
-
-PatchRamByteBatch::~PatchRamByteBatch() {
-  if (count_)
-    input_recorder.RecordPatchByte(addr_, vals_, count_);
-}
-
-void PatchRamByteBatch::Patch(uint32 addr, uint8 value) {
+uint32 count_ = 0;
+uint32 addr_ = 0;
+uint8 vals_[256];
+void patch(uint32 addr, uint8 value) {
   if (count_ >= 256 || addr != addr_ + count_) {
     if (count_)
-      input_recorder.RecordPatchByte(addr_, vals_, count_);
+      StateRecorderRecordPatchByte(addr_, vals_, count_);
     addr_ = addr;
     count_ = 0;
   }
@@ -876,16 +847,16 @@ void PatchRamByteBatch::Patch(uint32 addr, uint8 value) {
 
   g_emulated_ram[addr] = g_ram[addr] = value;
 }
-
 void PatchCommand(char c) {
-  PatchRamByteBatch b;
   if (c == 'w') {
-    b.Patch(0xf372, 80);  // health filler
-    b.Patch(0xf373, 80);  // magic filler
-//    b.Patch(0x1FE01, 25);
+    patch(0xf372, 80);  // health filler
+    patch(0xf373, 80);  // magic filler
+    //    b.Patch(0x1FE01, 25);
   } else if (c == 'k') {
-    input_recorder.MigrateToBaseSnapshot();
+    StateRecorderMigrateToBaseSnapshot();
   } else if (c == 'o') {
-    b.Patch(0xf36f, 1);
+    patch(0xf36f, 1);
   }
+  if (count_)
+    StateRecorderRecordPatchByte(addr_, vals_, count_);
 }

@@ -1,6 +1,8 @@
 /.vs/
+/.vscode/
 .DS_Store
 *.dSYM
+*.sfc
 /Debug
 /Release
 /x64
@@ -10,3 +12,6 @@
 /tables/old/
 /saves/*.sav
 __pycache__
+*.o
+*.exe
+*.out

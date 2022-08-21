@@ -2745,7 +2745,7 @@ void RenderText_FindYItem_Next() {  // 8ecded
 
 void RenderText_DrawSelectedYItem() {  // 8ece14
   int item = choice_in_multiselect_box;
-  const uint16 *p = kHudItemBoxGfxPtrs[item];
+  const uint16 *p = kHudItemBoxGfxPtrs[item][0];
   p += ((item == 3 || item == 32) ? 1 : (&link_item_bow)[item]) * 4;
   uint8 *vwf300 = &g_ram[0x1300];
   memcpy(vwf300 + 0xc2, p, 4);

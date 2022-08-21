@@ -5,36 +5,45 @@ A reimplementation of Zelda 3.
 
 This is a reverse engineered clone of Zelda 3 - A Link to the Past.
 
-It's around 70-80kLOC of C/C++ code, and reimplements all parts of the original game. The game is playable from start to end.
+It's around 70-80kLOC of C99 code, and reimplements all parts of the original game. The game is playable from start to end.
 
 You need a copy of the ROM to extract game resources (levels, images). Then once that's done, the ROM is no longer needed.
 
-It uses the PPU and DSP implementation from LakeSnes. Additionally, it can be configured to also run the original machine code side by side. Then the RAM state is compared after each frame, to verify that the C++ implementation is correct.
+It uses the PPU and DSP implementation from [LakeSnes](https://github.com/elzo-d/LakeSnes).
+Additionally, it can be configured to also run the original machine code side by side. Then the RAM state is compared after each frame, to verify that the C++ implementation is correct.
 
 I got much assistance from spannierism's Zelda 3 JP disassembly and the other ones that documented loads of function names and variables.
 
-## Compiling
+## Dependencies
 
-Put the ROM in tables/zelda3.sfc
+- the `libsdl2-dev` library (ubuntu: `apt install libsdl2-dev`, macOS: `brew install sdl2`)
+- a `tables/zelda3.sfc` ROM file (for asset extraction step only)
+- The `pillow` and `pyyaml` python dependencies used by assets extractor
 
-`cd tables`
-
-Install python dependencies: `pip install pillow` and `pip install pyyaml`
-
-Run `python extract_resources.py` to extract resources from the ROM into a more human readable format.
-
-Run `python compile_resources.py` to produce .h files that gets included by the C++ code.
+```
+cd tables; pip install pillow pyyaml
+```
 
 ### Windows
 Build the .sln file with Visual Studio
 
 ### Linux
-`apt install libsdl2-dev`
 
-Make sure you are in the root directory.
+```sh
+make
+```
 
-`clang++ -I/usr/include/SDL2 -lSDL2 -O2 -ozelda3 *.cpp snes/*.cpp`
+You can set `make` variables to use custom compilation flags or custom compiler:
 
+```sh
+make # will use default compiler
+CC=gcc make
+CC=clang make
+CFLAGS=-O2 make
+CFLAGS=-DSDL_DISABLE_IMMINTRIN_H CC=tcc make
+CFLAGS=-DSDL_DISABLE_IMMINTRIN_H CC=chibicc make # also need SDL.h tweaking
+CFLAGS=-m32 LDFLAGS=-m32 make # compile and link as x86 executable
+```
 
 ## Usage and controls
 

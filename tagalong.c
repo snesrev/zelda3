@@ -41,13 +41,13 @@ static const uint8 kTagalong_IndoorOffsets[8] = {0, 3, 6, 7, 9, 10, 11, 12};
 static const uint8 kTagalong_OutdoorOffsets[4] = {0, 1, 4, 5};
 static const uint16 kTagalong_IndoorRooms[7] = {0xf1, 0x61, 0x51, 2, 0xdb, 0xab, 0x22};
 static const uint16 kTagalong_OutdoorRooms[3] = {3, 0x5e, 0};
-struct TagalongSprXY {
+typedef struct TagalongSprXY {
   int8 y1, x1, y2, x2;
-};
-struct TagalongDmaFlags {
+} TagalongSprXY;
+typedef struct TagalongDmaFlags {
   uint8 dma6, dma7;
   uint8 flags;
-};
+} TagalongDmaFlags;
 static const TagalongSprXY kTagalongDraw_SprXY[56] = {
   {-2, 0, 0, 0},
   {-2, 0, 0, 0},
@@ -393,8 +393,8 @@ void Follower_BasicMover() {  // 89a197
   }
 
   if (link_x_vel | link_y_vel) {
-label_e:
     uint8 t;
+label_e:
     t = tagalong_var1 - 15;
     if (sign8(t))
       t += 20;
@@ -643,9 +643,9 @@ incr:
     bytewise_extended_oam[oam - oam_buf] = ext;
     oam++;
   }
+  uint8 pal;
 skip_first_sprites:
-
-  uint8 pal = kTagalongDraw_Pals[savegame_tagalong];
+  pal = kTagalongDraw_Pals[savegame_tagalong];
   if (pal == 7 && overworld_palette_swap_flag)
     pal = 0;
 
