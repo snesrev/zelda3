@@ -8,5 +8,8 @@
 /tables/dungeon/*.yaml
 /tables/img/
 /tables/old/
+/tables/zelda3.sfc
 /saves/*.sav
+/zelda3
 __pycache__
+*.o

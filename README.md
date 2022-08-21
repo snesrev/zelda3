@@ -33,7 +33,7 @@ Build the .sln file with Visual Studio
 
 Make sure you are in the root directory.
 
-`clang++ -I/usr/include/SDL2 -lSDL2 -O2 -ozelda3 *.cpp snes/*.cpp`
+`make -j$(nproc)`
 
 
 ## Usage and controls
