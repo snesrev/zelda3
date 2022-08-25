@@ -35,6 +35,13 @@ Make sure you are in the root directory.
 
 `clang++ -I/usr/include/SDL2 -lSDL2 -O2 -ozelda3 *.cpp snes/*.cpp`
 
+### macOS
+`brew install sdl2`
+
+Make sure you are in the root directory.
+```
+clang++ `sdl2-config --cflags` -O2 -ozelda3 *.cpp snes/*.cpp `sdl2-config --libs`
+```
 
 ## Usage and controls
 
