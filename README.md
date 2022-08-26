@@ -26,7 +26,10 @@ Run `python extract_resources.py` to extract resources from the ROM into a more 
 Run `python compile_resources.py` to produce .h files that gets included by the C++ code.
 
 ### Windows
-Build the .sln file with Visual Studio
+
+- Clone SDL2 repo from https://wiki.libsdl.org/SourceCode
+- Place the SDL folder on the same level as zelda3
+- Build the .sln file with Visual Studio 2022
 
 ### Linux
 `apt install libsdl2-dev`
