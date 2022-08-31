@@ -61,8 +61,7 @@ def print_dialogue():
   print_int_array('kDialogueText', new_r, 'uint8', True, 16, file = f)
   f.close()
 
-ROM = util.LoadedRom(sys.argv[1])
-
+ROM = util.LoadedRom(sys.argv[1] if len(sys.argv) >= 2 else None)
 
 kCompSpritePtrs = [
   0x10f000,0x10f600,0x10fc00,0x118200,0x118800,0x118e00,0x119400,0x119a00,
