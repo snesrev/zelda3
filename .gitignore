@@ -9,4 +9,5 @@
 /tables/img/
 /tables/old/
 /saves/*.sav
+/.vs/
 __pycache__

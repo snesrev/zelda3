@@ -52,7 +52,8 @@ int main(int argc, char** argv) {
     printf("Failed to init SDL: %s\n", SDL_GetError());
     return 1;
   }
-  SDL_Window* window = SDL_CreateWindow("Zelda3", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, 512, 480, 0);
+  uint32 win_flags = SDL_WINDOWPOS_UNDEFINED;
+  SDL_Window* window = SDL_CreateWindow("Zelda3", SDL_WINDOWPOS_UNDEFINED, win_flags, 512, 480, 0);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());
     return 1;
@@ -101,57 +102,64 @@ int main(int argc, char** argv) {
   // sdl loop
   bool running = true;
   SDL_Event event;
-  uint32_t lastTick = SDL_GetTicks();
-  uint32_t curTick = 0;
-  uint32_t delta = 0;
+  uint32 lastTick = SDL_GetTicks();
+  uint32 curTick = 0;
+  uint32 delta = 0;
   int numFrames = 0;
   bool cpuNext = false;
   bool spcNext = false;
   int counter = 0;
   bool paused = false;
   bool turbo = true;
-  uint32_t frameCtr = 0;
-
-  printf("%d\n", *(int *)snes->cart->ram);
+  uint32 frameCtr = 0;
 
   while(running) {
     while(SDL_PollEvent(&event)) {
       switch(event.type) {
-        case SDL_KEYDOWN: {
-          switch(event.key.keysym.sym) {
-            case SDLK_e:
-              if (snes) {
-                snes_reset(snes, event.key.keysym.sym == SDLK_e);
-                CopyStateAfterSnapshotRestore(true);
-              }
-              break;
-            case SDLK_p: paused ^= true; break;
-            case SDLK_w:
-              PatchCommand('w');
-              break;
-            case SDLK_o:
-              PatchCommand('o');
-              break;
-            case SDLK_k:
-              PatchCommand('k');
-              break;
-            case SDLK_t:
-              turbo = !turbo;
-              break;
+      case SDL_KEYDOWN: {
+        bool skip_default = false;
+        switch(event.key.keysym.sym) {
+        case SDLK_e:
+          if (snes) {
+            snes_reset(snes, event.key.keysym.sym == SDLK_e);
+            CopyStateAfterSnapshotRestore(true);
           }
+          break;
+        case SDLK_p: paused ^= true; break;
+        case SDLK_w:
+          PatchCommand('w');
+          break;
+        case SDLK_o:
+          PatchCommand('o');
+          break;
+        case SDLK_k:
+          PatchCommand('k');
+          break;
+        case SDLK_t:
+          turbo = !turbo;
+          break;
+        case SDLK_RETURN:
+          if (event.key.keysym.mod & KMOD_ALT) {
+            win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
+            SDL_SetWindowFullscreen(window, win_flags);
+            skip_default = true;
+          }
+          break;
+        }
+        if (!skip_default)
           handleInput(event.key.keysym.sym, event.key.keysym.mod, true);
-          break;
-        }
-        case SDL_KEYUP: {
-          handleInput(event.key.keysym.sym, event.key.keysym.mod, false);
-          break;
-        }
-        case SDL_QUIT: {
-          running = false;
-          break;
-        }
+        break;
+      }
+      case SDL_KEYUP: {
+        handleInput(event.key.keysym.sym, event.key.keysym.mod, false);
+        break;
+      }
+      case SDL_QUIT: {
+        running = false;
+        break;
       }
     }
+  }
 
     if (paused) {
       SDL_Delay(16);
