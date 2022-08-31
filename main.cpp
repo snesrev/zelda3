@@ -70,6 +70,75 @@ void ZeldaWriteSram() {
   }
 }
 
+const int NATIVE_WIDTH = 512;
+const int NATIVE_HEIGHT = 480;
+int zoom = -1;
+
+static void doZoom(SDL_Window* window, SDL_Renderer* renderer, int zoomIn) {
+  float w = NATIVE_WIDTH;
+  float h = NATIVE_HEIGHT;
+
+  SDL_SetWindowFullscreen(window, SDL_WINDOW_SHOWN);  // disable fullscreen
+  int screen = SDL_GetWindowDisplayIndex(window);
+  if (screen < 0) screen = 0;
+
+  if (zoomIn > 0)
+    zoom++;
+  else if (zoomIn == 0)
+    zoom--;
+
+  if (zoom < 0) {  // autosize
+    SDL_Rect bounds;
+    if (SDL_GetDisplayUsableBounds(screen, &bounds) == 0) {  // note this takes into effect Windows display scaling, i.e., resolution is divided by scale factor
+      int bw = bounds.w;
+      int bh = bounds.h;
+      int t, l, b, r;
+      if (SDL_GetWindowBordersSize(window, &t, &l, &b, &r) == 0) {  // this call may take a while before it is reported by Windows (or not at all in my testing)
+        bw = bw - l - r;
+        bh = bh - t - b;
+      } else {  // guess based on Windows 10/11 defaults
+        bw -= 2;
+        bh -= 32;
+      }
+      w = bw;
+      h = bh;
+      float nratio = (float)NATIVE_HEIGHT / (float)NATIVE_WIDTH;  // 480/512 = 0.9375
+      float ratio = h / w;  // 2160/3840 = 0.5625  // 1200/1920 = 0.625
+
+      // determine maximum window size for screen
+      int i;
+      for (i = 1; i <= 20; i++) {
+        if (bw > NATIVE_WIDTH * i && bh > NATIVE_HEIGHT * i) {
+          w = NATIVE_WIDTH * i;
+          h = NATIVE_HEIGHT * i;
+        } else {
+          i--;
+          break;
+        }
+      }
+
+      if (i == 0) {
+        w = NATIVE_WIDTH / 2;
+        h = NATIVE_HEIGHT / 2;
+      }
+      zoom = -1;
+    } else {
+      zoom = 1;
+    }
+  } else if (zoom == 0) {
+    w = NATIVE_WIDTH / 2;
+    h = NATIVE_HEIGHT / 2;
+  } else {
+    if (zoom > 20) zoom = 20;
+    w = NATIVE_WIDTH * zoom;
+    h = NATIVE_HEIGHT * zoom;
+  }
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
+  SDL_RenderSetLogicalSize(renderer, (int)w, (int)h);
+  SDL_SetWindowSize(window, (int)w, (int)h);
+  SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+}
+
 #undef main
 int main(int argc, char** argv) {
   // set up SDL
@@ -78,7 +147,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   uint32 win_flags = SDL_WINDOWPOS_UNDEFINED;
-  SDL_Window* window = SDL_CreateWindow("Zelda3", SDL_WINDOWPOS_UNDEFINED, win_flags, 512, 480, 0);
+  SDL_Window* window = SDL_CreateWindow("Zelda3", SDL_WINDOWPOS_UNDEFINED, win_flags, NATIVE_WIDTH, NATIVE_HEIGHT, 0);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());
     return 1;
@@ -88,7 +157,12 @@ int main(int argc, char** argv) {
     printf("Failed to create renderer: %s\n", SDL_GetError());
     return 1;
   }
-  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STREAMING, 512, 480);
+
+  if (zoom < 0) {  // autosize
+    doZoom(window, renderer, zoom);
+  }
+
+  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STREAMING, NATIVE_WIDTH, NATIVE_HEIGHT);
   if(texture == NULL) {
     printf("Failed to create texture: %s\n", SDL_GetError());
     return 1;
@@ -172,6 +246,12 @@ int main(int argc, char** argv) {
         case SDLK_t:
           turbo = !turbo;
           break;
+        case SDLK_KP_MINUS:
+            doZoom(window, renderer, false);
+            break;
+        case SDLK_KP_PLUS:
+            doZoom(window, renderer, true);
+            break;
         case SDLK_RETURN:
           if (event.key.keysym.mod & KMOD_ALT) {
             win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;

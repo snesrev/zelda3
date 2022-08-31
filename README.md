@@ -76,6 +76,7 @@ Additionally, the following commands are available:
 | T   | Toggle replay turbo   |
 | K   | Clear all input history from current snapshot  |
 | F1-F10 | Load snapshot      |
+| Keypad +/- | Resize window         |
 | Alt+Enter | Toggle Fullscreen     |
 | Shift+F1-F10 | Save snapshot |
 | Ctrl+F1-F10 | Replay the snapshot |
