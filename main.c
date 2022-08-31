@@ -144,7 +144,15 @@ int main(int argc, char** argv) {
             CopyStateAfterSnapshotRestore(true);
           }
           break;
-        case SDLK_p: paused ^= true; break;
+        case SDLK_p:
+          paused ^= true;
+          if (paused) {
+            SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+            SDL_SetRenderDrawColor(renderer, 0, 0, 0, 159);
+            SDL_RenderFillRect(renderer, NULL);
+            SDL_RenderPresent(renderer);
+          }
+          break;
         case SDLK_w:
           PatchCommand('w');
           break;
