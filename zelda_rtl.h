@@ -91,7 +91,19 @@ struct MirrorHdmaVars {
 };
 
 
-// Various level tables
+// Special RAM locations that are unused but I use for compat things.
+enum {
+  kRam_APUI00 = 0x648,
+  kRam_CrystalRotateCounter = 0x649,
+  kRam_BugsFixed = 0x64a,
+};
+
+enum {
+  // Poly rendered uses correct speed
+  kBugFix_PolyRenderer = 1,
+  kBugFix_AncillaOverwrites = 1,
+  kBugFix_Latest = 1,
+};
 
 
 #define scratch_0 (*(uint16*)(g_ram+0x72))
@@ -183,7 +195,7 @@ void HdmaSetup(uint32 addr6, uint32 addr7, uint8 transfer_unit, uint8 reg6, uint
 void ZeldaInitializationCode();
 void ZeldaRunGameLoop();
 void ZeldaInitialize();
-void ZeldaRunFrame(uint16 input);
+void ZeldaRunFrame(uint16 input, int run_what);
 void ClearOamBuffer();
 void Startup_InitializeMemory();
 void LoadSongBank(const uint8 *p);

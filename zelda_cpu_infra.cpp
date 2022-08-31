@@ -103,6 +103,10 @@ static void VerifySnapshotsEq(Snapshot *b, Snapshot *a, Snapshot *prev) {
   b->ram[0xa0] = a->ram[0xa0];
   b->ram[0x128] = a->ram[0x128];  // irq_flag
   b->ram[0x463] = a->ram[0x463];  // which_staircase_index_padding
+
+  // c code is authoritative
+  WORD(a->ram[0x1f0a]) = WORD(b->ram[0x1f0a]);
+
   memcpy(&b->ram[0x1f0d], &a->ram[0x1f0d], 0x3f - 0xd);
   memcpy(b->ram + 0x138, a->ram + 0x138, 256 - 0x38); // copy the stack over
 
@@ -242,6 +246,12 @@ void RunEmulatedFuncSilent(uint32 pc, uint16 a, uint16 x, uint16 y, bool mf, boo
 }
 
 void RunOrigAsmCodeOneLoop(Snes *snes) {
+  Cpu *cpu = snes->cpu;
+  cpu->a = cpu->x = cpu->y = 0;
+  cpu->e = false;
+  cpu->irqWanted = cpu->nmiWanted = cpu->waiting = cpu->stopped = 0;
+  cpu_setFlags(cpu, 0x30);
+
   // Run until the wait loop in Interrupt_Reset,
   // Or the polyhedral main function.
   for(int loops = 0;;loops++) {
@@ -251,22 +261,39 @@ void RunOrigAsmCodeOneLoop(Snes *snes) {
       dma_doDma(snes->dma);
 
     uint32_t pc = snes->cpu->k << 16 | snes->cpu->pc;
-    if (pc == 0x8034 || pc == 0x9f81d && loops >= 10)
+    if (pc == 0x8034 || pc == 0x9f81d && loops >= 10 || pc == 0x8225 || pc == 0x82D2)
       break;
   }
 }
 
-void RunEmulatedSnesFrame(Snes *snes) {
+void RunEmulatedSnesFrame(Snes *snes, int run_what) {
   // First call runs until init
   if (snes->cpu->pc == 0x8000 && snes->cpu->k == 0) {
     RunOrigAsmCodeOneLoop(snes);
     g_emulated_ram[0x12] = 1;
-
     // Fixup uninitialized variable
     *(uint16*)(g_emulated_ram+0xAE0) = 0xb280;
     *(uint16*)(g_emulated_ram+0xAE2) = 0xb280 + 0x60;
   }
-  RunOrigAsmCodeOneLoop(snes);
+
+  // Run poly code
+  if (run_what & 2) {
+    Cpu *cpu = snes->cpu;
+    cpu->sp = 0x1f3e;
+    cpu->pc = 0xf81d;
+    cpu->db = cpu->k = 9;
+    cpu->dp = 0x1f00;
+    RunOrigAsmCodeOneLoop(snes);
+  }
+    
+  // Run main code
+  if (run_what & 1) {
+    Cpu *cpu = g_snes->cpu;
+    cpu->sp = 0x1ff;
+    cpu->pc = 0x8034;
+    cpu->k = cpu->dp = cpu->db = 0;
+    RunOrigAsmCodeOneLoop(snes);
+  }
 
   snes_doAutoJoypad(snes);
 
@@ -277,17 +304,13 @@ void RunEmulatedSnesFrame(Snes *snes) {
   // In one code path flag_update_hud_in_nmi uses an undefined value
   snes_write(snes, DMAP0, 0x01);
   snes_write(snes, BBAD0, 0x18);
-  snes->cpu->nmiWanted = true;
-  for (;;) {
-    snes_printCpuLine(snes);
-    cpu_runOpcode(snes->cpu);
-    while (snes->dma->dmaBusy)
-      dma_doDma(snes->dma);
 
-    uint32_t pc = snes->cpu->k << 16 | snes->cpu->pc;
-    if (pc == 0x8039 || pc == 0x9f81d)
-      break;
-  }
+  // Run NMI handler
+  Cpu *cpu = g_snes->cpu;
+  cpu->sp = 0x1ff;
+  cpu->pc = 0x80D9;
+  cpu->k = cpu->dp = cpu->db = 0;
+  RunOrigAsmCodeOneLoop(snes);
 }
 
 struct Ppu *GetPpuForRendering() {
@@ -332,27 +355,6 @@ void CopyStateAfterSnapshotRestore(bool is_reset) {
   memcpy(g_zenv.dma->channel, g_snes->dma->channel, sizeof(Dma) - offsetof(Dma, channel));
   
   g_zenv.player->timer_cycles = 0;
-
-  if (!is_reset) {
-    // Setup some fake cpu state cause we can't depend on the savegame's
-    Cpu *cpu = g_snes->cpu;
-    cpu->a = cpu->x = cpu->y = 0;
-    cpu->pc = 0x8034;
-    cpu->sp = 0x1ff;
-    cpu->k = cpu->dp = cpu->db = 0;
-    cpu_setFlags(cpu, 0x30);
-    cpu->irqWanted = cpu->nmiWanted = cpu->waiting = cpu->stopped = 0;
-    cpu->e = false;
-
-    if (thread_other_stack == 0x1f2) {
-      cpu->sp = 0x1f3e;
-      cpu->pc = 0xf81d;
-      cpu->db = cpu->k = 9;
-      cpu->dp = 0x1f00;
-      static const uint8 kStackInit[] = { 0x82, 0, 0, 0, 0, 0, 0, 0, 0x40, 0xb7, 0xb0, 0x34, 0x80, 0 };
-      memcpy(g_snes->ram + 0x1f2, kStackInit, sizeof(kStackInit));
-    }
-  }
 }
 
 std::vector<uint8> SaveSnesState() {
@@ -602,6 +604,12 @@ uint16 StateRecorder::ReadNextReplayState() {
 StateRecorder input_recorder;
 static int frame_ctr;
 
+int IncrementCrystalCountdown(uint8 *a, int v) {
+  int t = *a + v;
+  *a = t;
+  return t >> 8;
+}
+
 bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
   frame_ctr++;
 
@@ -619,14 +627,34 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
 
     // This is whether APUI00 is true or false, this is used by the ancilla code.
     uint8 apui00 = g_zenv.player->port_to_snes[0] != 0;
-    if (apui00 != g_ram[0x648]) {
-      g_emulated_ram[0x648] = g_ram[0x648] = apui00;
-      input_recorder.RecordPatchByte(0x648, &apui00, 1);
+    if (apui00 != g_ram[kRam_APUI00]) {
+      g_emulated_ram[kRam_APUI00] = g_ram[kRam_APUI00] = apui00;
+      input_recorder.RecordPatchByte(kRam_APUI00, &apui00, 1);
+    }
+
+    // Whenever we're no longer replaying, we'll remember what bugs were fixed,
+    // but only if game is initialized.
+    if (g_ram[kRam_BugsFixed] < kBugFix_Latest && animated_tile_data_src != 0) {
+      g_emulated_ram[kRam_BugsFixed] = g_ram[kRam_BugsFixed] = kBugFix_Latest;
+      input_recorder.RecordPatchByte(kRam_BugsFixed, &g_ram[kRam_BugsFixed], 1);
     }
   }
 
+  int run_what;
+  if (g_ram[kRam_BugsFixed] < kBugFix_PolyRenderer) {
+    // A previous version of this code alternated the game loop with
+    // the poly renderer.
+    run_what = (is_nmi_thread_active && thread_other_stack != 0x1f31) ? 2 : 1;
+  } else {
+    // The snes seems to let poly rendering run for a little
+    // while each fram until it eventually completes a frame.
+    // Simulate this by rendering the poly every n:th frame.
+    run_what = (is_nmi_thread_active && IncrementCrystalCountdown(&g_ram[kRam_CrystalRotateCounter], virq_trigger)) ? 3 : 1;
+    g_emulated_ram[kRam_CrystalRotateCounter] = g_ram[kRam_CrystalRotateCounter];
+  }
+  
   if (snes == NULL) {
-    ZeldaRunFrame(input_state);
+    ZeldaRunFrame(input_state, run_what);
     return turbo;
   }
 
@@ -644,12 +672,12 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
 again:
   // Run orig version then snapshot
   snes->input1->currentState = input_state;
-  RunEmulatedSnesFrame(snes);
+  RunEmulatedSnesFrame(snes, run_what);
   MakeSnapshot(&g_snapshot_theirs);
 
   // Run my version and snapshot
 again_mine:
-  ZeldaRunFrame(input_state);
+  ZeldaRunFrame(input_state, run_what);
   
   MakeMySnapshot(&g_snapshot_mine);
 

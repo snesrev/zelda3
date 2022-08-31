@@ -61,7 +61,7 @@ uint8_t zelda_read_apui00() {
   // from the apu and we don't want to make the core code
   // dependent on the apu timings, so relocated this value
   // to 0x648.
-  return g_ram[0x648];
+  return g_ram[kRam_APUI00];
 }
 
 uint8_t zelda_apu_read(uint32_t adr) {
@@ -237,21 +237,22 @@ void ZeldaInitialize() {
   ppu_reset(g_zenv.ppu);
 }
 
-void ZeldaRunFrame(uint16 input) {
+void ZeldaRunPolyLoop() {
+  if (intro_did_run_step && !nmi_flag_update_polyhedral) {
+    Poly_RunFrame();
+    intro_did_run_step = 0;
+    nmi_flag_update_polyhedral = 0xff;
+  }
+}
+
+void ZeldaRunFrame(uint16 input, int run_what) {
   if (animated_tile_data_src == 0)
     ZeldaInitializationCode();
 
-  // When poly is active, the main game loop is not run. They alternate.
-  if (is_nmi_thread_active && thread_other_stack != 0x1f31) {
-    if (intro_did_run_step && !nmi_flag_update_polyhedral) {
-      Poly_RunFrame();
-      intro_did_run_step = 0;
-      nmi_flag_update_polyhedral = 0xff;
-    }
-  } else {
+  if (run_what & 2)
+    ZeldaRunPolyLoop();
+  if (run_what & 1)
     ZeldaRunGameLoop();
-  }
-
   Interrupt_NMI(input);
 }
 
