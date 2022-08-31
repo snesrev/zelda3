@@ -10,7 +10,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #endif
-
+#include <math.h>
 #include "snes/snes.h"
 #include "tracing.h"
 
@@ -25,7 +25,7 @@ extern Dsp *GetDspForRendering();
 extern uint8 g_emulated_ram[0x20000];
 bool g_run_without_emu = false;
 
-void PatchRom(uint8_t *rom);
+void PatchRom(uint8 *rom);
 void SetSnes(Snes *snes);
 void RunAudioPlayer();
 void CopyStateAfterSnapshotRestore(bool is_reset);
@@ -33,11 +33,14 @@ void SaveLoadSlot(int cmd, int which);
 void PatchCommand(char cmd);
 bool RunOneFrame(Snes *snes, int input_state, bool turbo);
 
-static uint8_t* readFile(char* name, size_t* length);
-static bool loadRom(char* name, Snes* snes);
-static void playAudio(Snes *snes, SDL_AudioDeviceID device, int16_t* audioBuffer);
-static void renderScreen(SDL_Renderer* renderer, SDL_Texture* texture);
-static void handleInput(int keyCode, int modCode, bool pressed);
+static uint8 *ReadFile(char* name, size_t* length);
+static bool LoadRom(char* name, Snes* snes);
+static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer);
+static void RenderScreen(SDL_Renderer *renderer, SDL_Texture *texture);
+static void HandleInput(int keyCode, int modCode, bool pressed);
+static void HandleGamepadInput(int button, bool pressed);
+static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
+static void OpenOneGamepad(int i);
 
 int input1_current_state;
 
@@ -46,7 +49,7 @@ void NORETURN Die(const char *error) {
   exit(1);
 }
 
-void setButtonState(int button, bool pressed) {
+void SetButtonState(int button, bool pressed) {
   // set key in constroller
   if (pressed) {
     input1_current_state |= 1 << button;
@@ -58,7 +61,7 @@ void setButtonState(int button, bool pressed) {
 #undef main
 int main(int argc, char** argv) {
   // set up SDL
-  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO) != 0) {
+  if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
     printf("Failed to init SDL: %s\n", SDL_GetError());
     return 1;
   }
@@ -97,7 +100,7 @@ int main(int argc, char** argv) {
   Snes *snes = snes_init(g_emulated_ram), *snes_run = NULL;
   if (argc >= 2 && !g_run_without_emu) {
     // init snes, load rom
-    bool loaded = loadRom(argv[1], snes);
+    bool loaded = LoadRom(argv[1], snes);
     if (!loaded) {
       puts("No rom loaded");
       return 1;
@@ -117,6 +120,9 @@ int main(int argc, char** argv) {
   ZeldaInitialize();
   ZeldaReadSram(snes);
 
+  for (int i = 0; i < SDL_NumJoysticks(); i++)
+    OpenOneGamepad(i);
+
   bool hooks = true;
   // sdl loop
   bool running = true;
@@ -135,6 +141,18 @@ int main(int argc, char** argv) {
   while(running) {
     while(SDL_PollEvent(&event)) {
       switch(event.type) {
+      case SDL_CONTROLLERDEVICEADDED:
+        OpenOneGamepad(event.cdevice.which);
+        break;
+      case SDL_CONTROLLERAXISMOTION:
+        HandleGamepadAxisInput(event.caxis.which, event.caxis.axis, event.caxis.value);
+        break;
+      case SDL_CONTROLLERBUTTONDOWN:
+        HandleGamepadInput(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
+        break;
+      case SDL_CONTROLLERBUTTONUP:
+        HandleGamepadInput(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
+        break;
       case SDL_KEYDOWN: {
         bool skip_default = false;
         switch(event.key.keysym.sym) {
@@ -166,11 +184,11 @@ int main(int argc, char** argv) {
           break;
         }
         if (!skip_default)
-          handleInput(event.key.keysym.sym, event.key.keysym.mod, true);
+          HandleInput(event.key.keysym.sym, event.key.keysym.mod, true);
         break;
       }
       case SDL_KEYUP: {
-        handleInput(event.key.keysym.sym, event.key.keysym.mod, false);
+        HandleInput(event.key.keysym.sym, event.key.keysym.mod, false);
         break;
       }
       case SDL_QUIT: {
@@ -192,8 +210,8 @@ int main(int argc, char** argv) {
 
     ZeldaDrawPpuFrame();
 
-    playAudio(snes_run, device, audioBuffer);
-    renderScreen(renderer, texture);
+    PlayAudio(snes_run, device, audioBuffer);
+    RenderScreen(renderer, texture);
 
     SDL_RenderPresent(renderer); // vsyncs to 60 FPS
     // if vsync isn't working, delay manually
@@ -228,7 +246,7 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-static void playAudio(Snes *snes, SDL_AudioDeviceID device, int16_t* audioBuffer) {
+static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) {
   // generate enough samples
   if (!kIsOrigEmu && snes) {
     while (snes->apu->dsp->sampleOffset < 534)
@@ -245,7 +263,7 @@ static void playAudio(Snes *snes, SDL_AudioDeviceID device, int16_t* audioBuffer
   }
 }
 
-static void renderScreen(SDL_Renderer* renderer, SDL_Texture* texture) {
+static void RenderScreen(SDL_Renderer* renderer, SDL_Texture* texture) {
   void* pixels = NULL;
   int pitch = 0;
   if(SDL_LockTexture(texture, NULL, &pixels, &pitch) != 0) {
@@ -259,20 +277,20 @@ static void renderScreen(SDL_Renderer* renderer, SDL_Texture* texture) {
 }
 
 
-static void handleInput(int keyCode, int keyMod, bool pressed) {
+static void HandleInput(int keyCode, int keyMod, bool pressed) {
   switch(keyCode) {
-    case SDLK_z: setButtonState(0, pressed); break;
-    case SDLK_a: setButtonState(1, pressed); break;
-    case SDLK_RSHIFT: setButtonState(2, pressed); break;
-    case SDLK_RETURN: setButtonState(3, pressed); break;
-    case SDLK_UP: setButtonState(4, pressed); break;
-    case SDLK_DOWN: setButtonState(5, pressed); break;
-    case SDLK_LEFT: setButtonState(6, pressed); break;
-    case SDLK_RIGHT: setButtonState(7, pressed); break;
-    case SDLK_x: setButtonState(8, pressed); break;
-    case SDLK_s: setButtonState(9, pressed); break;
-    case SDLK_d: setButtonState(10, pressed); break;
-    case SDLK_c: setButtonState(11, pressed); break;
+    case SDLK_z: SetButtonState(0, pressed); break;
+    case SDLK_a: SetButtonState(1, pressed); break;
+    case SDLK_RSHIFT: SetButtonState(2, pressed); break;
+    case SDLK_RETURN: SetButtonState(3, pressed); break;
+    case SDLK_UP: SetButtonState(4, pressed); break;
+    case SDLK_DOWN: SetButtonState(5, pressed); break;
+    case SDLK_LEFT: SetButtonState(6, pressed); break;
+    case SDLK_RIGHT: SetButtonState(7, pressed); break;
+    case SDLK_x: SetButtonState(8, pressed); break;
+    case SDLK_s: SetButtonState(9, pressed); break;
+    case SDLK_d: SetButtonState(10, pressed); break;
+    case SDLK_c: SetButtonState(11, pressed); break;
     case SDLK_BACKSPACE:
     case SDLK_1:
     case SDLK_2:
@@ -317,10 +335,66 @@ static void handleInput(int keyCode, int keyMod, bool pressed) {
   }
 }
 
-static bool loadRom(char* name, Snes* snes) {
+static void OpenOneGamepad(int i) {
+  if (SDL_IsGameController(i)) {
+    SDL_GameController *controller = SDL_GameControllerOpen(i);
+    if (!controller)
+      fprintf(stderr, "Could not open gamepad %d: %s\n", i, SDL_GetError());
+  }
+}
+
+static void HandleGamepadInput(int button, bool pressed) {
+  switch (button) {
+  case SDL_CONTROLLER_BUTTON_A: SetButtonState(0, pressed); break;
+  case SDL_CONTROLLER_BUTTON_X: SetButtonState(1, pressed); break;
+  case SDL_CONTROLLER_BUTTON_BACK: SetButtonState(2, pressed); break;
+  case SDL_CONTROLLER_BUTTON_START: SetButtonState(3, pressed); break;
+  case SDL_CONTROLLER_BUTTON_DPAD_UP: SetButtonState(4, pressed); break;
+  case SDL_CONTROLLER_BUTTON_DPAD_DOWN: SetButtonState(5, pressed); break;
+  case SDL_CONTROLLER_BUTTON_DPAD_LEFT: SetButtonState(6, pressed); break;
+  case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: SetButtonState(7, pressed); break;
+  case SDL_CONTROLLER_BUTTON_B: SetButtonState(8, pressed); break;
+  case SDL_CONTROLLER_BUTTON_Y: SetButtonState(9, pressed); break;
+  case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: SetButtonState(10, pressed); break;
+  case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: SetButtonState(11, pressed); break;
+  }
+}
+
+static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
+  static int last_gamepad_id, last_x, last_y;
+  if (axis == SDL_CONTROLLER_AXIS_LEFTX || axis == SDL_CONTROLLER_AXIS_LEFTY) {
+    // try to be smart if there's more than one gamepad
+    if (last_gamepad_id != gamepad_id && (value < -10000 || value > 10000)) {
+      last_gamepad_id = gamepad_id;
+      last_x = last_y = 0;
+    }
+    *(axis == SDL_CONTROLLER_AXIS_LEFTX ? &last_x : &last_y) = value;
+    int buttons = 0;
+    if (last_x * last_x + last_y * last_y >= 10000 * 10000) {
+      // in the non deadzone part, divide the circle into eight 45 degree
+      // segments rotated by 22.5 degrees that control which direction to move.
+      // todo: do this without floats?
+      static const uint8 kSegmentToButtons[8] = {
+        1 << 4,           // 0 = up
+        1 << 4 | 1 << 7,  // 1 = up, right
+        1 << 7,           // 2 = right
+        1 << 7 | 1 << 5,  // 3 = right, down
+        1 << 5,           // 4 = down
+        1 << 5 | 1 << 6,  // 5 = down, left
+        1 << 6,           // 6 = left
+        1 << 6 | 1 << 4,  // 7 = left, up
+      };
+      int angle = (int)(atan2f(last_y, last_x) * (float)(128 / M_PI) + 0.5f);
+      buttons = kSegmentToButtons[(uint8)(angle + 16 + 64) >> 5];
+    }
+    input1_current_state = input1_current_state & ~0xf0 | buttons;
+  }
+}
+
+static bool LoadRom(char* name, Snes* snes) {
   size_t length = 0;
   uint8_t* file = NULL;
-  file = readFile(name, &length);
+  file = ReadFile(name, &length);
   if(!file) Die("Failed to read file");
 
   PatchRom(file);
@@ -331,7 +405,7 @@ static bool loadRom(char* name, Snes* snes) {
 }
 
 
-static uint8_t* readFile(char* name, size_t* length) {
+static uint8_t* ReadFile(char* name, size_t* length) {
   FILE* f = fopen(name, "rb");
   if(f == NULL) {
     return NULL;
