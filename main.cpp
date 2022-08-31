@@ -7,6 +7,9 @@
 #include <SDL.h>
 #ifdef _WIN32
 #include <direct.h>
+#else
+#include <sys/stat.h>
+#include <sys/types.h>
 #endif
 
 #include "snes/snes.h"
