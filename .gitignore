@@ -9,6 +9,8 @@
 /tables/dungeon/*.yaml
 /tables/img/
 /tables/old/
+/tables/zelda3.sfc
+/tables/zelda3.smc
 /saves/*.sav
 /.vs/
 __pycache__

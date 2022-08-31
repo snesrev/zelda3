@@ -7,10 +7,22 @@ import tables
 import yaml
 import extract_music
 import os
+import getopt
 
 PATH=''
 
-ROM = util.LoadedRom()
+option_list, args = getopt.getopt(sys.argv[1:], 'r:', ['rom_path='])
+rom_path = None
+for opt, arg in option_list:
+  if opt in ('-r', '--rom_path'):
+    rom_path = arg
+
+try:
+  ROM = util.LoadedRom(rom_path)
+except Exception as error:
+  print(f"Failed to load ROM data for extraction. Error: {error}")
+  sys.exit(1)
+
 
 get_byte = ROM.get_byte
 get_word = ROM.get_word
