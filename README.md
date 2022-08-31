@@ -40,6 +40,9 @@ Make sure you are in the root directory.
 ```
 clang++ `sdl2-config --cflags` -O2 -ozelda3 *.cpp snes/*.cpp `sdl2-config --libs`
 ```
+or
+`make -j$(nproc)`
+
 
 ## Usage and controls
 
