@@ -15,7 +15,7 @@ I got much assistance from spannierism's Zelda 3 JP disassembly and the other on
 
 ## Compiling
 
-Put the ROM in tables/zelda3.sfc
+Put the ROM in tables/zelda3.sfc. The ROM needs to be the US ROM with SHA256 hash `66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`.
 
 `cd tables`
 
