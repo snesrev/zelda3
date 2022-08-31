@@ -26,14 +26,6 @@ extern uint8 g_ram[131072];
 
 static inline void zelda_snes_dummy_write(uint32_t adr, uint8_t val) {}
 
-
-
-
-
-
-
-
-
 const uint16 kUpperBitmasks[] = { 0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100, 0x80, 0x40, 0x20, 0x10, 8, 4, 2, 1 };
 const uint8 kLitTorchesColorPlus[] = {31, 8, 4, 0};
 const uint8 kDungeonCrystalPendantBit[13] = {0, 0, 4, 2, 0, 16, 2, 1, 64, 4, 1, 32, 8};
@@ -195,3 +187,4 @@ void ZeldaRunFrame(uint16 input);
 void ClearOamBuffer();
 void Startup_InitializeMemory();
 void LoadSongBank(const uint8 *p);
+void ZeldaWriteSram();

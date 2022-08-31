@@ -4,8 +4,10 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-
 #include <SDL.h>
+#ifdef _WIN32
+#include <direct.h>
+#endif
 
 #include "snes/snes.h"
 #include "tracing.h"
@@ -44,6 +46,26 @@ void setButtonState(int button, bool pressed) {
   }
 }
 
+
+void ZeldaReadSram(Snes *snes) {
+  FILE *f = fopen("saves/sram.dat", "rb");
+  if (f) {
+    fread(g_zenv.sram, 1, 8192, f);
+    memcpy(snes->cart->ram, g_zenv.sram, 8192);
+    fclose(f);
+  }
+}
+
+void ZeldaWriteSram() {
+  rename("saves/sram.dat", "saves/sram.bak");
+  FILE *f = fopen("saves/sram.dat", "wb");
+  if (f) {
+    fwrite(g_zenv.sram, 1, 8192, f);
+    fclose(f);
+  } else {
+    fprintf(stderr, "Unable to write saves/sram.dat\n");
+  }
+}
 
 #undef main
 int main(int argc, char** argv) {
@@ -96,8 +118,17 @@ int main(int argc, char** argv) {
   } else {
     snes_reset(snes, true);
   }
+
+#if defined(_WIN32)
+  _mkdir("saves");
+#else
+  mkdir("saves", 755);
+#endif
+
   SetSnes(snes);
   ZeldaInitialize();
+  ZeldaReadSram(snes);
+
   bool hooks = true;
   // sdl loop
   bool running = true;

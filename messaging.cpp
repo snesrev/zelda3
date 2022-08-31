@@ -396,6 +396,7 @@ void SaveGameFile() {  // 80894a
   word_7EF4FE = t;
   WORD(g_zenv.sram[offs + 0x4fe]) = t;
   WORD(g_zenv.sram[offs + 0x4fe + 0xf00]) = t;
+  ZeldaWriteSram();
 }
 
 void TransferMode7Characters() {  // 80e399
