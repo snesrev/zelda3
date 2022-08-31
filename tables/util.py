@@ -1,13 +1,20 @@
 import array
 import sys
 import hashlib
+import os
+
+# Both are common SNES rom extensions. For Zelda3 (NA), they are equivalent files.
+COMMON_ROM_NAMES = ['zelda3.sfc', 'zelda3.smc']
+DEFAULT_ROM_DIRECTORY = os.path.dirname(__file__)
+ZELDA3_SHA256 = '66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb'
 
 class LoadedRom:
-  def __init__(self, name = 'zelda3.sfc'):
-    self.ROM = open(name, 'rb').read()
+  def __init__(self, path = None):
+    rom_path = self.__get_rom_path(path)
+    self.ROM = open(rom_path, 'rb').read()
     hash = hashlib.sha256(self.ROM).hexdigest() 
-    if hash != '66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb':
-      raise Exception('Wrong ROM version. Expecting Legend of Zelda - A Link to the Past, The (NA) (1.0).sfc')
+    if hash != ZELDA3_SHA256:
+      raise Exception(f"ROM with hash {hash} not supported. Expected {ZELDA3_SHA256}. Please verify your ROM is the NA 1.0 version.");
 
   def get_byte(self, ea):
     assert (ea & 0x8000)
@@ -37,6 +44,22 @@ class LoadedRom:
       if (addr & 0x8000) == 0:
         addr += 0x8000
     return r
+
+  def __get_rom_path(self, path = None):
+    # Check default locations when no path is given by user.
+    if path is None:
+      for rom_name in COMMON_ROM_NAMES:
+        rom_path = os.path.join(DEFAULT_ROM_DIRECTORY, rom_name)
+        if os.path.isfile(rom_path):
+          return rom_path
+      raise Exception(f"Could not find any ROMs ({', '.join(COMMON_ROM_NAMES)}) at the default location {DEFAULT_ROM_DIRECTORY}.") 
+
+    rom_path = os.path.join(DEFAULT_ROM_DIRECTORY, path)
+    if os.path.isfile(rom_path):
+      return rom_path
+    raise Exception(f"No ROM found at provided path {rom_path}.")
+
+
 
 def split_list(l, n):
   return [l[i:i+n] for i in range(0, len(l), n)]
