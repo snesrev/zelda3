@@ -1,10 +1,10 @@
 #pragma once
 #include "types.h"
 
-struct SwordResult {
+typedef struct SwordResult {
   uint8 r6;
   uint8 r12;
-};
+} SwordResult;
 
 bool PlayerOam_WantInvokeSword();
 void CalculateSwordHitBox();

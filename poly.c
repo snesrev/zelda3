@@ -24,9 +24,9 @@ static const int8 kPolySinCos[320] = {
   45,  46,  47,  48,  49,  50,  51,  52,  53,  54,  55,  56,  56,  57,  58,  59,
   59,  60,  60,  61,  61,  62,  62,  62,  63,  63,  63,  64,  64,  64,  64,  64,
 };
-struct Vertex3 {
+typedef struct Vertex3 {
   int8 x, y, z;
-};
+} Vertex3;
 static const Vertex3 kPoly0_Vtx[6] = {
   {  0,  65,   0},
   {  0, -65,   0},
@@ -60,12 +60,12 @@ static const uint8 kPoly1_Polys[28] = {
   4, 1, 5, 4, 2, 4,
   4, 3, 0, 2, 4, 3,
 };
-struct PolyConfig {
+typedef struct PolyConfig {
   uint8 num_vtx, num_poly;
   uint16 vtx_val, polys_val;
   const Vertex3 *vertex;
   const uint8 *poly;
-};
+} PolyConfig;
 static const PolyConfig kPolyConfigs[2] = {
   {6, 8, 0xff98, 0xffaa, kPoly0_Vtx, kPoly0_Polys},
   {6, 5, 0xffd2, 0xffe4, kPoly1_Vtx, kPoly1_Polys},

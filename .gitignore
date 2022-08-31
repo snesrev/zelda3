@@ -1,5 +1,6 @@
 /.vs/
 /packages/
+/.vscode/
 .DS_Store
 *.dSYM
 /Debug
@@ -12,7 +13,11 @@
 /tables/zelda3.sfc
 /tables/zelda3.smc
 /saves/*.sav
+/saves/sram.dat
+/saves/sram.bak
 /zelda3
-/.vs/
 __pycache__
-*.o
+/*.o
+/*.exe
+/*.out
+/snes/*.o

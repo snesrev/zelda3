@@ -34,21 +34,21 @@ enum {
   kDoorType_ShutterTrapDL = 74,
 };
 
-struct DungPalInfo {
+typedef struct DungPalInfo {
   uint8 pal0;
   uint8 pal1;
   uint8 pal2;
   uint8 pal3;
-};
+} DungPalInfo;
 
-struct RoomBounds {
+typedef struct RoomBounds {
   union {
     struct {
       uint16 a0, b0, a1, b1;
     };
     uint16 v[4];
   };
-};
+} RoomBounds;
 
 #define room_bounds_y (*(RoomBounds*)(g_ram+0x600))
 #define room_bounds_x (*(RoomBounds*)(g_ram+0x608))

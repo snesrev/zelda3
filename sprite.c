@@ -2366,8 +2366,9 @@ void AgahnimBalls_DamageAgahnim(int k, uint8 dmg, uint8 r0_hit_timer) {  // 86ed
                 sprite_flags5[k] & 0x10 ? 0x1c : 8;
     sound_effect_2 = sfx | Sprite_CalculateSfxPan(k);
   }
+  uint8 type;
 flag4:
-  uint8 type = sprite_type[k];
+  type = sprite_type[k];
   sprite_F[k] = (damage_type_determiner >= 13) ? 0 :
                 (type == 9) ? 20 :
                 (type == 0x53 || type == 0x18) ? 11 : 15;

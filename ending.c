@@ -2289,7 +2289,7 @@ void Credits_HandleCameraScrollControl() {  // 8eaea6
       *which -= 0x10;
       overworld_screen_trans_dir_bits2 |= sign8(yvel) ? 8 : 4;
     }
-    (sign8(yvel) ? overworld_unk1_neg : overworld_unk1) = -*which;
+    *(sign8(yvel) ? &overworld_unk1_neg : &overworld_unk1) = -*which;
     uint16 r4 = (int8)yvel, subp;
     WORD(byte_7E069E[0]) = r4;
     uint8 oi = BYTE(overlay_index);
@@ -2321,7 +2321,7 @@ void Credits_HandleCameraScrollControl() {  // 8eaea6
       *which -= 0x10;
       overworld_screen_trans_dir_bits2 |= sign8(xvel) ? 2 : 1;
     }
-    (sign8(xvel) ? overworld_unk3_neg : overworld_unk3) = -*which;
+    *(sign8(xvel) ? &overworld_unk3_neg : &overworld_unk3) = -*which;
 
     uint16 r4 = (int8)xvel, subp;
     WORD(byte_7E069E[1]) = r4;

@@ -8,6 +8,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#include "dsp_regs.h"
 typedef struct Dsp Dsp;
 
 #include "saveload.h"
@@ -81,11 +82,9 @@ struct Dsp {
 };
 
 
-#include "../dsp_regs.h"
-
 typedef struct DspRegWriteHistory {
   uint32_t count;
-  enum DspReg addr[256];
+  uint8_t addr[256];
   uint8_t val[256];
 } DspRegWriteHistory;
 

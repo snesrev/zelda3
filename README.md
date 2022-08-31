@@ -5,28 +5,32 @@ A reimplementation of Zelda 3.
 
 This is a reverse engineered clone of Zelda 3 - A Link to the Past.
 
-It's around 70-80kLOC of C/C++ code, and reimplements all parts of the original game. The game is playable from start to end.
+It's around 70-80kLOC of C code, and reimplements all parts of the original game. The game is playable from start to end.
 
 You need a copy of the ROM to extract game resources (levels, images). Then once that's done, the ROM is no longer needed.
 
-It uses the PPU and DSP implementation from LakeSnes. Additionally, it can be configured to also run the original machine code side by side. Then the RAM state is compared after each frame, to verify that the C++ implementation is correct.
+It uses the PPU and DSP implementation from [LakeSnes](https://github.com/elzo-d/LakeSnes).
+Additionally, it can be configured to also run the original machine code side by side. Then the RAM state is compared after each frame, to verify that the C implementation is correct.
 
 I got much assistance from spannierism's Zelda 3 JP disassembly and the other ones that documented loads of function names and variables.
 
-## Compiling
+## Dependencies
 
-Put the ROM in tables/zelda3.sfc. The ROM needs to be the US ROM with SHA256 hash `66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`.
+- the `libsdl2-dev` library (ubuntu: `apt install libsdl2-dev`, macOS: `brew install sdl2`). On Windows, it's installed automatically with NuGet.
+- a `tables/zelda3.sfc` US ROM file (for asset extraction step only) with SHA256 hash `66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`. 
+- The `pillow` and `pyyaml` python dependencies used by the assets extractor. `pip install pillow pyyaml`
+
+## Compiling
 
 `cd tables`
 
-Install python dependencies: `pip install pillow` and `pip install pyyaml`
+Run `python3 extract_resources.py` to extract resources from the ROM into a more human readable format.
 
-Run `python extract_resources.py` to extract resources from the ROM into a more human readable format.
+Run `python3 compile_resources.py` to produce .h files that get included by the C code.
 
-Run `python compile_resources.py` to produce .h files that gets included by the C++ code.
 
 ### Windows
-Build the .sln file with Visual Studio
+First extract and compile resources, see above. Then build the .sln file with Visual Studio.
 
 ### Linux/macOS
 #### Dependencies
@@ -35,20 +39,19 @@ Linux: `apt install libsdl2-dev`
 macOS: `brew install sdl2`
 
 #### Building
-Make sure you are in the root directory.
+First extract and compile resources, see above. Then make sure you are in the root directory.
 
 ```
-clang++ `sdl2-config --cflags` -O2 -ozelda3 *.cpp snes/*.cpp `sdl2-config --libs`
+clang++ `sdl2-config --cflags` -O2 -ozelda3 *.c snes/*.c `sdl2-config --libs`
 ```
 or
 `make -j$(nproc)`
-
 
 ## Usage and controls
 
 The game supports snapshots. The joypad input history is also saved in the snapshot. It's thus possible to replay a playthrough in turbo mode to verify that the game behaves correctly.
 
-The game is run with `./zelda3` and takes an optional path to the ROM-file, which will verify for each frame that the C++ code matches the original behavior.
+The game is run with `./zelda3` and takes an optional path to the ROM-file, which will verify for each frame that the C code matches the original behavior.
 
 | Button | Key         |
 | ------ | ----------- |

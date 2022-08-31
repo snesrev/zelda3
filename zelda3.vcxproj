@@ -123,77 +123,77 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ancilla.cpp" />
-    <ClCompile Include="attract.cpp" />
-    <ClCompile Include="dungeon.cpp" />
-    <ClCompile Include="ending.cpp" />
-    <ClCompile Include="hud.cpp" />
-    <ClCompile Include="load_gfx.cpp" />
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="ancilla.c" />
+    <ClCompile Include="attract.c" />
+    <ClCompile Include="dungeon.c" />
+    <ClCompile Include="ending.c" />
+    <ClCompile Include="hud.c" />
+    <ClCompile Include="load_gfx.c" />
+    <ClCompile Include="main.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="messaging.cpp" />
-    <ClCompile Include="misc.cpp" />
-    <ClCompile Include="nmi.cpp" />
-    <ClCompile Include="other_modules.cpp" />
-    <ClCompile Include="overlord.cpp" />
-    <ClCompile Include="overworld.cpp" />
-    <ClCompile Include="player.cpp" />
-    <ClCompile Include="player_oam.cpp" />
-    <ClCompile Include="poly.cpp" />
-    <ClCompile Include="select_file.cpp" />
-    <ClCompile Include="snes\apu.cpp">
+    <ClCompile Include="messaging.c" />
+    <ClCompile Include="misc.c" />
+    <ClCompile Include="nmi.c" />
+    <ClCompile Include="other_modules.c" />
+    <ClCompile Include="overlord.c" />
+    <ClCompile Include="overworld.c" />
+    <ClCompile Include="player.c" />
+    <ClCompile Include="player_oam.c" />
+    <ClCompile Include="poly.c" />
+    <ClCompile Include="select_file.c" />
+    <ClCompile Include="snes\apu.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="snes\cart.cpp">
+    <ClCompile Include="snes\cart.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="snes\cpu.cpp">
+    <ClCompile Include="snes\cpu.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="snes\dma.cpp">
+    <ClCompile Include="snes\dma.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="snes\dsp.cpp">
+    <ClCompile Include="snes\dsp.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="snes\input.cpp">
+    <ClCompile Include="snes\input.c">
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="snes\ppu.cpp">
+    <ClCompile Include="snes\ppu.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">MaxSpeed</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">AnySuitable</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="snes\snes.cpp">
+    <ClCompile Include="snes\snes.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="snes\snes_other.cpp">
+    <ClCompile Include="snes\snes_other.c">
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="snes\spc.cpp">
+    <ClCompile Include="snes\spc.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="spc_player.cpp" />
-    <ClCompile Include="sprite.cpp" />
-    <ClCompile Include="sprite_main.cpp">
+    <ClCompile Include="spc_player.c" />
+    <ClCompile Include="sprite.c" />
+    <ClCompile Include="sprite_main.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MaxSpeed</Optimization>
     </ClCompile>
-    <ClCompile Include="tagalong.cpp" />
-    <ClCompile Include="tile_detect.cpp" />
-    <ClCompile Include="tracing.cpp">
+    <ClCompile Include="tagalong.c" />
+    <ClCompile Include="tile_detect.c" />
+    <ClCompile Include="tracing.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
-    <ClCompile Include="zelda_cpu_infra.cpp" />
-    <ClCompile Include="zelda_rtl.cpp" />
+    <ClCompile Include="zelda_cpu_infra.c" />
+    <ClCompile Include="zelda_rtl.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ancilla.h" />
@@ -217,6 +217,7 @@
     <ClInclude Include="snes\cpu.h" />
     <ClInclude Include="snes\dma.h" />
     <ClInclude Include="snes\dsp.h" />
+    <ClInclude Include="snes\dsp_regs.h" />
     <ClInclude Include="snes\input.h" />
     <ClInclude Include="snes\ppu.h" />
     <ClInclude Include="snes\saveload.h" />

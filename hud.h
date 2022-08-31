@@ -1,14 +1,6 @@
 #pragma once
 #include "types.h"
 
-
-
-
-
-
-
-
-extern const uint16 *const kHudItemBoxGfxPtrs[];
 void Hud_RefreshIcon();
 uint8 CheckPalaceItemPosession();
 void Hud_GotoPrevItem();
@@ -38,7 +30,6 @@ void Hud_BottleMenu();
 void Hud_UpdateBottleMenu();
 void Hud_EraseBottleMenu();
 void Hud_RestoreNormalMenu();
-void Hud_DrawItem(uint16 a, const uint16 *src);
 void Hud_SearchForEquippedItem();
 uint16 Hud_GetPaletteMask(uint8 what);
 void Hud_DrawYButtonItems(uint16 mask);
@@ -70,3 +61,4 @@ void Hud_UpdateInternal();
 void Hud_Update_IgnoreItemBox();
 void Hud_Update_IgnoreHealth();
 void Hud_UpdateHearts(uint16 *dst, const uint16 *src, int n);
+const uint16 *Hud_GetItemBoxPtr(int item);

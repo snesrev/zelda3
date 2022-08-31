@@ -1,21 +1,22 @@
 #pragma once
+#include "types.h"
 #include "zelda_rtl.h"
 #include "sprite.h"
 
-struct CheckPlayerCollOut {
+typedef struct CheckPlayerCollOut {
   uint16 r4, r6;
   uint16 r8, r10;
-};
+} CheckPlayerCollOut;
 
-struct AncillaOamInfo {
+typedef struct AncillaOamInfo {
   uint8 x;
   uint8 y;
   uint8 flags;
-};
+} AncillaOamInfo;
 
-struct AncillaRadialProjection {
+typedef struct AncillaRadialProjection {
   uint8 r0, r2, r4, r6;
-};
+} AncillaRadialProjection;
 
 uint16 Ancilla_GetX(int k);
 uint16 Ancilla_GetY(int k);
