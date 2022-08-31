@@ -35,7 +35,7 @@ static uint8_t* readFile(char* name, size_t* length);
 static bool loadRom(char* name, Snes* snes);
 static bool checkExtention(const char* name, bool forZip);
 static void playAudio(Snes *snes, SDL_AudioDeviceID device, int16_t* audioBuffer);
-static void renderScreen(SDL_Renderer* renderer, SDL_Texture* texture);
+static void renderScreen(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture);
 static void handleInput(int keyCode, int modCode, bool pressed);
 
 int input1_current_state;
@@ -208,7 +208,7 @@ int main(int argc, char** argv) {
     ZeldaDrawPpuFrame();
 
     playAudio(snes_run, device, audioBuffer);
-    renderScreen(renderer, texture);
+    renderScreen(window, renderer, texture);
 
     SDL_RenderPresent(renderer); // vsyncs to 60 FPS
     // if vsync isn't working, delay manually
@@ -263,7 +263,7 @@ static void playAudio(Snes *snes, SDL_AudioDeviceID device, int16_t* audioBuffer
   }
 }
 
-static void renderScreen(SDL_Renderer* renderer, SDL_Texture* texture) {
+static void renderScreen(SDL_Window* window, SDL_Renderer* renderer, SDL_Texture* texture) {
   void* pixels = NULL;
   int pitch = 0;
   if(SDL_LockTexture(texture, NULL, &pixels, &pitch) != 0) {
@@ -273,7 +273,43 @@ static void renderScreen(SDL_Renderer* renderer, SDL_Texture* texture) {
 
   ppu_putPixels(GetPpuForRendering(), (uint8_t*) pixels);
   SDL_UnlockTexture(texture);
-  SDL_RenderCopy(renderer, texture, NULL, NULL);
+
+  const Uint32 windowFlags = SDL_GetWindowFlags(window);
+  bool isFullscreen =
+      ((windowFlags & SDL_WINDOW_FULLSCREEN) != 0) ||
+      ((windowFlags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
+
+  // draw scaled image to window size with correct aspect ratio
+  SDL_DisplayMode displayMode;
+  SDL_memset(&displayMode, 0, sizeof(displayMode));
+  if (isFullscreen && 0 == SDL_GetWindowDisplayMode(window, &displayMode))
+  {
+      const float scaleWidth = displayMode.w / 512.0f;
+      const float scaleHeight = displayMode.h / 480.0f;
+      const float scale = scaleWidth < scaleHeight ? scaleWidth : scaleHeight;
+      int width = (int)lroundf(512 * scale);
+      int height = (int)lroundf(480 * scale);
+      width =
+          width < 0 ? 0 :
+          width > displayMode.w ? displayMode.w :
+          width;
+      height =
+          height < 0 ? 0 :
+          height > displayMode.h ? displayMode.h :
+          height;
+      SDL_Rect dstrect;
+      SDL_memset(&dstrect, 0, sizeof(dstrect));
+      dstrect.w = width;
+      dstrect.h = height;
+      dstrect.x = (displayMode.w - width) / 2;
+      dstrect.y = (displayMode.h - height) / 2;
+
+      SDL_RenderCopy(renderer, texture, NULL, &dstrect);
+  }
+  else // not fullscreen
+  {
+      SDL_RenderCopy(renderer, texture, NULL, NULL);
+  }
 }
 
 
