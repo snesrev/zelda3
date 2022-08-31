@@ -155,6 +155,7 @@ void SelectFile_Func16() {
       selectfile_arr1[k] = 0;
       memset(g_zenv.sram + k * 0x500, 0, 0x500);
       memset(g_zenv.sram + k * 0x500 + 0xf00, 0, 0x500);
+      ZeldaWriteSram();
     }
     ReturnToFileSelect();
     subsubmodule_index = 0;
@@ -340,7 +341,7 @@ void FileSelect_TriggerNameStripesAndAdvance() {  // 8cceb1
 void FileSelect_Main() {  // 8ccebd
   static const uint8 kSelectFile_Faerie_Y[5] = {0x4a, 0x6a, 0x8a, 0xaf, 0xbf};
 
-  uint8 *cart = g_zenv.sram;
+  const uint8 *cart = g_zenv.sram;
 
   if (selectfile_R16 < 3)
     selectfile_var2 = selectfile_R16;
@@ -473,7 +474,7 @@ void CopyFile_SelectionAndBlinker() {  // 8cd13f
 
   for (int k = 0; k != 3; k++) {
     if (selectfile_arr1[k] & 1) {
-      uint16 *name = (uint16 *)(g_zenv.sram + 0x500 * k + kSrmOffs_Name);
+      const uint16 *name = (uint16 *)(g_zenv.sram + 0x500 * k + kSrmOffs_Name);
       uint16 *dst = vram_upload_data + kCopyFile_SelectionAndBlinker_Dst[k] / 2;
       for (int i = 0; i != 6; i++) {
         uint16 t = *name++ + 0x1800;
@@ -571,7 +572,7 @@ void CopyFile_TargetSelectionAndBlink() {  // 8cd27b
     dst[10] = t + 0x10;
     dst += 2;
     if (selectfile_arr1[k]) {
-      uint16 *name = (uint16 *)(g_zenv.sram + 0x500 * k + kSrmOffs_Name);
+      const uint16 *name = (uint16 *)(g_zenv.sram + 0x500 * k + kSrmOffs_Name);
       for (int i = 0; i != 6; i++) {
         uint16 t = *name++ + 0x1800;
         dst[0] = t;
@@ -635,6 +636,7 @@ void CopyFile_HandleConfirmation() {  // 8cd371
     if (selectfile_R16 == 0) {
       memcpy(g_zenv.sram + (selectfile_R18 >> 1) * 0x500, g_zenv.sram + (selectfile_R20 >> 1) * 0x500, 0x500);
       selectfile_arr1[(selectfile_R18 >> 1)] = 1;
+      ZeldaWriteSram();
     }
     ReturnToFileSelect();
     selectfile_R16 = 0;
@@ -779,9 +781,10 @@ void NameFile_EraseSave() {  // 8cd89c
   selectfile_var7 = 0x83;
   selectfile_var8 = 0x1f0;
   BG3HOFS_copy2 = 0;
-  attract_legend_ctr = selectfile_R16 * 0x500;
-  memset(g_zenv.sram + attract_legend_ctr, 0, 0x500);
-  uint16 *name = (uint16 *)(g_zenv.sram + attract_legend_ctr + kSrmOffs_Name);
+  int offs = selectfile_R16 * 0x500;
+  attract_legend_ctr = offs;
+  memset(g_zenv.sram + offs, 0, 0x500);
+  uint16 *name = (uint16 *)(g_zenv.sram + offs + kSrmOffs_Name);
   name[0] = name[1] = name[2] = name[3] = name[4] = name[5] = 0xa9;
 }
 
@@ -909,6 +912,7 @@ void NameFile_DoTheNaming() {  // 8cda4d
   };
   memcpy(sram + 0x340, kSramInit_Normal, 60);
   Intro_FixCksum(sram);
+  ZeldaWriteSram();
   ReturnToFileSelect();
   irq_flag = 0xff;
   sound_effect_1 = 0x2c;

@@ -11387,7 +11387,7 @@ void SpritePrep_Zelda_bounce(int k) {  // 86c06c
     }
   } else {
     sprite_subtype2[k] = 0;
-    if (savegame_tagalong != 1 && (sram_progress_flags & 4))
+    if (savegame_tagalong == 1 || (sram_progress_flags & 4))
       sprite_state[k] = 0;
   }
 }

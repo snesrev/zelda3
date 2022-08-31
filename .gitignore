@@ -1,4 +1,5 @@
 /.vs/
+/packages/
 .DS_Store
 *.dSYM
 /Debug
@@ -9,7 +10,9 @@
 /tables/img/
 /tables/old/
 /tables/zelda3.sfc
+/tables/zelda3.smc
 /saves/*.sav
 /zelda3
+/.vs/
 __pycache__
 *.o

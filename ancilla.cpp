@@ -7187,6 +7187,11 @@ uint8 Ancilla_CalculateSfxPan(int k) {  // 8dbb5e
 }
 
 int Ancilla_AllocInit(uint8 type, uint8 y) {  // 8ff577
+  // snes bug: R14 is used in tile detection already
+  // unless this is here it the memcmp will fail when entering/leaving a water through steps quickly
+  if (g_ram[kRam_BugsFixed] >= kBugFix_PolyRenderer)
+    BYTE(R14) = y + 1;
+
   int n = 0;
   for (int k = 0; k < 5; k++) {
     if (ancilla_type[k] == type)

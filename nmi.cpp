@@ -100,10 +100,6 @@ void Interrupt_NMI(uint16 joypad_input) {  // 8080c9
 
   if (is_nmi_thread_active) {
     NMI_SwitchThread();
-    if (thread_other_stack != 0x1f31)
-      thread_other_stack = 0x1f31;
-    else
-      thread_other_stack = 0x1f2;
   } else {
     zelda_ppu_write(W12SEL, W12SEL_copy);
     zelda_ppu_write(W34SEL, W34SEL_copy);
@@ -185,6 +181,7 @@ void NMI_SwitchThread() {  // 80822d
   zelda_ppu_write(BG3VOFS, BG3VOFS_copy2 >> 8);
   zelda_ppu_write(INIDISP, INIDISP_copy);
   zelda_snes_dummy_write(HDMAEN, HDMAEN_copy);
+  thread_other_stack = (thread_other_stack != 0x1f31) ? 0x1f31 : 0x1f2;
 }
 
 void NMI_ReadJoypads(uint16 joypad_input) {  // 8083d1

@@ -15,7 +15,7 @@ I got much assistance from spannierism's Zelda 3 JP disassembly and the other on
 
 ## Compiling
 
-Put the ROM in tables/zelda3.sfc
+Put the ROM in tables/zelda3.sfc. The ROM needs to be the US ROM with SHA256 hash `66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`.
 
 `cd tables`
 
@@ -28,11 +28,19 @@ Run `python compile_resources.py` to produce .h files that gets included by the 
 ### Windows
 Build the .sln file with Visual Studio
 
-### Linux
-`apt install libsdl2-dev`
+### Linux/macOS
+#### Dependencies
+Linux: `apt install libsdl2-dev`
 
+macOS: `brew install sdl2`
+
+#### Building
 Make sure you are in the root directory.
 
+```
+clang++ `sdl2-config --cflags` -O2 -ozelda3 *.cpp snes/*.cpp `sdl2-config --libs`
+```
+or
 `make -j$(nproc)`
 
 
@@ -68,6 +76,7 @@ Additionally, the following commands are available:
 | T   | Toggle replay turbo   |
 | K   | Clear all input history from current snapshot  |
 | F1-F10 | Load snapshot      |
+| Alt+Enter | Toggle Fullscreen     |
 | Shift+F1-F10 | Save snapshot |
 | Ctrl+F1-F10 | Replay the snapshot |
 
