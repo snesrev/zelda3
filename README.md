@@ -28,13 +28,18 @@ Run `python compile_resources.py` to produce .h files that gets included by the 
 ### Windows
 Build the .sln file with Visual Studio
 
-### Linux
-`apt install libsdl2-dev`
+### Linux/macOS
+#### Dependencies
+Linux: `apt install libsdl2-dev`
 
+macOS: `brew install sdl2`
+
+#### Building
 Make sure you are in the root directory.
 
-`clang++ -I/usr/include/SDL2 -lSDL2 -O2 -ozelda3 *.cpp snes/*.cpp`
-
+```
+clang++ `sdl2-config --cflags` -O2 -ozelda3 *.cpp snes/*.cpp `sdl2-config --libs`
+```
 
 ## Usage and controls
 
