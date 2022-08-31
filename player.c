@@ -2006,8 +2006,8 @@ void Link_HandleAPress() {  // 879baa
       }
       action = 1;
     }
-attempt_action:
     static const uint8 kAbilityBitmasks[] = { 0xE0, 0x40, 4, 0xE0, 0xE0, 0xE0, 0xE0, 0xE0 };
+attempt_action:
     if (!(kAbilityBitmasks[action] & link_ability_flags)) {
       bitfield_for_a_button = 0;
       return;

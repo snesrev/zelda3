@@ -10,109 +10,109 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="snes\apu.cpp">
+    <ClCompile Include="snes\apu.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="snes\cart.cpp">
+    <ClCompile Include="snes\cart.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="snes\cpu.cpp">
+    <ClCompile Include="snes\cpu.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="snes\dma.cpp">
+    <ClCompile Include="snes\dma.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="snes\dsp.cpp">
+    <ClCompile Include="snes\dsp.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="snes\input.cpp">
+    <ClCompile Include="snes\input.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="main.cpp">
+    <ClCompile Include="main.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="snes\ppu.cpp">
+    <ClCompile Include="snes\ppu.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="snes\snes.cpp">
+    <ClCompile Include="snes\snes.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="snes\snes_other.cpp">
+    <ClCompile Include="snes\snes_other.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="snes\spc.cpp">
+    <ClCompile Include="snes\spc.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="tracing.cpp">
+    <ClCompile Include="tracing.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="zelda_rtl.cpp">
+    <ClCompile Include="zelda_rtl.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="hud.cpp">
+    <ClCompile Include="hud.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="dungeon.cpp">
+    <ClCompile Include="dungeon.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="nmi.cpp">
+    <ClCompile Include="nmi.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="player_oam.cpp">
+    <ClCompile Include="player_oam.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="load_gfx.cpp">
+    <ClCompile Include="load_gfx.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="messaging.cpp">
+    <ClCompile Include="messaging.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="overworld.cpp">
+    <ClCompile Include="overworld.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="sprite.cpp">
+    <ClCompile Include="sprite.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="sprite_main.cpp">
+    <ClCompile Include="sprite_main.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="tagalong.cpp">
+    <ClCompile Include="tagalong.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="overlord.cpp">
+    <ClCompile Include="overlord.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="poly.cpp">
+    <ClCompile Include="poly.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="ancilla.cpp">
+    <ClCompile Include="ancilla.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="ending.cpp">
+    <ClCompile Include="ending.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="attract.cpp">
+    <ClCompile Include="attract.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="select_file.cpp">
+    <ClCompile Include="select_file.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="spc_player.cpp">
+    <ClCompile Include="spc_player.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="player.cpp">
+    <ClCompile Include="player.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="tile_detect.cpp">
+    <ClCompile Include="tile_detect.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="other_modules.cpp">
+    <ClCompile Include="other_modules.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="misc.cpp">
+    <ClCompile Include="misc.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="zelda_cpu_infra.cpp">
+    <ClCompile Include="zelda_cpu_infra.c">
       <Filter>Zelda</Filter>
     </ClCompile>
   </ItemGroup>
@@ -227,6 +227,9 @@
     </ClInclude>
     <ClInclude Include="sprite_main.h">
       <Filter>Zelda</Filter>
+    </ClInclude>
+    <ClInclude Include="snes\dsp_regs.h">
+      <Filter>Snes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

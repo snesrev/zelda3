@@ -225,7 +225,7 @@ static PlayerHandlerFunc *const kOverworldSubmodules[48] = {
   &Overworld_Func1E,
   &Overworld_Func1F,
   &Overworld_LoadOverlays2,
-  &Overworld_LoadAmbientOverlay,
+  &Overworld_LoadAmbientOverlayFalse,
   &Overworld_Func22,
   &Module09_MirrorWarp,
   &Overworld_StartMosaicTransition,
@@ -2054,7 +2054,7 @@ void Overworld_LoadAmbientOverlay(bool load_map_data) {  // 82ed25
   INIDISP_copy = 0;
 }
 
-void Overworld_LoadAmbientOverlay() {  // 82ed24
+void Overworld_LoadAmbientOverlayFalse() {  // 82ed24
   Overworld_LoadAmbientOverlay(false);
 }
 
@@ -2109,7 +2109,7 @@ void Overworld_HandleOverlaysAndBombDoors() {  // 82ef29
 void TriggerAndFinishMapLoadStripe_Y(int n) {  // 82ef7a
   BYTE(overworld_screen_trans_dir_bits2) = 8;
   nmi_subroutine_index = 3;
-  uint16 *dst = uvram.t3.data;
+  uint16 *dst = uvram.data;
   *dst++ = 0x80;
   do {
     dst = BufferAndBuildMap16Stripes_Y(dst);
@@ -2122,7 +2122,7 @@ void TriggerAndFinishMapLoadStripe_Y(int n) {  // 82ef7a
 void TriggerAndFinishMapLoadStripe_X(int n) {  // 82efb3
   BYTE(overworld_screen_trans_dir_bits2) = 2;
   nmi_subroutine_index = 3;
-  uint16 *dst = uvram.t3.data;
+  uint16 *dst = uvram.data;
   *dst++ = 0x8040;
   do {
     dst = BufferAndBuildMap16Stripes_X(dst);
@@ -2240,7 +2240,7 @@ void CreateInitialOWScreenView_Small_East() {  // 82f1b7
 }
 
 void OverworldTransitionScrollAndLoadMap() {  // 82f20e
-  uint16 *dst = uvram.t3.data;
+  uint16 *dst = uvram.data;
   switch (BYTE(overworld_screen_trans_dir_bits2)) {
   case 1: dst = BuildFullStripeDuringTransition_East(dst); break;
   case 2: dst = BuildFullStripeDuringTransition_West(dst); break;
@@ -2251,7 +2251,7 @@ void OverworldTransitionScrollAndLoadMap() {  // 82f20e
     submodule_index = 0;
   }
   dst[0] = dst[1] = 0xffff;
-  if (dst != uvram.t3.data)
+  if (dst != uvram.data)
     nmi_subroutine_index = 3;
 }
 
@@ -2288,7 +2288,7 @@ uint16 *BuildFullStripeDuringTransition_East(uint16 *dst) {  // 82f24a
 }
 
 void OverworldHandleMapScroll() {  // 82f273
-  uint16 *dst = uvram.t3.data;
+  uint16 *dst = uvram.data;
   switch (BYTE(overworld_screen_trans_dir_bits2)) {
   case 1:
     dst = CheckForNewlyLoadedMapAreas_East(dst);
@@ -2321,7 +2321,7 @@ void OverworldHandleMapScroll() {  // 82f273
     submodule_index = 0;
   }
   dst[0] = dst[1] = 0xffff;
-  if (dst != uvram.t3.data)
+  if (dst != uvram.data)
     nmi_subroutine_index = 3;
   overworld_screen_transition = overworld_screen_trans_dir_bits2;
 }
@@ -3313,8 +3313,8 @@ uint16 Overworld_ToolAndTileInteraction(uint16 x, uint16 y) {  // 9bbd82
         scratch_1 = y & ~0xf;
         index_of_interacting_tile = yv;
         yv = (attr == 0x72a) ? 0xdc8 : 0xdc7;
-check_secret:
         uint32 result;
+check_secret:
         result = Overworld_RevealSecret(pos);
         if (result != 0)
           yv = result;

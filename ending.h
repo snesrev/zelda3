@@ -1,10 +1,10 @@
 #pragma once
 
-struct IntroSpriteEnt {
+typedef struct IntroSpriteEnt {
   int8 x, y;
   uint8 charnum, flags;
   uint8 ext;
-};
+} IntroSpriteEnt;
 
 void Intro_SetupScreen();
 void Intro_LoadTextPointersAndPalettes();

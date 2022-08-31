@@ -1,3 +1,5 @@
+#ifndef ZELDA_RTL_H
+#define ZELDA_RTL_H
 #pragma once
 
 #include <stdio.h>
@@ -8,59 +10,53 @@
 
 #include "types.h"
 #include "snes_regs.h"
+#include "snes/dma.h"
+#include "snes/ppu.h"
+#include "spc_player.h"
 
-
-struct ZeldaEnv {
+typedef struct ZeldaEnv {
   uint8 *ram;
   uint8 *sram;
   uint16 *vram;
-  struct Ppu *ppu;
-  struct SpcPlayer *player;
-  struct Dma *dma;
-};
+  Ppu *ppu;
+  SpcPlayer *player;
+  Dma *dma;
+} ZeldaEnv;
 extern ZeldaEnv g_zenv;
+
 // it's here so that the variables.h can access it
 extern uint8 g_ram[131072];
+extern const uint16 kUpperBitmasks[];
+extern const uint8 kLitTorchesColorPlus[];
+extern const uint8 kDungeonCrystalPendantBit[];
+extern const int8 kGetBestActionToPerformOnTile_x[];
+extern const int8 kGetBestActionToPerformOnTile_y[];
 
+static inline void zelda_snes_dummy_write(uint32 adr, uint8 val) {}
 
-
-static inline void zelda_snes_dummy_write(uint32_t adr, uint8_t val) {}
-
-const uint16 kUpperBitmasks[] = { 0x8000, 0x4000, 0x2000, 0x1000, 0x800, 0x400, 0x200, 0x100, 0x80, 0x40, 0x20, 0x10, 8, 4, 2, 1 };
-const uint8 kLitTorchesColorPlus[] = {31, 8, 4, 0};
-const uint8 kDungeonCrystalPendantBit[13] = {0, 0, 4, 2, 0, 16, 2, 1, 64, 4, 1, 32, 8};
-const int8 kGetBestActionToPerformOnTile_x[4] = { 7, 7, -3, 16 };
-const int8 kGetBestActionToPerformOnTile_y[4] = { 6, 24, 12, 12 };
-
-struct MovableBlockData {
+typedef struct MovableBlockData {
   uint16 room;
   uint16 tilemap;
-};
+} MovableBlockData;
 
-struct OamEntSigned {
+typedef struct OamEntSigned {
   int8 x, y;
   uint8 charnum, flags;
-};
+} OamEntSigned;
 
 
 
 #define movable_block_datas ((MovableBlockData*)(g_ram+0xf940))
 #define oam_buf ((OamEnt*)(g_ram+0x800))
 
-
-
-
-struct OwScrollVars {
+typedef struct OwScrollVars {
   uint16 ystart, yend, xstart, xend;
-};
+} OwScrollVars;
 
 #define ow_scroll_vars0 (*(OwScrollVars*)(g_ram+0x600))
 #define ow_scroll_vars1 (*(OwScrollVars*)(g_ram+0x608))
 
 #define ow_scroll_vars0_exit (*(OwScrollVars*)(g_ram+0xC154))
-
-
-
 
 extern const uint8 kLayoutQuadrantFlags[];
 extern const uint8 kVariousPacks[16];
@@ -75,7 +71,7 @@ extern const uint16 kOverworld_OffsetBaseX[64];
 // forwards
 
 
-struct MirrorHdmaVars {
+typedef struct MirrorHdmaVars {
   uint16 var0;
   uint16 var1[2];
   uint16 var3[2];
@@ -88,7 +84,7 @@ struct MirrorHdmaVars {
   uint16 var11;
   uint16 pad;
   uint8 ctr2, ctr;
-};
+} MirrorHdmaVars;
 
 
 // Special RAM locations that are unused but I use for compat things.
@@ -199,4 +195,8 @@ void ZeldaRunFrame(uint16 input, int run_what);
 void ClearOamBuffer();
 void Startup_InitializeMemory();
 void LoadSongBank(const uint8 *p);
+void NORETURN Die(const char *error);
 void ZeldaWriteSram();
+void ZeldaReadSram(Snes *snes);
+
+#endif  // ZELDA_RTL_H

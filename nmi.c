@@ -276,7 +276,7 @@ void NMI_DoUpdates() {  // 8089e0
   }
 
   if (nmi_copy_packets_flag) {
-    uint8 *p = (uint8 *)uvram.t3.data;
+    uint8 *p = (uint8 *)uvram.data;
     do {
       int dst = WORD(p[0]);
       int vmain = p[2];
@@ -321,7 +321,7 @@ void NMI_UploadBG3Text() {  // 808ce4
 }
 
 void NMI_UpdateOWScroll() {  // 808d13
-  uint8 *src = (uint8 *)uvram.t3.data, *src_org = src;
+  uint8 *src = (uint8 *)uvram.data, *src_org = src;
   int f = WORD(src[0]);
   int step = (f & 0x8000) ? 32 : 1;
   int len = f & 0x3fff;

@@ -21,7 +21,7 @@ def replace_in_file(fname):
   
 
 
-for filename in glob.glob('*.cpp') + glob.glob('*.h'):
+for filename in glob.glob('*.c') + glob.glob('*.h'):
   replace_in_file(filename)
 
 

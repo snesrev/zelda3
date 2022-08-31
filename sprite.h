@@ -3,13 +3,13 @@
 #include "variables.h"
 
 
-struct PrepOamCoordsRet {
+typedef struct PrepOamCoordsRet {
   uint16 x, y;
   uint8 r4;
   uint8 flags;
-};
+} PrepOamCoordsRet;
 
-struct SpriteHitBox {
+typedef struct SpriteHitBox {
   uint8 r0_xlo;
   uint8 r8_xhi;
   uint8 r1_ylo;
@@ -23,25 +23,23 @@ struct SpriteHitBox {
   uint8 r11_spr_yhi;
   uint8 r6_spr_xsize;
   uint8 r7_spr_ysize;
-};
+} SpriteHitBox;
 
-struct SpriteSpawnInfo {
+typedef struct SpriteSpawnInfo {
   uint16 r0_x;
   uint16 r2_y;
   uint8 r4_z;
   uint16 r5_overlord_x;
   uint16 r7_overlord_y;
-};
+} SpriteSpawnInfo;
 
 extern const uint8 kAbsorbBigKey[2];
 
-
-
-struct DrawMultipleData {
+typedef struct DrawMultipleData {
   int8 x, y;
   uint16 char_flags;
   uint8 ext;
-};
+} DrawMultipleData;
 
 
 

@@ -1,4 +1,3 @@
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,6 +19,9 @@
 
 #include "zelda_rtl.h"
 
+extern Ppu *GetPpuForRendering();
+extern Dsp *GetDspForRendering();
+
 extern uint8 g_emulated_ram[0x20000];
 bool g_run_without_emu = false;
 
@@ -33,12 +35,16 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo);
 
 static uint8_t* readFile(char* name, size_t* length);
 static bool loadRom(char* name, Snes* snes);
-static bool checkExtention(const char* name, bool forZip);
 static void playAudio(Snes *snes, SDL_AudioDeviceID device, int16_t* audioBuffer);
 static void renderScreen(SDL_Renderer* renderer, SDL_Texture* texture);
 static void handleInput(int keyCode, int modCode, bool pressed);
 
 int input1_current_state;
+
+void NORETURN Die(const char *error) {
+  fprintf(stderr, "Error: %s\n", error);
+  exit(1);
+}
 
 void setButtonState(int button, bool pressed) {
   // set key in constroller
@@ -46,27 +52,6 @@ void setButtonState(int button, bool pressed) {
     input1_current_state |= 1 << button;
   } else {
     input1_current_state &= ~(1 << button);
-  }
-}
-
-
-void ZeldaReadSram(Snes *snes) {
-  FILE *f = fopen("saves/sram.dat", "rb");
-  if (f) {
-    fread(g_zenv.sram, 1, 8192, f);
-    memcpy(snes->cart->ram, g_zenv.sram, 8192);
-    fclose(f);
-  }
-}
-
-void ZeldaWriteSram() {
-  rename("saves/sram.dat", "saves/sram.bak");
-  FILE *f = fopen("saves/sram.dat", "wb");
-  if (f) {
-    fwrite(g_zenv.sram, 1, 8192, f);
-    fclose(f);
-  } else {
-    fprintf(stderr, "Unable to write saves/sram.dat\n");
   }
 }
 
@@ -243,9 +228,6 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-extern struct Ppu *GetPpuForRendering();
-extern struct Dsp *GetDspForRendering();
-
 static void playAudio(Snes *snes, SDL_AudioDeviceID device, int16_t* audioBuffer) {
   // generate enough samples
   if (!kIsOrigEmu && snes) {
@@ -335,31 +317,11 @@ static void handleInput(int keyCode, int keyMod, bool pressed) {
   }
 }
 
-static bool checkExtention(const char* name, bool forZip) {
-  if(name == NULL) return false;
-  int length = strlen(name);
-  if(length < 4) return false;
-  if(forZip) {
-    if(strcmp(name + length - 4, ".zip") == 0) return true;
-    if(strcmp(name + length - 4, ".ZIP") == 0) return true;
-  } else {
-    if(strcmp(name + length - 4, ".smc") == 0) return true;
-    if(strcmp(name + length - 4, ".SMC") == 0) return true;
-    if(strcmp(name + length - 4, ".sfc") == 0) return true;
-    if(strcmp(name + length - 4, ".SFC") == 0) return true;
-  }
-  return false;
-}
-
 static bool loadRom(char* name, Snes* snes) {
-  // zip library from https://github.com/kuba--/zip
   size_t length = 0;
   uint8_t* file = NULL;
   file = readFile(name, &length);
-  if(file == NULL) {
-    puts("Failed to read file");
-    return false;
-  }
+  if(!file) Die("Failed to read file");
 
   PatchRom(file);
 
@@ -367,6 +329,7 @@ static bool loadRom(char* name, Snes* snes) {
   free(file);
   return result;
 }
+
 
 static uint8_t* readFile(char* name, size_t* length) {
   FILE* f = fopen(name, "rb");
@@ -377,6 +340,7 @@ static uint8_t* readFile(char* name, size_t* length) {
   int size = ftell(f);
   rewind(f);
   uint8_t* buffer = (uint8_t *)malloc(size);
+  if (!buffer) Die("malloc failed");
   fread(buffer, size, 1, f);
   fclose(f);
   *length = size;

@@ -1,9 +1,9 @@
 #pragma once
 #include "types.h"
 
-struct TagalongMessageInfo {
+typedef struct TagalongMessageInfo {
   uint16 y, x, bit, msg, tagalong;
-};
+} TagalongMessageInfo;
 
 bool Tagalong_IsFollowing();
 bool Follower_ValidateMessageFreedom();

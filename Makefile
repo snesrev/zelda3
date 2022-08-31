@@ -1,22 +1,22 @@
 # adapted from original README.md:
-# `clang++ -I/usr/include/SDL2 -lSDL2 -O2 -ozelda3 *.cpp snes/*.cpp`
+# `clang -I/usr/include/SDL2 -lSDL2 -O2 -ozelda3 *.c snes/*.c`
 
-ifneq (,$(shell command -v clang++))
-	CXX = clang++
-else ifneq (,$(shell command -v g++))
-	CXX = g++
+ifneq (,$(shell which clang))
+	CC = clang
+else ifneq (,$(shell which gcc))
+	CC = gcc
 endif
 
-ifneq (,$(findstring clang,$(CXX)))
+ifneq (,$(findstring clang,$(CC)))
 	LTO = -flto=thin
-else ifneq (,$(findstring g++,$(CXX)))
+else ifneq (,$(findstring gcc,$(CC)))
 	LTO = -flto=auto
 endif
 
-override CXXFLAGS := -O2 -I/usr/include/SDL2 $(LTO) $(CXXFLAGS)
+override CFLAGS := -O2 -I/usr/include/SDL2 $(LTO) $(CXXFLAGS)
 override LDFLAGS := -lSDL2 $(LDFLAGS)
 
-override OBJS = $(patsubst %.cpp,%.o,$(wildcard *.cpp snes/*.cpp))
+override OBJS = $(patsubst %.c,%.o,$(wildcard *.c snes/*.c))
 override BIN = zelda3
 
 .PHONY: all clean
@@ -27,4 +27,4 @@ clean:
 	$(RM) $(BIN) $(OBJS)
 
 $(BIN): $(OBJS)
-	$(CXX) $(CXXFLAGS) -o $(BIN) $(OBJS) $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $(BIN) $(OBJS) $(LDFLAGS)

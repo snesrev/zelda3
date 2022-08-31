@@ -459,11 +459,11 @@ def extract_sound_data(rom):
       print_all_sfx(open('sfx.txt', 'w'))
 
 if __name__ == "__main__":
-  if len(sys.argv) < 2:
-    print('extract_music.py [intro|lightworld|indoor|ending]')
+  if len(sys.argv) < 3:
+    print('extract_music.py [rom-filename] [intro|lightworld|indoor|ending]')
     sys.exit(0)
-  ROM = util.LoadedRom()
-  song = sys.argv[1]
+  ROM = util.LoadedRom(None if sys.argv[1] == '' else sys.argv[1])
+  song = sys.argv[2]
 
   load_song(ROM, song)
   print_song(song, sys.stdout)

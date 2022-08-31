@@ -8,6 +8,13 @@
 
 #include "variables.h"
 #include "hud.h"
+
+typedef struct ItemBoxGfx {
+  uint16 v[4];
+} ItemBoxGfx;
+
+static void Hud_DrawItem(uint16 a, const ItemBoxGfx *src);
+
 const uint8 kMaxBombsForLevel[] = { 10, 15, 20, 25, 30, 35, 40, 50 };
 const uint8 kMaxArrowsForLevel[] = { 30, 35, 40, 45, 50, 55, 60, 70 };
 static const uint8 kMaxHealthForLevel[] = { 9, 9, 9, 9, 9, 9, 9, 9, 17, 17, 17, 17, 17, 17, 17, 25, 25, 25, 25, 25, 25 };
@@ -28,7 +35,8 @@ static const uint16 kHudBottlesGfx[128] = {
   0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x2551, 0x2554, 0x2554, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5,
   0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x2556, 0x255e, 0x255e, 0x2553, 0x24f5, 0x2551, 0x2554, 0x2554,
 };
-static const uint16 kHudItemBottles[9][4] = {
+
+static const ItemBoxGfx kHudItemBottles[9] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x2044, 0x2045, 0x2046, 0x2047},
   {0x2837, 0x2838, 0x2cc3, 0x2cd3},
@@ -39,155 +47,155 @@ static const uint16 kHudItemBottles[9][4] = {
   {0x2837, 0x2838, 0x2839, 0x283a},
   {0x2837, 0x2838, 0x2839, 0x283a},
 };
-static const uint16 kHudItemBow[5][4] = {
+static const ItemBoxGfx kHudItemBow[5] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x28ba, 0x28e9, 0x28e8, 0x28cb},
   {0x28ba, 0x284a, 0x2849, 0x28cb},
   {0x28ba, 0x28e9, 0x28e8, 0x28cb},
   {0x28ba, 0x28bb, 0x24ca, 0x28cb},
 };
-static const uint16 kHudItemBoomerang[3][4] = {
+static const ItemBoxGfx kHudItemBoomerang[3] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x2cb8, 0x2cb9, 0x2cf5, 0x2cc9},
   {0x24b8, 0x24b9, 0x24f5, 0x24c9},
 };
-static const uint16 kHudItemHookshot[2][4] = {
+static const ItemBoxGfx kHudItemHookshot[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x24f5, 0x24f6, 0x24c0, 0x24f5},
 };
-static const uint16 kHudItemBombs[2][4] = {
+static const ItemBoxGfx kHudItemBombs[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x2cb2, 0x2cb3, 0x2cc2, 0x6cc2},
 };
-static const uint16 kHudItemMushroom[3][4] = {
+static const ItemBoxGfx kHudItemMushroom[3] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x2444, 0x2445, 0x2446, 0x2447},
   {0x203b, 0x203c, 0x203d, 0x203e},
 };
-static const uint16 kHudItemFireRod[2][4] = {
+static const ItemBoxGfx kHudItemFireRod[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x24b0, 0x24b1, 0x24c0, 0x24c1},
 };
-static const uint16 kHudItemIceRod[2][4] = {
+static const ItemBoxGfx kHudItemIceRod[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x2cb0, 0x2cbe, 0x2cc0, 0x2cc1},
 };
-static const uint16 kHudItemBombos[2][4] = {
+static const ItemBoxGfx kHudItemBombos[2] = {
   {0x20f5, 0x20f5, 0x20f5,  0x20f5},
   {0x287d, 0x287e, 0xe87e, 0xe87d},
 };
-static const uint16 kHudItemEther[2][4] = {
+static const ItemBoxGfx kHudItemEther[2] = {
   {0x20f5, 0x20f5,  0x20f5,  0x20f5},
   {0x2876, 0x2877, 0xE877, 0xE876},
 };
-static const uint16 kHudItemQuake[2][4] = {
+static const ItemBoxGfx kHudItemQuake[2] = {
   {0x20f5, 0x20f5,  0x20f5,  0x20f5},
   {0x2866, 0x2867, 0xE867, 0xE866},
 };
-static const uint16 kHudItemTorch[2][4] = {
+static const ItemBoxGfx kHudItemTorch[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x24bc, 0x24bd, 0x24cc, 0x24cd},
 };
-static const uint16 kHudItemHammer[2][4] = {
+static const ItemBoxGfx kHudItemHammer[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x20b6, 0x20b7, 0x20c6, 0x20c7},
 };
-static const uint16 kHudItemFlute[4][4] = {
+static const ItemBoxGfx kHudItemFlute[4] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x20d0, 0x20d1, 0x20e0, 0x20e1},
   {0x2cd4, 0x2cd5, 0x2ce4, 0x2ce5},
   {0x2cd4, 0x2cd5, 0x2ce4, 0x2ce5},
 };
-static const uint16 kHudItemBugNet[2][4] = {
+static const ItemBoxGfx kHudItemBugNet[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x3c40, 0x3c41, 0x2842, 0x3c43},
 };
-static const uint16 kHudItemBookMudora[2][4] = {
+static const ItemBoxGfx kHudItemBookMudora[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x3ca5, 0x3ca6, 0x3cd8, 0x3cd9},
 };
-static const uint16 kHudItemCaneSomaria[2][4] = {
+static const ItemBoxGfx kHudItemCaneSomaria[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x24dc, 0x24dd, 0x24ec, 0x24ed},
 };
-static const uint16 kHudItemCaneByrna[2][4] = {
+static const ItemBoxGfx kHudItemCaneByrna[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x2cdc, 0x2cdd, 0x2cec, 0x2ced},
 };
-static const uint16 kHudItemCape[2][4] = {
+static const ItemBoxGfx kHudItemCape[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x24b4, 0x24b5, 0x24c4, 0x24c5},
 };
-static const uint16 kHudItemMirror[4][4] = {
+static const ItemBoxGfx kHudItemMirror[4] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x28de, 0x28df, 0x28ee, 0x28ef},
   {0x2c62, 0x2c63, 0x2c72, 0x2c73},
   {0x2886, 0x2887, 0x2888, 0x2889},
 };
-static const uint16 kHudItemGloves[3][4] = {
+static const ItemBoxGfx kHudItemGloves[3] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x2130, 0x2131, 0x2140, 0x2141},
   {0x28da, 0x28db, 0x28ea, 0x28eb},
 };
-static const uint16 kHudItemBoots[2][4] = {
+static const ItemBoxGfx kHudItemBoots[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x3429, 0x342a, 0x342b, 0x342c},
 };
-static const uint16 kHudItemFlippers[2][4] = {
+static const ItemBoxGfx kHudItemFlippers[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x2c9a, 0x2c9b, 0x2c9d, 0x2c9e},
 };
-static const uint16 kHudItemMoonPearl[2][4] = {
+static const ItemBoxGfx kHudItemMoonPearl[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x2433, 0x2434, 0x2435, 0x2436},
 };
-static const uint16 kHudItemEmpty[1][4] = {
+static const ItemBoxGfx kHudItemEmpty[1] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
 };
-static const uint16 kHudItemSword[5][4] = {
+static const ItemBoxGfx kHudItemSword[5] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x2c64, 0x2cce, 0x2c75, 0x3d25},
   {0x2c8a, 0x2c65, 0x2474, 0x3d26},
   {0x248a, 0x2465, 0x3c74, 0x2d48},
   {0x288a, 0x2865, 0x2c74, 0x2d39},
 };
-static const uint16 kHudItemShield[4][4] = {
+static const ItemBoxGfx kHudItemShield[4] = {
   {0x24f5, 0x24f5, 0x24f5, 0x24f5},
   {0x2cfd, 0x6cfd, 0x2cfe, 0x6cfe},
   {0x34ff, 0x74ff, 0x349f, 0x749f},
   {0x2880, 0x2881, 0x288d, 0x288e},
 };
-static const uint16 kHudItemArmor[5][4] = {
+static const ItemBoxGfx kHudItemArmor[5] = {
   {0x3c68, 0x7c68, 0x3c78, 0x7c78},
   {0x2c68, 0x6c68, 0x2c78, 0x6c78},
   {0x2468, 0x6468, 0x2478, 0x6478},
 };
-static const uint16 kHudItemDungeonCompass[2][4] = {
+static const ItemBoxGfx kHudItemDungeonCompass[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x24bf, 0x64bf, 0x2ccf, 0x6ccf},
 };
-static const uint16 kHudItemPalaceItem[3][4] = {
+static const ItemBoxGfx kHudItemPalaceItem[3] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x28d6, 0x68d6, 0x28e6, 0x28e7},
   {0x354b, 0x354c, 0x354d, 0x354e},
 };
-static const uint16 kHudItemDungeonMap[2][4] = {
+static const ItemBoxGfx kHudItemDungeonMap[2] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
   {0x28de, 0x28df, 0x28ee, 0x28ef},
 };
-static const uint16 kHudPendants0[2][4] = {
+static const ItemBoxGfx kHudPendants0[2] = {
   {0x313b, 0x313c, 0x313d, 0x313e},
   {0x252b, 0x252c, 0x252d, 0x252e}
 };
-static const uint16 kHudPendants1[2][4] = {
+static const ItemBoxGfx kHudPendants1[2] = {
   {0x313b, 0x313c, 0x313d, 0x313e},
   {0x2d2b, 0x2d2c, 0x2d2d, 0x2d2e}
 };
-static const uint16 kHudPendants2[2][4] = {
+static const ItemBoxGfx kHudPendants2[2] = {
   {0x313b, 0x313c, 0x313d, 0x313e},
   {0x3d2b, 0x3d2c, 0x3d2d, 0x3d2e}
 };
-static const uint16 kHudItemHeartPieces[4][4] = {
+static const ItemBoxGfx kHudItemHeartPieces[4] = {
   {0x2484, 0x6484, 0x2485, 0x6485},
   {0x24ad, 0x6484, 0x2485, 0x6485},
   {0x24ad, 0x6484, 0x24ae, 0x6485},
@@ -285,39 +293,40 @@ static const uint16 kHudTilemap[165] = {
   0x207f, 0x207f, 0x2854, 0x305e, 0x6854, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f,
   0x207f, 0x207f, 0xa850, 0x2856, 0xe850,
 };
-const uint16 *const kHudItemBoxGfxPtrs[] = {
-  kHudItemBow[0],
-  kHudItemBoomerang[0],
-  kHudItemHookshot[0],
-  kHudItemBombs[0],
-  kHudItemMushroom[0],
-  kHudItemFireRod[0],
-  kHudItemIceRod[0],
-  kHudItemBombos[0],
-  kHudItemEther[0],
-  kHudItemQuake[0],
-  kHudItemTorch[0],
-  kHudItemHammer[0],
-  kHudItemFlute[0],
-  kHudItemBugNet[0],
-  kHudItemBookMudora[0],
-  kHudItemBottles[0],
-  kHudItemCaneSomaria[0],
-  kHudItemCaneByrna[0],
-  kHudItemCape[0],
-  kHudItemMirror[0],
-  kHudItemGloves[0],
-  kHudItemBoots[0],
-  kHudItemFlippers[0],
-  kHudItemMoonPearl[0],
-  kHudItemEmpty[0],
-  kHudItemSword[0],
-  kHudItemShield[0],
-  kHudItemArmor[0],
-  kHudItemBottles[0],
-  kHudItemBottles[0],
-  kHudItemBottles[0],
-  kHudItemBottles[0],
+
+static const ItemBoxGfx * const kHudItemBoxGfxPtrs[] = {
+  kHudItemBow,
+  kHudItemBoomerang,
+  kHudItemHookshot,
+  kHudItemBombs,
+  kHudItemMushroom,
+  kHudItemFireRod,
+  kHudItemIceRod,
+  kHudItemBombos,
+  kHudItemEther,
+  kHudItemQuake,
+  kHudItemTorch,
+  kHudItemHammer,
+  kHudItemFlute,
+  kHudItemBugNet,
+  kHudItemBookMudora,
+  kHudItemBottles,
+  kHudItemCaneSomaria,
+  kHudItemCaneByrna,
+  kHudItemCape,
+  kHudItemMirror,
+  kHudItemGloves,
+  kHudItemBoots,
+  kHudItemFlippers,
+  kHudItemMoonPearl,
+  kHudItemEmpty,
+  kHudItemSword,
+  kHudItemShield,
+  kHudItemArmor,
+  kHudItemBottles,
+  kHudItemBottles,
+  kHudItemBottles,
+  kHudItemBottles,
 };
 static const uint16 kUpdateMagicPowerTilemap[17][4] = {
   {0x3cf5, 0x3cf5, 0x3cf5, 0x3cf5},
@@ -832,11 +841,11 @@ void Hud_UpdateBottleMenu() {  // 8de17f
     for (int x = 0; x < 8; x++)
       uvram_screen.row[y].col[22 + x] = 0x24f5;
 
-  Hud_DrawItem(0x1372, kHudItemBottles[link_bottle_info[0]]);
-  Hud_DrawItem(0x1472, kHudItemBottles[link_bottle_info[1]]);
-  Hud_DrawItem(0x1572, kHudItemBottles[link_bottle_info[2]]);
-  Hud_DrawItem(0x1672, kHudItemBottles[link_bottle_info[3]]);
-  Hud_DrawItem(0x1408, kHudItemBottles[link_item_bottles ? link_bottle_info[link_item_bottles - 1] : 0]);
+  Hud_DrawItem(0x1372, &kHudItemBottles[link_bottle_info[0]]);
+  Hud_DrawItem(0x1472, &kHudItemBottles[link_bottle_info[1]]);
+  Hud_DrawItem(0x1572, &kHudItemBottles[link_bottle_info[2]]);
+  Hud_DrawItem(0x1672, &kHudItemBottles[link_bottle_info[3]]);
+  Hud_DrawItem(0x1408, &kHudItemBottles[link_item_bottles ? link_bottle_info[link_item_bottles - 1] : 0]);
 
   uint16 *p = (uint16 *)&g_ram[kHudItemInVramPtr[hud_cur_item - 1]];
   uvram_screen.row[6].col[25] = p[0];
@@ -902,12 +911,12 @@ void Hud_RestoreNormalMenu() {  // 8de346
   BYTE(nmi_load_target_addr) = 0x22;
 }
 
-void Hud_DrawItem(uint16 a, const uint16 *src) {  // 8de372
+static void Hud_DrawItem(uint16 a, const ItemBoxGfx *src) {  // 8de372
   uint16 *dst = (uint16 *)&g_ram[a];
-  dst[0] = src[0];
-  dst[1] = src[1];
-  dst[32] = src[2];
-  dst[33] = src[3];
+  dst[0] = src->v[0];
+  dst[1] = src->v[1];
+  dst[32] = src->v[2];
+  dst[33] = src->v[3];
 }
 
 void Hud_SearchForEquippedItem() {  // 8de399
@@ -959,26 +968,26 @@ void Hud_DrawYButtonItems(uint16 mask) {  // 8de3d9
   uvram_screen.row[5].col[3] = 0x246E;
   uvram_screen.row[5].col[4] = 0x246F;
 
-  Hud_DrawItem(0x11c8, kHudItemBow[link_item_bow]);
-  Hud_DrawItem(0x11ce, kHudItemBoomerang[link_item_boomerang]);
-  Hud_DrawItem(0x11d4, kHudItemHookshot[link_item_hookshot]);
-  Hud_DrawItem(0x11da, kHudItemBombs[link_item_bombs ? 1 : 0]);
-  Hud_DrawItem(0x11e0, kHudItemMushroom[link_item_mushroom]);
-  Hud_DrawItem(0x1288, kHudItemFireRod[link_item_fire_rod]);
-  Hud_DrawItem(0x128e, kHudItemIceRod[link_item_ice_rod]);
-  Hud_DrawItem(0x1294, kHudItemBombos[link_item_bombos_medallion]);
-  Hud_DrawItem(0x129a, kHudItemEther[link_item_ether_medallion]);
-  Hud_DrawItem(0x12a0, kHudItemQuake[link_item_quake_medallion]);
-  Hud_DrawItem(0x1348, kHudItemTorch[link_item_torch]);
-  Hud_DrawItem(0x134e, kHudItemHammer[link_item_hammer]);
-  Hud_DrawItem(0x1354, kHudItemFlute[link_item_flute]);
-  Hud_DrawItem(0x135a, kHudItemBugNet[link_item_bug_net]);
-  Hud_DrawItem(0x1360, kHudItemBookMudora[link_item_book_of_mudora]);
-  Hud_DrawItem(0x1408, kHudItemBottles[link_item_bottles ? link_bottle_info[link_item_bottles - 1] : 0]);
-  Hud_DrawItem(0x140e, kHudItemCaneSomaria[link_item_cane_somaria]);
-  Hud_DrawItem(0x1414, kHudItemCaneByrna[link_item_cane_byrna]);
-  Hud_DrawItem(0x141a, kHudItemCape[link_item_cape]);
-  Hud_DrawItem(0x1420, kHudItemMirror[link_item_mirror]);
+  Hud_DrawItem(0x11c8, &kHudItemBow[link_item_bow]);
+  Hud_DrawItem(0x11ce, &kHudItemBoomerang[link_item_boomerang]);
+  Hud_DrawItem(0x11d4, &kHudItemHookshot[link_item_hookshot]);
+  Hud_DrawItem(0x11da, &kHudItemBombs[link_item_bombs ? 1 : 0]);
+  Hud_DrawItem(0x11e0, &kHudItemMushroom[link_item_mushroom]);
+  Hud_DrawItem(0x1288, &kHudItemFireRod[link_item_fire_rod]);
+  Hud_DrawItem(0x128e, &kHudItemIceRod[link_item_ice_rod]);
+  Hud_DrawItem(0x1294, &kHudItemBombos[link_item_bombos_medallion]);
+  Hud_DrawItem(0x129a, &kHudItemEther[link_item_ether_medallion]);
+  Hud_DrawItem(0x12a0, &kHudItemQuake[link_item_quake_medallion]);
+  Hud_DrawItem(0x1348, &kHudItemTorch[link_item_torch]);
+  Hud_DrawItem(0x134e, &kHudItemHammer[link_item_hammer]);
+  Hud_DrawItem(0x1354, &kHudItemFlute[link_item_flute]);
+  Hud_DrawItem(0x135a, &kHudItemBugNet[link_item_bug_net]);
+  Hud_DrawItem(0x1360, &kHudItemBookMudora[link_item_book_of_mudora]);
+  Hud_DrawItem(0x1408, &kHudItemBottles[link_item_bottles ? link_bottle_info[link_item_bottles - 1] : 0]);
+  Hud_DrawItem(0x140e, &kHudItemCaneSomaria[link_item_cane_somaria]);
+  Hud_DrawItem(0x1414, &kHudItemCaneByrna[link_item_cane_byrna]);
+  Hud_DrawItem(0x141a, &kHudItemCape[link_item_cape]);
+  Hud_DrawItem(0x1420, &kHudItemMirror[link_item_mirror]);
 }
 
 void Hud_DrawUnknownBox(uint16 palmask) {  // 8de647
@@ -1072,9 +1081,9 @@ void Hud_DrawAbilityText(uint16 palmask) {  // 8de6b6
 }
 
 void Hud_DrawAbilityIcons() {  // 8de7b7
-  Hud_DrawItem(0x16D0, kHudItemGloves[link_item_gloves]);
-  Hud_DrawItem(0x16C8, kHudItemBoots[link_item_boots]);
-  Hud_DrawItem(0x16D8, kHudItemFlippers[link_item_flippers]);
+  Hud_DrawItem(0x16D0, &kHudItemGloves[link_item_gloves]);
+  Hud_DrawItem(0x16C8, &kHudItemBoots[link_item_boots]);
+  Hud_DrawItem(0x16D8, &kHudItemFlippers[link_item_flippers]);
   if (link_item_gloves)
     Hud_DrawGlovesText(link_item_gloves != 1);
 }
@@ -1100,9 +1109,9 @@ void Hud_DrawProgressIcons_Pendants() {  // 8de9d3
     src += 10;
   }
 
-  Hud_DrawItem(0x13B2, kHudPendants0[(link_which_pendants >> 0) & 1]);
-  Hud_DrawItem(0x146E, kHudPendants1[(link_which_pendants >> 1) & 1]);
-  Hud_DrawItem(0x1476, kHudPendants2[(link_which_pendants >> 2) & 1]);
+  Hud_DrawItem(0x13B2, &kHudPendants0[(link_which_pendants >> 0) & 1]);
+  Hud_DrawItem(0x146E, &kHudPendants1[(link_which_pendants >> 1) & 1]);
+  Hud_DrawItem(0x1476, &kHudPendants2[(link_which_pendants >> 2) & 1]);
 }
 
 void Hud_DrawProgressIcons_Crystals() {  // 8dea62
@@ -1188,7 +1197,7 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
 }
 
 void Hud_DrawMoonPearl() {  // 8dece9
-  Hud_DrawItem(0x16e0, kHudItemMoonPearl[link_item_moon_pearl]);
+  Hud_DrawItem(0x16e0, &kHudItemMoonPearl[link_item_moon_pearl]);
 }
 
 void Hud_DrawEquipment(uint16 palmask) {  // 8ded29
@@ -1232,34 +1241,34 @@ void Hud_DrawEquipment(uint16 palmask) {  // 8ded29
   if (cur_palace_index_x2 == 0xff) {
     for (int i = 0; i < 8; i++)
       uvram_screen.row[26].col[22 + i] = 0x24F5;
-    Hud_DrawItem(0x16f2, kHudItemHeartPieces[link_heart_pieces]);
+    Hud_DrawItem(0x16f2, &kHudItemHeartPieces[link_heart_pieces]);
   }
-  Hud_DrawItem(0x15ec, kHudItemSword[link_sword_type == 0xff ? 0 : link_sword_type]);
+  Hud_DrawItem(0x15ec, &kHudItemSword[link_sword_type == 0xff ? 0 : link_sword_type]);
 }
 
 void Hud_DrawShield() {  // 8dee21
-  Hud_DrawItem(0x15f2, kHudItemShield[link_shield_type]);
+  Hud_DrawItem(0x15f2, &kHudItemShield[link_shield_type]);
 }
 
 void Hud_DrawArmor() {  // 8dee3c
-  Hud_DrawItem(0x15f8, kHudItemArmor[link_armor]);
+  Hud_DrawItem(0x15f8, &kHudItemArmor[link_armor]);
 }
 
 void Hud_DrawMapAndBigKey() {  // 8dee57
   if (cur_palace_index_x2 != 0xff &&
       (link_bigkey << (cur_palace_index_x2 >> 1)) & 0x8000) {
-    Hud_DrawItem(0x16F8, kHudItemPalaceItem[CheckPalaceItemPosession() + 1]);
+    Hud_DrawItem(0x16F8, &kHudItemPalaceItem[CheckPalaceItemPosession() + 1]);
   }
   if (cur_palace_index_x2 != 0xff &&
       (link_dungeon_map << (cur_palace_index_x2 >> 1)) & 0x8000) {
-    Hud_DrawItem(0x16EC, kHudItemDungeonMap[1]);
+    Hud_DrawItem(0x16EC, &kHudItemDungeonMap[1]);
   }
 }
 
 void Hud_DrawCompass() {  // 8def39
   if (cur_palace_index_x2 != 0xff &&
       (link_compass << (cur_palace_index_x2 >> 1)) & 0x8000) {
-    Hud_DrawItem(0x16F2, kHudItemDungeonCompass[1]);
+    Hud_DrawItem(0x16F2, &kHudItemDungeonCompass[1]);
   }
 }
 
@@ -1284,11 +1293,11 @@ void Hud_DrawBottleMenu(uint16 palmask) {  // 8def67
     for (int x = 0; x < 8; x++)
       uvram_screen.row[y].col[22 + x] = 0x24f5;
 
-  Hud_DrawItem(0x1372, kHudItemBottles[link_bottle_info[0]]);
-  Hud_DrawItem(0x1472, kHudItemBottles[link_bottle_info[1]]);
-  Hud_DrawItem(0x1572, kHudItemBottles[link_bottle_info[2]]);
-  Hud_DrawItem(0x1672, kHudItemBottles[link_bottle_info[3]]);
-  Hud_DrawItem(0x1408, kHudItemBottles[link_bottle_info[link_item_bottles - 1]]);
+  Hud_DrawItem(0x1372, &kHudItemBottles[link_bottle_info[0]]);
+  Hud_DrawItem(0x1472, &kHudItemBottles[link_bottle_info[1]]);
+  Hud_DrawItem(0x1572, &kHudItemBottles[link_bottle_info[2]]);
+  Hud_DrawItem(0x1672, &kHudItemBottles[link_bottle_info[3]]);
+  Hud_DrawItem(0x1408, &kHudItemBottles[link_bottle_info[link_item_bottles - 1]]);
 
   uint16 *p = (uint16 *)&g_ram[kHudItemInVramPtr[hud_cur_item - 1]];
 
@@ -1411,7 +1420,7 @@ void Hud_UpdateItemBox() {  // 8dfafd
   else if (hud_cur_item == 16)
     item_val = link_bottle_info[item_val - 1];
 
-  const uint16 *p = kHudItemBoxGfxPtrs[hud_cur_item - 1] + item_val * 4;
+  const uint16 *p = kHudItemBoxGfxPtrs[hud_cur_item - 1][item_val].v;
 
   hud_tile_indices_buffer[37] = p[0];
   hud_tile_indices_buffer[38] = p[1];
@@ -1484,3 +1493,6 @@ void Hud_UpdateHearts(uint16 *dst, const uint16 *src, int n) {  // 8dfdab
   }
 }
 
+const uint16 *Hud_GetItemBoxPtr(int item) {
+  return kHudItemBoxGfxPtrs[item]->v;
+}

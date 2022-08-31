@@ -2331,7 +2331,7 @@ void Object_Draw_DoorRight_3x4(uint16 src, int door) {
 
 void Dungeon_OpeningLockedDoor_Combined(bool skip_anim) {
   uint8 ctr = 2;
-  int k, dma_ptr;
+  int m, k, dma_ptr;
 
   if (skip_anim) {
     door_animation_step_indicator = 16;
@@ -2343,7 +2343,7 @@ void Dungeon_OpeningLockedDoor_Combined(bool skip_anim) {
     if (door_animation_step_indicator != 12)
       goto middle;
 step12:
-    int m = kUpperBitmasks[dung_bg2_attr_table[dung_cur_door_pos] & 7];
+    m = kUpperBitmasks[dung_bg2_attr_table[dung_cur_door_pos] & 7];
     dung_door_opened_incl_adjacent |= m;
     dung_door_opened |= m;
     ctr = 4;
@@ -2631,7 +2631,7 @@ void Dungeon_LoadRoom() {  // 81873a
   RoomDraw_DrawAllObjects(cur_p0);  // Draw Layer 3 objects to BG2
 
   for (dung_load_ptr_offs = 0; dung_load_ptr_offs != 0x18C; dung_load_ptr_offs += 4) {
-    MovableBlockData &m = movable_block_datas[dung_load_ptr_offs >> 2];
+    MovableBlockData m = movable_block_datas[dung_load_ptr_offs >> 2];
     if (m.room == dungeon_room_index)
       DrawObjects_PushableBlock(m.tilemap, dung_load_ptr_offs);
   }
@@ -5174,8 +5174,9 @@ handle_62:
       return;
     }
     if ((a & 0xf0) == 0xf0) {
+      int j;
 handle_f0:
-      int j = a & 0xf;
+      j = a & 0xf;
       a = door_type_and_slot[j] & 0xfe;
       if (a != kDoorType_BreakableWall && a != 0x2A && a != 0x2E)
         return;
@@ -5739,8 +5740,9 @@ uint8 OpenChestForItem(uint8 tile, int *chest_position) {  // 81eb66
           overworld_tileattr[pos + 1] = ptr[2];
           overworld_tileattr[pos + 65] = ptr[3];
 
+          uint8 attr;
 afterStoreCrap:
-          uint8 attr = (loc < 0x8000) ? 0x27 : 0x00;
+          attr = (loc < 0x8000) ? 0x27 : 0x00;
 
           dung_bg2_attr_table[pos + 0] = attr;
           dung_bg2_attr_table[pos + 64] = attr;
@@ -6131,7 +6133,7 @@ void ClearAndStripeExplodingWall(uint16 dsto) {  // 81f811
   if (!(dung_door_direction[dung_cur_door_idx >> 1] & 2))
     r6++;
 
-  uint16 *uvdata = &uvram.t3.data[0];
+  uint16 *uvdata = &uvram.data[0];
   for (;;) {
     const uint16 *bg2 = &dung_bg2[dsto];
     do {
@@ -8532,7 +8534,7 @@ void PushBlock_HandleCollision(uint8 i, uint16 x, uint16 y) {  // 87efb9
       bitmask_of_dragstate |= index_of_changable_dungeon_objs[i] ? 4 : 1;
     if (dir & 1 ? (r8 >= r10 && (uint16)(r8 - r10) < 8) : (uint16)(r8 - r10) >= 0xfff8) {
       *coord_p -= r8 - r10;
-      (dir & 2 ? link_x_vel : link_y_vel) -= r8 - r10;
+      *(dir & 2 ? &link_x_vel : &link_y_vel) -= r8 - r10;
     }
   }
   HandleIndoorCameraAndDoors();

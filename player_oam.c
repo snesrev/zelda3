@@ -396,10 +396,10 @@ static const uint16 kLinkDmaGraphicsIndices[511] = {
   203, 72, 113, 99, 26, 295, 102, 30, 105, 203, 107, 10, 10, 109, 109, 13, 13, 112, 114, 110, 203, 297, 299, 300, 301, 302, 63, 16, 16, 79, 79, 294,
   80, 294, 19, 19, 20, 20, 21, 21, 81, 82, 81, 23, 23, 24, 24, 25, 130, 131, 132, 133, 134, 134, 28, 28, 29, 121, 122, 123, 124, 129, 129,
 };
-struct LinkSpriteBody {
+typedef struct LinkSpriteBody {
   int8 y, x;
   uint8 tile;
-};
+} LinkSpriteBody;
 static const LinkSpriteBody kLinkSpriteBodys[303] = {
   { 0,  0, 0x00},
   { 1,  0, 0x00},
