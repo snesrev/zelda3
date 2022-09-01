@@ -36,13 +36,13 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo);
 static uint8 *ReadFile(char* name, size_t* length);
 static bool LoadRom(char* name, Snes* snes);
 static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer);
-static void RenderScreen(SDL_Renderer *renderer, SDL_Texture *texture);
+static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen);
 static void HandleInput(int keyCode, int modCode, bool pressed);
 static void HandleGamepadInput(int button, bool pressed);
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
 
-int input1_current_state;
+static int input1_current_state;
 
 void NORETURN Die(const char *error) {
   fprintf(stderr, "Error: %s\n", error);
@@ -211,7 +211,7 @@ int main(int argc, char** argv) {
     ZeldaDrawPpuFrame();
 
     PlayAudio(snes_run, device, audioBuffer);
-    RenderScreen(renderer, texture);
+    RenderScreen(window, renderer, texture, (win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
 
     SDL_RenderPresent(renderer); // vsyncs to 60 FPS
     // if vsync isn't working, delay manually
@@ -263,7 +263,7 @@ static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) 
   }
 }
 
-static void RenderScreen(SDL_Renderer* renderer, SDL_Texture* texture) {
+static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen) {
   void* pixels = NULL;
   int pitch = 0;
   if(SDL_LockTexture(texture, NULL, &pixels, &pitch) != 0) {
@@ -273,7 +273,19 @@ static void RenderScreen(SDL_Renderer* renderer, SDL_Texture* texture) {
 
   ppu_putPixels(GetPpuForRendering(), (uint8_t*) pixels);
   SDL_UnlockTexture(texture);
-  SDL_RenderCopy(renderer, texture, NULL, NULL);
+
+  SDL_DisplayMode display_mode;
+  if (fullscreen && SDL_GetWindowDisplayMode(window, &display_mode) == 0) {
+    uint32 w = display_mode.w, h = display_mode.h;
+    if (w * 15 < h * 16)
+      h = w * 15 / 16;  // limit height
+    else
+      w = h * 16 / 15;  // limit width
+    SDL_Rect r = { (display_mode.w - w) / 2, (display_mode.h - h) / 2, w, h };
+    SDL_RenderCopy(renderer, texture, NULL, &r);
+  } else {
+    SDL_RenderCopy(renderer, texture, NULL, NULL);
+  }
 }
 
 
