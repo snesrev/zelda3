@@ -13,8 +13,8 @@ else ifneq (,$(findstring gcc,$(CC)))
 	LTO = -flto=auto
 endif
 
-override CFLAGS := -O2 -I/usr/include/SDL2 $(LTO) $(CXXFLAGS)
-override LDFLAGS := -lSDL2 $(LDFLAGS)
+override CFLAGS := -O2 `sdl2-config --cflags` $(LTO) $(CXXFLAGS)
+override LDFLAGS := `sdl2-config --libs` $(LDFLAGS)
 
 override OBJS = $(patsubst %.c,%.o,$(wildcard *.c snes/*.c))
 override BIN = zelda3
