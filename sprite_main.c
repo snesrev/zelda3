@@ -20843,7 +20843,7 @@ void Sprite_A1_Freezor(int k) {  // 9e981d
     break;
   }
   case 2: { // moving
-    static const int8 kFreezor_Xvel[2] = {8, -8};
+    static const int8 kFreezor_Xvel[4] = {8, -8, 0, 0};
     static const int8 kFreezor_Yvel[4] = {0, 0, 18, -18};
     static const uint8 kFreezor_Moving_Gfx[4] = {1, 2, 1, 3};
     static const int8 kFreezor_Sparkle_X[8] = {-4, -2, 0, 2, 4, 6, 8, 10};
