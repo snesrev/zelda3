@@ -41,6 +41,8 @@ static void HandleInput(int keyCode, int modCode, bool pressed);
 static void HandleGamepadInput(int button, bool pressed);
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
+static inline int IntMin(int a, int b) { return a < b ? a : b; }
+static inline int IntMax(int a, int b) { return a > b ? a : b; }
 
 static int input1_current_state;
 
@@ -58,6 +60,58 @@ void SetButtonState(int button, bool pressed) {
   }
 }
 
+enum {
+  kRenderWidth = 512,
+  kRenderHeight = 480,
+  kDefaultZoom = 2,
+};
+
+static int current_zoom = kDefaultZoom;
+
+void DoZoom(SDL_Window *window, SDL_Renderer *renderer, int zoom_step) {
+  int screen = SDL_GetWindowDisplayIndex(window);
+  if (screen < 0) screen = 0;
+  int max_zoom = kDefaultZoom * 5;
+  SDL_Rect bounds;
+  int bt = -1, bl, bb, br;
+  // note this takes into effect Windows display scaling, i.e., resolution is divided by scale factor
+  if (SDL_GetDisplayUsableBounds(screen, &bounds) == 0) {
+    // this call may take a while before it is reported by Windows (or not at all in my testing)
+    if (SDL_GetWindowBordersSize(window, &bt, &bl, &bb, &br) != 0) {
+      // guess based on Windows 10/11 defaults
+      bl = br = bb = 1;
+      bt = 31;
+    }
+    // Allow a zoom level slightly above the max that fits on screen
+    int mw = (bounds.w - bl - br + (kRenderWidth / kDefaultZoom) / 4) / (kRenderWidth / kDefaultZoom);
+    int mh = (bounds.h - bt - bb + (kRenderHeight / kDefaultZoom) / 4) / (kRenderHeight / kDefaultZoom);
+    max_zoom = IntMin(mw, mh);
+  }
+  int new_zoom = IntMax(IntMin(current_zoom + zoom_step, max_zoom), 1);
+  current_zoom = new_zoom;
+  int w = new_zoom * (kRenderWidth / kDefaultZoom);
+  int h = new_zoom * (kRenderHeight / kDefaultZoom);
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
+  SDL_RenderSetLogicalSize(renderer, w, h);
+  SDL_SetWindowSize(window, w, h);
+  if (bt >= 0) {
+    // Center the window on top of the mouse
+    int mx, my;
+    SDL_GetGlobalMouseState(&mx, &my);
+    int wx = IntMax(IntMin(mx - w / 2, bounds.x + bounds.w - bl - br - w), bounds.x + bl);
+    int wy = IntMax(IntMin(my - h / 2, bounds.y + bounds.h - bt - bb - h), bounds.y + bt);
+    SDL_SetWindowPosition(window, wx, wy);
+  } else {
+    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+  }
+}
+
+static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area, void *data) {
+  uint32 flags = SDL_GetWindowFlags(win);
+  return (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && 
+         (SDL_GetModState() & KMOD_CTRL) != 0 ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
+}
+
 #undef main
 int main(int argc, char** argv) {
   // set up SDL
@@ -66,17 +120,18 @@ int main(int argc, char** argv) {
     return 1;
   }
   uint32 win_flags = SDL_WINDOWPOS_UNDEFINED;
-  SDL_Window* window = SDL_CreateWindow("Zelda3", SDL_WINDOWPOS_UNDEFINED, win_flags, 512, 480, 0);
+  SDL_Window* window = SDL_CreateWindow("Zelda3", SDL_WINDOWPOS_UNDEFINED, win_flags, kRenderWidth, kRenderHeight, 0);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());
     return 1;
   }
+  SDL_SetWindowHitTest(window, HitTestCallback, NULL);
   SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   if(renderer == NULL) {
     printf("Failed to create renderer: %s\n", SDL_GetError());
     return 1;
   }
-  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STREAMING, 512, 480);
+  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STREAMING, kRenderWidth, kRenderHeight);
   if(texture == NULL) {
     printf("Failed to create texture: %s\n", SDL_GetError());
     return 1;
@@ -153,6 +208,18 @@ int main(int argc, char** argv) {
       case SDL_CONTROLLERBUTTONUP:
         HandleGamepadInput(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
         break;
+      case SDL_MOUSEWHEEL:
+        if ((win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && event.wheel.y != 0 && SDL_GetModState() & KMOD_CTRL)
+          DoZoom(window, renderer, event.wheel.y > 0 ? 1 : -1);
+        break;
+      case SDL_MOUSEBUTTONDOWN:
+        if (event.button.button == SDL_BUTTON_LEFT && event.button.state == SDL_PRESSED && event.button.clicks == 2) {
+          if ((win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && SDL_GetModState() & KMOD_SHIFT) {
+            win_flags ^= SDL_WINDOW_BORDERLESS;
+            SDL_SetWindowBordered(window, (win_flags & SDL_WINDOW_BORDERLESS) == 0);
+          }
+        }
+        break;
       case SDL_KEYDOWN: {
         bool skip_default = false;
         switch(event.key.keysym.sym) {
@@ -178,7 +245,7 @@ int main(int argc, char** argv) {
         case SDLK_RETURN:
           if (event.key.keysym.mod & KMOD_ALT) {
             win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
-            SDL_SetWindowFullscreen(window, win_flags);
+            SDL_SetWindowFullscreen(window, win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP);
             skip_default = true;
           }
           break;
