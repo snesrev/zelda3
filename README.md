@@ -16,7 +16,7 @@ I got much assistance from spannierism's Zelda 3 JP disassembly and the other on
 
 ## Dependencies
 
-For windows you need: 
+For Windows you need: 
 
 [Python](https://www.python.org/downloads/) During the install Click add to path.
 
