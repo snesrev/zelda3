@@ -14,7 +14,7 @@ else ifneq (,$(findstring gcc,$(CC)))
 endif
 
 override CFLAGS := -O2 `sdl2-config --cflags` $(LTO) $(CXXFLAGS)
-override LDFLAGS := `sdl2-config --libs` $(LDFLAGS)
+override LDFLAGS := -lm `sdl2-config --libs` $(LDFLAGS)
 
 override OBJS = $(patsubst %.c,%.o,$(wildcard *.c snes/*.c))
 override BIN = zelda3
