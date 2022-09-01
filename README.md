@@ -16,25 +16,53 @@ I got much assistance from spannierism's Zelda 3 JP disassembly and the other on
 
 ## Dependencies
 
+For windows you need: 
+
+[Python](https://www.python.org/downloads/) During the install Click add to path.
+
+![image](https://user-images.githubusercontent.com/84041391/187845660-c0f1bf1d-588d-4e0e-8caa-1a9e530cf563.png)
+
+[Git](https://git-scm.com/downloads) This is used if you want to pull down updates using git pull and keep the project updated.
+
+
 - the `libsdl2-dev` library (ubuntu: `apt install libsdl2-dev`, macOS: `brew install sdl2`). On Windows, it's installed automatically with NuGet.
 - a `tables/zelda3.sfc` US ROM file (for asset extraction step only) with SHA256 hash `66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`. 
 - The `pillow` and `pyyaml` python dependencies used by the assets extractor. `pip install pillow pyyaml`
 
 ## Compiling
 
+The Rom will go into tables folder
+
+![image](https://user-images.githubusercontent.com/84041391/187846748-8c33ec12-cd41-4def-96dc-83c0577af6a7.png)
+
+`git clone https://github.com/snesrev/zelda3`
+
+![image](https://user-images.githubusercontent.com/84041391/187846927-b033ecf9-e4f5-41e5-8b17-45748ab5bc2e.png)
+
+`cd zelda3`
+
+![image](https://user-images.githubusercontent.com/84041391/187846982-1ec2088a-6b9d-4587-9a9a-59e0a41946b7.png)
+
 `cd tables`
 
-Run `python3 extract_resources.py` to extract resources from the ROM into a more human readable format.
+![image](https://user-images.githubusercontent.com/84041391/187847128-534636de-5e47-4db2-b936-0560ae81925b.png)
 
-Run `python3 compile_resources.py` to produce .h files that get included by the C code.
+
+Run `python extract_resources.py` to extract resources from the ROM into a more human readable format.
+
+Run `python compile_resources.py` to produce .h files that get included by the C code.
 
 
 ### Windows
 First extract and compile resources, see above. Then build the .sln file with Visual Studio.
 
-### Linux/macOS
-#### Dependencies
-Linux: `apt install libsdl2-dev`
+### Linux/macOS Dependencies
+
+Ubuntu/Debian `sudo apt install libsdl2-dev`
+
+Fedora Linux `sudo dnf in sdl2-devel`
+
+Arch Linux `sudo pacman -S sdl2`
 
 macOS: `brew install sdl2`
 
