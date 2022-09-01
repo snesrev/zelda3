@@ -341,6 +341,7 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
   ppu_putPixels(GetPpuForRendering(), (uint8_t*) pixels);
   SDL_UnlockTexture(texture);
 
+  SDL_RenderClear(renderer);
   SDL_DisplayMode display_mode;
   if (fullscreen && SDL_GetWindowDisplayMode(window, &display_mode) == 0) {
     uint32 w = display_mode.w, h = display_mode.h;
