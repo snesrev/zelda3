@@ -120,6 +120,11 @@ static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area,
          (SDL_GetModState() & KMOD_CTRL) != 0 ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 
+enum {
+  kSampleRate = 44100,
+  kSnesSamplesPerBlock = (534 * kSampleRate) / 32000,
+};
+
 #undef main
 int main(int argc, char** argv) {
   ParseConfigFile();
@@ -154,7 +159,7 @@ int main(int argc, char** argv) {
   SDL_AudioSpec want, have;
   SDL_AudioDeviceID device;
   SDL_memset(&want, 0, sizeof(want));
-  want.freq = 44100;
+  want.freq = kSampleRate;
   want.format = AUDIO_S16;
   want.channels = 2;
   want.samples = 2048;
@@ -164,7 +169,7 @@ int main(int argc, char** argv) {
     printf("Failed to open audio device: %s\n", SDL_GetError());
     return 1;
   }
-  int16_t* audioBuffer = (int16_t * )malloc(735 * 4); // *2 for stereo, *2 for sizeof(int16)
+  int16_t* audioBuffer = (int16_t * )malloc(kSnesSamplesPerBlock * 2 * sizeof(int16));
   SDL_PauseAudioDevice(device, 0);
 
   Snes *snes = snes_init(g_emulated_ram), *snes_run = NULL;
@@ -299,12 +304,15 @@ static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) 
     snes->apu->dsp->sampleOffset = 0;
   }
 
-  dsp_getSamples(GetDspForRendering(), audioBuffer, 735);
-  if(SDL_GetQueuedAudioSize(device) <= 735 * 4 * 6) {
-    // don't queue audio if buffer is still filled
-    SDL_QueueAudio(device, audioBuffer, 735 * 4);
-  } else {
-    printf("Skipping audio!\n");
+  dsp_getSamples(GetDspForRendering(), audioBuffer, kSnesSamplesPerBlock);
+
+  for (int i = 0; i < 10; i++) {
+    if (SDL_GetQueuedAudioSize(device) <= kSnesSamplesPerBlock * 4 * 6) {
+      // don't queue audio if buffer is still filled
+      SDL_QueueAudio(device, audioBuffer, kSnesSamplesPerBlock * 4);
+      return;
+    }
+    SDL_Delay(1);
   }
 }
 
