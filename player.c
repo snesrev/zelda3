@@ -2751,7 +2751,7 @@ void LinkState_SpinAttack() {  // 87a804
       if (ancilla_type[i] == 0x2a || ancilla_type[i] == 0x2b)
         ancilla_type[i] = 0;
     } while (--i >= 0);
-    link_x_coord &= 0xff;
+    link_z_coord &= 0xff;
     link_cant_change_direction &= ~1;
     link_delay_timer_spin_attack = 0;
     button_b_frames = 0;
