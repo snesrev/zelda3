@@ -317,6 +317,7 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
   }
   ppu_putPixels(GetPpuForRendering(), (uint8_t*) pixels);
   SDL_UnlockTexture(texture);
+  SDL_RenderClear(renderer);
   SDL_RenderCopy(renderer, texture, NULL, NULL);
 }
 
