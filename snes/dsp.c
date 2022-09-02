@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include "dsp_regs.h"
 #include "dsp.h"
 
 #define MY_CHANGES 1
@@ -70,7 +71,7 @@ void dsp_free(Dsp* dsp) {
 
 void dsp_reset(Dsp* dsp) {
   memset(dsp->ram, 0, sizeof(dsp->ram));
-  dsp->ram[0x7c] = 0xff; // set ENDx
+  dsp->ram[ENDX] = 0xff; // set ENDX bit for all channels
   for(int i = 0; i < 8; i++) {
     dsp->channel[i].pitch = 0;
     dsp->channel[i].pitchCounter = 0;
@@ -363,7 +364,7 @@ static void dsp_decodeBrr(Dsp* dsp, int ch) {
       dsp->channel[ch].adsrState = 4;
       dsp->channel[ch].gain = 0;
     }
-    dsp->ram[0x7c] |= 1 << ch; // set ENDx
+    dsp->ram[ENDX] |= 1 << ch; // set ENDX bit for channel
   }
   uint8_t header = dsp->apu_ram[dsp->channel[ch].decodeOffset++];
   int shift = header >> 4;
@@ -417,150 +418,217 @@ uint8_t dsp_read(Dsp* dsp, uint8_t adr) {
   return dsp->ram[adr];
 }
 
-void dsp_write(Dsp* dsp, uint8_t adr, uint8_t val) {
+void dsp_write(Dsp *dsp, uint8_t adr, uint8_t val) {
   int ch = adr >> 4;
-  switch(adr) {
-    case 0x00: case 0x10: case 0x20: case 0x30: case 0x40: case 0x50: case 0x60: case 0x70: {
-      dsp->channel[ch].volumeL = val;
-      break;
+  switch (adr) {
+  case V0VOLL:
+  case V1VOLL:
+  case V2VOLL:
+  case V3VOLL:
+  case V4VOLL:
+  case V5VOLL:
+  case V6VOLL:
+  case V7VOLL: {
+    dsp->channel[ch].volumeL = val;
+    break;
+  }
+  case V0VOLR:
+  case V1VOLR:
+  case V2VOLR:
+  case V3VOLR:
+  case V4VOLR:
+  case V5VOLR:
+  case V6VOLR:
+  case V7VOLR: {
+    dsp->channel[ch].volumeR = val;
+    break;
+  }
+  case V0PITCHL:
+  case V1PL:
+  case V2PL:
+  case V3PL:
+  case V4PL:
+  case V5PL:
+  case V6PL:
+  case V7PL: {
+    dsp->channel[ch].pitch = (dsp->channel[ch].pitch & 0x3f00) | val;
+    break;
+  }
+  case V0PITCHH:
+  case V1PH:
+  case V2PH:
+  case V3PH:
+  case V4PH:
+  case V5PH:
+  case V6PH:
+  case V7PH: {
+    dsp->channel[ch].pitch =
+        ((dsp->channel[ch].pitch & 0x00ff) | (val << 8)) & 0x3fff;
+    break;
+  }
+  case V0SRCN:
+  case V1SRCN:
+  case V2SRCN:
+  case V3SRCN:
+  case V4SRCN:
+  case V5SRCN:
+  case V6SRCN:
+  case V7SRCN: {
+    dsp->channel[ch].srcn = val;
+    break;
+  }
+  case V0ADSR1:
+  case V1ADSR1:
+  case V2ADSR1:
+  case V3ADSR1:
+  case V4ADSR1:
+  case V5ADSR1:
+  case V6ADSR1:
+  case V7ADSR1: {
+    dsp->channel[ch].adsrRates[0] = rateValues[(val & 0xf) * 2 + 1];
+    dsp->channel[ch].adsrRates[1] = rateValues[((val & 0x70) >> 4) * 2 + 16];
+    dsp->channel[ch].useGain = (val & 0x80) == 0;
+    break;
+  }
+  case V0ADSR2:
+  case V1ADSR2:
+  case V2ADSR2:
+  case V3ADSR2:
+  case V4ADSR2:
+  case V5ADSR2:
+  case V6ADSR2:
+  case V7ADSR2: {
+    dsp->channel[ch].adsrRates[2] = rateValues[val & 0x1f];
+    dsp->channel[ch].sustainLevel = (((val & 0xe0) >> 5) + 1) * 0x100;
+    break;
+  }
+  case V0GAIN:
+  case V1GAIN:
+  case V2GAIN:
+  case V3GAIN:
+  case V4GAIN:
+  case V5GAIN:
+  case V6GAIN:
+  case V7GAIN: {
+    dsp->channel[ch].directGain = (val & 0x80) == 0;
+    if (val & 0x80) {
+      dsp->channel[ch].gainMode = (val & 0x60) >> 5;
+      dsp->channel[ch].adsrRates[3] = rateValues[val & 0x1f];
+    } else {
+      dsp->channel[ch].gainValue = (val & 0x7f) * 16;
     }
-    case 0x01: case 0x11: case 0x21: case 0x31: case 0x41: case 0x51: case 0x61: case 0x71: {
-      dsp->channel[ch].volumeR = val;
-      break;
-    }
-    case 0x02: case 0x12: case 0x22: case 0x32: case 0x42: case 0x52: case 0x62: case 0x72: {
-      dsp->channel[ch].pitch = (dsp->channel[ch].pitch & 0x3f00) | val;
-      break;
-    }
-    case 0x03: case 0x13: case 0x23: case 0x33: case 0x43: case 0x53: case 0x63: case 0x73: {
-      dsp->channel[ch].pitch = ((dsp->channel[ch].pitch & 0x00ff) | (val << 8)) & 0x3fff;
-      break;
-    }
-    case 0x04: case 0x14: case 0x24: case 0x34: case 0x44: case 0x54: case 0x64: case 0x74: {
-      dsp->channel[ch].srcn = val;
-      break;
-    }
-    case 0x05: case 0x15: case 0x25: case 0x35: case 0x45: case 0x55: case 0x65: case 0x75: {
-      dsp->channel[ch].adsrRates[0] = rateValues[(val & 0xf) * 2 + 1];
-      dsp->channel[ch].adsrRates[1] = rateValues[((val & 0x70) >> 4) * 2 + 16];
-      dsp->channel[ch].useGain = (val & 0x80) == 0;
-      break;
-    }
-    case 0x06: case 0x16: case 0x26: case 0x36: case 0x46: case 0x56: case 0x66: case 0x76: {
-      dsp->channel[ch].adsrRates[2] = rateValues[val & 0x1f];
-      dsp->channel[ch].sustainLevel = (((val & 0xe0) >> 5) + 1) * 0x100;
-      break;
-    }
-    case 0x07: case 0x17: case 0x27: case 0x37: case 0x47: case 0x57: case 0x67: case 0x77: {
-      dsp->channel[ch].directGain = (val & 0x80) == 0;
-      if(val & 0x80) {
-        dsp->channel[ch].gainMode = (val & 0x60) >> 5;
-        dsp->channel[ch].adsrRates[3] = rateValues[val & 0x1f];
-      } else {
-        dsp->channel[ch].gainValue = (val & 0x7f) * 16;
-      }
-      break;
-    }
-    case 0x0c: {
-      dsp->masterVolumeL = val;
-      break;
-    }
-    case 0x1c: {
-      dsp->masterVolumeR = val;
-      break;
-    }
-    case 0x2c: {
-      dsp->echoVolumeL = val;
-      break;
-    }
-    case 0x3c: {
-      dsp->echoVolumeR = val;
-      break;
-    }
-    case 0x4c: {
-      for(int ch = 0; ch < 8; ch++) {
-        dsp->channel[ch].keyOn = val & (1 << ch);
+    break;
+  }
+  case MVOLL: {
+    dsp->masterVolumeL = val;
+    break;
+  }
+  case MVOLR: {
+    dsp->masterVolumeR = val;
+    break;
+  }
+  case EVOLL: {
+    dsp->echoVolumeL = val;
+    break;
+  }
+  case EVOLR: {
+    dsp->echoVolumeR = val;
+    break;
+  }
+  case KON: {
+    for (int ch = 0; ch < 8; ch++) {
+      dsp->channel[ch].keyOn = val & (1 << ch);
 #if MY_CHANGES
 
-        if (dsp->channel[ch].keyOn) {
-          dsp->channel[ch].keyOn = false;
-          // restart current sample
-          dsp->channel[ch].previousFlags = 0;
-          uint16_t samplePointer = dsp->dirPage + 4 * dsp->channel[ch].srcn;
-          dsp->channel[ch].decodeOffset = dsp->apu_ram[samplePointer];
-          dsp->channel[ch].decodeOffset |= dsp->apu_ram[(samplePointer + 1) & 0xffff] << 8;
-          memset(dsp->channel[ch].decodeBuffer, 0, sizeof(dsp->channel[ch].decodeBuffer));
-          dsp->channel[ch].gain = 0;
-          dsp->channel[ch].adsrState = dsp->channel[ch].useGain ? 3 : 0;
-        }
-#endif
+      if (dsp->channel[ch].keyOn) {
+        dsp->channel[ch].keyOn = false;
+        // restart current sample
+        dsp->channel[ch].previousFlags = 0;
+        uint16_t samplePointer = dsp->dirPage + 4 * dsp->channel[ch].srcn;
+        dsp->channel[ch].decodeOffset = dsp->apu_ram[samplePointer];
+        dsp->channel[ch].decodeOffset |=
+            dsp->apu_ram[(samplePointer + 1) & 0xffff] << 8;
+        memset(dsp->channel[ch].decodeBuffer, 0,
+               sizeof(dsp->channel[ch].decodeBuffer));
+        dsp->channel[ch].gain = 0;
+        dsp->channel[ch].adsrState = dsp->channel[ch].useGain ? 3 : 0;
       }
-      break;
+#endif
     }
-    case 0x5c: {
-      for(int ch = 0; ch < 8; ch++) {
-        dsp->channel[ch].keyOff = val & (1 << ch);
+    break;
+  }
+  case KOF: {
+    for (int ch = 0; ch < 8; ch++) {
+      dsp->channel[ch].keyOff = val & (1 << ch);
 #if MY_CHANGES
-        if (dsp->channel[ch].keyOff) {
-          // go to release
-          dsp->channel[ch].adsrState = 4;
-        }
+      if (dsp->channel[ch].keyOff) {
+        // go to release
+        dsp->channel[ch].adsrState = 4;
+      }
 #endif
-      }
+    }
 
-
-      break;
+    break;
+  }
+  case FLG: {
+    dsp->reset = val & 0x80;
+    dsp->mute = val & 0x40;
+    dsp->echoWrites = (val & 0x20) == 0;
+    dsp->noiseRate = rateValues[val & 0x1f];
+    break;
+  }
+  case ENDX: {
+    val = 0; // any write clears ENDx
+    break;
+  }
+  case EFB: {
+    dsp->feedbackVolume = val;
+    break;
+  }
+  case PMON: {
+    for (int i = 0; i < 8; i++) {
+      dsp->channel[i].pitchModulation = val & (1 << i);
     }
-    case 0x6c: {
-      dsp->reset = val & 0x80;
-      dsp->mute = val & 0x40;
-      dsp->echoWrites = (val & 0x20) == 0;
-      dsp->noiseRate = rateValues[val & 0x1f];
-      break;
+    break;
+  }
+  case NON: {
+    for (int i = 0; i < 8; i++) {
+      dsp->channel[i].useNoise = val & (1 << i);
     }
-    case 0x7c: {
-      val = 0; // any write clears ENDx
-      break;
+    break;
+  }
+  case EON: {
+    for (int i = 0; i < 8; i++) {
+      dsp->channel[i].echoEnable = val & (1 << i);
     }
-    case 0x0d: {
-      dsp->feedbackVolume = val;
-      break;
-    }
-    case 0x2d: {
-      for(int i = 0; i < 8; i++) {
-        dsp->channel[i].pitchModulation = val & (1 << i);
-      }
-      break;
-    }
-    case 0x3d: {
-      for(int i = 0; i < 8; i++) {
-        dsp->channel[i].useNoise = val & (1 << i);
-      }
-      break;
-    }
-    case 0x4d: {
-      for(int i = 0; i < 8; i++) {
-        dsp->channel[i].echoEnable = val & (1 << i);
-      }
-      break;
-    }
-    case 0x5d: {
-      dsp->dirPage = val << 8;
-      break;
-    }
-    case 0x6d: {
-      dsp->echoBufferAdr = val << 8;
-      break;
-    }
-    case 0x7d: {
-      dsp->echoDelay = (val & 0xf) * 512; // 2048-byte steps, stereo sample is 4 bytes
-      if(dsp->echoDelay == 0) dsp->echoDelay = 1;
-      break;
-    }
-    case 0x0f: case 0x1f: case 0x2f: case 0x3f: case 0x4f: case 0x5f: case 0x6f: case 0x7f: {
-      dsp->firValues[ch] = val;
-      break;
-    }
+    break;
+  }
+  case DIR: {
+    dsp->dirPage = val << 8;
+    break;
+  }
+  case ESA: {
+    dsp->echoBufferAdr = val << 8;
+    break;
+  }
+  case EDL: {
+    dsp->echoDelay =
+        (val & 0xf) * 512; // 2048-byte steps, stereo sample is 4 bytes
+    if (dsp->echoDelay == 0)
+      dsp->echoDelay = 1;
+    break;
+  }
+  case FIR0:
+  case FIR1:
+  case FIR2:
+  case FIR3:
+  case FIR4:
+  case FIR5:
+  case FIR6:
+  case FIR7: {
+    dsp->firValues[ch] = val;
+    break;
+  }
   }
   dsp->ram[adr] = val;
 }
