@@ -350,6 +350,7 @@ static void HandleCommand(uint32 j, bool pressed) {
       break;
     case kKeys_Reset:
       snes_reset(g_snes, true);
+      ZeldaReadSram(g_snes);
       CopyStateAfterSnapshotRestore(true);
       break;
     case kKeys_Pause: g_paused = !g_paused; break;
