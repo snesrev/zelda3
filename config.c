@@ -15,8 +15,8 @@ enum {
 #define REMAP_SDL_KEYCODE(key) ((key) & SDLK_SCANCODE_MASK ? kKeyMod_ScanCode : 0) | (key) & (kKeyMod_ScanCode - 1)
 #define _(x) REMAP_SDL_KEYCODE(x)
 #define S(x) REMAP_SDL_KEYCODE(x) | kKeyMod_Shift
-#define C(x) REMAP_SDL_KEYCODE(x) | kKeyMod_Alt
-#define A(x) REMAP_SDL_KEYCODE(x) | kKeyMod_Ctrl
+#define A(x) REMAP_SDL_KEYCODE(x) | kKeyMod_Alt
+#define C(x) REMAP_SDL_KEYCODE(x) | kKeyMod_Ctrl
 #define N 0
 static const uint16 kDefaultKbdControls[kKeys_Total] = {
   // Controls
