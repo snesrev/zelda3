@@ -166,9 +166,9 @@ void ppu_reset(Ppu* ppu) {
   ppu->evenFrame = false;
   ppu->pseudoHires_always_zero = false;
   ppu->overscan_always_zero = false;
-  ppu->frameOverscan = false;
+  ppu->frameOverscan_always_zero = false;
   ppu->interlace_always_zero = false;
-  ppu->frameInterlace = false;
+  ppu->frameInterlace_always_zero = false;
   ppu->directColor = false;
   ppu->hCount = 0;
   ppu->vCount = 0;
@@ -184,12 +184,6 @@ void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx) {
   func(ctx, &ppu->vram, offsetof(Ppu, pixelBuffer) - offsetof(Ppu, vram));
 }
 
-bool ppu_checkOverscan(Ppu* ppu) {
-  // called at (0,225)
-  ppu->frameOverscan = ppu->overscan_always_zero; // set if we have a overscan-frame
-  return ppu->frameOverscan;
-}
-
 void ppu_handleVblank(Ppu* ppu) {
   // called either right after ppu_checkOverscan at (0,225), or at (0,240)
   if(!ppu->forcedBlank) {
@@ -197,7 +191,7 @@ void ppu_handleVblank(Ppu* ppu) {
     ppu->oamInHigh = ppu->oamInHighWritten;
     ppu->oamSecondWrite = false;
   }
-  ppu->frameInterlace = ppu->interlace_always_zero; // set if we have a interlaced frame
+  ppu->frameInterlace_always_zero = ppu->interlace_always_zero; // set if we have a interlaced frame
 }
 
 void ppu_runLine(Ppu* ppu, int line) {
@@ -221,9 +215,9 @@ void ppu_runLine(Ppu* ppu, int line) {
 }
 
 static void ppu_handlePixel(Ppu* ppu, int x, int y) {
-  int r = 0, r2 = 0;
-  int g = 0, g2 = 0;
-  int b = 0, b2 = 0;
+  int r = 0;
+  int g = 0;
+  int b = 0;
   if(!ppu->forcedBlank) {
     int mainLayer = ppu_getPixel(ppu, x, y, false, &r, &g, &b);
 
@@ -237,12 +231,13 @@ static void ppu_handlePixel(Ppu* ppu, int x, int y) {
       (ppu->preventMathMode == 2 && colorWindowState) ||
       (ppu->preventMathMode == 1 && !colorWindowState)
     );
-    if(mathEnabled && ppu->addSubscreen) {
-      secondLayer = ppu_getPixel(ppu, x, y, true, &r2, &g2, &b2);
-    }
     // TODO: subscreen pixels can be clipped to black as well
     // TODO: math for subscreen pixels (add/sub sub to main)
     if(mathEnabled) {
+      int r2 = 0, g2 = 0, b2 = 0;
+      if (ppu->addSubscreen) {
+        secondLayer = ppu_getPixel(ppu, x, y, true, &r2, &g2, &b2);
+      }
       if(ppu->subtractColor) {
         r -= (ppu->addSubscreen && secondLayer != 5) ? r2 : ppu->fixedColorR;
         g -= (ppu->addSubscreen && secondLayer != 5) ? g2 : ppu->fixedColorG;
@@ -264,17 +259,13 @@ static void ppu_handlePixel(Ppu* ppu, int x, int y) {
       if(g < 0) g = 0;
       if(b < 0) b = 0;
     }
-    r2 = r; g2 = g; b2 = b;
   }
   int row = (y - 1) + (ppu->evenFrame ? 0 : 239);
   uint8_t *dst = &ppu->pixelBuffer[row * 2048 + x * 8];
   uint8_t ppu_brightness = ppu->brightness;
-  dst[1] = ((b2 << 3) | (b2 >> 2)) * ppu_brightness / 15;
-  dst[2] = ((g2 << 3) | (g2 >> 2)) * ppu_brightness / 15;
-  dst[3] = ((r2 << 3) | (r2 >> 2)) * ppu_brightness / 15;
-  dst[5] = ((b << 3) | (b >> 2)) * ppu_brightness / 15;
-  dst[6] = ((g << 3) | (g >> 2)) * ppu_brightness / 15;
-  dst[7] = ((r << 3) | (r >> 2)) * ppu_brightness / 15;
+  dst[1] = dst[5] = ((b << 3) | (b >> 2)) * ppu_brightness / 15;
+  dst[2] = dst[6] = ((g << 3) | (g >> 2)) * ppu_brightness / 15;
+  dst[3] = dst[7] = ((r << 3) | (r >> 2)) * ppu_brightness / 15;
 }
 
 static int ppu_getPixel(Ppu* ppu, int x, int y, bool sub, int* r, int* g, int* b) {
@@ -959,20 +950,13 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
 }
 
 void ppu_putPixels(Ppu* ppu, uint8_t* pixels) {
-  for(int y = 0; y < (ppu->frameOverscan ? 239 : 224); y++) {
-    int dest = y * 2 + (ppu->frameOverscan ? 2 : 16);
-    int y1 = y, y2 = y + 239;
-    if(!ppu->frameInterlace) {
-      y1 = y + (ppu->evenFrame ? 0 : 239);
-      y2 = y1;
-    }
+  for(int y = 0; y < 224; y++) {
+    int dest = y * 2 + 16;
+    int y1 = y + (ppu->evenFrame ? 0 : 239);
     memcpy(pixels + (dest * 2048), &ppu->pixelBuffer[y1 * 2048], 2048);
-    memcpy(pixels + ((dest + 1) * 2048), &ppu->pixelBuffer[y2 * 2048], 2048);
+    memcpy(pixels + ((dest + 1) * 2048), &ppu->pixelBuffer[y1 * 2048], 2048);
   }
-  // clear top 2 lines, and following 14 and last 16 lines if not overscanning
-  memset(pixels, 0, 2048 * 2);
-  if(!ppu->frameOverscan) {
-    memset(pixels + (2 * 2048), 0, 2048 * 14);
-    memset(pixels + (464 * 2048), 0, 2048 * 16);
-  }
+  // clear top 16 and last 16 lines if not overscanning
+  memset(pixels, 0, 2048 * 16);
+  memset(pixels + (464 * 2048), 0, 2048 * 16);
 }

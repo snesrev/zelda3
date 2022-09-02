@@ -114,9 +114,9 @@ struct Ppu {
   bool evenFrame;
   bool pseudoHires_always_zero;
   bool overscan_always_zero;
-  bool frameOverscan; // if we are overscanning this frame (determined at 0,225)
+  bool frameOverscan_always_zero; // if we are overscanning this frame (determined at 0,225)
   bool interlace_always_zero;
-  bool frameInterlace; // if we are interlacing this frame (determined at start vblank)
+  bool frameInterlace_always_zero; // if we are interlacing this frame (determined at start vblank)
   bool directColor;
   // latching
   uint16_t hCount;
@@ -134,7 +134,6 @@ struct Ppu {
 Ppu* ppu_init(Snes* snes);
 void ppu_free(Ppu* ppu);
 void ppu_reset(Ppu* ppu);
-bool ppu_checkOverscan(Ppu* ppu);
 void ppu_handleVblank(Ppu* ppu);
 void ppu_runLine(Ppu* ppu, int line);
 uint8_t ppu_read(Ppu* ppu, uint8_t adr);
