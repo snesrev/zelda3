@@ -224,8 +224,8 @@
     <ClInclude Include="snes\ppu.h" />
     <ClInclude Include="snes\saveload.h" />
     <ClInclude Include="snes\snes.h" />
+    <ClInclude Include="snes\snes_regs.h" />
     <ClInclude Include="snes\spc.h" />
-    <ClInclude Include="snes_regs.h" />
     <ClInclude Include="spc_player.h" />
     <ClInclude Include="sprite.h" />
     <ClInclude Include="sprite_main.h" />

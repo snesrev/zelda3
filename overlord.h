@@ -1,7 +1,5 @@
 #pragma once
-#include "zelda_rtl.h"
-#include "variables.h"
-#include "snes_regs.h"
+#include "types.h"
 
 void Overlord_StalfosFactory(int k);
 void Overlord_SetX(int k, uint16 v);

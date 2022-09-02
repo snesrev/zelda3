@@ -16,7 +16,7 @@
 #include "cart.h"
 #include "input.h"
 #include "../tracing.h"
-#include "../snes_regs.h"
+#include "snes_regs.h"
 
 static const double apuCyclesPerMaster = (32040 * 32) / (1364 * 262 * 60.0);
 

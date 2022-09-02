@@ -162,9 +162,6 @@
     <ClInclude Include="dungeon.h">
       <Filter>Zelda</Filter>
     </ClInclude>
-    <ClInclude Include="snes_regs.h">
-      <Filter>Zelda</Filter>
-    </ClInclude>
     <ClInclude Include="nmi.h">
       <Filter>Zelda</Filter>
     </ClInclude>
@@ -236,6 +233,9 @@
     </ClInclude>
     <ClInclude Include="config.h">
       <Filter>Zelda</Filter>
+    </ClInclude>
+    <ClInclude Include="snes\snes_regs.h">
+      <Filter>Snes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

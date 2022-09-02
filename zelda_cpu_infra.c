@@ -7,7 +7,8 @@
 #include "nmi.h"
 #include "poly.h"
 #include "attract.h"
-
+#include "spc_player.h"
+#include "snes/snes_regs.h"
 #include "snes/snes.h"
 #include "snes/cpu.h"
 #include "snes/cart.h"

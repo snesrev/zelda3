@@ -1,7 +1,7 @@
 #include "messaging.h"
 #include "zelda_rtl.h"
 #include "variables.h"
-#include "snes_regs.h"
+#include "snes/snes_regs.h"
 #include "dungeon.h"
 #include "hud.h"
 #include "load_gfx.h"
