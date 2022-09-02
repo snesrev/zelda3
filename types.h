@@ -73,3 +73,5 @@ typedef struct UploadVram_3 {
 
 typedef void PlayerHandlerFunc();
 typedef void HandlerFuncK(int k);
+
+void NORETURN Die(const char *error);

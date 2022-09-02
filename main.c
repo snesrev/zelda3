@@ -18,12 +18,15 @@
 #include "variables.h"
 
 #include "zelda_rtl.h"
+#include "config.h"
 
 extern Ppu *GetPpuForRendering();
 extern Dsp *GetDspForRendering();
-
+extern Snes *g_snes;
 extern uint8 g_emulated_ram[0x20000];
 bool g_run_without_emu = false;
+
+static int g_input1_state;
 
 void PatchRom(uint8 *rom);
 void SetSnes(Snes *snes);
@@ -33,18 +36,30 @@ void SaveLoadSlot(int cmd, int which);
 void PatchCommand(char cmd);
 bool RunOneFrame(Snes *snes, int input_state, bool turbo);
 
-static uint8 *ReadFile(char* name, size_t* length);
-static bool LoadRom(char* name, Snes* snes);
+static bool LoadRom(const char *name, Snes *snes);
 static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer);
 static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen);
 static void HandleInput(int keyCode, int modCode, bool pressed);
 static void HandleGamepadInput(int button, bool pressed);
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
+
 static inline int IntMin(int a, int b) { return a < b ? a : b; }
 static inline int IntMax(int a, int b) { return a > b ? a : b; }
 
-static int input1_current_state;
+enum {
+  kRenderWidth = 512,
+  kRenderHeight = 480,
+  kDefaultZoom = 2,
+};
+
+
+static uint32 g_win_flags = SDL_WINDOW_RESIZABLE;
+static SDL_Window *g_window;
+static SDL_Renderer *g_renderer;
+static uint8 g_paused, g_turbo = true;
+static int current_zoom = kDefaultZoom;
+static uint8 g_gamepad_buttons;
 
 void NORETURN Die(const char *error) {
   fprintf(stderr, "Error: %s\n", error);
@@ -54,22 +69,15 @@ void NORETURN Die(const char *error) {
 void SetButtonState(int button, bool pressed) {
   // set key in constroller
   if (pressed) {
-    input1_current_state |= 1 << button;
+    g_input1_state |= 1 << button;
   } else {
-    input1_current_state &= ~(1 << button);
+    g_input1_state &= ~(1 << button);
   }
 }
 
-enum {
-  kRenderWidth = 512,
-  kRenderHeight = 480,
-  kDefaultZoom = 2,
-};
 
-static int current_zoom = kDefaultZoom;
-
-void DoZoom(SDL_Window *window, SDL_Renderer *renderer, int zoom_step) {
-  int screen = SDL_GetWindowDisplayIndex(window);
+void DoZoom(int zoom_step) {
+  int screen = SDL_GetWindowDisplayIndex(g_window);
   if (screen < 0) screen = 0;
   int max_zoom = kDefaultZoom * 5;
   SDL_Rect bounds;
@@ -77,7 +85,7 @@ void DoZoom(SDL_Window *window, SDL_Renderer *renderer, int zoom_step) {
   // note this takes into effect Windows display scaling, i.e., resolution is divided by scale factor
   if (SDL_GetDisplayUsableBounds(screen, &bounds) == 0) {
     // this call may take a while before it is reported by Windows (or not at all in my testing)
-    if (SDL_GetWindowBordersSize(window, &bt, &bl, &bb, &br) != 0) {
+    if (SDL_GetWindowBordersSize(g_window, &bt, &bl, &bb, &br) != 0) {
       // guess based on Windows 10/11 defaults
       bl = br = bb = 1;
       bt = 31;
@@ -91,18 +99,18 @@ void DoZoom(SDL_Window *window, SDL_Renderer *renderer, int zoom_step) {
   current_zoom = new_zoom;
   int w = new_zoom * (kRenderWidth / kDefaultZoom);
   int h = new_zoom * (kRenderHeight / kDefaultZoom);
-  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
-  SDL_RenderSetLogicalSize(renderer, w, h);
-  SDL_SetWindowSize(window, w, h);
+  
+  //SDL_RenderSetLogicalSize(g_renderer, w, h);
+  SDL_SetWindowSize(g_window, w, h);
   if (bt >= 0) {
     // Center the window on top of the mouse
     int mx, my;
     SDL_GetGlobalMouseState(&mx, &my);
     int wx = IntMax(IntMin(mx - w / 2, bounds.x + bounds.w - bl - br - w), bounds.x + bl);
     int wy = IntMax(IntMin(my - h / 2, bounds.y + bounds.h - bt - bb - h), bounds.y + bt);
-    SDL_SetWindowPosition(window, wx, wy);
+    SDL_SetWindowPosition(g_window, wx, wy);
   } else {
-    SDL_SetWindowPosition(window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
+    SDL_SetWindowPosition(g_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   }
 }
 
@@ -114,28 +122,35 @@ static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area,
 
 #undef main
 int main(int argc, char** argv) {
+  ParseConfigFile();
+  AfterConfigParse();
+
   // set up SDL
   if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
     printf("Failed to init SDL: %s\n", SDL_GetError());
     return 1;
   }
-  uint32 win_flags = SDL_WINDOWPOS_UNDEFINED;
-  SDL_Window* window = SDL_CreateWindow("Zelda3", SDL_WINDOWPOS_UNDEFINED, win_flags, kRenderWidth, kRenderHeight, 0);
+  SDL_Window* window = SDL_CreateWindow("Zelda3", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, kRenderWidth, kRenderHeight, g_win_flags);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());
     return 1;
   }
+  g_window = window;
   SDL_SetWindowHitTest(window, HitTestCallback, NULL);
   SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   if(renderer == NULL) {
     printf("Failed to create renderer: %s\n", SDL_GetError());
     return 1;
   }
+  g_renderer = renderer;
+  SDL_RenderSetLogicalSize(renderer, 512, 480); 
   SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STREAMING, kRenderWidth, kRenderHeight);
   if(texture == NULL) {
     printf("Failed to create texture: %s\n", SDL_GetError());
     return 1;
   }
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
+
   SDL_AudioSpec want, have;
   SDL_AudioDeviceID device;
   SDL_memset(&want, 0, sizeof(want));
@@ -178,19 +193,10 @@ int main(int argc, char** argv) {
   for (int i = 0; i < SDL_NumJoysticks(); i++)
     OpenOneGamepad(i);
 
-  bool hooks = true;
-  // sdl loop
   bool running = true;
   SDL_Event event;
   uint32 lastTick = SDL_GetTicks();
   uint32 curTick = 0;
-  uint32 delta = 0;
-  int numFrames = 0;
-  bool cpuNext = false;
-  bool spcNext = false;
-  int counter = 0;
-  bool paused = false;
-  bool turbo = true;
   uint32 frameCtr = 0;
 
   while(running) {
@@ -209,68 +215,40 @@ int main(int argc, char** argv) {
         HandleGamepadInput(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
         break;
       case SDL_MOUSEWHEEL:
-        if ((win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && event.wheel.y != 0 && SDL_GetModState() & KMOD_CTRL)
-          DoZoom(window, renderer, event.wheel.y > 0 ? 1 : -1);
+        if ((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && event.wheel.y != 0 && SDL_GetModState() & KMOD_CTRL)
+          DoZoom(event.wheel.y > 0 ? 1 : -1);
         break;
       case SDL_MOUSEBUTTONDOWN:
         if (event.button.button == SDL_BUTTON_LEFT && event.button.state == SDL_PRESSED && event.button.clicks == 2) {
-          if ((win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && SDL_GetModState() & KMOD_SHIFT) {
-            win_flags ^= SDL_WINDOW_BORDERLESS;
-            SDL_SetWindowBordered(window, (win_flags & SDL_WINDOW_BORDERLESS) == 0);
+          if ((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && SDL_GetModState() & KMOD_SHIFT) {
+            g_win_flags ^= SDL_WINDOW_BORDERLESS;
+            SDL_SetWindowBordered(g_window, (g_win_flags & SDL_WINDOW_BORDERLESS) == 0);
           }
         }
         break;
-      case SDL_KEYDOWN: {
-        bool skip_default = false;
-        switch(event.key.keysym.sym) {
-        case SDLK_e:
-          if (snes) {
-            snes_reset(snes, event.key.keysym.sym == SDLK_e);
-            CopyStateAfterSnapshotRestore(true);
-          }
-          break;
-        case SDLK_p: paused ^= true; break;
-        case SDLK_w:
-          PatchCommand('w');
-          break;
-        case SDLK_o:
-          PatchCommand('o');
-          break;
-        case SDLK_k:
-          PatchCommand('k');
-          break;
-        case SDLK_t:
-          turbo = !turbo;
-          break;
-        case SDLK_RETURN:
-          if (event.key.keysym.mod & KMOD_ALT) {
-            win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
-            SDL_SetWindowFullscreen(window, win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP);
-            skip_default = true;
-          }
-          break;
-        }
-        if (!skip_default)
-          HandleInput(event.key.keysym.sym, event.key.keysym.mod, true);
+      case SDL_KEYDOWN:
+        HandleInput(event.key.keysym.sym, event.key.keysym.mod, true);
         break;
-      }
-      case SDL_KEYUP: {
+      case SDL_KEYUP:
         HandleInput(event.key.keysym.sym, event.key.keysym.mod, false);
         break;
-      }
-      case SDL_QUIT: {
+      case SDL_QUIT:
         running = false;
         break;
       }
     }
-  }
 
-    if (paused) {
+    if (g_paused) {
       SDL_Delay(16);
       continue;
     }
 
-    bool is_turbo = RunOneFrame(snes_run, input1_current_state, (counter++ & 0x7f) != 0 && turbo);
+    // Clear gamepad inputs when joypad directional inputs to avoid wonkiness
+    int inputs = g_input1_state;
+    if (g_input1_state & 0xf0)
+      g_gamepad_buttons = 0;
+
+    bool is_turbo = RunOneFrame(snes_run, g_input1_state | g_gamepad_buttons, (frameCtr++ & 0x7f) != 0 && g_turbo);
 
     if (is_turbo)
       continue;
@@ -278,7 +256,7 @@ int main(int argc, char** argv) {
     ZeldaDrawPpuFrame();
 
     PlayAudio(snes_run, device, audioBuffer);
-    RenderScreen(window, renderer, texture, (win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
+    RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
 
     SDL_RenderPresent(renderer); // vsyncs to 60 FPS
     // if vsync isn't working, delay manually
@@ -286,10 +264,10 @@ int main(int argc, char** argv) {
 
     static const uint8 delays[3] = { 17, 17, 16 }; // 60 fps
 #if 1
-    lastTick += delays[frameCtr++ % 3];
+    lastTick += delays[frameCtr % 3];
 
     if (lastTick > curTick) {
-      delta = lastTick - curTick;
+      uint32 delta = lastTick - curTick;
       if (delta > 500) {
         lastTick = curTick - 500;
         delta = 500;
@@ -337,81 +315,64 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
     printf("Failed to lock texture: %s\n", SDL_GetError());
     return;
   }
-
   ppu_putPixels(GetPpuForRendering(), (uint8_t*) pixels);
   SDL_UnlockTexture(texture);
+  SDL_RenderCopy(renderer, texture, NULL, NULL);
+}
 
-  SDL_DisplayMode display_mode;
-  if (fullscreen && SDL_GetWindowDisplayMode(window, &display_mode) == 0) {
-    uint32 w = display_mode.w, h = display_mode.h;
-    if (w * 15 < h * 16)
-      h = w * 15 / 16;  // limit height
-    else
-      w = h * 16 / 15;  // limit width
-    SDL_Rect r = { (display_mode.w - w) / 2, (display_mode.h - h) / 2, w, h };
-    SDL_RenderCopy(renderer, texture, NULL, &r);
+static void HandleCommand(uint32 j, bool pressed) {
+  if (j <= kKeys_Controls_Last) {
+    static const uint8 kKbdRemap[12] = { 4, 5, 6, 7, 2, 3, 8, 0, 9, 1, 10, 11 };
+    SetButtonState(kKbdRemap[j], pressed);
+    return;
+  }
+  if (!pressed)
+    return;
+  if (j <= kKeys_Load_Last) {
+    SaveLoadSlot(kSaveLoad_Load, j - kKeys_Load);
+  } else if (j <= kKeys_Save_Last) {
+    SaveLoadSlot(kSaveLoad_Save, j - kKeys_Save);
+  } else if (j <= kKeys_Replay_Last) {
+    SaveLoadSlot(kSaveLoad_Replay, j - kKeys_Replay);
+  } else if (j <= kKeys_LoadRef_Last) {
+    SaveLoadSlot(kSaveLoad_Load, 256 + j - kKeys_LoadRef);
+  } else if (j <= kKeys_ReplayRef_Last) {
+    SaveLoadSlot(kSaveLoad_Replay, 256 + j - kKeys_ReplayRef);
   } else {
-    SDL_RenderCopy(renderer, texture, NULL, NULL);
+    switch (j) {
+    case kKeys_CheatLife: PatchCommand('w'); break;
+    case kKeys_CheatKeys: PatchCommand('o'); break;
+    case kKeys_MigrateSnapshot: PatchCommand('k'); break;
+    case kKeys_Fullscreen:
+      g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
+      SDL_SetWindowFullscreen(g_window, g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP);
+      break;
+    case kKeys_Reset:
+      snes_reset(g_snes, true);
+      CopyStateAfterSnapshotRestore(true);
+      break;
+    case kKeys_Pause: g_paused = !g_paused; break;
+    case kKeys_PauseDimmed: 
+      g_paused = !g_paused;
+      if (g_paused) {
+        SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
+        SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 159);
+        SDL_RenderFillRect(g_renderer, NULL);
+        SDL_RenderPresent(g_renderer);
+      }
+      break;
+    case kKeys_Turbo: g_turbo = !g_turbo; break;
+    case kKeys_ZoomIn: DoZoom(1); break;
+    case kKeys_ZoomOut: DoZoom(-1); break;
+    default: assert(0);
+    }
   }
 }
 
-
 static void HandleInput(int keyCode, int keyMod, bool pressed) {
-  switch(keyCode) {
-    case SDLK_z: SetButtonState(0, pressed); break;
-    case SDLK_a: SetButtonState(1, pressed); break;
-    case SDLK_RSHIFT: SetButtonState(2, pressed); break;
-    case SDLK_RETURN: SetButtonState(3, pressed); break;
-    case SDLK_UP: SetButtonState(4, pressed); break;
-    case SDLK_DOWN: SetButtonState(5, pressed); break;
-    case SDLK_LEFT: SetButtonState(6, pressed); break;
-    case SDLK_RIGHT: SetButtonState(7, pressed); break;
-    case SDLK_x: SetButtonState(8, pressed); break;
-    case SDLK_s: SetButtonState(9, pressed); break;
-    case SDLK_d: SetButtonState(10, pressed); break;
-    case SDLK_c: SetButtonState(11, pressed); break;
-    case SDLK_BACKSPACE:
-    case SDLK_1:
-    case SDLK_2:
-    case SDLK_3:
-    case SDLK_4:
-    case SDLK_5:
-    case SDLK_6:
-    case SDLK_7:
-    case SDLK_8:
-    case SDLK_9:
-    case SDLK_0:
-    case SDLK_MINUS:
-    case SDLK_EQUALS:
-      if (pressed) {
-        SaveLoadSlot(
-          (keyMod & KMOD_CTRL) != 0 ? kSaveLoad_Replay : kSaveLoad_Load,
-          256 + (keyCode == SDLK_0 ? 9 : 
-                 keyCode == SDLK_MINUS ? 10 : 
-                 keyCode == SDLK_EQUALS ? 11 :
-                 keyCode == SDLK_BACKSPACE ? 12 :
-                 keyCode - SDLK_1));
-      }
-      break;
-
-    case SDLK_F1: 
-    case SDLK_F2: 
-    case SDLK_F3: 
-    case SDLK_F4: 
-    case SDLK_F5: 
-    case SDLK_F6: 
-    case SDLK_F7: 
-    case SDLK_F8: 
-    case SDLK_F9: 
-    case SDLK_F10: 
-      if (pressed) {
-        SaveLoadSlot(
-          (keyMod & KMOD_CTRL) != 0 ? kSaveLoad_Replay : 
-          (keyMod & KMOD_SHIFT) != 0 ? kSaveLoad_Save : kSaveLoad_Load,
-          keyCode - SDLK_F1);
-      }
-      break;
-  }
+  int j = FindCmdForSdlKey(keyCode, keyMod);
+  if (j >= 0)
+    HandleCommand(j, pressed);
 }
 
 static void OpenOneGamepad(int i) {
@@ -466,14 +427,13 @@ static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
       int angle = (int)(atan2f(last_y, last_x) * (float)(128 / M_PI) + 0.5f);
       buttons = kSegmentToButtons[(uint8)(angle + 16 + 64) >> 5];
     }
-    input1_current_state = input1_current_state & ~0xf0 | buttons;
+    g_gamepad_buttons = buttons;
   }
 }
 
-static bool LoadRom(char* name, Snes* snes) {
+static bool LoadRom(const char *name, Snes *snes) {
   size_t length = 0;
-  uint8_t* file = NULL;
-  file = ReadFile(name, &length);
+  uint8 *file = ReadFile(name, &length);
   if(!file) Die("Failed to read file");
 
   PatchRom(file);
@@ -484,18 +444,3 @@ static bool LoadRom(char* name, Snes* snes) {
 }
 
 
-static uint8_t* ReadFile(char* name, size_t* length) {
-  FILE* f = fopen(name, "rb");
-  if(f == NULL) {
-    return NULL;
-  }
-  fseek(f, 0, SEEK_END);
-  int size = ftell(f);
-  rewind(f);
-  uint8_t* buffer = (uint8_t *)malloc(size);
-  if (!buffer) Die("malloc failed");
-  fread(buffer, size, 1, f);
-  fclose(f);
-  *length = size;
-  return buffer;
-}

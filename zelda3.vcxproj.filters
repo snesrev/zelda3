@@ -115,6 +115,9 @@
     <ClCompile Include="zelda_cpu_infra.c">
       <Filter>Zelda</Filter>
     </ClCompile>
+    <ClCompile Include="config.c">
+      <Filter>Zelda</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="snes\apu.h">
@@ -230,6 +233,9 @@
     </ClInclude>
     <ClInclude Include="snes\dsp_regs.h">
       <Filter>Snes</Filter>
+    </ClInclude>
+    <ClInclude Include="config.h">
+      <Filter>Zelda</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

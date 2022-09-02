@@ -125,6 +125,7 @@
   <ItemGroup>
     <ClCompile Include="ancilla.c" />
     <ClCompile Include="attract.c" />
+    <ClCompile Include="config.c" />
     <ClCompile Include="dungeon.c" />
     <ClCompile Include="ending.c" />
     <ClCompile Include="hud.c" />
@@ -198,6 +199,7 @@
   <ItemGroup>
     <ClInclude Include="ancilla.h" />
     <ClInclude Include="attract.h" />
+    <ClInclude Include="config.h" />
     <ClInclude Include="dungeon.h" />
     <ClInclude Include="ending.h" />
     <ClInclude Include="hud.h" />

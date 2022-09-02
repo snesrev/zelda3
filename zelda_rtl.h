@@ -195,7 +195,6 @@ void ZeldaRunFrame(uint16 input, int run_what);
 void ClearOamBuffer();
 void Startup_InitializeMemory();
 void LoadSongBank(const uint8 *p);
-void NORETURN Die(const char *error);
 void ZeldaWriteSram();
 void ZeldaReadSram(Snes *snes);
 
