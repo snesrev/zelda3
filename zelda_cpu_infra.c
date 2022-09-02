@@ -655,6 +655,37 @@ int IncrementCrystalCountdown(uint8 *a, int v) {
   return t >> 8;
 }
 
+#ifdef _DEBUG
+// This can be used to read inputs from a text file for easier debugging
+int InputStateReadFromFile() {
+  static FILE *f;
+  static uint32 next_ts, next_keys, cur_keys;
+  char buf[64];
+  char keys[64];
+
+  while (state_recorder.total_frames == next_ts) {
+    cur_keys = next_keys;
+    if (!f)
+      f = fopen("boss_bug.txt", "r");
+    if (fgets(buf, sizeof(buf), f)) {
+      if (sscanf(buf, "%d: %s", &next_ts, keys) == 1) keys[0] = 0;
+      int i = 0;
+      for (const char *s = keys; *s; s++) {
+        static const char kKeys[] = "AXsSUDLRBY";
+        const char *t = strchr(kKeys, *s);
+        assert(t);
+        i |= 1 << (t - kKeys);
+      }
+      next_keys = i;
+    } else {
+      next_ts = 0xffffffff;
+    }
+  }
+
+  return cur_keys;
+}
+#endif
+
 bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
   frame_ctr++;
 
@@ -667,6 +698,7 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
   if (state_recorder.replay_mode) {
     input_state = StateRecorder_ReadNextReplayState(&state_recorder);
   } else {
+    //    input_state = InputStateReadFromFile();
     StateRecorder_Record(&state_recorder, input_state);
     turbo = false;
 
