@@ -342,7 +342,8 @@ static void HandleCommand(uint32 j, bool pressed) {
     switch (j) {
     case kKeys_CheatLife: PatchCommand('w'); break;
     case kKeys_CheatKeys: PatchCommand('o'); break;
-    case kKeys_MigrateSnapshot: PatchCommand('k'); break;
+    case kKeys_ClearKeyLog: PatchCommand('k'); break;
+    case kKeys_StopReplay: PatchCommand('l'); break;
     case kKeys_Fullscreen:
       g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
       SDL_SetWindowFullscreen(g_window, g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP);

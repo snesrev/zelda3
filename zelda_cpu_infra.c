@@ -339,10 +339,25 @@ void ByteArray_Destroy(ByteArray *arr) {
   arr->data = NULL;
 }
 
-void saveFunc(void *ctx_in, void *data, size_t data_size) {
-  ByteArray *arr = (ByteArray *)ctx_in;
+void ByteArray_AppendData(ByteArray *arr, const uint8 *data, size_t data_size) {
   ByteArray_Resize(arr, arr->size + data_size);
   memcpy(arr->data + arr->size - data_size, data, data_size);
+}
+
+void ByteArray_AppendByte(ByteArray *arr, uint8 v) {
+  ByteArray_Resize(arr, arr->size + 1);
+  arr->data[arr->size - 1] = v;
+}
+
+void ByteArray_AppendVl(ByteArray *arr, uint32 v) {
+  for (; v >= 255; v -= 255)
+    ByteArray_AppendByte(arr, 255);
+  ByteArray_AppendByte(arr, v);
+}
+
+
+void saveFunc(void *ctx_in, void *data, size_t data_size) {
+  ByteArray_AppendData((ByteArray *)ctx_in, data, data_size);
 }
 
 typedef struct LoadFuncState {
@@ -395,7 +410,7 @@ typedef struct StateRecorder {
   uint32 total_frames;
 
   // For replay
-  uint32 replay_pos;
+  uint32 replay_pos, replay_pos_last_complete;
   uint32 replay_frame_counter;
   uint32 replay_next_cmd_at;
   uint8 replay_cmd;
@@ -411,24 +426,13 @@ void StateRecorder_Init(StateRecorder *sr) {
   memset(sr, 0, sizeof(*sr));
 }
 
-void StateRecorder_AppendByte(StateRecorder *sr, uint8 v) {
-  ByteArray_Resize(&sr->log, sr->log.size + 1);
-  sr->log.data[sr->log.size - 1] = v;
-  printf("%.2x ", v);
-}
-
-void StateRecorder_AppendVl(StateRecorder *sr, uint32 v) {
-  for (; v >= 255; v -= 255)
-    StateRecorder_AppendByte(sr, 255);
-  StateRecorder_AppendByte(sr, v);
-}
-
-void StateRecorder_RecordJoypadBit(StateRecorder *sr, int command) {
+void StateRecorder_RecordCmd(StateRecorder *sr, uint8 cmd) {
   int frames = sr->frames_since_last;
-  StateRecorder_AppendByte(sr, command << 4 | (frames < 15 ? frames : 15));
-  if (frames >= 15)
-    StateRecorder_AppendVl(sr, frames - 15);
   sr->frames_since_last = 0;
+  int x = (cmd < 0xc0) ? 0xf : 0x1;
+  ByteArray_AppendByte(&sr->log, cmd | (frames < x ? frames : x));
+  if (frames >= x)
+    ByteArray_AppendVl(&sr->log, frames - x);
 }
 
 void StateRecorder_Record(StateRecorder *sr, uint16 inputs) {
@@ -436,10 +440,13 @@ void StateRecorder_Record(StateRecorder *sr, uint16 inputs) {
   if (diff != 0) {
     sr->last_inputs = inputs;
     printf("0x%.4x %d: ", diff, sr->frames_since_last);
+    int lb = sr->log.size;
     for (int i = 0; i < 12; i++) {
       if ((diff >> i) & 1)
-        StateRecorder_RecordJoypadBit(sr, i);
+        StateRecorder_RecordCmd(sr, i << 4);
     }
+    while (lb < sr->log.size)
+      printf("%.2x ", sr->log.data[lb++]);
     printf("\n");
   }
   sr->frames_since_last++;
@@ -448,27 +455,26 @@ void StateRecorder_Record(StateRecorder *sr, uint16 inputs) {
 
 void StateRecorder_RecordPatchByte(StateRecorder *sr, uint32 addr, const uint8 *value, int num) {
   assert(addr < 0x20000);
+  
   printf("%d: PatchByte(0x%x, 0x%x. %d): ", sr->frames_since_last, addr, *value, num);
-
-  int frames = sr->frames_since_last;
-  sr->frames_since_last = 0;
-
+  int lb = sr->log.size;
   int lq = (num - 1) <= 3 ? (num - 1) : 3;
-  StateRecorder_AppendByte(sr, 0xc0 | (frames != 0 ? 1 : 0) | (addr & 0x10000 ? 2 : 0) | lq << 2);
-  if (frames != 0)
-    StateRecorder_AppendVl(sr, frames - 1);
+  StateRecorder_RecordCmd(sr, 0xc0 | (addr & 0x10000 ? 2 : 0) | lq << 2);
   if (lq == 3)
-    StateRecorder_AppendVl(sr, num - 1 - 3);
-  StateRecorder_AppendByte(sr, addr >> 8);
-  StateRecorder_AppendByte(sr, addr);
+    ByteArray_AppendVl(&sr->log, num - 1 - 3);
+  ByteArray_AppendByte(&sr->log, addr >> 8);
+  ByteArray_AppendByte(&sr->log, addr);
   for(int i = 0; i < num; i++)
-    StateRecorder_AppendByte(sr, value[i]);
+    ByteArray_AppendByte(&sr->log, value[i]);
+  while (lb < sr->log.size)
+    printf("%.2x ", sr->log.data[lb++]);
   printf("\n");
 }
 
 void StateRecorder_Load(StateRecorder *sr, FILE *f, bool replay_mode) {
+  // todo: fix robustness on invalid data.
   uint32 hdr[8] = { 0 };
-  fread(hdr, 8, 4, f);
+  fread(hdr, 1, sizeof(hdr), f);
 
   assert(hdr[0] == 1);
 
@@ -481,14 +487,15 @@ void StateRecorder_Load(StateRecorder *sr, FILE *f, bool replay_mode) {
   ByteArray_Resize(&sr->base_snapshot, (hdr[5] & 1) ? hdr[6] : 0);
   fread(sr->base_snapshot.data, 1, sr->base_snapshot.size, f);
 
+  sr->replay_next_cmd_at = 0;
+
   bool is_reset = false;
   sr->replay_mode = replay_mode;
   if (replay_mode) {
-    sr->replay_next_cmd_at = sr->frames_since_last = 0;
+    sr->frames_since_last = 0;
     sr->last_inputs = 0;
-    sr->replay_pos = 0;
+    sr->replay_pos = sr->replay_pos_last_complete = 0;
     sr->replay_frame_counter = 0;
-    sr->replay_cmd = 0xff;
     // Load snapshot from |base_snapshot_|, or reset if empty.
 
     if (sr->base_snapshot.size) {
@@ -501,6 +508,11 @@ void StateRecorder_Load(StateRecorder *sr, FILE *f, bool replay_mode) {
       is_reset = true;
     }
   } else {
+    // Resume replay from the saved position?
+    sr->replay_pos = sr->replay_pos_last_complete = hdr[5] >> 1;
+    sr->replay_frame_counter = hdr[7];
+    sr->replay_mode = (sr->replay_frame_counter != 0);
+
     ByteArray arr = { 0 };
     ByteArray_Resize(&arr, hdr[6]);
     fread(arr.data, 1, arr.size, f);
@@ -525,64 +537,98 @@ void StateRecorder_Save(StateRecorder *sr, FILE *f) {
   hdr[4] = sr->frames_since_last;
   hdr[5] = sr->base_snapshot.size ? 1 : 0;
   hdr[6] = arr.size;
-
-  fwrite(hdr, 8, 4, f);
-  fwrite(sr->log.data, 1, sr->log.size, f);
+  // If saving while in replay mode, also need to persist
+  // sr->replay_pos_last_complete and sr->replay_frame_counter
+  // so the replaying can be resumed.
+  if (sr->replay_mode) {
+    hdr[5] |= sr->replay_pos_last_complete << 1;
+    hdr[7] = sr->replay_frame_counter;
+  }
+  fwrite(hdr, 1, sizeof(hdr), f);
+  fwrite(sr->log.data, 1, hdr[2], f);
   fwrite(sr->base_snapshot.data, 1, sr->base_snapshot.size, f);
   fwrite(arr.data, 1, arr.size, f);
 
   ByteArray_Destroy(&arr);
 }
 
-void StateRecorder_MigrateToBaseSnapshot(StateRecorder *sr) {
-  printf("Migrating to base snapshot!\n");
+void StateRecorder_ClearKeyLog(StateRecorder *sr) {
+  printf("Clearing key log!\n");
   sr->base_snapshot.size = 0;
   SaveSnesState(&sr->base_snapshot);
-  sr->replay_mode = false;
+  ByteArray old_log = sr->log;
+  int old_frames_since_last = sr->frames_since_last;
+  memset(&sr->log, 0, sizeof(sr->log));
+  // If there are currently any active inputs, record them initially at timestamp 0.
   sr->frames_since_last = 0;
-  sr->last_inputs = 0;
-  sr->total_frames = 0;
-  sr->log.size = 0;
+  if (sr->last_inputs) {
+    for (int i = 0; i < 12; i++) {
+      if ((sr->last_inputs >> i) & 1)
+        StateRecorder_RecordCmd(sr, i << 4);
+    }
+  }
+  if (sr->replay_mode) {
+    // When clearing the key log while in replay mode, we want to keep
+    // replaying but discarding all key history up until this point.
+    if (sr->replay_next_cmd_at != 0xffffffff) {
+      sr->replay_next_cmd_at -= old_frames_since_last;
+      sr->frames_since_last = sr->replay_next_cmd_at;
+      sr->replay_pos_last_complete = sr->log.size;
+      StateRecorder_RecordCmd(sr, sr->replay_cmd);
+      int old_replay_pos = sr->replay_pos;
+      sr->replay_pos = sr->log.size;
+      ByteArray_AppendData(&sr->log, old_log.data + old_replay_pos, old_log.size - old_replay_pos);
+    }
+    sr->total_frames -= sr->replay_frame_counter;
+    sr->replay_frame_counter = 0;
+  } else {
+    sr->total_frames = 0;
+  }
+  ByteArray_Destroy(&old_log);
+  sr->frames_since_last = 0;
 }
 
 uint16 StateRecorder_ReadNextReplayState(StateRecorder *sr) {
   assert(sr->replay_mode);
   while (sr->frames_since_last >= sr->replay_next_cmd_at) {
-    sr->frames_since_last = 0;
-    // Apply next command
-    if (sr->replay_cmd != 0xff) {
+    int replay_pos = sr->replay_pos;
+    if (replay_pos != sr->replay_pos_last_complete) {
+      // Apply next command
+      sr->frames_since_last = 0;
       if (sr->replay_cmd < 0xc0) {
         sr->last_inputs ^= 1 << (sr->replay_cmd >> 4);
       } else if (sr->replay_cmd < 0xd0) {
         int nb = 1 + ((sr->replay_cmd >> 2) & 3);
         uint8 t;
         if (nb == 4) do {
-          nb += t = sr->log.data[sr->replay_pos++];
+          nb += t = sr->log.data[replay_pos++];
         } while (t == 255);
         uint32 addr = ((sr->replay_cmd >> 1) & 1) << 16;
-        addr |= sr->log.data[sr->replay_pos++] << 8;
-        addr |= sr->log.data[sr->replay_pos++];
+        addr |= sr->log.data[replay_pos++] << 8;
+        addr |= sr->log.data[replay_pos++];
         do {
-          g_emulated_ram[addr & 0x1ffff] = g_ram[addr & 0x1ffff] = sr->log.data[sr->replay_pos++];
+          g_emulated_ram[addr & 0x1ffff] = g_ram[addr & 0x1ffff] = sr->log.data[replay_pos++];
         } while (addr++, --nb);
       } else {
         assert(0);
       }
     }
-    if (sr->replay_pos >= sr->log.size) {
-      sr->replay_cmd = 0xff;
+    sr->replay_pos_last_complete = replay_pos;
+    if (replay_pos >= sr->log.size) {
+      sr->replay_pos = replay_pos;
       sr->replay_next_cmd_at = 0xffffffff;
       break;
     }
     // Read the next one
-    uint8 cmd = sr->log.data[sr->replay_pos++], t;
+    uint8 cmd = sr->log.data[replay_pos++], t;
     int mask = (cmd < 0xc0) ? 0xf : 0x1;
     int frames = cmd & mask;
     if (frames == mask) do {
-      frames += t = sr->log.data[sr->replay_pos++];
+      frames += t = sr->log.data[replay_pos++];
     } while (t == 255);
     sr->replay_next_cmd_at = frames;
     sr->replay_cmd = cmd;
+    sr->replay_pos = replay_pos;
   }
   sr->frames_since_last++;
   // Turn off replay mode after we reached the final frame position
@@ -590,6 +636,14 @@ uint16 StateRecorder_ReadNextReplayState(StateRecorder *sr) {
     sr->replay_mode = false;
   }
   return sr->last_inputs;
+}
+
+void StateRecorder_StopReplay(StateRecorder *sr) {
+  if (!sr->replay_mode)
+    return;
+  sr->replay_mode = false;
+  sr->total_frames = sr->replay_frame_counter;
+  sr->log.size = sr->replay_pos_last_complete;
 }
 
 static int frame_ctr;
@@ -766,7 +820,6 @@ void PatchRom(uint8_t *rom) {
     rom[0xdc0f2] = target;
     rom[0xdc0f3] = target >> 8;
     rom[0xdc0f4] = target >> 16;
-
   }
 
   rom[0x2dec7] = 0;  // Fix Uncle_Embark reading bad ram
@@ -921,9 +974,11 @@ void PatchCommand(char c) {
     StateRecoderMultiPatch_Patch(&mp, 0xf373, 80);  // magic filler
     //    b.Patch(0x1FE01, 25);
   } else if (c == 'k') {
-    StateRecorder_MigrateToBaseSnapshot(&state_recorder);
+    StateRecorder_ClearKeyLog(&state_recorder);
   } else if (c == 'o') {
     StateRecoderMultiPatch_Patch(&mp, 0xf36f, 1);
+  } else if (c == 'l') {
+    StateRecorder_StopReplay(&state_recorder);
   }
   StateRecoderMultiPatch_Commit(&mp);
 }
