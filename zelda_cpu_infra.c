@@ -689,11 +689,6 @@ int InputStateReadFromFile() {
 bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
   frame_ctr++;
 
-  if (kIsOrigEmu) {
-    snes_runFrame(snes);
-    return false;
-  }
-
   // Either copy state or apply state
   if (state_recorder.replay_mode) {
     input_state = StateRecorder_ReadNextReplayState(&state_recorder);

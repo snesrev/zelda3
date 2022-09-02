@@ -313,7 +313,7 @@ int main(int argc, char** argv) {
 
 static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) {
   // generate enough samples
-  if (!kIsOrigEmu && snes) {
+  if (snes) {
     while (snes->apu->dsp->sampleOffset < 534)
       apu_cycle(snes->apu);
     snes->apu->dsp->sampleOffset = 0;

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <assert.h>
 #include "ppu.h"
 #include "snes.h"
 
@@ -108,7 +109,7 @@ void ppu_reset(Ppu* ppu) {
   memset(ppu->objPriorityBuffer, 0, sizeof(ppu->objPriorityBuffer));
   ppu->timeOver = false;
   ppu->rangeOver = false;
-  ppu->objInterlace = false;
+  ppu->objInterlace_always_zero = false;
   for(int i = 0; i < 4; i++) {
     ppu->bgLayer[i].hScroll = 0;
     ppu->bgLayer[i].vScroll = 0;
@@ -116,7 +117,7 @@ void ppu_reset(Ppu* ppu) {
     ppu->bgLayer[i].tilemapHigher = false;
     ppu->bgLayer[i].tilemapAdr = 0;
     ppu->bgLayer[i].tileAdr = 0;
-    ppu->bgLayer[i].bigTiles = false;
+    ppu->bgLayer[i].bigTiles_always_zero = false;
     ppu->bgLayer[i].mosaicEnabled = false;
   }
   ppu->scrollPrev = 0;
@@ -135,7 +136,7 @@ void ppu_reset(Ppu* ppu) {
   ppu->m7charFill = false;
   ppu->m7xFlip = false;
   ppu->m7yFlip = false;
-  ppu->m7extBg = false;
+  ppu->m7extBg_always_zero = false;
   ppu->m7startX = 0;
   ppu->m7startY = 0;
   for(int i = 0; i < 6; i++) {
@@ -163,10 +164,10 @@ void ppu_reset(Ppu* ppu) {
   ppu->mode = 0;
   ppu->bg3priority = false;
   ppu->evenFrame = false;
-  ppu->pseudoHires = false;
-  ppu->overscan = false;
+  ppu->pseudoHires_always_zero = false;
+  ppu->overscan_always_zero = false;
   ppu->frameOverscan = false;
-  ppu->interlace = false;
+  ppu->interlace_always_zero = false;
   ppu->frameInterlace = false;
   ppu->directColor = false;
   ppu->hCount = 0;
@@ -185,7 +186,7 @@ void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx) {
 
 bool ppu_checkOverscan(Ppu* ppu) {
   // called at (0,225)
-  ppu->frameOverscan = ppu->overscan; // set if we have a overscan-frame
+  ppu->frameOverscan = ppu->overscan_always_zero; // set if we have a overscan-frame
   return ppu->frameOverscan;
 }
 
@@ -196,7 +197,7 @@ void ppu_handleVblank(Ppu* ppu) {
     ppu->oamInHigh = ppu->oamInHighWritten;
     ppu->oamSecondWrite = false;
   }
-  ppu->frameInterlace = ppu->interlace; // set if we have a interlaced frame
+  ppu->frameInterlace = ppu->interlace_always_zero; // set if we have a interlaced frame
 }
 
 void ppu_runLine(Ppu* ppu, int line) {
@@ -227,11 +228,7 @@ static void ppu_handlePixel(Ppu* ppu, int x, int y) {
     int mainLayer = ppu_getPixel(ppu, x, y, false, &r, &g, &b);
 
     bool colorWindowState = ppu_getWindowState(ppu, 5, x);
-    if(
-      ppu->clipMode == 3 ||
-      (ppu->clipMode == 2 && colorWindowState) ||
-      (ppu->clipMode == 1 && !colorWindowState)
-    ) {
+    if(ppu->clipMode == 3 || (ppu->clipMode == 2 && colorWindowState) || (ppu->clipMode == 1 && !colorWindowState)) {
       r = g = b = 0;
     }
     int secondLayer = 5; // backdrop
@@ -240,7 +237,7 @@ static void ppu_handlePixel(Ppu* ppu, int x, int y) {
       (ppu->preventMathMode == 2 && colorWindowState) ||
       (ppu->preventMathMode == 1 && !colorWindowState)
     );
-    if((mathEnabled && ppu->addSubscreen) || ppu->pseudoHires || ppu->mode == 5 || ppu->mode == 6) {
+    if(mathEnabled && ppu->addSubscreen) {
       secondLayer = ppu_getPixel(ppu, x, y, true, &r2, &g2, &b2);
     }
     // TODO: subscreen pixels can be clipped to black as well
@@ -267,24 +264,23 @@ static void ppu_handlePixel(Ppu* ppu, int x, int y) {
       if(g < 0) g = 0;
       if(b < 0) b = 0;
     }
-    if(!(ppu->pseudoHires || ppu->mode == 5 || ppu->mode == 6)) {
-      r2 = r; g2 = g; b2 = b;
-    }
+    r2 = r; g2 = g; b2 = b;
   }
   int row = (y - 1) + (ppu->evenFrame ? 0 : 239);
-  ppu->pixelBuffer[row * 2048 + x * 8 + 1] = ((b2 << 3) | (b2 >> 2)) * ppu->brightness / 15;
-  ppu->pixelBuffer[row * 2048 + x * 8 + 2] = ((g2 << 3) | (g2 >> 2)) * ppu->brightness / 15;
-  ppu->pixelBuffer[row * 2048 + x * 8 + 3] = ((r2 << 3) | (r2 >> 2)) * ppu->brightness / 15;
-  ppu->pixelBuffer[row * 2048 + x * 8 + 5] = ((b << 3) | (b >> 2)) * ppu->brightness / 15;
-  ppu->pixelBuffer[row * 2048 + x * 8 + 6] = ((g << 3) | (g >> 2)) * ppu->brightness / 15;
-  ppu->pixelBuffer[row * 2048 + x * 8 + 7] = ((r << 3) | (r >> 2)) * ppu->brightness / 15;
+  uint8_t *dst = &ppu->pixelBuffer[row * 2048 + x * 8];
+  uint8_t ppu_brightness = ppu->brightness;
+  dst[1] = ((b2 << 3) | (b2 >> 2)) * ppu_brightness / 15;
+  dst[2] = ((g2 << 3) | (g2 >> 2)) * ppu_brightness / 15;
+  dst[3] = ((r2 << 3) | (r2 >> 2)) * ppu_brightness / 15;
+  dst[5] = ((b << 3) | (b >> 2)) * ppu_brightness / 15;
+  dst[6] = ((g << 3) | (g >> 2)) * ppu_brightness / 15;
+  dst[7] = ((r << 3) | (r >> 2)) * ppu_brightness / 15;
 }
 
 static int ppu_getPixel(Ppu* ppu, int x, int y, bool sub, int* r, int* g, int* b) {
   // figure out which color is on this location on main- or subscreen, sets it in r, g, b
   // returns which layer it is: 0-3 for bg layer, 4 or 6 for sprites (depending on palette), 5 for backdrop
   int actMode = ppu->mode == 1 && ppu->bg3priority ? 8 : ppu->mode;
-  actMode = ppu->mode == 7 && ppu->m7extBg ? 9 : actMode;
   int layer = 5;
   int pixel = 0;
   for(int i = 0; i < layerCountPerMode[actMode]; i++) {
@@ -313,18 +309,7 @@ static int ppu_getPixel(Ppu* ppu, int x, int y, bool sub, int* r, int* g, int* b
           pixel = ppu_getPixelForMode7(ppu, lx, curLayer, curPriority);
         } else {
           lx += ppu->bgLayer[curLayer].hScroll;
-          if(ppu->mode == 5 || ppu->mode == 6) {
-            lx *= 2;
-            lx += (sub || ppu->bgLayer[curLayer].mosaicEnabled) ? 0 : 1;
-            if(ppu->interlace) {
-              ly *= 2;
-              ly += (ppu->evenFrame || ppu->bgLayer[curLayer].mosaicEnabled) ? 0 : 1;
-            }
-          }
           ly += ppu->bgLayer[curLayer].vScroll;
-          if(ppu->mode == 2 || ppu->mode == 4 || ppu->mode == 6) {
-            ppu_handleOPT(ppu, curLayer, &lx, &ly);
-          }
           pixel = ppu_getPixelForBgLayer(
             ppu, lx & 0x3ff, ly & 0x3ff,
             curLayer, curPriority
@@ -355,61 +340,16 @@ static int ppu_getPixel(Ppu* ppu, int x, int y, bool sub, int* r, int* g, int* b
   return layer;
 }
 
-static void ppu_handleOPT(Ppu* ppu, int layer, int* lx, int* ly) {
-  int x = *lx;
-  int y = *ly;
-  int column = 0;
-  if(ppu->mode == 6) {
-    column = ((x - (x & 0xf)) - ((ppu->bgLayer[layer].hScroll * 2) & 0xfff0)) >> 4;
-  } else {
-    column = ((x - (x & 0x7)) - (ppu->bgLayer[layer].hScroll & 0xfff8)) >> 3;
-  }
-  if(column > 0) {
-    // fetch offset values from layer 3 tilemap
-    int valid = layer == 0 ? 0x2000 : 0x4000;
-    uint16_t hOffset = ppu_getOffsetValue(ppu, column - 1, 0);
-    uint16_t vOffset = 0;
-    if(ppu->mode == 4) {
-      if(hOffset & 0x8000) {
-        vOffset = hOffset;
-        hOffset = 0;
-      }
-    } else {
-      vOffset = ppu_getOffsetValue(ppu, column - 1, 1);
-    }
-    if(ppu->mode == 6) {
-      // TODO: not sure if correct
-      if(hOffset & valid) *lx = (((hOffset & 0x3f8) + (column * 8)) * 2) | (x & 0xf);
-    } else {
-      if(hOffset & valid) *lx = ((hOffset & 0x3f8) + (column * 8)) | (x & 0x7);
-    }
-    // TODO: not sure if correct for interlace
-    if(vOffset & valid) *ly = (vOffset & 0x3ff) + (y - ppu->bgLayer[layer].vScroll);
-  }
-}
-
-static uint16_t ppu_getOffsetValue(Ppu* ppu, int col, int row) {
-  int x = col * 8 + ppu->bgLayer[2].hScroll;
-  int y = row * 8 + ppu->bgLayer[2].vScroll;
-  int tileBits = ppu->bgLayer[2].bigTiles ? 4 : 3;
-  int tileHighBit = ppu->bgLayer[2].bigTiles ? 0x200 : 0x100;
-  uint16_t tilemapAdr = ppu->bgLayer[2].tilemapAdr + (((y >> tileBits) & 0x1f) << 5 | ((x >> tileBits) & 0x1f));
-  if((x & tileHighBit) && ppu->bgLayer[2].tilemapWider) tilemapAdr += 0x400;
-  if((y & tileHighBit) && ppu->bgLayer[2].tilemapHigher) tilemapAdr += ppu->bgLayer[2].tilemapWider ? 0x800 : 0x400;
-  return ppu->vram[tilemapAdr & 0x7fff];
-}
-
 static int ppu_getPixelForBgLayer(Ppu* ppu, int x, int y, int layer, bool priority) {
   BgLayer *layerp = &ppu->bgLayer[layer];
   // figure out address of tilemap word and read it
-  bool wideTiles = layerp->bigTiles || ppu->mode == 5 || ppu->mode == 6;
-  int tileBitsX = wideTiles ? 4 : 3;
-  int tileHighBitX = wideTiles ? 0x200 : 0x100;
-  int tileBitsY = layerp->bigTiles ? 4 : 3;
-  int tileHighBitY = layerp->bigTiles ? 0x200 : 0x100;
+  int tileBitsX = 3;
+  int tileHighBitX = 0x100;
+  int tileBitsY = 3;
+  int tileHighBitY = 0x100;
   uint16_t tilemapAdr = layerp->tilemapAdr + (((y >> tileBitsY) & 0x1f) << 5 | ((x >> tileBitsX) & 0x1f));
-  if((x & tileHighBitX) && layerp->tilemapWider) tilemapAdr += 0x400;
-  if((y & tileHighBitY) && layerp->tilemapHigher) tilemapAdr += layerp->tilemapWider ? 0x800 : 0x400;
+  if ((x & tileHighBitX) && layerp->tilemapWider) tilemapAdr += 0x400;
+  if ((y & tileHighBitY) && layerp->tilemapHigher) tilemapAdr += layerp->tilemapWider ? 0x800 : 0x400;
   uint16_t tile = ppu->vram[tilemapAdr & 0x7fff];
   // check priority, get palette
   if(((bool) (tile & 0x2000)) != priority) return 0; // wrong priority
@@ -418,14 +358,6 @@ static int ppu_getPixelForBgLayer(Ppu* ppu, int x, int y, int layer, bool priori
   int row = (tile & 0x8000) ? 7 - (y & 0x7) : (y & 0x7);
   int col = (tile & 0x4000) ? (x & 0x7) : 7 - (x & 0x7);
   int tileNum = tile & 0x3ff;
-  if(wideTiles) {
-    // if unflipped right half of tile, or flipped left half of tile
-    if(((bool) (x & 8)) ^ ((bool) (tile & 0x4000))) tileNum += 1;
-  }
-  if(layerp->bigTiles) {
-    // if unflipped bottom half of tile, or flipped upper half of tile
-    if(((bool) (y & 8)) ^ ((bool) (tile & 0x8000))) tileNum += 0x10;
-  }
   // read tiledata, ajust palette for mode 0
   int bitDepth = bitDepthsPerMode[ppu->mode][layer];
   if(ppu->mode == 0) paletteNum += 8 * layer;
@@ -538,7 +470,7 @@ static void ppu_evaluateSprites(Ppu* ppu, int line) {
     // check if the sprite is on this line and get the sprite size
     uint8_t row = line - y;
     int spriteSize = spriteSizes[ppu->objSize][(ppu->highOam[index >> 3] >> ((index & 7) + 1)) & 1];
-    int spriteHeight = ppu->objInterlace ? spriteSize / 2 : spriteSize;
+    int spriteHeight = spriteSize;
     if(row < spriteHeight) {
       // in y-range, get the x location, using the high bit as well
       int x = ppu->oam[index] & 0xff;
@@ -552,8 +484,6 @@ static void ppu_evaluateSprites(Ppu* ppu, int line) {
           ppu->rangeOver = true;
           break;
         }
-        // update row according to obj-interlace
-        if(ppu->objInterlace) row = row * 2 + (ppu->evenFrame ? 0 : 1);
         // get some data for the sprite and y-flip row if needed
         int tile = ppu->oam[index + 1] & 0xff;
         int palette = (ppu->oam[index + 1] & 0xe00) >> 9;
@@ -786,10 +716,9 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
     case 0x05: {
       ppu->mode = val & 0x7;
       ppu->bg3priority = val & 0x8;
-      ppu->bgLayer[0].bigTiles = val & 0x10;
-      ppu->bgLayer[1].bigTiles = val & 0x20;
-      ppu->bgLayer[2].bigTiles = val & 0x40;
-      ppu->bgLayer[3].bigTiles = val & 0x80;
+      assert(ppu->mode == 1 || ppu->mode == 7);
+      // bigTiles are never used
+      assert((val & 0xf0) == 0);
       break;
     }
     case 0x06: {
@@ -799,13 +728,14 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
       ppu->bgLayer[2].mosaicEnabled = val & 0x4;
       ppu->bgLayer[3].mosaicEnabled = val & 0x8;
       ppu->mosaicSize = (val >> 4) + 1;
-      ppu->mosaicStartLine = 0;// ppu->snes->vPos;
+      ppu->mosaicStartLine = 0;
       break;
     }
     case 0x07:
     case 0x08:
     case 0x09:
     case 0x0a: {
+      // small tilemaps are used in attract intro
       ppu->bgLayer[adr - 7].tilemapWider = val & 0x1;
       ppu->bgLayer[adr - 7].tilemapHigher = val & 0x2;
       ppu->bgLayer[adr - 7].tilemapAdr = (val & 0xfc) << 8;
@@ -1014,11 +944,12 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
       break;
     }
     case 0x33: {
-      ppu->interlace = val & 0x1;
-      ppu->objInterlace = val & 0x2;
-      ppu->overscan = val & 0x4;
-      ppu->pseudoHires = val & 0x8;
-      ppu->m7extBg = val & 0x40;
+      assert(val == 0);
+      ppu->interlace_always_zero = val & 0x1;
+      ppu->objInterlace_always_zero = val & 0x2;
+      ppu->overscan_always_zero = val & 0x4;
+      ppu->pseudoHires_always_zero = val & 0x8;
+      ppu->m7extBg_always_zero = val & 0x40;
       break;
     }
     default: {

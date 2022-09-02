@@ -2403,7 +2403,8 @@ void EndSequence_32() {  // 8ebc6d
   music_control = 0x22;
   CGWSEL_copy = 0;
   CGADSUB_copy = 162;
-  zelda_ppu_write(BG2SC, 0x12);
+  // real zelda does 0x12 here but this seems to work too
+  zelda_ppu_write(BG2SC, 0x13);
   COLDATA_copy0 = 0x3f;
   COLDATA_copy1 = 0x5f;
   COLDATA_copy2 = 0x9f;
@@ -2437,8 +2438,10 @@ void Credits_FadeColorAndBeginAnimating() {  // 8ebd8b
   nmi_disable_core_updates = 1;
   Credits_AnimateTheTriangles();
   if (!(frame_counter & 3)) {
-    if (++BG2HOFS_copy2 == 0xc00)
-      zelda_ppu_write_word(BG1SC, 0x1300);
+    if (++BG2HOFS_copy2 == 0xc00) {
+      // real zelda writes 0x00 to BG1SC here but that doesn't seem needed
+      zelda_ppu_write(BG2SC, 0x13);
+    }
     room_bounds_y.a1 = BG2HOFS_copy2 >> 1;
     room_bounds_y.a0 = room_bounds_y.a1 + BG2HOFS_copy2;
     room_bounds_y.b0 = room_bounds_y.a0 >> 1;

@@ -19,7 +19,7 @@ typedef struct BgLayer {
   bool tilemapHigher;
   uint16_t tilemapAdr;
   uint16_t tileAdr;
-  bool bigTiles;
+  bool bigTiles_always_zero;
   bool mosaicEnabled;
 } BgLayer;
 
@@ -70,7 +70,7 @@ struct Ppu {
   uint8_t objPriorityBuffer[256];
   bool timeOver;
   bool rangeOver;
-  bool objInterlace;
+  bool objInterlace_always_zero;
   // background layers
   BgLayer bgLayer[4];
   uint8_t scrollPrev;
@@ -86,7 +86,7 @@ struct Ppu {
   bool m7charFill;
   bool m7xFlip;
   bool m7yFlip;
-  bool m7extBg;
+  bool m7extBg_always_zero;
   // mode 7 internal
   int32_t m7startX;
   int32_t m7startY;
@@ -112,10 +112,10 @@ struct Ppu {
   uint8_t mode;
   bool bg3priority;
   bool evenFrame;
-  bool pseudoHires;
-  bool overscan;
+  bool pseudoHires_always_zero;
+  bool overscan_always_zero;
   bool frameOverscan; // if we are overscanning this frame (determined at 0,225)
-  bool interlace;
+  bool interlace_always_zero;
   bool frameInterlace; // if we are interlacing this frame (determined at start vblank)
   bool directColor;
   // latching
