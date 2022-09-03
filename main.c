@@ -51,6 +51,8 @@ enum {
   kRenderWidth = 512,
   kRenderHeight = 480,
   kDefaultZoom = 2,
+  kMaxUserVolumeLevel = 100,
+  kVolumeIncrementInterval = 5,
 };
 
 
@@ -59,6 +61,7 @@ static SDL_Window *g_window;
 static SDL_Renderer *g_renderer;
 static uint8 g_paused, g_turbo = true;
 static int current_zoom = kDefaultZoom;
+static int g_current_user_volume_level = kMaxUserVolumeLevel;
 static uint8 g_gamepad_buttons;
 
 void NORETURN Die(const char *error) {
@@ -112,6 +115,10 @@ void DoZoom(int zoom_step) {
   } else {
     SDL_SetWindowPosition(g_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
   }
+}
+
+void AdjustMasterVolume(int volume_adjustment) {
+  g_current_user_volume_level = SDL_clamp(g_current_user_volume_level + volume_adjustment, 0, kMaxUserVolumeLevel);
 }
 
 static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area, void *data) {
@@ -305,7 +312,8 @@ static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, SDL_AudioFormat form
   if (SDL_GetQueuedAudioSize(device) <= 735 * 4 * 6) {
     int16 *volumeAdjustedAudioBuffer = (int16 *)malloc(735 * 4);
     SDL_memset(volumeAdjustedAudioBuffer, 0, 735 * 4);
-    SDL_MixAudioFormat((Uint8 *)volumeAdjustedAudioBuffer, (Uint8 *)audioBuffer, format, 735 * 4, SDL_MIX_MAXVOLUME);
+    int8 volume_level = (int8)floor((float)g_current_user_volume_level / kMaxUserVolumeLevel * SDL_MIX_MAXVOLUME);
+    SDL_MixAudioFormat((Uint8 *)volumeAdjustedAudioBuffer, (Uint8 *)audioBuffer, format, 735 * 4, volume_level);
     SDL_QueueAudio(device, volumeAdjustedAudioBuffer, 735 * 4);
     free(volumeAdjustedAudioBuffer);
   } else {
@@ -372,6 +380,12 @@ static void HandleCommand(uint32 j, bool pressed) {
     case kKeys_Turbo: g_turbo = !g_turbo; break;
     case kKeys_ZoomIn: DoZoom(1); break;
     case kKeys_ZoomOut: DoZoom(-1); break;
+    case kKeys_MasterVolumeDown:
+      AdjustMasterVolume(-1 * kVolumeIncrementInterval);
+      break;
+    case kKeys_MasterVolumeUp:
+      AdjustMasterVolume(kVolumeIncrementInterval);
+      break;
     default: assert(0);
     }
   }
