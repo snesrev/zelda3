@@ -26,6 +26,7 @@ enum {
   kKeys_Turbo,
   kKeys_ZoomIn,
   kKeys_ZoomOut,
+  kKeys_DisplayPerf,
   kKeys_Total,
 };
 

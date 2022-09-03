@@ -27,6 +27,8 @@ extern uint8 g_emulated_ram[0x20000];
 bool g_run_without_emu = false;
 
 static int g_input1_state;
+static bool g_display_perf;
+static int g_curr_fps;
 
 void PatchRom(uint8 *rom);
 void SetSnes(Snes *snes);
@@ -258,7 +260,20 @@ int main(int argc, char** argv) {
     if (is_turbo)
       continue;
 
-    ZeldaDrawPpuFrame();
+    if (g_display_perf) {
+      static float history[64], average;
+      static int history_pos;
+      uint64 before = SDL_GetPerformanceCounter();
+      ZeldaDrawPpuFrame();
+      uint64 after = SDL_GetPerformanceCounter();
+      float v = (double)SDL_GetPerformanceFrequency() / (after - before);
+      average += v - history[history_pos];
+      history[history_pos] = v;
+      history_pos = (history_pos + 1) & 63;
+      g_curr_fps = average * (1.0f / 64);
+    } else {
+      ZeldaDrawPpuFrame();
+    }
 
     PlayAudio(snes_run, device, audioBuffer);
     RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
@@ -316,6 +331,39 @@ static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) 
   }
 }
 
+static void RenderDigit(uint32 *dst, int digit, uint32 color) {
+  static const uint8 kFont[] = {
+    0x1c, 0x36, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63, 0x36, 0x1c,
+    0x18, 0x1c, 0x1e, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x7e,
+    0x3e, 0x63, 0x60, 0x30, 0x18, 0x0c, 0x06, 0x03, 0x63, 0x7f,
+    0x3e, 0x63, 0x60, 0x60, 0x3c, 0x60, 0x60, 0x60, 0x63, 0x3e,
+    0x30, 0x38, 0x3c, 0x36, 0x33, 0x7f, 0x30, 0x30, 0x30, 0x78,
+    0x7f, 0x03, 0x03, 0x03, 0x3f, 0x60, 0x60, 0x60, 0x63, 0x3e,
+    0x1c, 0x06, 0x03, 0x03, 0x3f, 0x63, 0x63, 0x63, 0x63, 0x3e,
+    0x7f, 0x63, 0x60, 0x60, 0x30, 0x18, 0x0c, 0x0c, 0x0c, 0x0c,
+    0x3e, 0x63, 0x63, 0x63, 0x3e, 0x63, 0x63, 0x63, 0x63, 0x3e,
+    0x3e, 0x63, 0x63, 0x63, 0x7e, 0x60, 0x60, 0x60, 0x30, 0x1e,
+  };
+  const uint8 *p = kFont + digit * 10;
+  for (int y = 0; y < 10; y++, dst += 512) {
+    int v = *p++;
+    for (int x = 0; v; x++, v>>=1) {
+      if (v & 1)
+        dst[x] = color;
+    }
+  }
+}
+
+static void RenderNumber(uint32 *dst, int n) {
+  char buf[32], *s;
+  int i;
+  sprintf(buf, "%d", n);
+  for (s = buf, i = 2; *s; s++, i += 8)
+    RenderDigit(dst + 513 + i, *s - '0', 0x40404000);
+  for (s = buf, i = 2; *s; s++, i += 8)
+    RenderDigit(dst + i, *s - '0', 0xffffff00);
+}
+
 static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen) {
   void* pixels = NULL;
   int pitch = 0;
@@ -324,6 +372,8 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
     return;
   }
   ppu_putPixels(GetPpuForRendering(), (uint8_t*) pixels);
+  if (g_display_perf)
+    RenderNumber((uint32 *)pixels + 512*2, g_curr_fps);
   SDL_UnlockTexture(texture);
   SDL_RenderClear(renderer);
   SDL_RenderCopy(renderer, texture, NULL, NULL);
@@ -375,6 +425,7 @@ static void HandleCommand(uint32 j, bool pressed) {
     case kKeys_Turbo: g_turbo = !g_turbo; break;
     case kKeys_ZoomIn: DoZoom(1); break;
     case kKeys_ZoomOut: DoZoom(-1); break;
+    case kKeys_DisplayPerf: g_display_perf ^= 1; break;
     default: assert(0);
     }
   }
