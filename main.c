@@ -312,8 +312,11 @@ static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, SDL_AudioFormat form
   if (SDL_GetQueuedAudioSize(device) <= 735 * 4 * 6) {
     int16 *volumeAdjustedAudioBuffer = (int16 *)malloc(735 * 4);
     SDL_memset(volumeAdjustedAudioBuffer, 0, 735 * 4);
-    int8 volume_level = (int8)floor((float)g_current_user_volume_level / kMaxUserVolumeLevel * SDL_MIX_MAXVOLUME);
-    SDL_MixAudioFormat((Uint8 *)volumeAdjustedAudioBuffer, (Uint8 *)audioBuffer, format, 735 * 4, volume_level);
+
+    int16 volume_div_shift = 0x8;
+    int32 volume_shifted = (g_current_user_volume_level << volume_div_shift) / kMaxUserVolumeLevel * SDL_MIX_MAXVOLUME;
+    SDL_MixAudioFormat((Uint8 *)volumeAdjustedAudioBuffer, (Uint8 *)audioBuffer, format, 735 * 4, volume_shifted >> volume_div_shift);
+
     SDL_QueueAudio(device, volumeAdjustedAudioBuffer, 735 * 4);
     free(volumeAdjustedAudioBuffer);
   } else {
@@ -381,7 +384,7 @@ static void HandleCommand(uint32 j, bool pressed) {
     case kKeys_ZoomIn: DoZoom(1); break;
     case kKeys_ZoomOut: DoZoom(-1); break;
     case kKeys_MasterVolumeDown:
-      AdjustMasterVolume(-1 * kVolumeIncrementInterval);
+      AdjustMasterVolume(-kVolumeIncrementInterval);
       break;
     case kKeys_MasterVolumeUp:
       AdjustMasterVolume(kVolumeIncrementInterval);
