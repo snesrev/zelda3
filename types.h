@@ -9,6 +9,7 @@ typedef uint16_t uint16;
 typedef int16_t int16;
 typedef uint32_t uint32;
 typedef int32_t int32;
+typedef uint64_t uint64;
 
 #define arraysize(x) sizeof(x)/sizeof(x[0])
 #define sign8(x) ((x) & 0x80)
@@ -18,9 +19,11 @@ typedef int32_t int32;
 #ifdef _MSC_VER
 #define countof _countof
 #define NORETURN __declspec(noreturn)
+#define FORCEINLINE __forceinline
 #else
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 #define NORETURN
+#define FORCEINLINE inline
 #endif
 
 static inline uint16 abs16(uint16 t) { return sign16(t) ? -t : t; }
