@@ -37,7 +37,7 @@ void PatchCommand(char cmd);
 bool RunOneFrame(Snes *snes, int input_state, bool turbo);
 
 static bool LoadRom(const char *name, Snes *snes);
-static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer);
+static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, SDL_AudioFormat format, int16 *audioBuffer);
 static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen);
 static void HandleInput(int keyCode, int modCode, bool pressed);
 static void HandleGamepadInput(int button, bool pressed);
@@ -164,7 +164,7 @@ int main(int argc, char** argv) {
     printf("Failed to open audio device: %s\n", SDL_GetError());
     return 1;
   }
-  int16_t* audioBuffer = (int16_t * )malloc(735 * 4); // *2 for stereo, *2 for sizeof(int16)
+  int16 *audioBuffer = (int16 *)malloc(735 * 4); // *2 for stereo, *2 for sizeof(int16)
   SDL_PauseAudioDevice(device, 0);
 
   Snes *snes = snes_init(g_emulated_ram), *snes_run = NULL;
@@ -255,7 +255,7 @@ int main(int argc, char** argv) {
 
     ZeldaDrawPpuFrame();
 
-    PlayAudio(snes_run, device, audioBuffer);
+    PlayAudio(snes_run, device, have.format, audioBuffer);
     RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
 
     SDL_RenderPresent(renderer); // vsyncs to 60 FPS
@@ -291,7 +291,7 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) {
+static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, SDL_AudioFormat format, int16 *audioBuffer) {
   // generate enough samples
   if (!kIsOrigEmu && snes) {
     while (snes->apu->dsp->sampleOffset < 534)
@@ -299,10 +299,15 @@ static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) 
     snes->apu->dsp->sampleOffset = 0;
   }
 
+  SDL_memset(audioBuffer, 0, 735 * 4);
   dsp_getSamples(GetDspForRendering(), audioBuffer, 735);
-  if(SDL_GetQueuedAudioSize(device) <= 735 * 4 * 6) {
-    // don't queue audio if buffer is still filled
-    SDL_QueueAudio(device, audioBuffer, 735 * 4);
+  // don't queue audio if buffer is still filled
+  if (SDL_GetQueuedAudioSize(device) <= 735 * 4 * 6) {
+    int16 *volumeAdjustedAudioBuffer = (int16 *)malloc(735 * 4);
+    SDL_memset(volumeAdjustedAudioBuffer, 0, 735 * 4);
+    SDL_MixAudioFormat((Uint8 *)volumeAdjustedAudioBuffer, (Uint8 *)audioBuffer, format, 735 * 4, SDL_MIX_MAXVOLUME);
+    SDL_QueueAudio(device, volumeAdjustedAudioBuffer, 735 * 4);
+    free(volumeAdjustedAudioBuffer);
   } else {
     printf("Skipping audio!\n");
   }
