@@ -1903,7 +1903,8 @@ door28:
         dung_hdr_bg2_properties = 0;
         goto stairs_wet;
       }
-      WORD(CGWSEL_copy) = 0x6202;
+      CGWSEL_copy = 2;
+      CGADSUB_copy = 0x62;
     }
     dung_stairs_table_2[dung_num_inroom_upsouth_stairs_water >> 1] = dsto;
     dung_num_inroom_upsouth_stairs_water += 2;
@@ -6854,8 +6855,6 @@ void Module07_05_ControlShutters() {  // 828c0f
 }
 
 void Module07_06_FatInterRoomStairs() {  // 828c14
-  int j;
-
   if (subsubmodule_index >= 3)
     Dungeon_LoadAttribute_Selectable();
 

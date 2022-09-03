@@ -3512,8 +3512,6 @@ void Link_PerformGrab() {  // 87b2ee
 void Link_APress_PullObject() {  // 87b322
   link_direction &= ~0xf;
 
-  uint8 x;
-
   if (!(kGrabWallDirs[link_direction_facing >> 1] & joypad1H_last)) {
     link_var30d = 0;
     goto set;

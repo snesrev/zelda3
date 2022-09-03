@@ -449,7 +449,7 @@ static bool LoadRom(const char *name, Snes *snes) {
 
   PatchRom(file);
 
-  bool result = snes_loadRom(snes, file, length);
+  bool result = snes_loadRom(snes, file, (int)length);
   free(file);
   return result;
 }

@@ -3641,7 +3641,6 @@ skipit:;
     WriteTo4BPPBuffer_at_7F4000(kReceiveItem_Tab5[a]);
   }
   Point16U pt;
-endif_12:
   Ancilla_PrepAdjustedOamCoord(k, &pt);
   Ancilla_ReceiveItem_Draw(k, pt.x, pt.y);
 }

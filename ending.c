@@ -135,7 +135,7 @@ void Intro_SetupScreen() {  // 828000
   TM_copy = 16;
   TS_copy = 0;
   Intro_InitializeBackgroundSettings();
-  CGWSEL_copy = 32;
+  CGWSEL_copy = 0x20;
   zelda_ppu_write(OBSEL, 2);
   load_chr_halfslot_even_odd = 20;
   Graphics_LoadChrHalfSlot();
@@ -1367,7 +1367,7 @@ void Credits_ScrollScene_Overworld() {  // 8e9958
     if (sprite_delay_main[k])
       sprite_delay_main[k]--;
 
-  int i = submodule_index >> 1, k;
+  int i = submodule_index >> 1;
 
   link_x_vel = link_y_vel = 0;
   if (R16 >= 0x40 && !(R16 & 1)) {
@@ -2503,7 +2503,6 @@ void Credits_AddNextAttribution() {  // 8ebe24
     }
   }
 
-done:
   R16 += 0x20;
   if (!(R16 & 0x3ff))
     R16 = (R16 & 0x6800) ^ 0x800;

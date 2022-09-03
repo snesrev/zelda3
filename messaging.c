@@ -769,7 +769,7 @@ void GameOver_DelayBeforeIris() {  // 89f33b
     return;
   Death_InitializeGameOverLetters();
   IrisSpotlight_close();
-  WOBJSEL_copy = 48;
+  WOBJSEL_copy = 0x30;
   W34SEL_copy = 0;
   submodule_index++;
 }
@@ -1437,7 +1437,6 @@ void WorldMap_HandleSprites() {  // 8abf66
     goto out;
 
   k = savegame_map_icons_indicator;
-  uint16 x;
 
   if (!OverworldMap_CheckForPendant(0) && !OverworldMap_CheckForCrystal(0) && !sign16(kOwMapCrystal0_x[k])) {
     link_x_coord_spexit = kOwMapCrystal0_x[k];
@@ -2979,7 +2978,8 @@ void DungMap_Backup() {  // 8ed94c
   BG2HOFS_copy2 = BG2VOFS_copy2 = 0;
   BG3HOFS_copy2 = BG3VOFS_copy2 = 0;
   mapbak_CGWSEL = WORD(CGWSEL_copy);
-  WORD(CGWSEL_copy) = 0x2002;
+  CGWSEL_copy = 0x02;
+  CGADSUB_copy = 0x20;
   for (int i = 0; i < 2048; i++)
     messaging_buf[i] = 0x300;
   sound_effect_2 = 16;

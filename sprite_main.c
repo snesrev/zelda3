@@ -8567,7 +8567,6 @@ void Sprite_09_Moldorm_bounce(int k) {  // 869469
 
 void Sprite_01_Vulture_bounce(int k) {  // 869473
   static const uint8 kVulture_Gfx[4] = {1, 2, 3, 2};
-  int j;
   sprite_obj_prio[k] |= 0x30;
   Vulture_Draw(k);
   if (Sprite_ReturnIfInactive(k))
@@ -22518,7 +22517,6 @@ void Sprite_8D_Arrghi(int k) {  // 9eb8c4
 }
 
 void Sprite_8B_Gibdo(int k) {  // 9eb9a9
-  int j;
   Gibdo_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
@@ -24287,7 +24285,7 @@ int ReleaseBeeFromBottle() {  // 9edccf
   static const int8 kSpawnBee_XY[8] = {8, 2, -2, -8, 10, 5, -5, -10};
 
   SpriteSpawnInfo info;
-  int j = Sprite_SpawnDynamically(0, 0xb2, &info), i;
+  int j = Sprite_SpawnDynamically(0, 0xb2, &info);
   if (j >= 0) {
     sprite_floor[j] = link_is_on_lower_level;
     Sprite_SetX(j, link_x_coord + 8);
@@ -25119,7 +25117,7 @@ void Sprite_Bully(int k) {  // 9eec7c
     return;
   Bully_HandleMessage(k);
   Sprite_MoveXYZ(k);
-  int t = Sprite_CheckTileCollision(k), j;
+  int t = Sprite_CheckTileCollision(k);
   if (t) {
     if (!(t & 3))
       sprite_y_vel[k] = -sprite_y_vel[k];

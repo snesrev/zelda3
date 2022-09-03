@@ -441,7 +441,7 @@ void StateRecorder_Record(StateRecorder *sr, uint16 inputs) {
   if (diff != 0) {
     sr->last_inputs = inputs;
     printf("0x%.4x %d: ", diff, sr->frames_since_last);
-    int lb = sr->log.size;
+    size_t lb = sr->log.size;
     for (int i = 0; i < 12; i++) {
       if ((diff >> i) & 1)
         StateRecorder_RecordCmd(sr, i << 4);
@@ -458,7 +458,7 @@ void StateRecorder_RecordPatchByte(StateRecorder *sr, uint32 addr, const uint8 *
   assert(addr < 0x20000);
   
   printf("%d: PatchByte(0x%x, 0x%x. %d): ", sr->frames_since_last, addr, *value, num);
-  int lb = sr->log.size;
+  size_t lb = sr->log.size;
   int lq = (num - 1) <= 3 ? (num - 1) : 3;
   StateRecorder_RecordCmd(sr, 0xc0 | (addr & 0x10000 ? 2 : 0) | lq << 2);
   if (lq == 3)
@@ -533,11 +533,11 @@ void StateRecorder_Save(StateRecorder *sr, FILE *f) {
 
   hdr[0] = 1;
   hdr[1] = sr->total_frames;
-  hdr[2] = sr->log.size;
+  hdr[2] = (uint32)sr->log.size;
   hdr[3] = sr->last_inputs;
   hdr[4] = sr->frames_since_last;
   hdr[5] = sr->base_snapshot.size ? 1 : 0;
-  hdr[6] = arr.size;
+  hdr[6] = (uint32)arr.size;
   // If saving while in replay mode, also need to persist
   // sr->replay_pos_last_complete and sr->replay_frame_counter
   // so the replaying can be resumed.
@@ -574,10 +574,10 @@ void StateRecorder_ClearKeyLog(StateRecorder *sr) {
     if (sr->replay_next_cmd_at != 0xffffffff) {
       sr->replay_next_cmd_at -= old_frames_since_last;
       sr->frames_since_last = sr->replay_next_cmd_at;
-      sr->replay_pos_last_complete = sr->log.size;
+      sr->replay_pos_last_complete = (uint32)sr->log.size;
       StateRecorder_RecordCmd(sr, sr->replay_cmd);
       int old_replay_pos = sr->replay_pos;
-      sr->replay_pos = sr->log.size;
+      sr->replay_pos = (uint32)sr->log.size;
       ByteArray_AppendData(&sr->log, old_log.data + old_replay_pos, old_log.size - old_replay_pos);
     }
     sr->total_frames -= sr->replay_frame_counter;
@@ -746,7 +746,6 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
     return turbo;
   }
 
-again:
   // Run orig version then snapshot
   snes->input1->currentState = input_state;
   RunEmulatedSnesFrame(snes, run_what);

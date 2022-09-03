@@ -2881,7 +2881,7 @@ void Sprite_SetupHitBox(int k, SpriteHitBox *hb) {  // 86f7ef
 
 // Returns the carry flag
 bool CheckIfHitBoxesOverlap(SpriteHitBox *hb) {  // 86f836
-  int t, u;
+  int t;
   uint8 r15, r12;
 
   if (hb->r8_xhi == 0x80 || hb->r10_spr_xhi == 0x80)
@@ -4377,7 +4377,7 @@ void Sprite_HaltAllMovement() {  // 9ef508
 
 int ReleaseFairy() {  // 9efe33
   SpriteSpawnInfo info;
-  int j = Sprite_SpawnDynamically(0, 0xe3, &info), i;
+  int j = Sprite_SpawnDynamically(0, 0xe3, &info);
   if (j >= 0) {
     sprite_floor[j] = link_is_on_lower_level;
     Sprite_SetX(j, link_x_coord + 8);
