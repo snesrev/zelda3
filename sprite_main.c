@@ -20232,8 +20232,8 @@ void Sprite_A8_GreenZirro(int k) {  // 9e8dd2
   if ((uint8)(pt.x + 40) < 80 && (uint8)(pt.y + 40) < 80 && player_oam_y_offset != 0x80 &&
       (link_is_running || sign8(button_b_frames - 9))) {
     ProjectSpeedRet pp = Sprite_ProjectSpeedTowardsLink(k, 0x30);
-    sprite_x_vel[k] = -pt.x;
-    sprite_y_vel[k] = -pt.y;
+    sprite_x_vel[k] = -pp.x;
+    sprite_y_vel[k] = -pp.y;
     sprite_delay_main[k] = 8;
     sprite_ai_state[k] = 2;
   }
