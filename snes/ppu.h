@@ -24,10 +24,8 @@ typedef struct BgLayer {
 } BgLayer;
 
 typedef struct Layer {
-  bool mainScreenEnabled;
-  bool subScreenEnabled;
-  bool mainScreenWindowed;
-  bool subScreenWindowed;
+  bool screenEnabled[2];   // 0 = main, 1 = sub
+  bool screenWindowed[2];  // 0 = main, 1 = sub
 } Layer;
 
 typedef struct WindowLayer {
@@ -35,7 +33,7 @@ typedef struct WindowLayer {
   bool window2enabled;
   bool window1inversed;
   bool window2inversed;
-  uint8_t maskLogic;
+  uint8_t maskLogic_always_zero;
 } WindowLayer;
 
 struct Ppu {
@@ -117,7 +115,7 @@ struct Ppu {
   bool frameOverscan_always_zero; // if we are overscanning this frame (determined at 0,225)
   bool interlace_always_zero;
   bool frameInterlace_always_zero; // if we are interlacing this frame (determined at start vblank)
-  bool directColor;
+  bool directColor_always_zero;
   // latching
   uint16_t hCount;
   uint16_t vCount;
