@@ -18,6 +18,8 @@ $(GEN): tables/dialogue.txt
 	cd tables; $(PYTHON) compile_resources.py ../$(ROM)
 tables/dialogue.txt:
 	cd tables; $(PYTHON) extract_resources.py ../$(ROM)
+%.o : %.c tables/generated_dialogue.h
+	$(CC) -c $(CFLAGS) $< -o $@
 
 clean: clean_obj clean_gen
 clean_obj:
