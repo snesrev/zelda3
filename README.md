@@ -53,7 +53,6 @@ Advanced make usage ...
 make -j$(nproc) # run on all core
 make clean all  # clear gen+obj and rebuild
 CC=clang make   # specify compiler
-CFLAGS=-O3 make # specify compilation flags
 ```
 </details>
 
@@ -78,6 +77,7 @@ The game is run with `./zelda3` and takes an optional path to the ROM-file, whic
 | L      | D           |
 | R      | C           |
 
+The keys can be reconfigured in zelda3.ini
 
 Additionally, the following commands are available:
 
@@ -88,7 +88,8 @@ Additionally, the following commands are available:
 | P   | Pause                 |
 | T   | Toggle replay turbo   |
 | O   | Set dungeon key to 1  |
-| K   | Clear all input history from current snapshot  |
+| K   | Clear all input history from the joypad log  |
+| L   | Stop replaying a shapshot  |
 | F1-F10 | Load snapshot      |
 | Alt+Enter | Toggle Fullscreen     |
 | Shift+F1-F10 | Save snapshot |
