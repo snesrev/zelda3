@@ -106,9 +106,6 @@
     <ClCompile Include="tile_detect.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="other_modules.c">
-      <Filter>Zelda</Filter>
-    </ClCompile>
     <ClCompile Include="misc.c">
       <Filter>Zelda</Filter>
     </ClCompile>
@@ -202,9 +199,6 @@
       <Filter>Zelda</Filter>
     </ClInclude>
     <ClInclude Include="player.h">
-      <Filter>Zelda</Filter>
-    </ClInclude>
-    <ClInclude Include="other_modules.h">
       <Filter>Zelda</Filter>
     </ClInclude>
     <ClInclude Include="misc.h">

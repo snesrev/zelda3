@@ -153,7 +153,6 @@
     <ClCompile Include="messaging.c" />
     <ClCompile Include="misc.c" />
     <ClCompile Include="nmi.c" />
-    <ClCompile Include="other_modules.c" />
     <ClCompile Include="overlord.c" />
     <ClCompile Include="overworld.c" />
     <ClCompile Include="player.c" />
@@ -223,7 +222,6 @@
     <ClInclude Include="messaging.h" />
     <ClInclude Include="misc.h" />
     <ClInclude Include="nmi.h" />
-    <ClInclude Include="other_modules.h" />
     <ClInclude Include="overlord.h" />
     <ClInclude Include="overworld.h" />
     <ClInclude Include="player.h" />

@@ -14,6 +14,7 @@ void Credits_LoadScene_Overworld_LoadMap();
 void Credits_OperateScrollingAndTileMap();
 void Credits_LoadCoolBackground();
 void Credits_LoadScene_Dungeon();
+void Module18_GanonEmerges();
 void Module19_TriforceRoom();
 void Intro_InitializeBackgroundSettings();
 void Polyhedral_InitializeThread();

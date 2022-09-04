@@ -10,7 +10,6 @@
 #include "select_file.h"
 #include "tile_detect.h"
 #include "player.h"
-#include "other_modules.h"
 #include "player_oam.h"
 #include "messaging.h"
 #include "ending.h"
