@@ -485,8 +485,10 @@ static float ApproximateAtan2(float y, float x) {
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
   static int last_gamepad_id, last_x, last_y;
   if (axis == SDL_CONTROLLER_AXIS_LEFTX || axis == SDL_CONTROLLER_AXIS_LEFTY) {
-    // try to be smart if there's more than one gamepad
-    if (last_gamepad_id != gamepad_id && (value < -10000 || value > 10000)) {
+    // ignore other gamepads unless they have a big input
+    if (last_gamepad_id != gamepad_id) {
+      if (value > -16000 && value < 16000)
+        return;
       last_gamepad_id = gamepad_id;
       last_x = last_y = 0;
     }
