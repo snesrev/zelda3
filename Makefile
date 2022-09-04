@@ -4,7 +4,9 @@ SRCS:=$(wildcard *.c snes/*.c)
 OBJS:=$(SRCS:%.c=%.o)
 GEN:=$(shell grep -hor tables/generated.*.h --include \*.c .)
 PYTHON:=/usr/bin/env python3
-CFLAGS:=${CFLAGS} -O2 $(shell sdl2-config --cflags)
+CFLAGS:=$(if $(CFLAGS),$(CFLAGS),-O2)
+
+CFLAGS:=${CFLAGS} $(shell sdl2-config --cflags)
 LDFLAGS:=${LDFLAGS} -lm $(shell sdl2-config --libs)
 
 .PHONY: all clean clean_obj clean_gen
