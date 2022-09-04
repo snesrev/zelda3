@@ -1,0 +1,56 @@
+name: Build
+
+on:
+  push:
+    branches:
+    - master
+  pull_request:
+
+jobs:
+  build-unix:
+    name: on ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+        - name: Linux
+          os: ubuntu-latest
+        - name: Mac
+          os: macos-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+    - name: Install dependencies for Linux
+      if: ${{ matrix.name == 'Linux' }}
+      run: |
+        sudo apt update
+        sudo apt install -y libsdl2-dev
+    - name: Install dependencies for Mac
+      if: ${{ matrix.name == 'Mac' }}
+      run: |
+        brew install sdl2 coreutils
+    - name: Install Python dependencies
+      run: |
+        pip3 install pillow pyyaml
+    - name: Download ROM
+      env:
+        URL: ${{ secrets.ROM_URL }}
+        FILE: tables/zelda3.sfc
+      run: |
+        wget -q -O ${FILE} ${URL} > /dev/null
+        sha256sum ${FILE}
+    - name: Prepare resources
+      working-directory: tables
+      run: |
+        echo "::group::Extracting resources"
+        time python3 extract_resources.py
+        echo "::endgroup::"
+
+        echo "::group::Compiling resources"
+        time python3 compile_resources.py
+        echo "::endgroup::"
+    - name: Build
+      run: make -j$(nproc)
