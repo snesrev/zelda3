@@ -1,6 +1,5 @@
 #include "zelda_rtl.h"
 #include "variables.h"
-#include "variables_attract.h"
 #include "snes/snes_regs.h"
 #include "load_gfx.h"
 #include "dungeon.h"
