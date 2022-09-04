@@ -462,6 +462,26 @@ static void HandleGamepadInput(int button, bool pressed) {
   }
 }
 
+// Approximates atan2(y, x) normalized to the [0,4) range
+// with a maximum error of 0.1620 degrees
+// normalized_atan(x) ~ (b x + x^2) / (1 + 2 b x + x^2)
+static float ApproximateAtan2(float y, float x) {
+  uint32 sign_mask = 0x80000000;
+  float b = 0.596227f;
+  // Extract the sign bits
+  uint32 ux_s = sign_mask & *(uint32 *)&x;
+  uint32 uy_s = sign_mask & *(uint32 *)&y;
+  // Determine the quadrant offset
+  float q = (float)((~ux_s & uy_s) >> 29 | ux_s >> 30);
+  // Calculate the arctangent in the first quadrant
+  float bxy_a = fabs(b * x * y);
+  float num = bxy_a + y * y;
+  float atan_1q = num / (x * x + bxy_a + num + 0.000001f);
+  // Translate it to the proper quadrant
+  uint32_t uatan_2q = (ux_s ^ uy_s) | *(uint32 *)&atan_1q;
+  return q + *(float *)&uatan_2q;
+}
+
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
   static int last_gamepad_id, last_x, last_y;
   if (axis == SDL_CONTROLLER_AXIS_LEFTX || axis == SDL_CONTROLLER_AXIS_LEFTY) {
@@ -486,7 +506,7 @@ static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
         1 << 6,           // 6 = left
         1 << 6 | 1 << 4,  // 7 = left, up
       };
-      int angle = (int)(atan2f(last_y, last_x) * (float)(128 / M_PI) + 0.5f);
+      uint8 angle = (uint8)(int)(ApproximateAtan2(last_y, last_x) * 64.0f + 0.5f);
       buttons = kSegmentToButtons[(uint8)(angle + 16 + 64) >> 5];
     }
     g_gamepad_buttons = buttons;

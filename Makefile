@@ -7,7 +7,7 @@ PYTHON:=/usr/bin/env python3
 CFLAGS:=$(if $(CFLAGS),$(CFLAGS),-O2)
 
 CFLAGS:=${CFLAGS} $(shell sdl2-config --cflags)
-LDFLAGS:=${LDFLAGS} -lm $(shell sdl2-config --libs)
+LDFLAGS:=${LDFLAGS} $(shell sdl2-config --libs)
 
 .PHONY: all clean clean_obj clean_gen
 
