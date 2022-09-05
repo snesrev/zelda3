@@ -635,8 +635,8 @@ void dsp_write(Dsp *dsp, uint8_t adr, uint8_t val) {
 
 void dsp_getSamples(Dsp* dsp, int16_t* sampleData, int samplesPerFrame) {
   // resample from 534 samples per frame to wanted value
-  double adder = 534.0 / samplesPerFrame;
-  double location = 0.0;
+  float adder = 534.0 / samplesPerFrame;
+  float location = 0.0;
   for(int i = 0; i < samplesPerFrame; i++) {
     sampleData[i * 2] = dsp->sampleBuffer[((int) location) * 2];
     sampleData[i * 2 + 1] = dsp->sampleBuffer[((int) location) * 2 + 1];
