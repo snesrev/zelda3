@@ -90,6 +90,8 @@ Additionally, the following commands are available:
 | O   | Set dungeon key to 1  |
 | K   | Clear all input history from the joypad log  |
 | L   | Stop replaying a shapshot  |
+| R   | Toggle between fast and slow renderer |
+| F   | Display renderer performance |
 | F1-F10 | Load snapshot      |
 | Alt+Enter | Toggle Fullscreen     |
 | Shift+F1-F10 | Save snapshot |

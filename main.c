@@ -424,6 +424,7 @@ static void HandleCommand(uint32 j, bool pressed) {
     case kKeys_ZoomIn: DoZoom(1); break;
     case kKeys_ZoomOut: DoZoom(-1); break;
     case kKeys_DisplayPerf: g_display_perf ^= 1; break;
+    case kKeys_ToggleRenderer: g_zenv.ppu->newRenderer ^= 1; break;
     default: assert(0);
     }
   }

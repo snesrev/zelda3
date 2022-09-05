@@ -375,7 +375,7 @@ void loadFunc(void *ctx, void *data, size_t data_size) {
 void CopyStateAfterSnapshotRestore(bool is_reset) {
   memcpy(g_zenv.ram, g_snes->ram, 0x20000);
   memcpy(g_zenv.sram, g_snes->cart->ram, g_snes->cart->ramSize);
-  memcpy(g_zenv.ppu->vram, &g_snes->ppu->vram, offsetof(Ppu, pixelBuffer) - offsetof(Ppu, vram));
+  memcpy(g_zenv.ppu->vram, &g_snes->ppu->vram, offsetof(Ppu, ppu2openBus) + 1 - offsetof(Ppu, vram));
   memcpy(g_zenv.player->ram, g_snes->apu->ram, sizeof(g_snes->apu->ram));
 
   if (!is_reset) {
@@ -392,7 +392,7 @@ void SaveSnesState(ByteArray *ctx) {
   MakeSnapshot(&g_snapshot_before);
 
   // Copy from my state into the emulator
-  memcpy(&g_snes->ppu->vram, g_zenv.ppu->vram, offsetof(Ppu, pixelBuffer) - offsetof(Ppu, vram));
+  memcpy(&g_snes->ppu->vram, g_zenv.ppu->vram, offsetof(Ppu, ppu2openBus) + 1 - offsetof(Ppu, vram));
   memcpy(g_snes->ram, g_zenv.ram, 0x20000);
   memcpy(g_snes->cart->ram, g_zenv.sram, 0x2000);
   SpcPlayer_CopyVariablesToRam(g_zenv.player);

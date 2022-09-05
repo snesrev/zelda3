@@ -36,8 +36,21 @@ typedef struct WindowLayer {
   uint8_t maskLogic_always_zero;
 } WindowLayer;
 
+typedef struct PpuPixelPrioBufs {
+  uint8_t pixel[256];
+  uint8_t prio[256];
+} PpuPixelPrioBufs;
+
 struct Ppu {
+  bool newRenderer;
+  bool lineHasSprites;
+  uint8_t lastBrightnessMult;
+  uint8_t lastMosaicModulo;
   Snes* snes;
+  // store 31 extra entries to remove the need for clamp
+  uint8_t brightnessMult[32 + 31]; 
+  uint8_t brightnessMultHalf[32 * 2];
+  PpuPixelPrioBufs bgBuffers[2];
   // vram access
   uint16_t vram[0x8000];
   uint16_t vramPointer;
@@ -64,8 +77,7 @@ struct Ppu {
   uint16_t objTileAdr1;
   uint16_t objTileAdr2;
   uint8_t objSize;
-  uint8_t objPixelBuffer[256]; // line buffers
-  uint8_t objPriorityBuffer[256];
+  PpuPixelPrioBufs objBuffer;
   bool timeOver;
   bool rangeOver;
   bool objInterlace_always_zero;
@@ -124,6 +136,9 @@ struct Ppu {
   bool countersLatched;
   uint8_t ppu1openBus;
   uint8_t ppu2openBus;
+
+  uint8_t mosaicModulo[256];
+
   // pixel buffer (xbgr)
   // times 2 for even and odd frame
   uint8_t pixelBuffer[512 * 4 * 239 * 2];

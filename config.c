@@ -31,8 +31,8 @@ static const uint16 kDefaultKbdControls[kKeys_Total] = {
   _(SDLK_1), _(SDLK_2), _(SDLK_3), _(SDLK_4), _(SDLK_5), _(SDLK_6), _(SDLK_7), _(SDLK_8), _(SDLK_9), _(SDLK_0), _(SDLK_MINUS), _(SDLK_EQUALS), _(SDLK_BACKSPACE), N, N, N, N, N, N, N,
   // Replay Ref State
   C(SDLK_1), C(SDLK_2), C(SDLK_3), C(SDLK_4), C(SDLK_5), C(SDLK_6), C(SDLK_7), C(SDLK_8), C(SDLK_9), C(SDLK_0), C(SDLK_MINUS), C(SDLK_EQUALS), C(SDLK_BACKSPACE), N, N, N, N, N, N, N,
-  // CheatLife, CheatKeys, ClearKeyLog, StopReplay, Fullscreen, Reset, Pause, PauseDimmed, Turbo, ZoomIn, ZoomOut, DisplayPerf
-  _(SDLK_w), _(SDLK_o), _(SDLK_k), _(SDLK_l), A(SDLK_RETURN), _(SDLK_e), S(SDLK_p), _(SDLK_p), _(SDLK_t), N, N, _(SDLK_f)
+  // CheatLife, CheatKeys, ClearKeyLog, StopReplay, Fullscreen, Reset, Pause, PauseDimmed, Turbo, ZoomIn, ZoomOut, DisplayPerf, ToggleRenderer
+  _(SDLK_w), _(SDLK_o), _(SDLK_k), _(SDLK_l), A(SDLK_RETURN), _(SDLK_e), S(SDLK_p), _(SDLK_p), _(SDLK_t), N, N, _(SDLK_f), _(SDLK_r),
 };
 #undef _
 #undef A
@@ -50,7 +50,7 @@ typedef struct KeyNameId {
 static const KeyNameId kKeyNameId[] = {
   M(Controls), M(Load), M(Save), M(Replay), M(LoadRef), M(ReplayRef),
   S(CheatLife), S(CheatKeys), S(ClearKeyLog), S(StopReplay), S(Fullscreen), S(Reset),
-  S(Pause), S(PauseDimmed), S(Turbo), S(ZoomIn), S(ZoomOut), S(DisplayPerf),
+  S(Pause), S(PauseDimmed), S(Turbo), S(ZoomIn), S(ZoomOut), S(DisplayPerf), S(ToggleRenderer),
 };
 #undef S
 #undef M
