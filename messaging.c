@@ -309,7 +309,7 @@ static const uint8 kOwMap_tab2[4] = {0x68, 0x69, 0x78, 0x69};
 static const uint8 kOverworldMap_Table4[4] = {0x34, 0x74, 0xf4, 0xb4};
 static const uint8 kOverworldMap_Timer[2] = {33, 12};
 static const int16 kOverworldMap_Table3[8] = {0, 0, 1, 2, -1, -2, 1, 2};
-static const int16 kOverworldMap_Table2[6] = {0, 0, 224, 480, -72, -224};
+static const int16 kOverworldMap_Table2[8] = {0, 0, 224, 480, -72, -224, 0, 0};
 static PlayerHandlerFunc *const kMessagingSubmodules[12] = {
   &Module_Messaging_0,
   &Hud_Module_Run,
@@ -1313,12 +1313,12 @@ void WorldMap_PlayerControl() {  // 8abae6
 
   if (overworld_map_flags) {
     int k = (joypad1H_last & 12) >> 1;
-    if (BG1VOFS_copy2 != kOverworldMap_Table2[k]) {
+    if (BG1VOFS_copy2 != (uint16)kOverworldMap_Table2[k]||1) {
       BG1VOFS_copy2 += kOverworldMap_Table3[k];
       M7Y_copy = BG1VOFS_copy2 + 0x100;
     }
     k = (joypad1H_last & 3) * 2 + 1;
-    if (BG1HOFS_copy2 != kOverworldMap_Table2[k])
+    if (BG1HOFS_copy2 != (uint16)kOverworldMap_Table2[k]||1)
       BG1HOFS_copy2 += kOverworldMap_Table3[k];
   }
   WorldMap_HandleSprites();
