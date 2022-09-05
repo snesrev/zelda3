@@ -1313,12 +1313,12 @@ void WorldMap_PlayerControl() {  // 8abae6
 
   if (overworld_map_flags) {
     int k = (joypad1H_last & 12) >> 1;
-    if (BG1VOFS_copy2 != (uint16)kOverworldMap_Table2[k]||1) {
+    if (BG1VOFS_copy2 != (uint16)kOverworldMap_Table2[k]) {
       BG1VOFS_copy2 += kOverworldMap_Table3[k];
       M7Y_copy = BG1VOFS_copy2 + 0x100;
     }
     k = (joypad1H_last & 3) * 2 + 1;
-    if (BG1HOFS_copy2 != (uint16)kOverworldMap_Table2[k]||1)
+    if (BG1HOFS_copy2 != (uint16)kOverworldMap_Table2[k])
       BG1HOFS_copy2 += kOverworldMap_Table3[k];
   }
   WorldMap_HandleSprites();
