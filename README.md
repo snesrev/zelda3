@@ -27,6 +27,7 @@ I got much assistance from spannierism's Zelda 3 JP disassembly and the other on
 
 ## Compiling
 
+Look at the wiki at https://github.com/snesrev/zelda3/wiki for more help.
 
 ### Windows
 First extract and compile resources.
