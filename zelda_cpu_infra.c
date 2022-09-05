@@ -904,6 +904,9 @@ void PatchRom(uint8_t *rom) {
   rom[0x49d0c] = 0xda; rom[0x49d0d] = 0xfa; 
   rom[0x49d0f] = 0xda; rom[0x49d10] = 0xfa; 
 
+  // Prevent LoadSongBank from executing in the rom because it hangs
+  rom[0x888] = 0x60;
+
 }
 
 
