@@ -440,15 +440,15 @@ void StateRecorder_Record(StateRecorder *sr, uint16 inputs) {
   uint16 diff = inputs ^ sr->last_inputs;
   if (diff != 0) {
     sr->last_inputs = inputs;
-    printf("0x%.4x %d: ", diff, sr->frames_since_last);
-    size_t lb = sr->log.size;
+//    printf("0x%.4x %d: ", diff, sr->frames_since_last);
+//    size_t lb = sr->log.size;
     for (int i = 0; i < 12; i++) {
       if ((diff >> i) & 1)
         StateRecorder_RecordCmd(sr, i << 4);
     }
-    while (lb < sr->log.size)
-      printf("%.2x ", sr->log.data[lb++]);
-    printf("\n");
+//    while (lb < sr->log.size)
+//      printf("%.2x ", sr->log.data[lb++]);
+//    printf("\n");
   }
   sr->frames_since_last++;
   sr->total_frames++;
@@ -457,8 +457,8 @@ void StateRecorder_Record(StateRecorder *sr, uint16 inputs) {
 void StateRecorder_RecordPatchByte(StateRecorder *sr, uint32 addr, const uint8 *value, int num) {
   assert(addr < 0x20000);
   
-  printf("%d: PatchByte(0x%x, 0x%x. %d): ", sr->frames_since_last, addr, *value, num);
-  size_t lb = sr->log.size;
+//  printf("%d: PatchByte(0x%x, 0x%x. %d): ", sr->frames_since_last, addr, *value, num);
+//  size_t lb = sr->log.size;
   int lq = (num - 1) <= 3 ? (num - 1) : 3;
   StateRecorder_RecordCmd(sr, 0xc0 | (addr & 0x10000 ? 2 : 0) | lq << 2);
   if (lq == 3)
@@ -467,9 +467,9 @@ void StateRecorder_RecordPatchByte(StateRecorder *sr, uint32 addr, const uint8 *
   ByteArray_AppendByte(&sr->log, addr);
   for(int i = 0; i < num; i++)
     ByteArray_AppendByte(&sr->log, value[i]);
-  while (lb < sr->log.size)
-    printf("%.2x ", sr->log.data[lb++]);
-  printf("\n");
+//  while (lb < sr->log.size)
+//    printf("%.2x ", sr->log.data[lb++]);
+//  printf("\n");
 }
 
 void StateRecorder_Load(StateRecorder *sr, FILE *f, bool replay_mode) {
