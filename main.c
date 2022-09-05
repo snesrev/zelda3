@@ -46,8 +46,6 @@ static void HandleGamepadInput(int button, bool pressed);
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
 
-static inline int IntMin(int a, int b) { return a < b ? a : b; }
-static inline int IntMax(int a, int b) { return a > b ? a : b; }
 
 enum {
   kRenderWidth = 512,

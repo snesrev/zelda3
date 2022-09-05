@@ -10,6 +10,7 @@ typedef int16_t int16;
 typedef uint32_t uint32;
 typedef int32_t int32;
 typedef uint64_t uint64;
+typedef unsigned int uint;
 
 #define arraysize(x) sizeof(x)/sizeof(x[0])
 #define sign8(x) ((x) & 0x80)
@@ -20,14 +21,18 @@ typedef uint64_t uint64;
 #define countof _countof
 #define NORETURN __declspec(noreturn)
 #define FORCEINLINE __forceinline
+#define NOINLINE __declspec(noinline)
 #else
 #define countof(a) (sizeof(a)/sizeof(*(a)))
 #define NORETURN
 #define FORCEINLINE inline
+#define NOINLINE
 #endif
 
-static inline uint16 abs16(uint16 t) { return sign16(t) ? -t : t; }
-static inline uint8 abs8(uint8 t) { return sign8(t) ? -t : t; }
+static FORCEINLINE uint16 abs16(uint16 t) { return sign16(t) ? -t : t; }
+static FORCEINLINE uint8 abs8(uint8 t) { return sign8(t) ? -t : t; }
+static FORCEINLINE int IntMin(int a, int b) { return a < b ? a : b; }
+static FORCEINLINE int IntMax(int a, int b) { return a > b ? a : b; }
 
 #define BYTE(x) (*(uint8*)&(x))
 #define HIBYTE(x) (((uint8*)&(x))[1])
