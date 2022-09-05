@@ -190,7 +190,7 @@ int main(int argc, char** argv) {
 #if defined(_WIN32)
   _mkdir("saves");
 #else
-  mkdir("saves", 755);
+  mkdir("saves", 0755);
 #endif
 
   SetSnes(snes);
