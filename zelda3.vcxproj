@@ -155,6 +155,7 @@
     <ClCompile Include="nmi.c" />
     <ClCompile Include="overlord.c" />
     <ClCompile Include="overworld.c" />
+    <ClCompile Include="platform\win32\volume_control.c" />
     <ClCompile Include="player.c" />
     <ClCompile Include="player_oam.c" />
     <ClCompile Include="poly.c" />
@@ -224,6 +225,7 @@
     <ClInclude Include="nmi.h" />
     <ClInclude Include="overlord.h" />
     <ClInclude Include="overworld.h" />
+    <ClInclude Include="platform\win32\volume_control.h" />
     <ClInclude Include="player.h" />
     <ClInclude Include="player_oam.h" />
     <ClInclude Include="poly.h" />
