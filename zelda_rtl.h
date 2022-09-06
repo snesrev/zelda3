@@ -9,18 +9,16 @@
 #include <assert.h>
 
 #include "types.h"
-#include "snes_regs.h"
-#include "snes/dma.h"
-#include "snes/ppu.h"
-#include "spc_player.h"
+
+struct Snes;
 
 typedef struct ZeldaEnv {
   uint8 *ram;
   uint8 *sram;
   uint16 *vram;
-  Ppu *ppu;
-  SpcPlayer *player;
-  Dma *dma;
+  struct Ppu *ppu;
+  struct SpcPlayer *player;
+  struct Dma *dma;
 } ZeldaEnv;
 extern ZeldaEnv g_zenv;
 
@@ -196,6 +194,6 @@ void ClearOamBuffer();
 void Startup_InitializeMemory();
 void LoadSongBank(const uint8 *p);
 void ZeldaWriteSram();
-void ZeldaReadSram(Snes *snes);
+void ZeldaReadSram(struct Snes *snes);
 
 #endif  // ZELDA_RTL_H

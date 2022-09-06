@@ -5,6 +5,8 @@
 #include "poly.h"
 #include "attract.h"
 #include "snes/ppu.h"
+#include "snes/snes_regs.h"
+#include "spc_player.h"
 
 ZeldaEnv g_zenv;
 // These point to the rewritten instance of the emu.

@@ -1,6 +1,6 @@
 #include "zelda_rtl.h"
 #include "variables.h"
-#include "snes_regs.h"
+#include "snes/snes_regs.h"
 #include "overworld.h"
 #include "load_gfx.h"
 #include "player.h"

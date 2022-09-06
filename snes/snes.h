@@ -17,11 +17,6 @@ typedef struct Snes Snes;
 #include "cart.h"
 #include "input.h"
 
-enum {
-  kIsOrigEmu = 0
-};
-
-
 struct Snes {
   Cpu* cpu;
   Apu* apu;
@@ -75,7 +70,6 @@ struct Snes {
 Snes* snes_init(uint8_t *ram);
 void snes_free(Snes* snes);
 void snes_reset(Snes* snes, bool hard);
-void snes_runFrame(Snes* snes);
 // used by dma, cpu
 uint8_t snes_readBBus(Snes* snes, uint8_t adr);
 void snes_writeBBus(Snes* snes, uint8_t adr, uint8_t val);
@@ -84,7 +78,6 @@ void snes_write(Snes* snes, uint32_t adr, uint8_t val);
 uint8_t snes_cpuRead(Snes* snes, uint32_t adr);
 void snes_cpuWrite(Snes* snes, uint32_t adr, uint8_t val);
 // debugging
-void snes_debugCycle(Snes* snes, bool* cpuNext, bool* spcNext);
 void snes_printCpuLine(Snes *snes);
 void snes_doAutoJoypad(Snes *snes);
 // snes_other.c functions:

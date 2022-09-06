@@ -10,11 +10,11 @@
 #include "select_file.h"
 #include "tile_detect.h"
 #include "player.h"
-#include "other_modules.h"
 #include "player_oam.h"
 #include "messaging.h"
 #include "ending.h"
 #include "attract.h"
+#include "snes/snes_regs.h"
 #include "tables/generated_predefined_tiles.h"
 #include "tables/generated_sound_banks.h"
 

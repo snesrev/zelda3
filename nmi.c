@@ -1,11 +1,12 @@
 #include "nmi.h"
 #include "zelda_rtl.h"
 #include "variables.h"
-#include "snes_regs.h"
+#include "messaging.h"
+#include "snes/snes_regs.h"
+#include "snes/ppu.h"
 #include "tables/generated_bg_tilemaps.h"
 #include "tables/generated_link_graphics.h"
-#include "messaging.h"
-#include "snes/ppu.h"
+
 static const uint8 kNmiVramAddrs[] = {
   0, 0, 4, 8, 12, 8, 12, 0, 4, 0, 8, 4, 12, 4, 12, 0,
   8, 16, 20, 24, 28, 24, 28, 16, 20, 16, 24, 20, 28, 20, 28, 16,

@@ -1,10 +1,5 @@
 #include "ancilla.h"
 #include "variables.h"
-#include "variables_weathervane.h"
-#include "variables_happiness_pond.h"
-#include "variables_blastwall.h"
-#include "variables_skullwoodsfire.h"
-#include "variables_breaktowerseal.h"
 #include "sprite.h"
 #include "hud.h"
 #include "load_gfx.h"
@@ -3641,7 +3636,6 @@ skipit:;
     WriteTo4BPPBuffer_at_7F4000(kReceiveItem_Tab5[a]);
   }
   Point16U pt;
-endif_12:
   Ancilla_PrepAdjustedOamCoord(k, &pt);
   Ancilla_ReceiveItem_Draw(k, pt.x, pt.y);
 }

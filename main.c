@@ -27,6 +27,8 @@ extern uint8 g_emulated_ram[0x20000];
 bool g_run_without_emu = false;
 
 static int g_input1_state;
+static bool g_display_perf;
+static int g_curr_fps;
 
 void PatchRom(uint8 *rom);
 void SetSnes(Snes *snes);
@@ -44,8 +46,6 @@ static void HandleGamepadInput(int button, bool pressed);
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
 
-static inline int IntMin(int a, int b) { return a < b ? a : b; }
-static inline int IntMax(int a, int b) { return a > b ? a : b; }
 
 enum {
   kRenderWidth = 512,
@@ -120,6 +120,11 @@ static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area,
          (SDL_GetModState() & KMOD_CTRL) != 0 ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 
+enum {
+  kSampleRate = 44100,
+  kSnesSamplesPerBlock = (534 * kSampleRate) / 32000,
+};
+
 #undef main
 int main(int argc, char** argv) {
   ParseConfigFile();
@@ -154,7 +159,7 @@ int main(int argc, char** argv) {
   SDL_AudioSpec want, have;
   SDL_AudioDeviceID device;
   SDL_memset(&want, 0, sizeof(want));
-  want.freq = 44100;
+  want.freq = kSampleRate;
   want.format = AUDIO_S16;
   want.channels = 2;
   want.samples = 2048;
@@ -164,7 +169,7 @@ int main(int argc, char** argv) {
     printf("Failed to open audio device: %s\n", SDL_GetError());
     return 1;
   }
-  int16_t* audioBuffer = (int16_t * )malloc(735 * 4); // *2 for stereo, *2 for sizeof(int16)
+  int16_t* audioBuffer = (int16_t * )malloc(kSnesSamplesPerBlock * 2 * sizeof(int16));
   SDL_PauseAudioDevice(device, 0);
 
   Snes *snes = snes_init(g_emulated_ram), *snes_run = NULL;
@@ -183,7 +188,7 @@ int main(int argc, char** argv) {
 #if defined(_WIN32)
   _mkdir("saves");
 #else
-  mkdir("saves", 755);
+  mkdir("saves", 0755);
 #endif
 
   SetSnes(snes);
@@ -253,7 +258,20 @@ int main(int argc, char** argv) {
     if (is_turbo)
       continue;
 
-    ZeldaDrawPpuFrame();
+    if (g_display_perf) {
+      static float history[64], average;
+      static int history_pos;
+      uint64 before = SDL_GetPerformanceCounter();
+      ZeldaDrawPpuFrame();
+      uint64 after = SDL_GetPerformanceCounter();
+      float v = (double)SDL_GetPerformanceFrequency() / (after - before);
+      average += v - history[history_pos];
+      history[history_pos] = v;
+      history_pos = (history_pos + 1) & 63;
+      g_curr_fps = average * (1.0f / 64);
+    } else {
+      ZeldaDrawPpuFrame();
+    }
 
     PlayAudio(snes_run, device, audioBuffer);
     RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
@@ -293,19 +311,55 @@ int main(int argc, char** argv) {
 
 static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) {
   // generate enough samples
-  if (!kIsOrigEmu && snes) {
+  if (snes) {
     while (snes->apu->dsp->sampleOffset < 534)
       apu_cycle(snes->apu);
     snes->apu->dsp->sampleOffset = 0;
   }
 
-  dsp_getSamples(GetDspForRendering(), audioBuffer, 735);
-  if(SDL_GetQueuedAudioSize(device) <= 735 * 4 * 6) {
-    // don't queue audio if buffer is still filled
-    SDL_QueueAudio(device, audioBuffer, 735 * 4);
-  } else {
-    printf("Skipping audio!\n");
+  dsp_getSamples(GetDspForRendering(), audioBuffer, kSnesSamplesPerBlock);
+
+  for (int i = 0; i < 10; i++) {
+    if (SDL_GetQueuedAudioSize(device) <= kSnesSamplesPerBlock * 4 * 6) {
+      // don't queue audio if buffer is still filled
+      SDL_QueueAudio(device, audioBuffer, kSnesSamplesPerBlock * 4);
+      return;
+    }
+    SDL_Delay(1);
   }
+}
+
+static void RenderDigit(uint32 *dst, int digit, uint32 color) {
+  static const uint8 kFont[] = {
+    0x1c, 0x36, 0x63, 0x63, 0x63, 0x63, 0x63, 0x63, 0x36, 0x1c,
+    0x18, 0x1c, 0x1e, 0x18, 0x18, 0x18, 0x18, 0x18, 0x18, 0x7e,
+    0x3e, 0x63, 0x60, 0x30, 0x18, 0x0c, 0x06, 0x03, 0x63, 0x7f,
+    0x3e, 0x63, 0x60, 0x60, 0x3c, 0x60, 0x60, 0x60, 0x63, 0x3e,
+    0x30, 0x38, 0x3c, 0x36, 0x33, 0x7f, 0x30, 0x30, 0x30, 0x78,
+    0x7f, 0x03, 0x03, 0x03, 0x3f, 0x60, 0x60, 0x60, 0x63, 0x3e,
+    0x1c, 0x06, 0x03, 0x03, 0x3f, 0x63, 0x63, 0x63, 0x63, 0x3e,
+    0x7f, 0x63, 0x60, 0x60, 0x30, 0x18, 0x0c, 0x0c, 0x0c, 0x0c,
+    0x3e, 0x63, 0x63, 0x63, 0x3e, 0x63, 0x63, 0x63, 0x63, 0x3e,
+    0x3e, 0x63, 0x63, 0x63, 0x7e, 0x60, 0x60, 0x60, 0x30, 0x1e,
+  };
+  const uint8 *p = kFont + digit * 10;
+  for (int y = 0; y < 10; y++, dst += 512) {
+    int v = *p++;
+    for (int x = 0; v; x++, v>>=1) {
+      if (v & 1)
+        dst[x] = color;
+    }
+  }
+}
+
+static void RenderNumber(uint32 *dst, int n) {
+  char buf[32], *s;
+  int i;
+  sprintf(buf, "%d", n);
+  for (s = buf, i = 2; *s; s++, i += 8)
+    RenderDigit(dst + 513 + i, *s - '0', 0x40404000);
+  for (s = buf, i = 2; *s; s++, i += 8)
+    RenderDigit(dst + i, *s - '0', 0xffffff00);
 }
 
 static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen) {
@@ -316,6 +370,8 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
     return;
   }
   ppu_putPixels(GetPpuForRendering(), (uint8_t*) pixels);
+  if (g_display_perf)
+    RenderNumber((uint32 *)pixels + 512*2, g_curr_fps);
   SDL_UnlockTexture(texture);
   SDL_RenderClear(renderer);
   SDL_RenderCopy(renderer, texture, NULL, NULL);
@@ -367,6 +423,8 @@ static void HandleCommand(uint32 j, bool pressed) {
     case kKeys_Turbo: g_turbo = !g_turbo; break;
     case kKeys_ZoomIn: DoZoom(1); break;
     case kKeys_ZoomOut: DoZoom(-1); break;
+    case kKeys_DisplayPerf: g_display_perf ^= 1; break;
+    case kKeys_ToggleRenderer: g_zenv.ppu->newRenderer ^= 1; break;
     default: assert(0);
     }
   }
@@ -403,11 +461,33 @@ static void HandleGamepadInput(int button, bool pressed) {
   }
 }
 
+// Approximates atan2(y, x) normalized to the [0,4) range
+// with a maximum error of 0.1620 degrees
+// normalized_atan(x) ~ (b x + x^2) / (1 + 2 b x + x^2)
+static float ApproximateAtan2(float y, float x) {
+  uint32 sign_mask = 0x80000000;
+  float b = 0.596227f;
+  // Extract the sign bits
+  uint32 ux_s = sign_mask & *(uint32 *)&x;
+  uint32 uy_s = sign_mask & *(uint32 *)&y;
+  // Determine the quadrant offset
+  float q = (float)((~ux_s & uy_s) >> 29 | ux_s >> 30);
+  // Calculate the arctangent in the first quadrant
+  float bxy_a = fabs(b * x * y);
+  float num = bxy_a + y * y;
+  float atan_1q = num / (x * x + bxy_a + num + 0.000001f);
+  // Translate it to the proper quadrant
+  uint32_t uatan_2q = (ux_s ^ uy_s) | *(uint32 *)&atan_1q;
+  return q + *(float *)&uatan_2q;
+}
+
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
   static int last_gamepad_id, last_x, last_y;
   if (axis == SDL_CONTROLLER_AXIS_LEFTX || axis == SDL_CONTROLLER_AXIS_LEFTY) {
-    // try to be smart if there's more than one gamepad
-    if (last_gamepad_id != gamepad_id && (value < -10000 || value > 10000)) {
+    // ignore other gamepads unless they have a big input
+    if (last_gamepad_id != gamepad_id) {
+      if (value > -16000 && value < 16000)
+        return;
       last_gamepad_id = gamepad_id;
       last_x = last_y = 0;
     }
@@ -427,7 +507,7 @@ static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
         1 << 6,           // 6 = left
         1 << 6 | 1 << 4,  // 7 = left, up
       };
-      int angle = (int)(atan2f(last_y, last_x) * (float)(128 / M_PI) + 0.5f);
+      uint8 angle = (uint8)(int)(ApproximateAtan2(last_y, last_x) * 64.0f + 0.5f);
       buttons = kSegmentToButtons[(uint8)(angle + 16 + 64) >> 5];
     }
     g_gamepad_buttons = buttons;
@@ -441,7 +521,7 @@ static bool LoadRom(const char *name, Snes *snes) {
 
   PatchRom(file);
 
-  bool result = snes_loadRom(snes, file, length);
+  bool result = snes_loadRom(snes, file, (int)length);
   free(file);
   return result;
 }

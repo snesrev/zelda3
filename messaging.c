@@ -1,7 +1,7 @@
 #include "messaging.h"
 #include "zelda_rtl.h"
 #include "variables.h"
-#include "snes_regs.h"
+#include "snes/snes_regs.h"
 #include "dungeon.h"
 #include "hud.h"
 #include "load_gfx.h"
@@ -309,7 +309,7 @@ static const uint8 kOwMap_tab2[4] = {0x68, 0x69, 0x78, 0x69};
 static const uint8 kOverworldMap_Table4[4] = {0x34, 0x74, 0xf4, 0xb4};
 static const uint8 kOverworldMap_Timer[2] = {33, 12};
 static const int16 kOverworldMap_Table3[8] = {0, 0, 1, 2, -1, -2, 1, 2};
-static const int16 kOverworldMap_Table2[6] = {0, 0, 224, 480, -72, -224};
+static const int16 kOverworldMap_Table2[8] = {0, 0, 224, 480, -72, -224, 0, 0};
 static PlayerHandlerFunc *const kMessagingSubmodules[12] = {
   &Module_Messaging_0,
   &Hud_Module_Run,
@@ -769,7 +769,7 @@ void GameOver_DelayBeforeIris() {  // 89f33b
     return;
   Death_InitializeGameOverLetters();
   IrisSpotlight_close();
-  WOBJSEL_copy = 48;
+  WOBJSEL_copy = 0x30;
   W34SEL_copy = 0;
   submodule_index++;
 }
@@ -1313,12 +1313,12 @@ void WorldMap_PlayerControl() {  // 8abae6
 
   if (overworld_map_flags) {
     int k = (joypad1H_last & 12) >> 1;
-    if (BG1VOFS_copy2 != kOverworldMap_Table2[k]) {
+    if (BG1VOFS_copy2 != (uint16)kOverworldMap_Table2[k]) {
       BG1VOFS_copy2 += kOverworldMap_Table3[k];
       M7Y_copy = BG1VOFS_copy2 + 0x100;
     }
     k = (joypad1H_last & 3) * 2 + 1;
-    if (BG1HOFS_copy2 != kOverworldMap_Table2[k])
+    if (BG1HOFS_copy2 != (uint16)kOverworldMap_Table2[k])
       BG1HOFS_copy2 += kOverworldMap_Table3[k];
   }
   WorldMap_HandleSprites();
@@ -1437,7 +1437,6 @@ void WorldMap_HandleSprites() {  // 8abf66
     goto out;
 
   k = savegame_map_icons_indicator;
-  uint16 x;
 
   if (!OverworldMap_CheckForPendant(0) && !OverworldMap_CheckForCrystal(0) && !sign16(kOwMapCrystal0_x[k])) {
     link_x_coord_spexit = kOwMapCrystal0_x[k];
@@ -2979,7 +2978,8 @@ void DungMap_Backup() {  // 8ed94c
   BG2HOFS_copy2 = BG2VOFS_copy2 = 0;
   BG3HOFS_copy2 = BG3VOFS_copy2 = 0;
   mapbak_CGWSEL = WORD(CGWSEL_copy);
-  WORD(CGWSEL_copy) = 0x2002;
+  CGWSEL_copy = 0x02;
+  CGADSUB_copy = 0x20;
   for (int i = 0; i < 2048; i++)
     messaging_buf[i] = 0x300;
   sound_effect_2 = 16;

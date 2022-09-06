@@ -1,9 +1,10 @@
 #include "player_oam.h"
 #include "zelda_rtl.h"
 #include "variables.h"
-#include "snes_regs.h"
+#include "snes/snes_regs.h"
 #include "player.h"
 #include "misc.h"
+
 static const int8 kPlayerOam_StairsOffsY[] = {
   0, -2, -3, 0, -2, -3, 0, 0, 0, 0, 0, 0, 0, -2, -3, 0,
   -2, -3, 0, 0, 0, 0, 0, 0,

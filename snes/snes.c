@@ -16,11 +16,10 @@
 #include "cart.h"
 #include "input.h"
 #include "../tracing.h"
-#include "../snes_regs.h"
+#include "snes_regs.h"
 
 static const double apuCyclesPerMaster = (32040 * 32) / (1364 * 262 * 60.0);
 
-static void snes_runCycle(Snes* snes);
 static void snes_runCpu(Snes* snes);
 static void snes_catchupApu(Snes* snes);
 static uint8_t snes_readReg(Snes* snes, uint16_t adr);
@@ -107,15 +106,6 @@ void snes_reset(Snes* snes, bool hard) {
 }
 
 static uint8_t g_last_module;
-bool didit;
-
-void snes_runFrame(Snes* snes) {
-  // runs a signle frame (run cycles until v/h pos is at 0,0)
-  do {
-    snes_runCycle(snes);
-  } while(!(snes->hPos == 0 && snes->vPos == 0));
-}
-
 
 void snes_printCpuLine(Snes *snes) {
   if (snes->debug_cycles) {
@@ -130,93 +120,6 @@ void snes_printCpuLine(Snes *snes) {
     fputs("\n", fout);
     fflush(fout);
   }
-}
-
-void snes_runGfxCycles(Snes *snes) {
-  // check for h/v timer irq's
-  if(snes->vIrqEnabled && snes->hIrqEnabled) {
-    if(snes->vPos == snes->vTimer && snes->hPos == (4 * snes->hTimer)) {
-      snes->inIrq = true;
-      snes->cpu->irqWanted = true; // request IRQ on CPU
-    }
-  } else if(snes->vIrqEnabled && !snes->hIrqEnabled) {
-    if(snes->vPos == snes->vTimer && snes->hPos == 0) {
-      snes->inIrq = true;
-      snes->cpu->irqWanted = true; // request IRQ on CPU
-    }
-  } else if(!snes->vIrqEnabled && snes->hIrqEnabled) {
-    if(snes->hPos == (4 * snes->hTimer)) {
-      snes->inIrq = true;
-      snes->cpu->irqWanted = true; // request IRQ on CPU
-    }
-  }
-  // handle positional stuff
-  // TODO: better timing? (especially Hpos)
-  if(snes->hPos == 0) {
-    // end of hblank, do most vPos-tests
-    bool startingVblank = false;
-    if(snes->vPos == 0) {
-      // end of vblank
-      snes->inVblank = false;
-      snes->inNmi = false;
-      dma_initHdma(snes->dma);
-    } else if(snes->vPos == 225) {
-      // ask the ppu if we start vblank now or at vPos 240 (overscan)
-      startingVblank = !ppu_checkOverscan(snes->ppu);
-    } else if(snes->vPos == 240){
-      // if we are not yet in vblank, we had an overscan frame, set startingVblank
-      if(!snes->inVblank) startingVblank = true;
-    }
-    if(startingVblank) {
-      // if we are starting vblank
-      ppu_handleVblank(snes->ppu);
-      snes->inVblank = true;
-      snes->inNmi = true;
-      if(snes->autoJoyRead) {
-        // TODO: this starts a little after start of vblank
-        snes->autoJoyTimer = 4224;
-        snes_doAutoJoypad(snes);
-      }
-      if(snes->nmiEnabled) {
-        snes->cpu->nmiWanted = true; // request NMI on CPU
-      }
-    }
-  } else if(snes->hPos == 512) {
-    // render the line halfway of the screen for better compatibility
-    if(!snes->inVblank) ppu_runLine(snes->ppu, snes->vPos);
-  } else if(snes->hPos == 1024) {
-    // start of hblank
-    if(!snes->inVblank) dma_doHdma(snes->dma);
-  }
-  // handle autoJoyRead-timer
-  if(snes->autoJoyTimer > 0) snes->autoJoyTimer -= 2;
-  // increment position
-  // TODO: exact frame timing (line 240 on odd frame is 4 cycles shorter,
-  //   even frames in interlace is 1 extra line)
-  if (!snes->disableHpos || !(snes->hPos < 536 || snes->hPos >= 576) || snes->hPos == 0 || snes->vPos == 0)
-    snes->hPos += 2;
-  if(snes->hPos == 1364) {
-    snes->hPos = 0;
-    snes->vPos++;
-    if(snes->vPos == 262) {
-      snes->vPos = 0;
-      snes->frames++;
-      snes_catchupApu(snes); // catch up the apu at the end of the frame
-    }
-  }
-}
-
-static void snes_runCycle(Snes* snes) {
-  snes->apuCatchupCycles += apuCyclesPerMaster * 2.0;
-  input_cycle(snes->input1);
-  input_cycle(snes->input2);
-  // if not in dram refresh, if we are busy with hdma/dma, do that, else do cpu cycle
-  if(snes->hPos < 536 || snes->hPos >= 576) {
-    if(!dma_cycle(snes->dma)) {
-      snes_runCpu(snes);
-    }
-  }
- snes_runGfxCycles(snes);
 }
 
 static void snes_runCpu(Snes* snes) {
@@ -267,10 +170,7 @@ uint8_t snes_readBBus(Snes* snes, uint8_t adr) {
     return ppu_read(snes->ppu, adr);
   }
   if(adr < 0x80) {
-    if (kIsOrigEmu)
-      snes_catchupApu(snes); // catch up the apu before reading
-    else
-      apu_cycle(snes->apu);//spc_runOpcode(snes->apu->spc);
+    apu_cycle(snes->apu);//spc_runOpcode(snes->apu->spc);
     return snes->apu->outPorts[adr & 0x3];
   }
   if(adr == 0x80) {
@@ -481,7 +381,7 @@ static uint8_t snes_rread(Snes* snes, uint32_t adr) {
 
 int g_bp_addr = 0;
 
-void PrintState();
+
 void snes_write(Snes* snes, uint32_t adr, uint8_t val) {
   snes->openBus = val;
   uint8_t bank = adr >> 16;
@@ -519,33 +419,6 @@ void snes_write(Snes* snes, uint32_t adr, uint8_t val) {
 static int snes_getAccessTime(Snes* snes, uint32_t adr) {
   // optimization
   return 6;
-
-  uint8_t bank = adr >> 16;
-  adr &= 0xffff;
-  if(bank >= 0x40 && bank < 0x80) {
-    return 8; // slow
-  }
-  if(bank >= 0xc0) {
-    return snes->fastMem ? 6 : 8; // depends on setting
-  }
-  // banks 0x00-0x3f and 0x80-0xcf
-  if(adr < 0x2000) {
-    return 8; // slow
-  }
-  if(adr < 0x4000) {
-    return 6; // fast
-  }
-  if(adr < 0x4200) {
-    return 12; // extra slow
-  }
-  if(adr < 0x6000) {
-    return 6; // fast
-  }
-  if(adr < 0x8000) {
-    return 8; // slow
-  }
-  // 0x8000-0xffff
-  return (snes->fastMem && bank >= 0x80) ? 6 : 8; // depends on setting in banks 80+
 }
 
 uint8_t snes_read(Snes* snes, uint32_t adr) {
@@ -568,19 +441,3 @@ void snes_cpuWrite(Snes* snes, uint32_t adr, uint8_t val) {
 
 // debugging
 
-void snes_debugCycle(Snes* snes, bool* cpuNext, bool* spcNext) {
-  // runs a normal cycle, catches up the apu, then looks if the next cycle will execute a CPU and/or a SPC opcode
-  snes_runCycle(snes);
-  snes_catchupApu(snes);
-  if(snes->dma->hdmaTimer > 0 || snes->dma->dmaBusy || (snes->hPos >= 536 && snes->hPos < 576)) {
-    *cpuNext = false;
-  } else {
-    *cpuNext = snes->cpuCyclesLeft == 0;
-  }
-  if(snes->apuCatchupCycles + (apuCyclesPerMaster * 2.0) >= 1.0) {
-    // we will run a apu cycle next call, see if it also starts a opcode
-    *spcNext = snes->apu->cpuCyclesLeft == 0;
-  } else {
-    *spcNext = false;
-  }
-}

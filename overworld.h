@@ -1,10 +1,6 @@
 #pragma once
 #include "zelda_rtl.h"
 #include "variables.h"
-#include "snes_regs.h"
-
-
-
 
 const uint8 *GetMap8toTileAttr();
 const uint16 *GetMap16toMap8Table();

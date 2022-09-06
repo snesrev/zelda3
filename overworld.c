@@ -9,6 +9,7 @@
 #include "misc.h"
 #include "messaging.h"
 #include "player_oam.h"
+#include "snes/snes_regs.h"
 #include "tables/generated_map32_to_map16.h"
 #include "tables/generated_map16_to_map8.h"
 #include "tables/generated_overworld_tables.h"

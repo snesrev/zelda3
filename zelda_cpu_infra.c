@@ -7,7 +7,8 @@
 #include "nmi.h"
 #include "poly.h"
 #include "attract.h"
-
+#include "spc_player.h"
+#include "snes/snes_regs.h"
 #include "snes/snes.h"
 #include "snes/cpu.h"
 #include "snes/cart.h"
@@ -374,7 +375,7 @@ void loadFunc(void *ctx, void *data, size_t data_size) {
 void CopyStateAfterSnapshotRestore(bool is_reset) {
   memcpy(g_zenv.ram, g_snes->ram, 0x20000);
   memcpy(g_zenv.sram, g_snes->cart->ram, g_snes->cart->ramSize);
-  memcpy(g_zenv.ppu->vram, &g_snes->ppu->vram, offsetof(Ppu, pixelBuffer) - offsetof(Ppu, vram));
+  memcpy(g_zenv.ppu->vram, &g_snes->ppu->vram, offsetof(Ppu, ppu2openBus) + 1 - offsetof(Ppu, vram));
   memcpy(g_zenv.player->ram, g_snes->apu->ram, sizeof(g_snes->apu->ram));
 
   if (!is_reset) {
@@ -391,7 +392,7 @@ void SaveSnesState(ByteArray *ctx) {
   MakeSnapshot(&g_snapshot_before);
 
   // Copy from my state into the emulator
-  memcpy(&g_snes->ppu->vram, g_zenv.ppu->vram, offsetof(Ppu, pixelBuffer) - offsetof(Ppu, vram));
+  memcpy(&g_snes->ppu->vram, g_zenv.ppu->vram, offsetof(Ppu, ppu2openBus) + 1 - offsetof(Ppu, vram));
   memcpy(g_snes->ram, g_zenv.ram, 0x20000);
   memcpy(g_snes->cart->ram, g_zenv.sram, 0x2000);
   SpcPlayer_CopyVariablesToRam(g_zenv.player);
@@ -439,15 +440,15 @@ void StateRecorder_Record(StateRecorder *sr, uint16 inputs) {
   uint16 diff = inputs ^ sr->last_inputs;
   if (diff != 0) {
     sr->last_inputs = inputs;
-    printf("0x%.4x %d: ", diff, sr->frames_since_last);
-    int lb = sr->log.size;
+//    printf("0x%.4x %d: ", diff, sr->frames_since_last);
+//    size_t lb = sr->log.size;
     for (int i = 0; i < 12; i++) {
       if ((diff >> i) & 1)
         StateRecorder_RecordCmd(sr, i << 4);
     }
-    while (lb < sr->log.size)
-      printf("%.2x ", sr->log.data[lb++]);
-    printf("\n");
+//    while (lb < sr->log.size)
+//      printf("%.2x ", sr->log.data[lb++]);
+//    printf("\n");
   }
   sr->frames_since_last++;
   sr->total_frames++;
@@ -456,8 +457,8 @@ void StateRecorder_Record(StateRecorder *sr, uint16 inputs) {
 void StateRecorder_RecordPatchByte(StateRecorder *sr, uint32 addr, const uint8 *value, int num) {
   assert(addr < 0x20000);
   
-  printf("%d: PatchByte(0x%x, 0x%x. %d): ", sr->frames_since_last, addr, *value, num);
-  int lb = sr->log.size;
+//  printf("%d: PatchByte(0x%x, 0x%x. %d): ", sr->frames_since_last, addr, *value, num);
+//  size_t lb = sr->log.size;
   int lq = (num - 1) <= 3 ? (num - 1) : 3;
   StateRecorder_RecordCmd(sr, 0xc0 | (addr & 0x10000 ? 2 : 0) | lq << 2);
   if (lq == 3)
@@ -466,9 +467,9 @@ void StateRecorder_RecordPatchByte(StateRecorder *sr, uint32 addr, const uint8 *
   ByteArray_AppendByte(&sr->log, addr);
   for(int i = 0; i < num; i++)
     ByteArray_AppendByte(&sr->log, value[i]);
-  while (lb < sr->log.size)
-    printf("%.2x ", sr->log.data[lb++]);
-  printf("\n");
+//  while (lb < sr->log.size)
+//    printf("%.2x ", sr->log.data[lb++]);
+//  printf("\n");
 }
 
 void StateRecorder_Load(StateRecorder *sr, FILE *f, bool replay_mode) {
@@ -532,11 +533,11 @@ void StateRecorder_Save(StateRecorder *sr, FILE *f) {
 
   hdr[0] = 1;
   hdr[1] = sr->total_frames;
-  hdr[2] = sr->log.size;
+  hdr[2] = (uint32)sr->log.size;
   hdr[3] = sr->last_inputs;
   hdr[4] = sr->frames_since_last;
   hdr[5] = sr->base_snapshot.size ? 1 : 0;
-  hdr[6] = arr.size;
+  hdr[6] = (uint32)arr.size;
   // If saving while in replay mode, also need to persist
   // sr->replay_pos_last_complete and sr->replay_frame_counter
   // so the replaying can be resumed.
@@ -573,10 +574,10 @@ void StateRecorder_ClearKeyLog(StateRecorder *sr) {
     if (sr->replay_next_cmd_at != 0xffffffff) {
       sr->replay_next_cmd_at -= old_frames_since_last;
       sr->frames_since_last = sr->replay_next_cmd_at;
-      sr->replay_pos_last_complete = sr->log.size;
+      sr->replay_pos_last_complete = (uint32)sr->log.size;
       StateRecorder_RecordCmd(sr, sr->replay_cmd);
       int old_replay_pos = sr->replay_pos;
-      sr->replay_pos = sr->log.size;
+      sr->replay_pos = (uint32)sr->log.size;
       ByteArray_AppendData(&sr->log, old_log.data + old_replay_pos, old_log.size - old_replay_pos);
     }
     sr->total_frames -= sr->replay_frame_counter;
@@ -654,18 +655,45 @@ int IncrementCrystalCountdown(uint8 *a, int v) {
   return t >> 8;
 }
 
+#ifdef _DEBUG
+// This can be used to read inputs from a text file for easier debugging
+int InputStateReadFromFile() {
+  static FILE *f;
+  static uint32 next_ts, next_keys, cur_keys;
+  char buf[64];
+  char keys[64];
+
+  while (state_recorder.total_frames == next_ts) {
+    cur_keys = next_keys;
+    if (!f)
+      f = fopen("boss_bug.txt", "r");
+    if (fgets(buf, sizeof(buf), f)) {
+      if (sscanf(buf, "%d: %s", &next_ts, keys) == 1) keys[0] = 0;
+      int i = 0;
+      for (const char *s = keys; *s; s++) {
+        static const char kKeys[] = "AXsSUDLRBY";
+        const char *t = strchr(kKeys, *s);
+        assert(t);
+        i |= 1 << (t - kKeys);
+      }
+      next_keys = i;
+    } else {
+      next_ts = 0xffffffff;
+    }
+  }
+
+  return cur_keys;
+}
+#endif
+
 bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
   frame_ctr++;
-
-  if (kIsOrigEmu) {
-    snes_runFrame(snes);
-    return false;
-  }
 
   // Either copy state or apply state
   if (state_recorder.replay_mode) {
     input_state = StateRecorder_ReadNextReplayState(&state_recorder);
   } else {
+    //    input_state = InputStateReadFromFile();
     StateRecorder_Record(&state_recorder, input_state);
     turbo = false;
 
@@ -713,7 +741,6 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
     return turbo;
   }
 
-again:
   // Run orig version then snapshot
   snes->input1->currentState = input_state;
   RunEmulatedSnesFrame(snes, run_what);
@@ -876,6 +903,9 @@ void PatchRom(uint8_t *rom) {
   // AncillaAdd_AddAncilla_Bank09 destroys R14
   rom[0x49d0c] = 0xda; rom[0x49d0d] = 0xfa; 
   rom[0x49d0f] = 0xda; rom[0x49d10] = 0xfa; 
+
+  // Prevent LoadSongBank from executing in the rom because it hangs
+  rom[0x888] = 0x60;
 
 }
 

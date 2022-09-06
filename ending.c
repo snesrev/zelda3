@@ -1,4 +1,5 @@
 #include "zelda_rtl.h"
+#include "snes/snes_regs.h"
 #include "variables.h"
 #include "load_gfx.h"
 #include "dungeon.h"
@@ -11,6 +12,8 @@
 #include "player_oam.h"
 #include "tables/generated_ending.h"
 #include "sprite_main.h"
+#include "ancilla.h"
+#include "hud.h"
 
 static const uint16 kPolyhedralPalette[8] = { 0, 0x14d, 0x1b0, 0x1f3, 0x256, 0x279, 0x2fd, 0x35f };
 
@@ -134,7 +137,7 @@ void Intro_SetupScreen() {  // 828000
   TM_copy = 16;
   TS_copy = 0;
   Intro_InitializeBackgroundSettings();
-  CGWSEL_copy = 32;
+  CGWSEL_copy = 0x20;
   zelda_ppu_write(OBSEL, 2);
   load_chr_halfslot_even_odd = 20;
   Graphics_LoadChrHalfSlot();
@@ -255,6 +258,87 @@ void Credits_LoadScene_Dungeon() {  // 8286fd
   INIDISP_copy = 0;
   submodule_index++;
   Credits_PrepAndLoadSprites();
+}
+
+void Module18_GanonEmerges() {  // 829edc
+  uint16 hofs2 = BG2HOFS_copy2;
+  uint16 vofs2 = BG2VOFS_copy2;
+  uint16 hofs1 = BG1HOFS_copy2;
+  uint16 vofs1 = BG1VOFS_copy2;
+
+  BG2HOFS_copy2 = BG2HOFS_copy = hofs2 + bg1_x_offset;
+  BG2VOFS_copy2 = BG2VOFS_copy = vofs2 + bg1_y_offset;
+  BG1HOFS_copy2 = BG1HOFS_copy = hofs1 + bg1_x_offset;
+  BG1VOFS_copy2 = BG1VOFS_copy = vofs1 + bg1_y_offset;
+  Sprite_Main();
+  BG1VOFS_copy2 = vofs1;
+  BG1HOFS_copy2 = hofs1;
+  BG2VOFS_copy2 = vofs2;
+  BG2HOFS_copy2 = hofs2;
+
+  switch (overworld_map_state) {
+  case 0:  // GetBirdForPursuit
+    Dungeon_HandleLayerEffect();
+    CallForDuckIndoors();
+    SaveDungeonKeys();
+    overworld_map_state++;
+    flag_is_link_immobilized++;
+    break;
+  case 1:  // PrepForPyramidLocation
+    Dungeon_HandleLayerEffect();
+    if (submodule_index == 10) {
+      overworld_screen_index = 91;
+      player_is_indoors = 0;
+      main_module_index = 24;
+      submodule_index = 0;
+      overworld_map_state = 2;
+    }
+    break;
+  case 2:  // FadeOutDungeonScreen
+    Dungeon_HandleLayerEffect();
+    if (--INIDISP_copy)
+      break;
+    EnableForceBlank();
+    overworld_map_state++;
+    Hud_RebuildIndoor();
+    link_x_vel = link_y_vel = 0;
+    break;
+  case 3:  // LOadPyramidArea
+    birdtravel_var1[0] = 8;
+    birdtravel_var1[1] = 0;
+    FluteMenu_LoadSelectedScreen();
+    LoadOWMusicIfNeeded();
+    music_control = 9;
+    break;
+  case 4:  // LoadAmbientOverlay
+    Overworld_LoadOverlayAndMap();
+    subsubmodule_index = 0;
+    break;
+  case 5:  // BrightenScreenThenSpawnBat
+    if (++INIDISP_copy == 15) {
+      dung_savegame_state_bits = 0;
+      flag_unk1 = 0;
+      Sprite_SpawnBatCrashCutscene();
+      link_direction_facing = 2;
+      saved_module_for_menu = 9;
+      player_is_indoors = 0;
+      overworld_map_state++;
+      subsubmodule_index = 128;
+      BYTE(cur_palace_index_x2) = 255;
+    }
+    break;
+  case 6:  // DelayForBatSmashIntoPyramid
+    break;
+  case 7:  // DelayPlayerDropOff
+    if (!--subsubmodule_index)
+      overworld_map_state++;
+    break;
+  case 8:  // DropOffPlayerAtPyramid
+    BirdTravel_Finish_Doit();
+    break;
+  }
+
+  LinkOam_Main();
 }
 
 void Module19_TriforceRoom() {  // 829fec
@@ -1366,7 +1450,7 @@ void Credits_ScrollScene_Overworld() {  // 8e9958
     if (sprite_delay_main[k])
       sprite_delay_main[k]--;
 
-  int i = submodule_index >> 1, k;
+  int i = submodule_index >> 1;
 
   link_x_vel = link_y_vel = 0;
   if (R16 >= 0x40 && !(R16 & 1)) {
@@ -2402,7 +2486,8 @@ void EndSequence_32() {  // 8ebc6d
   music_control = 0x22;
   CGWSEL_copy = 0;
   CGADSUB_copy = 162;
-  zelda_ppu_write(BG2SC, 0x12);
+  // real zelda does 0x12 here but this seems to work too
+  zelda_ppu_write(BG2SC, 0x13);
   COLDATA_copy0 = 0x3f;
   COLDATA_copy1 = 0x5f;
   COLDATA_copy2 = 0x9f;
@@ -2436,8 +2521,10 @@ void Credits_FadeColorAndBeginAnimating() {  // 8ebd8b
   nmi_disable_core_updates = 1;
   Credits_AnimateTheTriangles();
   if (!(frame_counter & 3)) {
-    if (++BG2HOFS_copy2 == 0xc00)
-      zelda_ppu_write_word(BG1SC, 0x1300);
+    if (++BG2HOFS_copy2 == 0xc00) {
+      // real zelda writes 0x00 to BG1SC here but that doesn't seem needed
+      zelda_ppu_write(BG2SC, 0x13);
+    }
     room_bounds_y.a1 = BG2HOFS_copy2 >> 1;
     room_bounds_y.a0 = room_bounds_y.a1 + BG2HOFS_copy2;
     room_bounds_y.b0 = room_bounds_y.a0 >> 1;
@@ -2502,7 +2589,6 @@ void Credits_AddNextAttribution() {  // 8ebe24
     }
   }
 
-done:
   R16 += 0x20;
   if (!(R16 & 0x3ff))
     R16 = (R16 & 0x6800) ^ 0x800;

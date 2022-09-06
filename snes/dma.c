@@ -7,7 +7,8 @@
 #include <stddef.h>
 #include "dma.h"
 #include "snes.h"
-#include "../snes_regs.h"
+#include "snes_regs.h"
+
 static const int bAdrOffsets[8][4] = {
   {0, 0, 0, 0},
   {0, 1, 0, 1},

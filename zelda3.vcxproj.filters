@@ -109,9 +109,6 @@
     <ClCompile Include="tile_detect.c">
       <Filter>Zelda</Filter>
     </ClCompile>
-    <ClCompile Include="other_modules.c">
-      <Filter>Zelda</Filter>
-    </ClCompile>
     <ClCompile Include="misc.c">
       <Filter>Zelda</Filter>
     </ClCompile>
@@ -165,9 +162,6 @@
     <ClInclude Include="dungeon.h">
       <Filter>Zelda</Filter>
     </ClInclude>
-    <ClInclude Include="snes_regs.h">
-      <Filter>Zelda</Filter>
-    </ClInclude>
     <ClInclude Include="nmi.h">
       <Filter>Zelda</Filter>
     </ClInclude>
@@ -210,9 +204,6 @@
     <ClInclude Include="player.h">
       <Filter>Zelda</Filter>
     </ClInclude>
-    <ClInclude Include="other_modules.h">
-      <Filter>Zelda</Filter>
-    </ClInclude>
     <ClInclude Include="misc.h">
       <Filter>Zelda</Filter>
     </ClInclude>
@@ -242,6 +233,9 @@
     </ClInclude>
     <ClInclude Include="config.h">
       <Filter>Zelda</Filter>
+    </ClInclude>
+    <ClInclude Include="snes\snes_regs.h">
+      <Filter>Snes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
