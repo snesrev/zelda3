@@ -20,7 +20,6 @@
 #include "zelda_rtl.h"
 #include "config.h"
 
-extern Ppu *GetPpuForRendering();
 extern Dsp *GetDspForRendering();
 extern Snes *g_snes;
 extern uint8 g_emulated_ram[0x20000];
@@ -124,6 +123,24 @@ enum {
   kSampleRate = 44100,
   kSnesSamplesPerBlock = (534 * kSampleRate) / 32000,
 };
+
+static void RenderScreenWithPerf(uint32 *pixel_buffer) {
+  if (g_display_perf) {
+    static float history[64], average;
+    static int history_pos;
+    uint64 before = SDL_GetPerformanceCounter();
+    ZeldaDrawPpuFrame(pixel_buffer);
+    uint64 after = SDL_GetPerformanceCounter();
+    float v = (double)SDL_GetPerformanceFrequency() / (after - before);
+    average += v - history[history_pos];
+    history[history_pos] = v;
+    history_pos = (history_pos + 1) & 63;
+    g_curr_fps = average * (1.0f / 64);
+  } else {
+    ZeldaDrawPpuFrame(pixel_buffer);
+  }
+}
+
 
 #undef main
 int main(int argc, char** argv) {
@@ -258,21 +275,6 @@ int main(int argc, char** argv) {
     if (is_turbo)
       continue;
 
-    if (g_display_perf) {
-      static float history[64], average;
-      static int history_pos;
-      uint64 before = SDL_GetPerformanceCounter();
-      ZeldaDrawPpuFrame();
-      uint64 after = SDL_GetPerformanceCounter();
-      float v = (double)SDL_GetPerformanceFrequency() / (after - before);
-      average += v - history[history_pos];
-      history[history_pos] = v;
-      history_pos = (history_pos + 1) & 63;
-      g_curr_fps = average * (1.0f / 64);
-    } else {
-      ZeldaDrawPpuFrame();
-    }
-
     PlayAudio(snes_run, device, audioBuffer);
     RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
 
@@ -369,7 +371,7 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
     printf("Failed to lock texture: %s\n", SDL_GetError());
     return;
   }
-  ppu_putPixels(GetPpuForRendering(), (uint8_t*) pixels);
+  RenderScreenWithPerf((uint32 *)pixels);
   if (g_display_perf)
     RenderNumber((uint32 *)pixels + 512*2, g_curr_fps);
   SDL_UnlockTexture(texture);

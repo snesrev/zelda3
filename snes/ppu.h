@@ -46,6 +46,7 @@ struct Ppu {
   bool lineHasSprites;
   uint8_t lastBrightnessMult;
   uint8_t lastMosaicModulo;
+  uint32_t *renderBuffer;
   Snes* snes;
   // store 31 extra entries to remove the need for clamp
   uint8_t brightnessMult[32 + 31]; 
@@ -138,10 +139,6 @@ struct Ppu {
   uint8_t ppu2openBus;
 
   uint8_t mosaicModulo[256];
-
-  // pixel buffer (xbgr)
-  // times 2 for even and odd frame
-  uint8_t pixelBuffer[512 * 4 * 239 * 2];
 };
 
 Ppu* ppu_init(Snes* snes);
@@ -151,7 +148,7 @@ void ppu_handleVblank(Ppu* ppu);
 void ppu_runLine(Ppu* ppu, int line);
 uint8_t ppu_read(Ppu* ppu, uint8_t adr);
 void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val);
-void ppu_putPixels(Ppu* ppu, uint8_t* pixels);
 void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx);
+void PpuBeginDrawing(Ppu *ppu, uint32_t *buffer);
 
 #endif

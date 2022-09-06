@@ -104,34 +104,6 @@ bool snes_loadRom(Snes* snes, uint8_t* data, int length) {
   return true;
 }
 
-void snes_setButtonState(Snes* snes, int player, int button, bool pressed) {
-  // set key in constroller
-  if(player == 1) {
-    if(pressed) {
-      snes->input1->currentState |= 1 << button;
-    } else {
-      snes->input1->currentState &= ~(1 << button);
-    }
-  } else {
-    if(pressed) {
-      snes->input2->currentState |= 1 << button;
-    } else {
-      snes->input2->currentState &= ~(1 << button);
-    }
-  }
-}
-
-void snes_setPixels(Snes* snes, uint8_t* pixelData) {
-  // size is 4 (rgba) * 512 (w) * 480 (h)
-  ppu_putPixels(snes->ppu, pixelData);
-}
-
-void snes_setSamples(Snes* snes, int16_t* sampleData, int samplesPerFrame) {
-  // size is 2 (int16) * 2 (stereo) * samplesPerFrame
-  // sets samples in the sampleData
-  dsp_getSamples(snes->apu->dsp, sampleData, samplesPerFrame);
-}
-
 static void readHeader(uint8_t* data, int location, CartHeader* header) {
   // read name, TODO: non-ASCII names?
   for(int i = 0; i < 21; i++) {

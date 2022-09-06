@@ -22,6 +22,7 @@ static int ppu_getPixelForMode7(Ppu* ppu, int x, int layer, bool priority);
 static bool ppu_getWindowState(Ppu* ppu, int layer, int x);
 static bool ppu_evaluateSprites(Ppu* ppu, int line);
 static uint16_t ppu_getVramRemap(Ppu* ppu);
+static void PpuDrawWholeLine(Ppu *ppu, uint y);
 
 Ppu* ppu_init(Snes* snes) {
   Ppu* ppu = (Ppu * )malloc(sizeof(Ppu));
@@ -130,37 +131,22 @@ void ppu_reset(Ppu* ppu) {
   ppu->countersLatched = false;
   ppu->ppu1openBus = 0;
   ppu->ppu2openBus = 0;
-  memset(ppu->pixelBuffer, 0, sizeof(ppu->pixelBuffer));
 }
 
 void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx) {
   func(ctx, &ppu->vram, offsetof(Ppu, mosaicModulo) - offsetof(Ppu, vram));
 }
 
-void ppu_handleVblank(Ppu* ppu) {
-  // called either right after ppu_checkOverscan at (0,225), or at (0,240)
-  if(!ppu->forcedBlank) {
-    ppu->oamAdr = ppu->oamAdrWritten;
-    ppu->oamInHigh = ppu->oamInHighWritten;
-    ppu->oamSecondWrite = false;
-  }
-  ppu->frameInterlace_always_zero = ppu->interlace_always_zero; // set if we have a interlaced frame
+void PpuBeginDrawing(Ppu *ppu, uint32_t *pixels) {
+  ppu->renderBuffer = pixels + 512 * 16;
+
+  // clear top 16 and last 16 lines
+  memset(pixels, 0, 512 * 16 * 4);
+  memset(pixels + (464 * 512), 0, 512 * 16 * 4);
 }
 
-static void PpuDrawWholeLine(Ppu *ppu, uint y);
-
-void ppu_runLine(Ppu* ppu, int line) {
+void ppu_runLine(Ppu *ppu, int line) {
   if(line == 0) {
-
-    // Ensure all window layer fields are just 0 or 1
-    for (int i = 0; i < 6; i++) {
-      WindowLayer *wl = &ppu->windowLayer[i];
-      wl->window1enabled = (wl->window1enabled != 0);
-      wl->window2enabled = (wl->window2enabled != 0);
-      wl->window1inversed = (wl->window1inversed != 0);
-      wl->window2inversed = (wl->window2inversed != 0);
-    }
-
     ppu->rangeOver = false;
     ppu->timeOver = false;
     ppu->evenFrame = !ppu->evenFrame;
@@ -188,6 +174,10 @@ void ppu_runLine(Ppu* ppu, int line) {
         ppu_handlePixel(ppu, x, line);
       }
     }
+
+    // Duplicate each line
+    uint32 *dst = &ppu->renderBuffer[(line - 1) * 1024];
+    memcpy(dst + 512, dst, 512 * 4);
   }
 }
 
@@ -726,12 +716,9 @@ static void PpuDrawBackgrounds(Ppu *ppu, int y, bool sub) {
 
 static NOINLINE void PpuDrawWholeLine(Ppu *ppu, uint y) {
   if (ppu->forcedBlank) {
-    int row = (y - 1) + (ppu->evenFrame ? 0 : 239);
-    uint8_t *dst = &ppu->pixelBuffer[row * 2048];
-    for (int i = 0; i < 256; i++, dst += 8) {
-      dst[1] = dst[5] = 0;
-      dst[2] = dst[6] = 0;
-      dst[3] = dst[7] = 0;
+    uint32 *dst = &ppu->renderBuffer[(y - 1) * 1024];
+    for (int i = 0; i < 256; i++, dst += 2) {
+      dst[1] = dst[0] = 0;
     }
     return;
   }
@@ -780,8 +767,7 @@ static NOINLINE void PpuDrawWholeLine(Ppu *ppu, uint y) {
   uint32 cw_clip_math = ((cwin.bits & kCwBitsMod[ppu->clipMode]) ^ kCwBitsMod[ppu->clipMode + 4]) |
                         ((cwin.bits & kCwBitsMod[ppu->preventMathMode]) ^ kCwBitsMod[ppu->preventMathMode + 4]) << 8;
 
-  int row = (y - 1) + (ppu->evenFrame ? 0 : 239);
-  uint32 *dst = (uint32*)&ppu->pixelBuffer[row * 2048];
+  uint32 *dst = &ppu->renderBuffer[(y - 1) * 1024];
   
   uint32 windex = 0;
   do {
@@ -890,13 +876,16 @@ static void ppu_handlePixel(Ppu* ppu, int x, int y) {
       r2 = r; g2 = g; b2 = b;
     }
   }
-  int row = (y - 1) + (ppu->evenFrame ? 0 : 239);
-  ppu->pixelBuffer[row * 2048 + x * 8 + 1] = ((b2 << 3) | (b2 >> 2)) * ppu->brightness / 15;
-  ppu->pixelBuffer[row * 2048 + x * 8 + 2] = ((g2 << 3) | (g2 >> 2)) * ppu->brightness / 15;
-  ppu->pixelBuffer[row * 2048 + x * 8 + 3] = ((r2 << 3) | (r2 >> 2)) * ppu->brightness / 15;
-  ppu->pixelBuffer[row * 2048 + x * 8 + 5] = ((b << 3) | (b >> 2)) * ppu->brightness / 15;
-  ppu->pixelBuffer[row * 2048 + x * 8 + 6] = ((g << 3) | (g >> 2)) * ppu->brightness / 15;
-  ppu->pixelBuffer[row * 2048 + x * 8 + 7] = ((r << 3) | (r >> 2)) * ppu->brightness / 15;
+  int row = y - 1;
+  uint8 *pixelBuffer = (uint8*) &ppu->renderBuffer[row * 1024 + x * 2];
+  pixelBuffer[0] = 0;
+  pixelBuffer[1] = ((b2 << 3) | (b2 >> 2)) * ppu->brightness / 15;
+  pixelBuffer[2] = ((g2 << 3) | (g2 >> 2)) * ppu->brightness / 15;
+  pixelBuffer[3] = ((r2 << 3) | (r2 >> 2)) * ppu->brightness / 15;
+  pixelBuffer[4] = 0;
+  pixelBuffer[5] = ((b << 3) | (b >> 2)) * ppu->brightness / 15;
+  pixelBuffer[6] = ((g << 3) | (g >> 2)) * ppu->brightness / 15;
+  pixelBuffer[7] = ((r << 3) | (r >> 2)) * ppu->brightness / 15;
 }
 
 static const int bitDepthsPerMode[10][4] = {
@@ -1636,14 +1625,3 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
   }
 }
 
-void ppu_putPixels(Ppu* ppu, uint8_t* pixels) {
-  for(int y = 0; y < 224; y++) {
-    int dest = y * 2 + 16;
-    int y1 = y + (ppu->evenFrame ? 0 : 239);
-    memcpy(pixels + (dest * 2048), &ppu->pixelBuffer[y1 * 2048], 2048);
-    memcpy(pixels + ((dest + 1) * 2048), &ppu->pixelBuffer[y1 * 2048], 2048);
-  }
-  // clear top 16 and last 16 lines
-  memset(pixels, 0, 2048 * 16);
-  memset(pixels + (464 * 2048), 0, 2048 * 16);
-}

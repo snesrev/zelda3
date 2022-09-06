@@ -161,8 +161,10 @@ void SimpleHdma_DoLine(SimpleHdma *c) {
   c->rep_count--;
 }
 
-void ZeldaDrawPpuFrame() {
+void ZeldaDrawPpuFrame(uint32 *pixel_buffer) {
   SimpleHdma hdma_chans[2];
+
+  PpuBeginDrawing(g_zenv.ppu, pixel_buffer);
 
   dma_startDma(g_zenv.dma, HDMAEN_copy, true);
 

@@ -310,10 +310,6 @@ void RunEmulatedSnesFrame(Snes *snes, int run_what) {
   RunOrigAsmCodeOneLoop(snes);
 }
 
-struct Ppu *GetPpuForRendering() {
-  return g_zenv.ppu;
-}
-
 Dsp *GetDspForRendering() {
   SpcPlayer_GenerateSamples(g_zenv.player);
   return g_zenv.player->dsp;
