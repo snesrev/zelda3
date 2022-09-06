@@ -10,6 +10,8 @@
     </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{8dbd24e3-4805-4844-bbc0-f229cb086e62}</UniqueIdentifier>
+    <Filter Include="Platform">
+      <UniqueIdentifier>{be379862-b248-4de9-8553-bb51e2e72141}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -117,6 +119,9 @@
     </ClCompile>
     <ClCompile Include="config.c">
       <Filter>Zelda</Filter>
+    </ClCompile>
+    <ClCompile Include="platform\win32\volume_control.c">
+      <Filter>Platform</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -236,6 +241,9 @@
     </ClInclude>
     <ClInclude Include="snes\snes_regs.h">
       <Filter>Snes</Filter>
+    </ClInclude>
+    <ClInclude Include="platform\win32\volume_control.h">
+      <Filter>Platform</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
