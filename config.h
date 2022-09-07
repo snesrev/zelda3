@@ -31,6 +31,13 @@ enum {
   kKeys_Total,
 };
 
+typedef struct Config {
+  bool enhanced_mode7;
+  bool new_renderer;
+} Config;
+
+extern Config g_config;
+
 uint8 *ReadFile(const char *name, size_t *length);
 void ParseConfigFile();
 void AfterConfigParse();

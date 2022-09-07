@@ -31,9 +31,6 @@
     <ClCompile Include="snes\input.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="main.c">
-      <Filter>Snes</Filter>
-    </ClCompile>
     <ClCompile Include="snes\ppu.c">
       <Filter>Snes</Filter>
     </ClCompile>
@@ -120,6 +117,9 @@
     </ClCompile>
     <ClCompile Include="platform\win32\volume_control.c">
       <Filter>Platform</Filter>
+    </ClCompile>
+    <ClCompile Include="main.c">
+      <Filter>Zelda</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

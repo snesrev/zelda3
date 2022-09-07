@@ -41,12 +41,22 @@ typedef struct PpuPixelPrioBufs {
   uint8_t prio[256];
 } PpuPixelPrioBufs;
 
+enum {
+  kPpuRenderFlags_NewRenderer = 1,
+  // Render mode7 upsampled by 4x4
+  kPpuRenderFlags_4x4Mode7 = 2,
+};
+
+
 struct Ppu {
-  bool newRenderer;
   bool lineHasSprites;
   uint8_t lastBrightnessMult;
   uint8_t lastMosaicModulo;
-  uint32_t *renderBuffer;
+  uint8_t renderFlags;
+  uint32_t renderPitch;
+  uint8_t *renderBuffer;
+  float mode7PerspectiveLow, mode7PerspectiveHigh;
+
   Snes* snes;
   // store 31 extra entries to remove the need for clamp
   uint8_t brightnessMult[32 + 31]; 
@@ -139,6 +149,7 @@ struct Ppu {
   uint8_t ppu2openBus;
 
   uint8_t mosaicModulo[256];
+  uint32_t colorMapRgb[256];
 };
 
 Ppu* ppu_init(Snes* snes);
@@ -149,6 +160,8 @@ void ppu_runLine(Ppu* ppu, int line);
 uint8_t ppu_read(Ppu* ppu, uint8_t adr);
 void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val);
 void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx);
-void PpuBeginDrawing(Ppu *ppu, uint32_t *buffer);
+bool PpuBeginDrawing(Ppu *ppu, uint8_t *buffer, size_t pitch, uint32_t render_flags);
+
+void PpuSetMode7PerspectiveCorrection(Ppu *ppu, int low, int high);
 
 #endif

@@ -101,9 +101,9 @@ const uint8 *SimpleHdma_GetPtr(uint32 p) {
   case 0xCFA94: return kAttractDmaTable1;
   case 0xebd53: return kHdmaTableForEnding;
   case 0x0F2FB: return kSpotlightIndirectHdma;
-  case 0xabdcf: return kMapModeHdma0;
-  case 0xabdd6: return kMapModeHdma1;
-  case 0xABDDD: return kAttractIndirectHdmaTab;
+  case 0xabdcf: return kMapModeHdma0;             // mode7
+  case 0xabdd6: return kMapModeHdma1;             // mode7
+  case 0xABDDD: return kAttractIndirectHdmaTab;   // mode7
   case 0x2c80c: return kHdmaTableForPrayingScene;
 
   case 0x1b00: return (uint8 *)mode7_hdma_table;
@@ -161,15 +161,27 @@ void SimpleHdma_DoLine(SimpleHdma *c) {
   c->rep_count--;
 }
 
-void ZeldaDrawPpuFrame(uint32 *pixel_buffer) {
+bool ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
   SimpleHdma hdma_chans[2];
 
-  PpuBeginDrawing(g_zenv.ppu, pixel_buffer);
+  bool rv = PpuBeginDrawing(g_zenv.ppu, pixel_buffer, pitch, render_flags);
 
   dma_startDma(g_zenv.dma, HDMAEN_copy, true);
 
   SimpleHdma_Init(&hdma_chans[0], &g_zenv.dma->channel[6]);
   SimpleHdma_Init(&hdma_chans[1], &g_zenv.dma->channel[7]);
+
+  // Cheat: Let the PPU impl know about the hdma perspective correction so it can avoid guessing.
+  if ((render_flags & kPpuRenderFlags_4x4Mode7) && g_zenv.ppu->mode == 7) {
+    if (hdma_chans[0].table == kMapModeHdma0)
+      PpuSetMode7PerspectiveCorrection(g_zenv.ppu, kMapMode_Zooms1[0], kMapMode_Zooms1[223]);
+    else if (hdma_chans[0].table == kMapModeHdma1)
+      PpuSetMode7PerspectiveCorrection(g_zenv.ppu, kMapMode_Zooms2[0], kMapMode_Zooms2[223]);
+    else if (hdma_chans[0].table == kAttractIndirectHdmaTab)
+      PpuSetMode7PerspectiveCorrection(g_zenv.ppu, mode7_hdma_table[0], mode7_hdma_table[223]);
+    else
+      PpuSetMode7PerspectiveCorrection(g_zenv.ppu, 0, 0);
+  }
 
   for (int i = 0; i < 225; i++) {
     if (i == 128 && irq_flag) {
@@ -186,6 +198,8 @@ void ZeldaDrawPpuFrame(uint32 *pixel_buffer) {
     SimpleHdma_DoLine(&hdma_chans[0]);
     SimpleHdma_DoLine(&hdma_chans[1]);
   }
+
+  return rv;
 }
 
 void HdmaSetup(uint32 addr6, uint32 addr7, uint8 transfer_unit, uint8 reg6, uint8 reg7, uint8 indirect_bank) {

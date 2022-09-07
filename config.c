@@ -12,6 +12,8 @@ enum {
   kKeyMod_Ctrl = 0x1000,
 };
 
+Config g_config;
+
 #define REMAP_SDL_KEYCODE(key) ((key) & SDLK_SCANCODE_MASK ? kKeyMod_ScanCode : 0) | (key) & (kKeyMod_ScanCode - 1)
 #define _(x) REMAP_SDL_KEYCODE(x)
 #define S(x) REMAP_SDL_KEYCODE(x) | kKeyMod_Shift
@@ -186,6 +188,8 @@ static void RegisterDefaultKeys() {
 static int GetIniSection(const char *s) {
   if (StringEqualsNoCase(s, "[KeyMap]"))
     return 0;
+  if (StringEqualsNoCase(s, "[Graphics]"))
+    return 1;
   return -1;
 }
 
@@ -198,6 +202,15 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
         return true;
       }
     }
+  } else if (section == 1) {
+    if (StringEqualsNoCase(key, "EnhancedMode7")) {
+      g_config.enhanced_mode7 = atoi(value);
+      return true;
+    } else if (StringEqualsNoCase(key, "NewRenderer")) {
+      g_config.new_renderer = atoi(value);
+      return true;
+    }
+
   }
   return false;
 }
