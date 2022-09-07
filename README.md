@@ -85,6 +85,7 @@ Additionally, the following commands are available:
 | Key | Action                |
 | --- | --------------------- |
 | W   | Fill health/magic     |
+| Shift+W   | Fill rupees/bombs/arrows     |
 | E   | Hard reset            |
 | P   | Pause                 |
 | T   | Toggle replay turbo   |
