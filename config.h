@@ -17,6 +17,7 @@ enum {
   kKeys_ReplayRef_Last = kKeys_ReplayRef + 19,
   kKeys_CheatLife,
   kKeys_CheatKeys,
+  kKeys_CheatEquipment,
   kKeys_ClearKeyLog,
   kKeys_StopReplay,
   kKeys_Fullscreen,

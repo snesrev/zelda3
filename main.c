@@ -420,6 +420,7 @@ static void HandleCommand(uint32 j, bool pressed) {
   } else {
     switch (j) {
     case kKeys_CheatLife: PatchCommand('w'); break;
+    case kKeys_CheatEquipment: PatchCommand('W'); break;
     case kKeys_CheatKeys: PatchCommand('o'); break;
     case kKeys_ClearKeyLog: PatchCommand('k'); break;
     case kKeys_StopReplay: PatchCommand('l'); break;

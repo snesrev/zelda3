@@ -999,6 +999,12 @@ void PatchCommand(char c) {
     StateRecoderMultiPatch_Patch(&mp, 0xf372, 80);  // health filler
     StateRecoderMultiPatch_Patch(&mp, 0xf373, 80);  // magic filler
     //    b.Patch(0x1FE01, 25);
+  } else if (c == 'W') {
+    StateRecoderMultiPatch_Patch(&mp, 0xf375, 10);  // link_bomb_filler
+    StateRecoderMultiPatch_Patch(&mp, 0xf376, 10);  // link_arrow_filler
+    uint16 rupees = link_rupees_goal + 100;
+    StateRecoderMultiPatch_Patch(&mp, 0xf360, rupees);  // link_rupees_goal
+    StateRecoderMultiPatch_Patch(&mp, 0xf361, rupees >> 8);  // link_rupees_goal
   } else if (c == 'k') {
     StateRecorder_ClearKeyLog(&state_recorder);
   } else if (c == 'o') {
