@@ -170,7 +170,8 @@ int main(int argc, char** argv) {
     return 1;
   }
   g_renderer = renderer;
-  SDL_RenderSetLogicalSize(renderer, 512, 480); 
+  if (!g_config.ignore_aspect_ratio)
+    SDL_RenderSetLogicalSize(renderer, 512, 480); 
   SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STREAMING, kRenderWidth * 2, kRenderHeight * 2);
   if(texture == NULL) {
     printf("Failed to create texture: %s\n", SDL_GetError());

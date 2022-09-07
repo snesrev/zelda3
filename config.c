@@ -209,6 +209,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "NewRenderer")) {
       g_config.new_renderer = atoi(value);
       return true;
+    } else if (StringEqualsNoCase(key, "IgnoreAspectRatio")) {
+      g_config.ignore_aspect_ratio = atoi(value);
+      return true;
     }
 
   }
