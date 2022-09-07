@@ -141,16 +141,7 @@ bool PpuBeginDrawing(Ppu *ppu, uint8_t *pixels, size_t pitch, uint32_t render_fl
   bool hq = ppu->mode == 7 && !ppu->forcedBlank && 
       (ppu->renderFlags & (kPpuRenderFlags_4x4Mode7 | kPpuRenderFlags_NewRenderer)) == (kPpuRenderFlags_4x4Mode7 | kPpuRenderFlags_NewRenderer);
   ppu->renderPitch = (uint)pitch;
-  ppu->renderBuffer = pixels + (pitch * 16 << hq);
-
-  // clear top 16 and last 16 lines (or 32 in hq)
-  int w = 512 * 4 << hq;
-  int n = 16 << hq;
-  int y1 = 464 << hq;
-  for (size_t i = 0; i < n; i++) {
-    memset(pixels + pitch * i, 0, w);
-    memset(pixels + pitch * (y1 + i), 0, w);
-  }
+  ppu->renderBuffer = pixels;
 
   // Cache the brightness computation
   if (ppu->brightness != ppu->lastBrightnessMult) {

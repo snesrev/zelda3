@@ -48,8 +48,8 @@ static void OpenOneGamepad(int i);
 
 
 enum {
-  kRenderWidth = 512,
-  kRenderHeight = 480,
+  kRenderWidth = 256 * 2,
+  kRenderHeight = 224 * 2,
   kDefaultZoom = 2,
 };
 
@@ -171,7 +171,7 @@ int main(int argc, char** argv) {
   }
   g_renderer = renderer;
   if (!g_config.ignore_aspect_ratio)
-    SDL_RenderSetLogicalSize(renderer, 512, 480); 
+    SDL_RenderSetLogicalSize(renderer, kRenderWidth, kRenderHeight);
   SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STREAMING, kRenderWidth * 2, kRenderHeight * 2);
   if(texture == NULL) {
     printf("Failed to create texture: %s\n", SDL_GetError());
@@ -395,7 +395,7 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
   SDL_UnlockTexture(texture);
   SDL_RenderClear(renderer);
 
-  SDL_Rect src_rect = { 0, 0, 512, 480 };
+  SDL_Rect src_rect = { 0, 0, kRenderWidth, kRenderHeight };
   SDL_RenderCopy(renderer, texture, hq ? NULL : &src_rect, NULL);
 }
 
