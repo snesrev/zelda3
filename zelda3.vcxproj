@@ -229,6 +229,7 @@
     <ClInclude Include="player.h" />
     <ClInclude Include="player_oam.h" />
     <ClInclude Include="poly.h" />
+    <ClInclude Include="platform\win32\resource.h" />
     <ClInclude Include="select_file.h" />
     <ClInclude Include="snes\apu.h" />
     <ClInclude Include="snes\cart.h" />
@@ -255,6 +256,12 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="platform\win32\zelda3.rc" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="platform\win32\triforce.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

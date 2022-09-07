@@ -3,6 +3,8 @@
 /.vscode/
 .DS_Store
 *.dSYM
+/*.vcxproj.user
+*.aps
 /Debug
 /Release
 /x64

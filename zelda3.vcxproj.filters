@@ -8,6 +8,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="Resource Files">
+      <UniqueIdentifier>{8dbd24e3-4805-4844-bbc0-f229cb086e62}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Platform">
       <UniqueIdentifier>{be379862-b248-4de9-8553-bb51e2e72141}</UniqueIdentifier>
     </Filter>
@@ -231,6 +234,9 @@
     <ClInclude Include="snes\dsp_regs.h">
       <Filter>Snes</Filter>
     </ClInclude>
+    <ClInclude Include="platform\win32\resource.h">
+      <Filter>Resource Files</Filter>
+    </ClInclude>
     <ClInclude Include="config.h">
       <Filter>Zelda</Filter>
     </ClInclude>
@@ -243,5 +249,15 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="platform\win32\triforce.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="platform\win32\zelda3.rc">
+      <Filter>Resource Files</Filter>
+    </ResourceCompile>
   </ItemGroup>
 </Project>
