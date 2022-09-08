@@ -394,10 +394,10 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
     RenderNumber(pixels + (pitch*2<<hq), pitch, g_curr_fps, hq);
   }
   if (g_config.display_perf_title) {
-    char title[48] = "The Legend of Zelda: A Link to the Past | FPS: ";
-    char fps[10];
-    sprintf(fps, "%d", g_curr_fps);
-    strncat(title, fps, 10);
+    char title[] = "The Legend of Zelda: A Link to the Past | FPS: ";
+    char curr_fps[11];
+    int curr_fps_size = sprintf(curr_fps, "%d", g_curr_fps);
+    strncat(title, curr_fps, curr_fps_size);
     SDL_SetWindowTitle(window, title);
   }
   SDL_UnlockTexture(texture);
