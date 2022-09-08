@@ -127,7 +127,7 @@ enum {
 
 static bool RenderScreenWithPerf(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
   bool rv;
-  if (g_display_perf) {
+  if (g_display_perf || g_config.display_perf_title) {
     static float history[64], average;
     static int history_pos;
     uint64 before = SDL_GetPerformanceCounter();
@@ -390,8 +390,16 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
     return;
   }
   bool hq = RenderScreenWithPerf(pixels, pitch, g_ppu_render_flags);
-  if (g_display_perf)
+  if (g_display_perf) {
     RenderNumber(pixels + (pitch*2<<hq), pitch, g_curr_fps, hq);
+  }
+  if (g_config.display_perf_title) {
+    char title[48] = "The Legend of Zelda: A Link to the Past | FPS: ";
+    char fps[10];
+    sprintf(fps, "%d", g_curr_fps);
+    strncat(title, fps, 10);
+    SDL_SetWindowTitle(window, title);
+  }
   SDL_UnlockTexture(texture);
   SDL_RenderClear(renderer);
 

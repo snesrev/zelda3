@@ -36,6 +36,7 @@ typedef struct Config {
   bool enhanced_mode7;
   bool new_renderer;
   bool ignore_aspect_ratio;
+  bool display_perf_title;
 } Config;
 
 extern Config g_config;
