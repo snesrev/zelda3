@@ -36,6 +36,12 @@ typedef struct Config {
   bool enhanced_mode7;
   bool new_renderer;
   bool ignore_aspect_ratio;
+  uint8 fullscreen;
+  uint8 zoom;
+  uint16 audio_freq;
+  uint8 audio_channels;
+  uint16 audio_samples;
+  bool autosave;
 } Config;
 
 extern Config g_config;

@@ -190,6 +190,10 @@ static int GetIniSection(const char *s) {
     return 0;
   if (StringEqualsNoCase(s, "[Graphics]"))
     return 1;
+  if (StringEqualsNoCase(s, "[Sound]"))
+    return 2;
+  if (StringEqualsNoCase(s, "[Config]"))
+    return 3;
   return -1;
 }
 
@@ -204,13 +208,35 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     }
   } else if (section == 1) {
     if (StringEqualsNoCase(key, "EnhancedMode7")) {
-      g_config.enhanced_mode7 = atoi(value);
+      g_config.enhanced_mode7 = (bool)strtol(value, (char**)NULL, 10);
       return true;
     } else if (StringEqualsNoCase(key, "NewRenderer")) {
-      g_config.new_renderer = atoi(value);
+      g_config.new_renderer = (bool)strtol(value, (char**)NULL, 10);
       return true;
     } else if (StringEqualsNoCase(key, "IgnoreAspectRatio")) {
-      g_config.ignore_aspect_ratio = atoi(value);
+      g_config.ignore_aspect_ratio = (bool)strtol(value, (char**)NULL, 10);
+      return true;
+    } else if (StringEqualsNoCase(key, "Fullscreen")) {
+      g_config.fullscreen = (uint8)strtol(value, (char**)NULL, 10);
+      return true;
+    } else if (StringEqualsNoCase(key, "Zoom")) {
+      g_config.zoom = (uint8)strtol(value, (char**)NULL, 10);
+      return true;
+    }
+  } else if (section == 2) {
+    if (StringEqualsNoCase(key, "AudioFreq")) {
+      g_config.audio_freq = (uint16)strtol(value, (char**)NULL, 10);
+      return true;
+    } else if (StringEqualsNoCase(key, "AudioChannels")) {
+      g_config.audio_channels = (uint8)strtol(value, (char**)NULL, 10);
+      return true;
+    } else if (StringEqualsNoCase(key, "AudioSamples")) {
+      g_config.audio_samples = (uint16)strtol(value, (char**)NULL, 10);
+      return true;
+    }
+  } else if (section == 3) {
+    if (StringEqualsNoCase(key, "Autosave")) {
+      g_config.autosave = (bool)strtol(value, (char**)NULL, 10);
       return true;
     }
 
@@ -236,6 +262,23 @@ uint8 *ReadFile(const char *name, size_t *length) {
   if (length) *length = size;
   return buffer;
 }
+
+/*
+uint8 *WriteFile(const char *name) {
+  FILE *f = fopen(name, "w");
+  if (f == NULL)
+    return NULL;
+}
+
+void SaveConfigFile() {
+  uint8* file = ReadFile("zelda3.user.ini", NULL);
+  if (!file) {
+    file = ReadFile("zelda3.ini", NULL);
+    if (!file)
+      return;
+  }
+}
+*/
 
 void ParseConfigFile() {
   uint8 *file = ReadFile("zelda3.user.ini", NULL);

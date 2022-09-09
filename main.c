@@ -50,7 +50,12 @@ static void OpenOneGamepad(int i);
 enum {
   kRenderWidth = 256 * 2,
   kRenderHeight = 224 * 2,
+  kDefaultFullscreen = 0,
   kDefaultZoom = 2,
+  kMaxZoom = 10,
+  kDefaultFreq = 44100,
+  kDefaultChannels = 2,
+  kDefaultSamples = 2048,
 };
 
 
@@ -58,7 +63,8 @@ static uint32 g_win_flags = SDL_WINDOW_RESIZABLE;
 static SDL_Window *g_window;
 static SDL_Renderer *g_renderer;
 static uint8 g_paused, g_turbo = true;
-static int current_zoom = kDefaultZoom;
+static uint8 g_current_zoom;
+static uint8 g_samples_per_block;
 static uint8 g_gamepad_buttons;
 
 void NORETURN Die(const char *error) {
@@ -79,7 +85,7 @@ void SetButtonState(int button, bool pressed) {
 void DoZoom(int zoom_step) {
   int screen = SDL_GetWindowDisplayIndex(g_window);
   if (screen < 0) screen = 0;
-  int max_zoom = kDefaultZoom * 5;
+  int max_zoom = kMaxZoom;
   SDL_Rect bounds;
   int bt = -1, bl, bb, br;
   // note this takes into effect Windows display scaling, i.e., resolution is divided by scale factor
@@ -95,8 +101,8 @@ void DoZoom(int zoom_step) {
     int mh = (bounds.h - bt - bb + (kRenderHeight / kDefaultZoom) / 4) / (kRenderHeight / kDefaultZoom);
     max_zoom = IntMin(mw, mh);
   }
-  int new_zoom = IntMax(IntMin(current_zoom + zoom_step, max_zoom), 1);
-  current_zoom = new_zoom;
+  int new_zoom = IntMax(IntMin(g_current_zoom + zoom_step, max_zoom), 1);
+  g_current_zoom = new_zoom;
   int w = new_zoom * (kRenderWidth / kDefaultZoom);
   int h = new_zoom * (kRenderHeight / kDefaultZoom);
   
@@ -116,14 +122,9 @@ void DoZoom(int zoom_step) {
 
 static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area, void *data) {
   uint32 flags = SDL_GetWindowFlags(win);
-  return (flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && 
+  return ((flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (flags & SDL_WINDOW_FULLSCREEN) == 0) && 
          (SDL_GetModState() & KMOD_CTRL) != 0 ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
-
-enum {
-  kSampleRate = 44100,
-  kSnesSamplesPerBlock = (534 * kSampleRate) / 32000,
-};
 
 static bool RenderScreenWithPerf(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
   bool rv;
@@ -151,6 +152,37 @@ int main(int argc, char** argv) {
   AfterConfigParse();
 
   g_ppu_render_flags = g_config.new_renderer * kPpuRenderFlags_NewRenderer | g_config.enhanced_mode7 * kPpuRenderFlags_4x4Mode7;
+  
+  if (g_config.fullscreen == 1)
+    g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
+  else if (g_config.fullscreen == 2)
+    g_win_flags ^= SDL_WINDOW_FULLSCREEN;
+  uint8 z = g_config.zoom;
+  g_current_zoom = z > kMaxZoom ? kMaxZoom : z;
+  uint16 h = kRenderHeight;
+  uint16 w = kRenderWidth;
+  if (g_current_zoom > 0) {
+      w = kRenderWidth * g_current_zoom;
+      h = kRenderHeight * g_current_zoom;
+  } else {
+      w = kRenderWidth / 2;
+      h = kRenderHeight / 2;
+  }
+  
+  // audio_freq: power of 2 [Values higher than 48000 generally should not be used]
+  uint16 f = g_config.audio_freq;
+  if (f == 0 || f > 48000 || ((f & (f - 1)) != 0))
+      g_config.audio_freq = kDefaultFreq;
+  
+  // audio_channels: As of SDL 2.0, supported values are 1 (mono), 2 (stereo), 4 (quad), and 6 (5.1).
+  uint8 c = g_config.audio_channels;
+  if (c == 0 || c == 3 || c == 5 || c > 6)
+      g_config.audio_channels = kDefaultChannels;
+  
+  // audio_samples: power of 2
+  uint16 s = g_config.audio_samples;
+  if (s == 0 || ((s & (s - 1)) != 0))
+      g_config.audio_samples = kDefaultSamples;
 
   // set up SDL
   if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
@@ -178,21 +210,25 @@ int main(int argc, char** argv) {
     return 1;
   }
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
+  
+  SDL_SetWindowSize(window, w, h);
+  SDL_SetWindowPosition(g_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
   SDL_AudioSpec want, have;
   SDL_AudioDeviceID device;
   SDL_memset(&want, 0, sizeof(want));
-  want.freq = kSampleRate;
+  want.freq = g_config.audio_freq;
   want.format = AUDIO_S16;
-  want.channels = 2;
-  want.samples = 2048;
+  want.channels = g_config.audio_channels;
+  want.samples = g_config.audio_samples;
   want.callback = NULL; // use queue
   device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
   if(device == 0) {
     printf("Failed to open audio device: %s\n", SDL_GetError());
     return 1;
   }
-  int16_t* audioBuffer = (int16_t * )malloc(kSnesSamplesPerBlock * 2 * sizeof(int16));
+  g_samples_per_block = (534 * g_config.audio_freq) / 32000;
+  int16_t* audioBuffer = (int16_t * )malloc(g_samples_per_block * 2 * sizeof(int16));
   SDL_PauseAudioDevice(device, 0);
 
   Snes *snes = snes_init(g_emulated_ram), *snes_run = NULL;
@@ -227,6 +263,9 @@ int main(int argc, char** argv) {
   uint32 curTick = 0;
   uint32 frameCtr = 0;
 
+  if (g_config.autosave)
+    SaveLoadSlot(kSaveLoad_Load, 0);
+
   while(running) {
     while(SDL_PollEvent(&event)) {
       switch(event.type) {
@@ -243,12 +282,12 @@ int main(int argc, char** argv) {
         HandleGamepadInput(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
         break;
       case SDL_MOUSEWHEEL:
-        if ((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && event.wheel.y != 0 && SDL_GetModState() & KMOD_CTRL)
+        if (((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (g_win_flags & SDL_WINDOW_FULLSCREEN) == 0) && event.wheel.y != 0 && SDL_GetModState() & KMOD_CTRL)
           DoZoom(event.wheel.y > 0 ? 1 : -1);
         break;
       case SDL_MOUSEBUTTONDOWN:
         if (event.button.button == SDL_BUTTON_LEFT && event.button.state == SDL_PRESSED && event.button.clicks == 2) {
-          if ((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && SDL_GetModState() & KMOD_SHIFT) {
+          if (((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (g_win_flags & SDL_WINDOW_FULLSCREEN) == 0) && SDL_GetModState() & KMOD_SHIFT) {
             g_win_flags ^= SDL_WINDOW_BORDERLESS;
             SDL_SetWindowBordered(g_window, (g_win_flags & SDL_WINDOW_BORDERLESS) == 0);
           }
@@ -304,6 +343,8 @@ int main(int argc, char** argv) {
     }
 #endif
   }
+  if (g_config.autosave)
+    SaveLoadSlot(kSaveLoad_Save, 0);
   // clean snes
   snes_free(snes);
   // clean sdl
@@ -314,6 +355,7 @@ int main(int argc, char** argv) {
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
+  //SaveConfigFile();
   return 0;
 }
 
@@ -325,12 +367,12 @@ static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) 
     snes->apu->dsp->sampleOffset = 0;
   }
 
-  dsp_getSamples(GetDspForRendering(), audioBuffer, kSnesSamplesPerBlock);
+  dsp_getSamples(GetDspForRendering(), audioBuffer, g_samples_per_block);
 
   for (int i = 0; i < 10; i++) {
-    if (SDL_GetQueuedAudioSize(device) <= kSnesSamplesPerBlock * 4 * 6) {
+    if (SDL_GetQueuedAudioSize(device) <= g_samples_per_block * 4 * 6) {
       // don't queue audio if buffer is still filled
-      SDL_QueueAudio(device, audioBuffer, kSnesSamplesPerBlock * 4);
+      SDL_QueueAudio(device, audioBuffer, g_samples_per_block * 4);
       return;
     }
     SDL_Delay(1);
