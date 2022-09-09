@@ -23,7 +23,7 @@
 extern Dsp *GetDspForRendering();
 extern Snes *g_snes;
 extern uint8 g_emulated_ram[0x20000];
-bool g_run_without_emu = false;
+bool g_run_without_emu = true;
 
 static int g_input1_state;
 static bool g_display_perf;
@@ -48,7 +48,7 @@ static void OpenOneGamepad(int i);
 
 
 enum {
-  kRenderWidth = 256 * 2,
+  kRenderWidth = kPpuXPixels * 2,
   kRenderHeight = 224 * 2,
   kDefaultZoom = 2,
 };

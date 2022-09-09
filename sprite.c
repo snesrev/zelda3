@@ -1858,6 +1858,11 @@ void Sprite_PrepOamCoord(int k, PrepOamCoordsRet *ret) {  // 86e416
   Sprite_PrepOamCoordOrDoubleRet(k, ret);
 }
 
+enum {
+  kKillSpriteLeft = 0x40 + 0x20,
+  kKillSpriteRight = 0x130 + 0x20,
+};
+
 bool Sprite_PrepOamCoordOrDoubleRet(int k, PrepOamCoordsRet *ret) {  // 86e41e
   sprite_pause[k] = 0;
   uint16 x = cur_sprite_x - BG2HOFS_copy2;
@@ -1867,7 +1872,7 @@ bool Sprite_PrepOamCoordOrDoubleRet(int k, PrepOamCoordsRet *ret) {  // 86e41e
   R2 = y - sprite_z[k];
   ret->flags = sprite_oam_flags[k] ^ sprite_obj_prio[k];
   ret->r4 = 0;
-  if ((uint16)(x + 0x40) >= 0x170 || (uint16)(y + 0x40) >= 0x170 && !(sprite_flags4[k] & 0x20)) {
+  if ((uint16)(x + kKillSpriteLeft) >= (kKillSpriteLeft + kKillSpriteRight) || (uint16)(y + 0x40) >= 0x170 && !(sprite_flags4[k] & 0x20)) {
     sprite_pause[k]++;
     if (!(sprite_defl_bits[k] & 0x80))
       Sprite_KillSelf(k);

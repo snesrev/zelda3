@@ -47,9 +47,21 @@ typedef struct OamEntSigned {
 #define movable_block_datas ((MovableBlockData*)(g_ram+0xf940))
 #define oam_buf ((OamEnt*)(g_ram+0x800))
 
+
+typedef struct RoomBounds {
+  union {
+    struct { uint16 a0, b0, a1, b1; };
+    uint16 v[4];
+  };
+} RoomBounds;
+#define room_bounds_y (*(RoomBounds*)(g_ram+0x600))
+#define room_bounds_x (*(RoomBounds*)(g_ram+0x608))
+
+
 typedef struct OwScrollVars {
   uint16 ystart, yend, xstart, xend;
 } OwScrollVars;
+
 
 #define ow_scroll_vars0 (*(OwScrollVars*)(g_ram+0x600))
 #define ow_scroll_vars1 (*(OwScrollVars*)(g_ram+0x608))

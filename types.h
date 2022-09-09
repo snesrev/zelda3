@@ -33,6 +33,8 @@ static FORCEINLINE uint16 abs16(uint16 t) { return sign16(t) ? -t : t; }
 static FORCEINLINE uint8 abs8(uint8 t) { return sign8(t) ? -t : t; }
 static FORCEINLINE int IntMin(int a, int b) { return a < b ? a : b; }
 static FORCEINLINE int IntMax(int a, int b) { return a > b ? a : b; }
+static FORCEINLINE uint UintMin(uint a, uint b) { return a < b ? a : b; }
+static FORCEINLINE uint UintMax(uint a, uint b) { return a > b ? a : b; }
 
 #define BYTE(x) (*(uint8*)&(x))
 #define HIBYTE(x) (((uint8*)&(x))[1])

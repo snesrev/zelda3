@@ -36,9 +36,15 @@ typedef struct WindowLayer {
   uint8_t maskLogic_always_zero;
 } WindowLayer;
 
+enum {
+  // How much extra spacing to add on the left hand side
+  kPpuExtraLeft = 64,
+  kPpuExtraRight = 64,
+  kPpuXPixels = 256 + kPpuExtraLeft + kPpuExtraRight,
+};
 typedef struct PpuPixelPrioBufs {
-  uint8_t pixel[256];
-  uint8_t prio[256];
+  uint8_t pixel[kPpuXPixels];
+  uint8_t prio[kPpuXPixels];
 } PpuPixelPrioBufs;
 
 enum {
@@ -55,6 +61,7 @@ struct Ppu {
   uint8_t renderFlags;
   uint32_t renderPitch;
   uint8_t *renderBuffer;
+  int16_t extraWindowLeft, extraWindowRight;
   float mode7PerspectiveLow, mode7PerspectiveHigh;
 
   Snes* snes;
@@ -148,7 +155,7 @@ struct Ppu {
   uint8_t ppu1openBus;
   uint8_t ppu2openBus;
 
-  uint8_t mosaicModulo[256];
+  uint8_t mosaicModulo[320];
   uint32_t colorMapRgb[256];
 };
 
@@ -163,5 +170,6 @@ void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx);
 bool PpuBeginDrawing(Ppu *ppu, uint8_t *buffer, size_t pitch, uint32_t render_flags);
 
 void PpuSetMode7PerspectiveCorrection(Ppu *ppu, int low, int high);
+void PpuSetExtraSideSpace(Ppu *ppu, int left, int right);
 
 #endif

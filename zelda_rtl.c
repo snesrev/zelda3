@@ -183,6 +183,23 @@ bool ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
       PpuSetMode7PerspectiveCorrection(g_zenv.ppu, 0, 0);
   }
 
+  if (kPpuXPixels != 256) {
+    int extra_right = 0;
+    int extra_left = 0;
+    // Let PPU impl know about the maximum allowed extra space on the sides
+    printf("main %d, sub %d  (%d, %d, %d)\n", main_module_index, submodule_index, BG2HOFS_copy2, room_bounds_x.v[2|(quadrant_fullsize_x >> 1)], quadrant_fullsize_x >> 1);
+    if (main_module_index == 9) {
+      extra_left = BG2HOFS_copy2 - ow_scroll_vars0.xstart;
+      extra_right = ow_scroll_vars0.xend - BG2HOFS_copy2;
+    } else if (main_module_index == 7 && (submodule_index == 0 || submodule_index == 22 || submodule_index == 14 || submodule_index == 7)) {
+      int qm = quadrant_fullsize_x >> 1;
+      extra_left = IntMax(BG2HOFS_copy2 - room_bounds_x.v[qm], 0);
+      extra_right = IntMax(room_bounds_x.v[qm + 2] - BG2HOFS_copy2, 0);
+    }
+    PpuSetExtraSideSpace(g_zenv.ppu, UintMin(extra_left, 64), UintMin(extra_right, 64));
+  }
+
+
   for (int i = 0; i < 225; i++) {
     if (i == 128 && irq_flag) {
       zelda_ppu_write(BG3HOFS, selectfile_var8);
