@@ -57,7 +57,7 @@ enum {
 static uint32 g_win_flags = SDL_WINDOW_RESIZABLE;
 static SDL_Window *g_window;
 static SDL_Renderer *g_renderer;
-static uint8 g_paused, g_turbo = true;
+static uint8 g_paused, g_turbo = true, g_cursor = true;
 static int current_zoom = kDefaultZoom;
 static uint8 g_gamepad_buttons;
 
@@ -427,6 +427,8 @@ static void HandleCommand(uint32 j, bool pressed) {
     case kKeys_Fullscreen:
       g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
       SDL_SetWindowFullscreen(g_window, g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP);
+      g_cursor = !g_cursor;
+      SDL_ShowCursor(g_cursor);
       break;
     case kKeys_Reset:
       snes_reset(g_snes, true);
