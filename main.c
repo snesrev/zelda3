@@ -64,7 +64,7 @@ static SDL_Window *g_window;
 static SDL_Renderer *g_renderer;
 static uint8 g_paused, g_turbo = true, g_cursor = true;
 static uint8 g_current_zoom;
-static uint8 g_samples_per_block;
+static int g_samples_per_block;
 static uint8 g_gamepad_buttons;
 
 void NORETURN Die(const char *error) {
