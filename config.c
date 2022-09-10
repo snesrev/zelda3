@@ -192,7 +192,7 @@ static int GetIniSection(const char *s) {
     return 1;
   if (StringEqualsNoCase(s, "[Sound]"))
     return 2;
-  if (StringEqualsNoCase(s, "[Config]"))
+  if (StringEqualsNoCase(s, "[General]"))
     return 3;
   return -1;
 }
