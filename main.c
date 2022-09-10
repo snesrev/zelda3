@@ -170,9 +170,9 @@ int main(int argc, char** argv) {
       h = kRenderHeight / 2;
   }
   
-  // audio_freq: power of 2 [Values higher than 48000 generally should not be used]
+  // audio_freq: Use common sampling rates (see user config file. values higher than 48000 are not supported.)
   uint16 f = g_config.audio_freq;
-  if (f == 0 || f > 48000 || ((f & (f - 1)) != 0))
+  if (f == 0 || f > 48000)
       g_config.audio_freq = kDefaultFreq;
   
   // audio_channels: As of SDL 2.0, supported values are 1 (mono), 2 (stereo), 4 (quad), and 6 (5.1).
@@ -228,7 +228,7 @@ int main(int argc, char** argv) {
     printf("Failed to open audio device: %s\n", SDL_GetError());
     return 1;
   }
-  g_samples_per_block = (534 * g_config.audio_freq) / 32000;
+  g_samples_per_block = (534 * have.freq) / 32000;
   int16_t* audioBuffer = (int16_t * )malloc(g_samples_per_block * 2 * sizeof(int16));
   SDL_PauseAudioDevice(device, 0);
 
