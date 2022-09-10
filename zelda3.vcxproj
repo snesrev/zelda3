@@ -66,9 +66,19 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(Platform)\$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)bin\$(Platform)\$(Configuration)\</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -262,6 +272,78 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="platform\win32\triforce.ico" />
+  </ItemGroup>
+  <ItemGroup>
+    <ContentWithTargetPath Include="zelda3.ini">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>zelda3.ini</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="zelda3.ini" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 1 - Zelda's Rescue.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 1 - Zelda's Rescue.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 1 - Zelda's Rescue.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 2 - After Eastern Palace.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 2 - After Eastern Palace.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 2 - After Eastern Palace.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 3 - After Desert Palace.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 3 - After Desert Palace.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 3 - After Desert Palace.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 4 - After Tower of Hera.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 4 - After Tower of Hera.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 4 - After Tower of Hera.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 5 - After Hyrule Castle Tower.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 5 - After Hyrule Castle Tower.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 5 - After Hyrule Castle Tower.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 6 - After Dark Palace.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 6 - After Dark Palace.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 6 - After Dark Palace.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 7 - After Swamp Palace.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 7 - After Swamp Palace.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 7 - After Swamp Palace.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 8 - After Skull Woods.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 8 - After Skull Woods.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 8 - After Skull Woods.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 9 - After Gargoyle's Domain.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 9 - After Gargoyle's Domain.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 9 - After Gargoyle's Domain.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 10 - After Ice Palace.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 10 - After Ice Palace.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 10 - After Ice Palace.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 11 - After Misery Mire.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 11 - After Misery Mire.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 11 - After Misery Mire.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 12 - After Turtle Rock.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 12 - After Turtle Rock.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 12 - After Turtle Rock.sav" />
+    <ContentWithTargetPath Include="saves\ref\Chapter 13 - After Ganon's Tower.sav">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <TargetPath>saves\ref\Chapter 13 - After Ganon's Tower.sav</TargetPath>
+    </ContentWithTargetPath>
+    <None Include="saves\ref\Chapter 13 - After Ganon's Tower.sav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -8,6 +8,9 @@
       <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
       <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
     </Filter>
+    <Filter Include="saverefs">
+      <UniqueIdentifier>{43126d3a-e51a-4d0c-99a4-c0ca9a5e1a50}</UniqueIdentifier>
+    </Filter>
     <Filter Include="Resource Files">
       <UniqueIdentifier>{8dbd24e3-4805-4844-bbc0-f229cb086e62}</UniqueIdentifier>
     </Filter>
@@ -249,6 +252,45 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
+    <None Include="saves\ref\Chapter 1 - Zelda's Rescue.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 2 - After Eastern Palace.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 3 - After Desert Palace.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 4 - After Tower of Hera.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 5 - After Hyrule Castle Tower.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 6 - After Dark Palace.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 7 - After Swamp Palace.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 8 - After Skull Woods.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 9 - After Gargoyle's Domain.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 10 - After Ice Palace.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 11 - After Misery Mire.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 12 - After Turtle Rock.sav">
+      <Filter>saverefs</Filter>
+    </None>
+    <None Include="saves\ref\Chapter 13 - After Ganon's Tower.sav">
+      <Filter>saverefs</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <Image Include="platform\win32\triforce.ico">
