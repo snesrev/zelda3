@@ -291,6 +291,7 @@
     <None Include="saves\ref\Chapter 13 - After Ganon's Tower.sav">
       <Filter>saverefs</Filter>
     </None>
+    <None Include="zelda3.ini" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="platform\win32\triforce.ico">
