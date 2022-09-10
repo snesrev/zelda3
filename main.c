@@ -23,12 +23,6 @@
 extern Dsp *GetDspForRendering();
 extern Snes *g_snes;
 extern uint8 g_emulated_ram[0x20000];
-bool g_run_without_emu = false;
-
-static int g_input1_state;
-static bool g_display_perf;
-static int g_curr_fps;
-static int g_ppu_render_flags = 0;
 
 void PatchRom(uint8 *rom);
 void SetSnes(Snes *snes);
@@ -58,6 +52,7 @@ enum {
   kDefaultSamples = 2048,
 };
 
+static const char kWindowTitle[] = "The Legend of Zelda: A Link to the Past";
 
 static uint32 g_win_flags = SDL_WINDOW_RESIZABLE;
 static SDL_Window *g_window;
@@ -66,6 +61,12 @@ static uint8 g_paused, g_turbo = true, g_cursor = true;
 static uint8 g_current_zoom;
 static int g_samples_per_block;
 static uint8 g_gamepad_buttons;
+static int g_input1_state;
+static bool g_display_perf;
+static int g_curr_fps;
+static int g_ppu_render_flags = 0;
+bool g_run_without_emu = false;
+
 
 void NORETURN Die(const char *error) {
   fprintf(stderr, "Error: %s\n", error);
@@ -189,7 +190,7 @@ int main(int argc, char** argv) {
     printf("Failed to init SDL: %s\n", SDL_GetError());
     return 1;
   }
-  SDL_Window* window = SDL_CreateWindow("Zelda3", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, kRenderWidth, kRenderHeight, g_win_flags);
+  SDL_Window* window = SDL_CreateWindow(kWindowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, kRenderWidth, kRenderHeight, g_win_flags);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());
     return 1;
