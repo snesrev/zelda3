@@ -33,7 +33,7 @@ void PatchCommand(char cmd);
 bool RunOneFrame(Snes *snes, int input_state, bool turbo);
 
 static bool LoadRom(const char *name, Snes *snes);
-static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer);
+static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, SDL_AudioSpec spec, int16 *audioBuffer);
 static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen);
 static void HandleInput(int keyCode, int modCode, bool pressed);
 static void HandleGamepadInput(int button, bool pressed);
@@ -176,8 +176,9 @@ int main(int argc, char** argv) {
       g_config.audio_freq = kDefaultFreq;
   
   // audio_channels: As of SDL 2.0, supported values are 1 (mono), 2 (stereo), 4 (quad), and 6 (5.1).
+  // Currently, the SPC/DSP implementation only supports up to stereo.
   uint8 c = g_config.audio_channels;
-  if (c == 0 || c == 3 || c == 5 || c > 6)
+  if (c < 1 || c > 2)
       g_config.audio_channels = kDefaultChannels;
   
   // audio_samples: power of 2
@@ -229,7 +230,7 @@ int main(int argc, char** argv) {
     return 1;
   }
   g_samples_per_block = (534 * g_config.audio_freq) / 32000;
-  int16_t* audioBuffer = (int16_t * )malloc(g_samples_per_block * 2 * sizeof(int16));
+  int16_t* audioBuffer = (int16_t * )malloc(g_samples_per_block * have.channels * sizeof(int16));
   SDL_PauseAudioDevice(device, 0);
 
   Snes *snes = snes_init(g_emulated_ram), *snes_run = NULL;
@@ -321,7 +322,7 @@ int main(int argc, char** argv) {
     if (is_turbo)
       continue;
 
-    PlayAudio(snes_run, device, audioBuffer);
+    PlayAudio(snes_run, device, have, audioBuffer);
     RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
 
     SDL_RenderPresent(renderer); // vsyncs to 60 FPS
@@ -360,7 +361,7 @@ int main(int argc, char** argv) {
   return 0;
 }
 
-static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) {
+static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, SDL_AudioSpec spec, int16 *audioBuffer) {
   // generate enough samples
   if (snes) {
     while (snes->apu->dsp->sampleOffset < 534)
@@ -368,12 +369,11 @@ static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int16 *audioBuffer) 
     snes->apu->dsp->sampleOffset = 0;
   }
 
-  dsp_getSamples(GetDspForRendering(), audioBuffer, g_samples_per_block);
-
+  dsp_getSamples(GetDspForRendering(), audioBuffer, g_samples_per_block, spec.channels);
   for (int i = 0; i < 10; i++) {
-    if (SDL_GetQueuedAudioSize(device) <= g_samples_per_block * 4 * 6) {
+    if (SDL_GetQueuedAudioSize(device) <= g_samples_per_block * spec.channels * sizeof(int16) * 6) {
       // don't queue audio if buffer is still filled
-      SDL_QueueAudio(device, audioBuffer, g_samples_per_block * 4);
+      SDL_QueueAudio(device, audioBuffer, g_samples_per_block * spec.channels * sizeof(int16));
       return;
     }
     SDL_Delay(1);

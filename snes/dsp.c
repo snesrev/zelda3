@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <limits.h>
 #include "dsp_regs.h"
 #include "dsp.h"
 
@@ -633,13 +634,35 @@ void dsp_write(Dsp *dsp, uint8_t adr, uint8_t val) {
   dsp->ram[adr] = val;
 }
 
-void dsp_getSamples(Dsp* dsp, int16_t* sampleData, int samplesPerFrame) {
+int16_t saturated_add16(int16_t a, int16_t b) {
+  int16_t c = a + b;
+  if (((a ^ b) & SHRT_MIN) == 0) {
+    if ((c ^ a) & SHRT_MIN) {
+        c = (a < 0) ? SHRT_MIN : SHRT_MAX;
+    }
+  }
+  return c;
+}
+
+// The mono version of a 2-channel audio sample is the average of those 2 channel samples,
+// but with some clamping / saturated addition to avoid integer overflow.
+int16_t monoSample(int16_t leftChannelSample, int16_t rightChannelSample) {
+  return saturated_add16(leftChannelSample, rightChannelSample) / 2;
+}
+
+void dsp_getSamples(Dsp* dsp, int16_t* sampleData, int samplesPerFrame, int numChannels) {
   // resample from 534 samples per frame to wanted value
   float adder = 534.0 / samplesPerFrame;
   float location = 0.0;
-  for(int i = 0; i < samplesPerFrame; i++) {
-    sampleData[i * 2] = dsp->sampleBuffer[((int) location) * 2];
-    sampleData[i * 2 + 1] = dsp->sampleBuffer[((int) location) * 2 + 1];
+  for (int i = 0; i < samplesPerFrame; i++) {
+    int sampleL = dsp->sampleBuffer[((int)location) * 2];
+    int sampleR = dsp->sampleBuffer[((int)location) * 2 + 1];
+    if (numChannels == 1) {
+      sampleData[i] = monoSample(sampleL, sampleR);
+    } else {
+      sampleData[i * 2] = sampleL;
+      sampleData[i * 2 + 1] = sampleR;
+    }
     location += adder;
   }
   dsp->sampleOffset = 0;
