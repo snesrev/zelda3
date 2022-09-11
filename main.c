@@ -9,6 +9,7 @@
 #else
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <unistd.h>
 #endif
 #include <math.h>
 #include "snes/snes.h"
@@ -146,9 +147,35 @@ static bool RenderScreenWithPerf(uint8 *pixel_buffer, size_t pitch, uint32 rende
   return rv;
 }
 
+// Go some steps up and find zelda3.ini
+static void SwitchDirectory() {
+  char buf[4096];
+  if (!getcwd(buf, sizeof(buf) - 32))
+    return;
+  size_t pos = strlen(buf);
+
+  for (int step = 0; pos != 0 && step < 3; step++) {
+    memcpy(buf + pos, "/zelda3.ini", 12);
+    FILE *f = fopen(buf, "rb");
+    if (f) {
+      fclose(f);
+      buf[pos] = 0;
+      if (step != 0) {
+        printf("Found zelda3.ini in %s\n", buf);
+        chdir(buf);
+      }
+      return;
+    }
+    pos--;
+    while (pos != 0 && buf[pos] != '/' && buf[pos] != '\\')
+      pos--;
+  }
+}
+
 
 #undef main
 int main(int argc, char** argv) {
+  SwitchDirectory();
   ParseConfigFile();
   AfterConfigParse();
 
