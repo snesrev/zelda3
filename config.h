@@ -42,6 +42,7 @@ typedef struct Config {
   uint8 audio_channels;
   uint16 audio_samples;
   bool autosave;
+  bool display_perf_title;
 } Config;
 
 extern Config g_config;

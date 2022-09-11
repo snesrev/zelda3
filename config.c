@@ -238,6 +238,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     if (StringEqualsNoCase(key, "Autosave")) {
       g_config.autosave = (bool)strtol(value, (char**)NULL, 10);
       return true;
+    } else if (StringEqualsNoCase(key, "DisplayPerfInTitle")) {
+      g_config.display_perf_title = (bool)strtol(value, (char**)NULL, 10);
+      return true;
     }
 
   }
