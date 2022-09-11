@@ -157,7 +157,7 @@ bool PpuBeginDrawing(Ppu *ppu, uint8_t *pixels, size_t pitch, uint32_t render_fl
   if (hq) {
     for (int i = 0; i < 256; i++) {
       uint32 color = ppu->cgram[i];
-      ppu->colorMapRgb[i] = ppu->brightnessMult[color & 0x1f] << 24 | ppu->brightnessMult[(color >> 5) & 0x1f] << 16 | ppu->brightnessMult[(color >> 10) & 0x1f] << 8;
+      ppu->colorMapRgb[i] = ppu->brightnessMult[color & 0x1f] << 16 | ppu->brightnessMult[(color >> 5) & 0x1f] << 8 | ppu->brightnessMult[(color >> 10) & 0x1f];
     }
   }
 
@@ -876,9 +876,9 @@ static NOINLINE void PpuDrawWholeLine(Ppu *ppu, uint y) {
       uint32 i = left;
       do {
         uint32 color = ppu->cgram[ppu->bgBuffers[0].pixel[i]];
-        dst[1] = dst[0] = ppu->brightnessMult[color & clip_color_mask] << 24 |
-                          ppu->brightnessMult[(color >> 5) & clip_color_mask] << 16 |
-                          ppu->brightnessMult[(color >> 10) & clip_color_mask] << 8;
+        dst[1] = dst[0] = ppu->brightnessMult[color & clip_color_mask] << 16 |
+                          ppu->brightnessMult[(color >> 5) & clip_color_mask] << 8 |
+                          ppu->brightnessMult[(color >> 10) & clip_color_mask];
       } while (dst += 2, ++i < right);
     } else {
       uint8 *half_color_map = ppu->halfColor ? ppu->brightnessMultHalf : ppu->brightnessMult;
@@ -913,7 +913,7 @@ static NOINLINE void PpuDrawWholeLine(Ppu *ppu, uint y) {
             b += b2;
           }
         }
-        dst[0] = dst[1] = color_map[r] << 24 | color_map[g] << 16 | color_map[b] << 8;
+        dst[0] = dst[1] = color_map[b] | color_map[g] << 8 | color_map[r] << 16;
       } while (dst += 2, ++i < right);
     }
   } while (cw_clip_math >>= 1, ++windex < cwin.nr);
@@ -977,14 +977,14 @@ static void ppu_handlePixel(Ppu* ppu, int x, int y) {
   }
   int row = y - 1;
   uint8 *pixelBuffer = (uint8*) &ppu->renderBuffer[row * 2 * ppu->renderPitch + x * 8];
-  pixelBuffer[0] = 0;
-  pixelBuffer[1] = ((b2 << 3) | (b2 >> 2)) * ppu->brightness / 15;
-  pixelBuffer[2] = ((g2 << 3) | (g2 >> 2)) * ppu->brightness / 15;
-  pixelBuffer[3] = ((r2 << 3) | (r2 >> 2)) * ppu->brightness / 15;
-  pixelBuffer[4] = 0;
-  pixelBuffer[5] = ((b << 3) | (b >> 2)) * ppu->brightness / 15;
-  pixelBuffer[6] = ((g << 3) | (g >> 2)) * ppu->brightness / 15;
-  pixelBuffer[7] = ((r << 3) | (r >> 2)) * ppu->brightness / 15;
+  pixelBuffer[0] = ((b2 << 3) | (b2 >> 2)) * ppu->brightness / 15;
+  pixelBuffer[1] = ((g2 << 3) | (g2 >> 2)) * ppu->brightness / 15;
+  pixelBuffer[2] = ((r2 << 3) | (r2 >> 2)) * ppu->brightness / 15;
+  pixelBuffer[3] = 0;
+  pixelBuffer[4] = ((b << 3) | (b >> 2)) * ppu->brightness / 15;
+  pixelBuffer[5] = ((g << 3) | (g >> 2)) * ppu->brightness / 15;
+  pixelBuffer[6] = ((r << 3) | (r >> 2)) * ppu->brightness / 15;
+  pixelBuffer[7] = 0;
 }
 
 static const int bitDepthsPerMode[10][4] = {

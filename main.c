@@ -194,10 +194,18 @@ int main(int argc, char** argv) {
     printf("Failed to create renderer: %s\n", SDL_GetError());
     return 1;
   }
+
+  SDL_RendererInfo renderer_info;
+  SDL_GetRendererInfo(renderer, &renderer_info);
+  printf("Supported texture formats:");
+  for (int i = 0; i < renderer_info.num_texture_formats; i++)
+    printf(" %s", SDL_GetPixelFormatName(renderer_info.texture_formats[i]));
+  printf("\n");
+
   g_renderer = renderer;
   if (!g_config.ignore_aspect_ratio)
     SDL_RenderSetLogicalSize(renderer, kRenderWidth, kRenderHeight);
-  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBX8888, SDL_TEXTUREACCESS_STREAMING, kRenderWidth * 2, kRenderHeight * 2);
+  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, kRenderWidth * 2, kRenderHeight * 2);
   if(texture == NULL) {
     printf("Failed to create texture: %s\n", SDL_GetError());
     return 1;
@@ -303,15 +311,32 @@ int main(int argc, char** argv) {
     if (g_input1_state & 0xf0)
       g_gamepad_buttons = 0;
 
+    uint64 t0 = SDL_GetPerformanceCounter();
+
     bool is_turbo = RunOneFrame(snes_run, g_input1_state | g_gamepad_buttons, (frameCtr++ & 0x7f) != 0 && g_turbo);
 
     if (is_turbo)
       continue;
 
-    PlayAudio(snes_run, device, have.channels, audioBuffer);
-    RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
 
-    SDL_RenderPresent(renderer); // vsyncs to 60 FPS
+    uint64 t1 = SDL_GetPerformanceCounter();
+    PlayAudio(snes_run, device, have.channels, audioBuffer);
+    uint64 t2 = SDL_GetPerformanceCounter();
+
+    RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
+    uint64 t3 = SDL_GetPerformanceCounter();
+    SDL_RenderPresent(renderer); // vsyncs to 60 FPS?
+    uint64 t4 = SDL_GetPerformanceCounter();
+
+    double f = 1e3 / (double)SDL_GetPerformanceFrequency();
+    if (0) printf("Perf %6.2f %6.2f %6.2f %6.2f\n", 
+      (t1 - t0) * f,
+      (t2 - t1) * f,
+      (t3 - t2) * f,
+      (t4 - t3) * f
+      );
+
+
     // if vsync isn't working, delay manually
     curTick = SDL_GetTicks();
 
@@ -406,26 +431,43 @@ static void RenderNumber(uint8 *dst, size_t pitch, int n, bool big) {
   int i;
   sprintf(buf, "%d", n);
   for (s = buf, i = 2 * 4; *s; s++, i += 8 * 4)
-    RenderDigit(dst + ((pitch + i + 4) << big), pitch, *s - '0', 0x40404000, big);
+    RenderDigit(dst + ((pitch + i + 4) << big), pitch, *s - '0', 0x404040, big);
   for (s = buf, i = 2 * 4; *s; s++, i += 8 * 4)
-    RenderDigit(dst + (i << big), pitch, *s - '0', 0xffffff00, big);
+    RenderDigit(dst + (i << big), pitch, *s - '0', 0xffffff, big);
 }
 
 static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen) {
   uint8* pixels = NULL;
   int pitch = 0;
+  uint64 t0 = SDL_GetPerformanceCounter();
   if(SDL_LockTexture(texture, NULL, (void**)&pixels, &pitch) != 0) {
     printf("Failed to lock texture: %s\n", SDL_GetError());
     return;
   }
+  uint64 t1 = SDL_GetPerformanceCounter();
   bool hq = RenderScreenWithPerf(pixels, pitch, g_ppu_render_flags);
   if (g_display_perf)
     RenderNumber(pixels + (pitch*2<<hq), pitch, g_curr_fps, hq);
-  SDL_UnlockTexture(texture);
-  SDL_RenderClear(renderer);
 
+  uint64 t2 = SDL_GetPerformanceCounter();
+  SDL_UnlockTexture(texture);
+  uint64 t3 = SDL_GetPerformanceCounter();
+  SDL_RenderClear(renderer);
+  uint64 t4 = SDL_GetPerformanceCounter();
   SDL_Rect src_rect = { 0, 0, kRenderWidth, kRenderHeight };
   SDL_RenderCopy(renderer, texture, hq ? NULL : &src_rect, NULL);
+  uint64 t5 = SDL_GetPerformanceCounter();
+
+  double f = 1e3 / (double)SDL_GetPerformanceFrequency();
+  if (0) printf("RenderPerf %6.2f %6.2f %6.2f %6.2f %6.2f\n",
+    (t1 - t0) * f,
+    (t2 - t1) * f,
+    (t3 - t2) * f,
+    (t4 - t3) * f,
+    (t5 - t4) * f
+  );
+
+
 }
 
 static void HandleCommand(uint32 j, bool pressed) {
