@@ -1368,8 +1368,8 @@ void RunAudioPlayer() {
       SpcPlayer_GenerateSamples(p);
 
       int16_t audioBuffer[736 * 2];
-      dsp_getSamples(p->dsp, audioBuffer, 736);
-      SDL_QueueAudio(device, audioBuffer, 736 * 4);
+      dsp_getSamples(p->dsp, audioBuffer, 736, have.channels);
+      SDL_QueueAudio(device, audioBuffer, 736 * 2 * have.channels);
       while (SDL_GetQueuedAudioSize(device) >= 736 * 4 * 3/* 44100 * 4 * 300*/)
         SDL_Delay(1);
 
@@ -1435,8 +1435,8 @@ void RunAudioPlayer() {
 
       if (p->dsp->sampleOffset == 534) {
         int16_t audioBuffer[736 * 2];
-        dsp_getSamples(p->dsp, audioBuffer, 736);
-        SDL_QueueAudio(device, audioBuffer, 736 * 4);
+        dsp_getSamples(p->dsp, audioBuffer, 736, have.channels);
+        SDL_QueueAudio(device, audioBuffer, 736 * 2 * have.channels);
         while (SDL_GetQueuedAudioSize(device) >= 736 * 4 * 3/* 44100 * 4 * 300*/) {
           SDL_Delay(1);
         }
