@@ -5,9 +5,8 @@
 *.dSYM
 /*.vcxproj.user
 *.aps
-/Debug
-/Release
-/x64
+/obj/
+/bin/
 /tables/overworld/*.yaml
 /tables/dungeon/*.yaml
 /tables/img/
