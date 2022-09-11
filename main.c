@@ -130,7 +130,7 @@ static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area,
 
 static bool RenderScreenWithPerf(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
   bool rv;
-  if (g_display_perf) {
+  if (g_display_perf || g_config.display_perf_title) {
     static float history[64], average;
     static int history_pos;
     uint64 before = SDL_GetPerformanceCounter();
@@ -473,9 +473,14 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
   }
   uint64 t1 = SDL_GetPerformanceCounter();
   bool hq = RenderScreenWithPerf(pixels, pitch, g_ppu_render_flags);
-  if (g_display_perf)
-    RenderNumber(pixels + (pitch*2<<hq), pitch, g_curr_fps, hq);
-
+  if (g_display_perf) {
+    RenderNumber(pixels + (pitch * 2 << hq), pitch, g_curr_fps, hq);
+  }
+  if (g_config.display_perf_title) {
+    char title[] = "";
+    sprintf(title, "%s%s%d", kWindowTitle, " | FPS: ", g_curr_fps);
+    SDL_SetWindowTitle(window, title);
+  }
   uint64 t2 = SDL_GetPerformanceCounter();
   SDL_UnlockTexture(texture);
   uint64 t3 = SDL_GetPerformanceCounter();
