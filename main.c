@@ -158,40 +158,31 @@ int main(int argc, char** argv) {
     g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
   else if (g_config.fullscreen == 2)
     g_win_flags ^= SDL_WINDOW_FULLSCREEN;
-  uint8 z = g_config.zoom;
-  g_current_zoom = z > kMaxZoom ? kMaxZoom : z;
-  uint16 h = kRenderHeight;
-  uint16 w = kRenderWidth;
-  if (g_current_zoom > 0) {
-      w = kRenderWidth * g_current_zoom;
-      h = kRenderHeight * g_current_zoom;
-  } else {
-      w = kRenderWidth / 2;
-      h = kRenderHeight / 2;
-  }
-  
+
+  // Window zoom (0=50%, 1=100%, 2=200%, 3=300%, etc.)
+  g_current_zoom = g_config.zoom == 0 ? 1 : IntMin(g_config.zoom * 2, kMaxZoom);
+
   // audio_freq: Use common sampling rates (see user config file. values higher than 48000 are not supported.)
-  uint16 f = g_config.audio_freq;
-  if (f == 0 || f > 48000)
-      g_config.audio_freq = kDefaultFreq;
+  if (g_config.audio_freq < 11025 || g_config.audio_freq > 48000)
+    g_config.audio_freq = kDefaultFreq;
   
-  // audio_channels: As of SDL 2.0, supported values are 1 (mono), 2 (stereo), 4 (quad), and 6 (5.1).
   // Currently, the SPC/DSP implementation only supports up to stereo.
-  uint8 c = g_config.audio_channels;
-  if (c < 1 || c > 2)
-      g_config.audio_channels = kDefaultChannels;
+  if (g_config.audio_channels < 1 || g_config.audio_channels > 2)
+    g_config.audio_channels = kDefaultChannels;
   
   // audio_samples: power of 2
-  uint16 s = g_config.audio_samples;
-  if (s == 0 || ((s & (s - 1)) != 0))
-      g_config.audio_samples = kDefaultSamples;
+  if (g_config.audio_samples <= 0 || ((g_config.audio_samples & (g_config.audio_samples - 1)) != 0))
+    g_config.audio_samples = kDefaultSamples;
 
   // set up SDL
   if(SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
     printf("Failed to init SDL: %s\n", SDL_GetError());
     return 1;
   }
-  SDL_Window* window = SDL_CreateWindow(kWindowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, kRenderWidth, kRenderHeight, g_win_flags);
+
+  int window_width = g_current_zoom * (kRenderWidth / kDefaultZoom);
+  int window_height = g_current_zoom * (kRenderHeight / kDefaultZoom);
+  SDL_Window* window = SDL_CreateWindow(kWindowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, g_win_flags);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());
     return 1;
@@ -212,18 +203,13 @@ int main(int argc, char** argv) {
     return 1;
   }
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
-  
-  SDL_SetWindowSize(window, w, h);
-  SDL_SetWindowPosition(g_window, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
 
-  SDL_AudioSpec want, have;
+  SDL_AudioSpec want = { 0 }, have;
   SDL_AudioDeviceID device;
-  SDL_memset(&want, 0, sizeof(want));
   want.freq = g_config.audio_freq;
   want.format = AUDIO_S16;
   want.channels = g_config.audio_channels;
   want.samples = g_config.audio_samples;
-  want.callback = NULL; // use queue
   device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
   if(device == 0) {
     printf("Failed to open audio device: %s\n", SDL_GetError());
