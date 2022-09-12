@@ -17,6 +17,7 @@
 Snes *g_snes;
 Cpu *g_cpu;
 uint8 g_emulated_ram[0x20000];
+uint32 g_wanted_zelda_features;
 
 void SaveLoadSlot(int cmd, int which);
 
@@ -695,16 +696,23 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
 
     // This is whether APUI00 is true or false, this is used by the ancilla code.
     uint8 apui00 = g_zenv.player->port_to_snes[0] != 0;
-    if (apui00 != g_ram[0x648]) {
-      g_emulated_ram[0x648] = g_ram[0x648] = apui00;
+    if (apui00 != g_ram[kRam_APUI00]) {
+      g_emulated_ram[kRam_APUI00] = g_ram[kRam_APUI00] = apui00;
       StateRecorder_RecordPatchByte(&state_recorder, 0x648, &apui00, 1);
     }
 
-    // Whenever we're no longer replaying, we'll remember what bugs were fixed,
-    // but only if game is initialized.
-    if (g_ram[kRam_BugsFixed] < kBugFix_Latest && animated_tile_data_src != 0) {
-      g_emulated_ram[kRam_BugsFixed] = g_ram[kRam_BugsFixed] = kBugFix_Latest;
-      StateRecorder_RecordPatchByte(&state_recorder, kRam_BugsFixed, &g_ram[kRam_BugsFixed], 1);
+    if (animated_tile_data_src != 0) {
+      // Whenever we're no longer replaying, we'll remember what bugs were fixed,
+      // but only if game is initialized.
+      if (g_ram[kRam_BugsFixed] < kBugFix_Latest) {
+        g_emulated_ram[kRam_BugsFixed] = g_ram[kRam_BugsFixed] = kBugFix_Latest;
+        StateRecorder_RecordPatchByte(&state_recorder, kRam_BugsFixed, &g_ram[kRam_BugsFixed], 1);
+      }
+
+      if (g_ram[kRam_Features0] != g_wanted_zelda_features) {
+        g_emulated_ram[kRam_Features0] = g_ram[kRam_Features0] = g_wanted_zelda_features;
+        StateRecorder_RecordPatchByte(&state_recorder, kRam_Features0, &g_ram[kRam_Features0], 1);
+      }
     }
   }
 
@@ -721,7 +729,8 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
     g_emulated_ram[kRam_CrystalRotateCounter] = g_ram[kRam_CrystalRotateCounter];
   }
   
-  if (snes == NULL) {
+  if (snes == NULL || g_ram[kRam_Features0] != 0) {
+    // can't compare against real impl when running with extra features.
     ZeldaRunFrame(input_state, run_what);
     return turbo;
   }

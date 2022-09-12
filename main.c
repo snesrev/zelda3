@@ -43,7 +43,6 @@ static void OpenOneGamepad(int i);
 
 
 enum {
-  kRenderWidth = 256 * 2,
   kRenderHeight = 224 * 2,
   kDefaultFullscreen = 0,
   kDefaultWindowScale = 2,
@@ -66,8 +65,9 @@ static int g_input1_state;
 static bool g_display_perf;
 static int g_curr_fps;
 static int g_ppu_render_flags = 0;
-bool g_run_without_emu = false;
-
+static bool g_run_without_emu = false;
+static int g_snes_width;
+static const int g_snes_height = kRenderHeight;
 
 void NORETURN Die(const char *error) {
   fprintf(stderr, "Error: %s\n", error);
@@ -99,14 +99,14 @@ void ChangeWindowScale(int scale_step) {
       bt = 31;
     }
     // Allow a scale level slightly above the max that fits on screen
-    int mw = (bounds.w - bl - br + (kRenderWidth / kDefaultWindowScale) / 4) / (kRenderWidth / kDefaultWindowScale);
-    int mh = (bounds.h - bt - bb + (kRenderHeight / kDefaultWindowScale) / 4) / (kRenderHeight / kDefaultWindowScale);
+    int mw = (bounds.w - bl - br + (g_snes_width / kDefaultWindowScale) / 4) / (g_snes_width / kDefaultWindowScale);
+    int mh = (bounds.h - bt - bb + (g_snes_height / kDefaultWindowScale) / 4) / (g_snes_height / kDefaultWindowScale);
     max_scale = IntMin(mw, mh);
   }
   int new_scale = IntMax(IntMin(g_current_window_scale + scale_step, max_scale), 1);
   g_current_window_scale = new_scale;
-  int w = new_scale * (kRenderWidth / kDefaultWindowScale);
-  int h = new_scale * (kRenderHeight / kDefaultWindowScale);
+  int w = new_scale * (g_snes_width / kDefaultWindowScale);
+  int h = new_scale * (g_snes_height / kDefaultWindowScale);
   
   //SDL_RenderSetLogicalSize(g_renderer, w, h);
   SDL_SetWindowSize(g_window, w, h);
@@ -179,6 +179,10 @@ int main(int argc, char** argv) {
   ParseConfigFile();
   AfterConfigParse();
 
+  ZeldaInitialize();
+  g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
+  g_snes_width = 2 * (g_config.extended_aspect_ratio * 2 + 256);
+  g_wanted_zelda_features = (g_zenv.ppu->extraLeftRight && !g_config.extended_aspect_ratio_nospr) ? kFeatures0_ExtendScreen64 : 0;
   g_ppu_render_flags = g_config.new_renderer * kPpuRenderFlags_NewRenderer | g_config.enhanced_mode7 * kPpuRenderFlags_4x4Mode7;
   
   if (g_config.fullscreen == 1)
@@ -207,8 +211,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  int window_width = g_current_window_scale * (kRenderWidth / kDefaultWindowScale);
-  int window_height = g_current_window_scale * (kRenderHeight / kDefaultWindowScale);
+  int window_width = g_current_window_scale * (g_snes_width / kDefaultWindowScale);
+  int window_height = g_current_window_scale * (g_snes_height / kDefaultWindowScale);
   SDL_Window* window = SDL_CreateWindow(kWindowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, g_win_flags);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());
@@ -231,8 +235,8 @@ int main(int argc, char** argv) {
 
   g_renderer = renderer;
   if (!g_config.ignore_aspect_ratio)
-    SDL_RenderSetLogicalSize(renderer, kRenderWidth, kRenderHeight);
-  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, kRenderWidth * 2, kRenderHeight * 2);
+    SDL_RenderSetLogicalSize(renderer, g_snes_width, g_snes_height);
+  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, g_snes_width * 2, g_snes_height * 2);
   if(texture == NULL) {
     printf("Failed to create texture: %s\n", SDL_GetError());
     return 1;
@@ -274,7 +278,6 @@ int main(int argc, char** argv) {
 #endif
 
   SetSnes(snes);
-  ZeldaInitialize();
   ZeldaReadSram(snes);
 
   for (int i = 0; i < SDL_NumJoysticks(); i++)
@@ -486,7 +489,7 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
   uint64 t3 = SDL_GetPerformanceCounter();
   SDL_RenderClear(renderer);
   uint64 t4 = SDL_GetPerformanceCounter();
-  SDL_Rect src_rect = { 0, 0, kRenderWidth, kRenderHeight };
+  SDL_Rect src_rect = { 0, 0, g_snes_width, g_snes_height };
   SDL_RenderCopy(renderer, texture, hq ? NULL : &src_rect, NULL);
   uint64 t5 = SDL_GetPerformanceCounter();
 

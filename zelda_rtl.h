@@ -47,9 +47,21 @@ typedef struct OamEntSigned {
 #define movable_block_datas ((MovableBlockData*)(g_ram+0xf940))
 #define oam_buf ((OamEnt*)(g_ram+0x800))
 
+
+typedef struct RoomBounds {
+  union {
+    struct { uint16 a0, b0, a1, b1; };
+    uint16 v[4];
+  };
+} RoomBounds;
+#define room_bounds_y (*(RoomBounds*)(g_ram+0x600))
+#define room_bounds_x (*(RoomBounds*)(g_ram+0x608))
+
+
 typedef struct OwScrollVars {
   uint16 ystart, yend, xstart, xend;
 } OwScrollVars;
+
 
 #define ow_scroll_vars0 (*(OwScrollVars*)(g_ram+0x600))
 #define ow_scroll_vars1 (*(OwScrollVars*)(g_ram+0x608))
@@ -90,6 +102,7 @@ enum {
   kRam_APUI00 = 0x648,
   kRam_CrystalRotateCounter = 0x649,
   kRam_BugsFixed = 0x64a,
+  kRam_Features0 = 0x64c,
 };
 
 enum {
@@ -97,8 +110,12 @@ enum {
   kBugFix_PolyRenderer = 1,
   kBugFix_AncillaOverwrites = 1,
   kBugFix_Latest = 1,
+
+  // kRam_Features0
+  kFeatures0_ExtendScreen64 = 1,
 };
 
+extern uint32 g_wanted_zelda_features;
 
 #define scratch_0 (*(uint16*)(g_ram+0x72))
 #define scratch_1 (*(uint16*)(g_ram+0x74))

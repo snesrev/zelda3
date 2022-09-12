@@ -11,6 +11,7 @@
 typedef struct Ppu Ppu;
 
 #include "snes.h"
+#include "../types.h"
 
 typedef struct BgLayer {
   uint16_t hScroll;
@@ -36,9 +37,13 @@ typedef struct WindowLayer {
   uint8_t maskLogic_always_zero;
 } WindowLayer;
 
+enum {
+  kPpuXPixels = 256 + kPpuExtraLeftRight * 2,
+};
+
 typedef struct PpuPixelPrioBufs {
-  uint8_t pixel[256];
-  uint8_t prio[256];
+  uint8_t pixel[kPpuXPixels];
+  uint8_t prio[kPpuXPixels];
 } PpuPixelPrioBufs;
 
 enum {
@@ -55,6 +60,7 @@ struct Ppu {
   uint8_t renderFlags;
   uint32_t renderPitch;
   uint8_t *renderBuffer;
+  uint8_t extraLeftCur, extraRightCur, extraLeftRight;
   float mode7PerspectiveLow, mode7PerspectiveHigh;
 
   Snes* snes;
@@ -148,7 +154,7 @@ struct Ppu {
   uint8_t ppu1openBus;
   uint8_t ppu2openBus;
 
-  uint8_t mosaicModulo[256];
+  uint8_t mosaicModulo[kPpuXPixels];
   uint32_t colorMapRgb[256];
 };
 
@@ -163,5 +169,6 @@ void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx);
 bool PpuBeginDrawing(Ppu *ppu, uint8_t *buffer, size_t pitch, uint32_t render_flags);
 
 void PpuSetMode7PerspectiveCorrection(Ppu *ppu, int low, int high);
+void PpuSetExtraSideSpace(Ppu *ppu, int left, int right);
 
 #endif

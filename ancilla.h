@@ -197,7 +197,7 @@ void GameOverText_Draw();
 int AncillaAdd_AddAncilla_Bank08(uint8 type, uint8 y);
 void Ancilla_PrepOamCoord(int k, Point16U *info);
 void Ancilla_PrepAdjustedOamCoord(int k, Point16U *info);
-void Ancilla_SetOam_XY(OamEnt *oam, uint16 x, uint16 y);
+uint8 Ancilla_SetOam_XY(OamEnt *oam, uint16 x, uint16 y);
 uint8 Ancilla_SetOam_XY_safe(OamEnt *oam, uint16 x, uint16 y);
 bool Ancilla_CheckLinkCollision(int k, int j, CheckPlayerCollOut *out);
 bool Hookshot_CheckProximityToLink(int x, int y);

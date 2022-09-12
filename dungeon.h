@@ -1,5 +1,7 @@
 #pragma once
 
+typedef struct RoomBounds RoomBounds;
+
 enum {
   kDoorType_Regular = 0,
   kDoorType_Regular2 = 2,
@@ -40,18 +42,6 @@ typedef struct DungPalInfo {
   uint8 pal2;
   uint8 pal3;
 } DungPalInfo;
-
-typedef struct RoomBounds {
-  union {
-    struct {
-      uint16 a0, b0, a1, b1;
-    };
-    uint16 v[4];
-  };
-} RoomBounds;
-
-#define room_bounds_y (*(RoomBounds*)(g_ram+0x600))
-#define room_bounds_x (*(RoomBounds*)(g_ram+0x608))
 
 extern const uint8 kDungAnimatedTiles[24];
 uint16 *DstoPtr(uint16 d);

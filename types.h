@@ -3,6 +3,13 @@
 #include <stdbool.h>
 #pragma once
 
+// Build time config options
+enum {
+  kEnableLargeScreen = 1,
+  // How much extra spacing to add on the sides
+  kPpuExtraLeftRight = kEnableLargeScreen ? 71 : 0,
+};
+
 typedef uint8_t uint8;
 typedef int8_t int8;
 typedef uint16_t uint16;
@@ -33,6 +40,8 @@ static FORCEINLINE uint16 abs16(uint16 t) { return sign16(t) ? -t : t; }
 static FORCEINLINE uint8 abs8(uint8 t) { return sign8(t) ? -t : t; }
 static FORCEINLINE int IntMin(int a, int b) { return a < b ? a : b; }
 static FORCEINLINE int IntMax(int a, int b) { return a > b ? a : b; }
+static FORCEINLINE uint UintMin(uint a, uint b) { return a < b ? a : b; }
+static FORCEINLINE uint UintMax(uint a, uint b) { return a > b ? a : b; }
 
 #define BYTE(x) (*(uint8*)&(x))
 #define HIBYTE(x) (((uint8*)&(x))[1])

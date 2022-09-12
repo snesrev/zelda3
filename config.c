@@ -238,6 +238,20 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     if (StringEqualsNoCase(key, "Autosave")) {
       g_config.autosave = (bool)strtol(value, (char**)NULL, 10);
       return true;
+    } else if (StringEqualsNoCase(key, "ExtendedAspectRatio")) {
+      const char* s;
+      while ((s = NextDelim(&value, ',')) != NULL) {
+        if (strcmp(s, "16:9") == 0)
+          g_config.extended_aspect_ratio = (224 * 16 / 9 - 256) / 2;
+        else if (strcmp(s, "16:10") == 0)
+          g_config.extended_aspect_ratio = (224 * 16 / 10 - 256) / 2;
+        else if (strcmp(s, "unchanged_sprites") == 0)
+          g_config.extended_aspect_ratio_nospr = true;
+        else
+          return false;
+      }
+      
+      return true;
     } else if (StringEqualsNoCase(key, "DisplayPerfInTitle")) {
       g_config.display_perf_title = (bool)strtol(value, (char**)NULL, 10);
       return true;
@@ -265,23 +279,6 @@ uint8 *ReadFile(const char *name, size_t *length) {
   if (length) *length = size;
   return buffer;
 }
-
-/*
-uint8 *WriteFile(const char *name) {
-  FILE *f = fopen(name, "w");
-  if (f == NULL)
-    return NULL;
-}
-
-void SaveConfigFile() {
-  uint8* file = ReadFile("zelda3.user.ini", NULL);
-  if (!file) {
-    file = ReadFile("zelda3.ini", NULL);
-    if (!file)
-      return;
-  }
-}
-*/
 
 void ParseConfigFile() {
   uint8 *file = ReadFile("zelda3.user.ini", NULL);

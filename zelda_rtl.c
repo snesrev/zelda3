@@ -161,6 +161,26 @@ void SimpleHdma_DoLine(SimpleHdma *c) {
   c->rep_count--;
 }
 
+void ConfigurePpuSideSpace() {
+  // Let PPU impl know about the maximum allowed extra space on the sides
+  int extra_right = 0, extra_left = 0;
+//  printf("main %d, sub %d  (%d, %d, %d)\n", main_module_index, submodule_index, BG2HOFS_copy2, room_bounds_x.v[2 | (quadrant_fullsize_x >> 1)], quadrant_fullsize_x >> 1);
+  int mod = main_module_index;
+  if (mod == 14)
+    mod = saved_module_for_menu;
+  if (mod == 9) {
+    extra_left = BG2HOFS_copy2 - ow_scroll_vars0.xstart;
+    extra_right = ow_scroll_vars0.xend - BG2HOFS_copy2;
+  } else if (mod == 7) {
+    int qm = quadrant_fullsize_x >> 1;
+    extra_left = IntMax(BG2HOFS_copy2 - room_bounds_x.v[qm], 0);
+    extra_right = IntMax(room_bounds_x.v[qm + 2] - BG2HOFS_copy2, 0);
+  } else if (mod == 20) {
+    extra_left = kPpuExtraLeftRight, extra_right = kPpuExtraLeftRight;
+  }
+  PpuSetExtraSideSpace(g_zenv.ppu, extra_left, extra_right);
+}
+
 bool ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
   SimpleHdma hdma_chans[2];
 
@@ -182,6 +202,9 @@ bool ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
     else
       PpuSetMode7PerspectiveCorrection(g_zenv.ppu, 0, 0);
   }
+
+  if (g_zenv.ppu->extraLeftRight != 0)
+    ConfigurePpuSideSpace();
 
   for (int i = 0; i < 225; i++) {
     if (i == 128 && irq_flag) {
