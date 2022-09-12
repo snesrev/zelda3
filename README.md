@@ -86,8 +86,11 @@ Additionally, the following commands are available:
 | --- | --------------------- |
 | W   | Fill health/magic     |
 | Shift+W   | Fill rupees/bombs/arrows     |
-| E   | Hard reset            |
-| P   | Pause                 |
+| Ctrl+E | Reset            |
+| P   | Pause (with dim)                |
+| Shift+P   | Pause (without dim)                |
+| Ctrl+Up   | Increase window size                |
+| Ctrl+Down   | Decrease window size                |
 | T   | Toggle replay turbo   |
 | O   | Set dungeon key to 1  |
 | K   | Clear all input history from the joypad log  |
