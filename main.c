@@ -46,8 +46,8 @@ enum {
   kRenderWidth = 256 * 2,
   kRenderHeight = 224 * 2,
   kDefaultFullscreen = 0,
-  kDefaultZoom = 2,
-  kMaxZoom = 10,
+  kDefaultWindowScale = 2,
+  kMaxWindowScale = 10,
   kDefaultFreq = 44100,
   kDefaultChannels = 2,
   kDefaultSamples = 2048,
@@ -59,7 +59,7 @@ static uint32 g_win_flags = SDL_WINDOW_RESIZABLE;
 static SDL_Window *g_window;
 static SDL_Renderer *g_renderer;
 static uint8 g_paused, g_turbo = true, g_cursor = true;
-static uint8 g_current_zoom;
+static uint8 g_current_window_scale;
 static int g_samples_per_block;
 static uint8 g_gamepad_buttons;
 static int g_input1_state;
@@ -84,10 +84,10 @@ void SetButtonState(int button, bool pressed) {
 }
 
 
-void DoZoom(int zoom_step) {
+void ChangeWindowScale(int scale_step) {
   int screen = SDL_GetWindowDisplayIndex(g_window);
   if (screen < 0) screen = 0;
-  int max_zoom = kMaxZoom;
+  int max_scale = kMaxWindowScale;
   SDL_Rect bounds;
   int bt = -1, bl, bb, br;
   // note this takes into effect Windows display scaling, i.e., resolution is divided by scale factor
@@ -98,15 +98,15 @@ void DoZoom(int zoom_step) {
       bl = br = bb = 1;
       bt = 31;
     }
-    // Allow a zoom level slightly above the max that fits on screen
-    int mw = (bounds.w - bl - br + (kRenderWidth / kDefaultZoom) / 4) / (kRenderWidth / kDefaultZoom);
-    int mh = (bounds.h - bt - bb + (kRenderHeight / kDefaultZoom) / 4) / (kRenderHeight / kDefaultZoom);
-    max_zoom = IntMin(mw, mh);
+    // Allow a scale level slightly above the max that fits on screen
+    int mw = (bounds.w - bl - br + (kRenderWidth / kDefaultWindowScale) / 4) / (kRenderWidth / kDefaultWindowScale);
+    int mh = (bounds.h - bt - bb + (kRenderHeight / kDefaultWindowScale) / 4) / (kRenderHeight / kDefaultWindowScale);
+    max_scale = IntMin(mw, mh);
   }
-  int new_zoom = IntMax(IntMin(g_current_zoom + zoom_step, max_zoom), 1);
-  g_current_zoom = new_zoom;
-  int w = new_zoom * (kRenderWidth / kDefaultZoom);
-  int h = new_zoom * (kRenderHeight / kDefaultZoom);
+  int new_scale = IntMax(IntMin(g_current_window_scale + scale_step, max_scale), 1);
+  g_current_window_scale = new_scale;
+  int w = new_scale * (kRenderWidth / kDefaultWindowScale);
+  int h = new_scale * (kRenderHeight / kDefaultWindowScale);
   
   //SDL_RenderSetLogicalSize(g_renderer, w, h);
   SDL_SetWindowSize(g_window, w, h);
@@ -186,14 +186,14 @@ int main(int argc, char** argv) {
   else if (g_config.fullscreen == 2)
     g_win_flags ^= SDL_WINDOW_FULLSCREEN;
 
-  // Window zoom (0=50%, 1=100%, 2=200%, 3=300%, etc.)
-  g_current_zoom = g_config.zoom == 0 ? 1 : IntMin(g_config.zoom * 2, kMaxZoom);
+  // Window scale (0=50%, 1=100%, 2=200%, 3=300%, etc.)
+  g_current_window_scale = g_config.window_scale == 0 ? 1 : IntMin(g_config.window_scale * 2, kMaxWindowScale);
 
   // audio_freq: Use common sampling rates (see user config file. values higher than 48000 are not supported.)
   if (g_config.audio_freq < 11025 || g_config.audio_freq > 48000)
     g_config.audio_freq = kDefaultFreq;
   
-  // Currently, the SPC/DSP implementation only supports up to stereo.
+  // Currently, the SPC/DSP implementation åonly supports up to stereo.
   if (g_config.audio_channels < 1 || g_config.audio_channels > 2)
     g_config.audio_channels = kDefaultChannels;
   
@@ -207,8 +207,8 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  int window_width = g_current_zoom * (kRenderWidth / kDefaultZoom);
-  int window_height = g_current_zoom * (kRenderHeight / kDefaultZoom);
+  int window_width = g_current_window_scale * (kRenderWidth / kDefaultWindowScale);
+  int window_height = g_current_window_scale * (kRenderHeight / kDefaultWindowScale);
   SDL_Window* window = SDL_CreateWindow(kWindowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, g_win_flags);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());
@@ -306,7 +306,7 @@ int main(int argc, char** argv) {
         break;
       case SDL_MOUSEWHEEL:
         if (((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (g_win_flags & SDL_WINDOW_FULLSCREEN) == 0) && event.wheel.y != 0 && SDL_GetModState() & KMOD_CTRL)
-          DoZoom(event.wheel.y > 0 ? 1 : -1);
+          ChangeWindowScale(event.wheel.y > 0 ? 1 : -1);
         break;
       case SDL_MOUSEBUTTONDOWN:
         if (event.button.button == SDL_BUTTON_LEFT && event.button.state == SDL_PRESSED && event.button.clicks == 2) {
@@ -549,8 +549,8 @@ static void HandleCommand(uint32 j, bool pressed) {
       }
       break;
     case kKeys_Turbo: g_turbo = !g_turbo; break;
-    case kKeys_ZoomIn: DoZoom(1); break;
-    case kKeys_ZoomOut: DoZoom(-1); break;
+    case kKeys_WindowBigger: ChangeWindowScale(1); break;
+    case kKeys_WindowSmaller: ChangeWindowScale(-1); break;
     case kKeys_DisplayPerf: g_display_perf ^= 1; break;
     case kKeys_ToggleRenderer: g_ppu_render_flags ^= kPpuRenderFlags_NewRenderer; break;
     default: assert(0);

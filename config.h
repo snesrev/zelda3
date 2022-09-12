@@ -25,8 +25,8 @@ enum {
   kKeys_Pause,
   kKeys_PauseDimmed,
   kKeys_Turbo,
-  kKeys_ZoomIn,
-  kKeys_ZoomOut,
+  kKeys_WindowBigger,
+  kKeys_WindowSmaller,
   kKeys_DisplayPerf,
   kKeys_ToggleRenderer,
   kKeys_Total,
@@ -37,7 +37,7 @@ typedef struct Config {
   bool new_renderer;
   bool ignore_aspect_ratio;
   uint8 fullscreen;
-  uint8 zoom;
+  uint8 window_scale;
   uint16 audio_freq;
   uint8 audio_channels;
   uint16 audio_samples;
