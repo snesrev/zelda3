@@ -23,7 +23,7 @@ I got much assistance from spannierism's Zelda 3 JP disassembly and the other on
 - a `tables/zelda3.sfc` US ROM file (for asset extraction step only)
   - SHA256 : `66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`. 
 - The `pillow` and `pyyaml` python dependencies used by the assets extractor.
-  - `pip install pillow pyyaml`
+  - `python -m pip install -r requirements.txt`
 
 ## Compiling
 
