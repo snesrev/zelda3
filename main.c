@@ -477,8 +477,8 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
     RenderNumber(pixels + (pitch * 2 << hq), pitch, g_curr_fps, hq);
   }
   if (g_config.display_perf_title) {
-    char title[] = "";
-    sprintf(title, "%s%s%d", kWindowTitle, " | FPS: ", g_curr_fps);
+    char title[60];
+    snprintf(title, 60, "%s%s%d", kWindowTitle, " | FPS: ", g_curr_fps);
     SDL_SetWindowTitle(window, title);
   }
   uint64 t2 = SDL_GetPerformanceCounter();
