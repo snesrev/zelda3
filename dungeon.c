@@ -5101,8 +5101,12 @@ not_openable:
       m &= ~kUpperBitmasks[j];
     if (m != dung_door_opened_incl_adjacent) {
       dung_door_opened_incl_adjacent = m;
-      // 81:D01F
-      assert(0);
+      DrawEyeWatchDoor(j);
+      Dungeon_PrepOverlayDma_nextPrep(0, dung_door_tilemap_address[j]);
+      Dungeon_LoadToggleDoorAttr_OtherEntry(j);
+      nmi_copy_packets_flag = 1;
+      sound_effect_2 = 21;
+      return;
     }
   }
 
