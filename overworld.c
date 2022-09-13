@@ -3199,8 +3199,10 @@ void Overworld_GetPitDestination() {  // 9bb860
       break;
     if (--i < 0) {
       savegame_is_darkworld = 0;
-      i = 38 / 2;
-      break;
+      // Chris Houlihan's room
+      which_entrance = 130;
+      byte_7E010F = 0;
+      return;
     }
   }
   which_entrance = kFallHole_Entrances[i];
