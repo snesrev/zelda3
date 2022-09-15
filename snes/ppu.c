@@ -1119,7 +1119,8 @@ static int ppu_getPixel(Ppu *ppu, int x, int y, bool sub, int *r, int *g, int *b
       } else {
         // get a pixel from the sprite buffer
         pixel = 0;
-        if ((ppu->objBuffer.prio[x] >> 4) == SPRITE_PRIO_TO_PRIO_HI(curPriority)) pixel = ppu->objBuffer.pixel[x];
+        if ((ppu->objBuffer.prio[x + kPpuExtraLeftRight] >> 4) == SPRITE_PRIO_TO_PRIO_HI(curPriority))
+          pixel = ppu->objBuffer.pixel[x + kPpuExtraLeftRight];
       }
     }
     if (pixel > 0) {
