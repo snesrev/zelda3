@@ -725,8 +725,7 @@ label_a:
     HIBYTE(p->master_volume) = p->byte_3E1;
     p->byte_3E1 = 0;
     goto handle_cmd_00;
-  } else if (a == 0xf0) {
-HandleCmd_0xf0_PauseMusic:
+  } else if (a == 0xf0) HandleCmd_0xf0_PauseMusic: {
     p->key_OFF = p->is_chan_on ^ 0xff;
     p->port_to_snes[0] = 0;
     p->cur_chan_bit = 0;

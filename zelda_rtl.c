@@ -326,3 +326,122 @@ void LoadSongBank(const uint8 *p) {  // 808888
   SpcPlayer_Upload(g_zenv.player, p);
 }
 
+
+bool msu_enabled;
+static FILE *msu_file;
+static uint32 msu_loop_start;
+static uint32 msu_buffer_size, msu_buffer_pos;
+static uint8 msu_buffer[65536];
+
+static const uint8 kMsuTracksWithRepeat[48] = {
+  1,0,1,1,1,1,1,1,0,1,0,1,1,1,1,0,
+  1,1,1,0,1,1,1,1,1,1,1,1,1,0,1,1,
+  1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,
+};
+
+#define msu_curr_sample (*(uint32*)(g_ram+0x650))
+#define msu_volume (*(uint8*)(g_ram+0x654))
+#define msu_track (*(uint8*)(g_ram+0x655))
+
+bool ZeldaIsMusicPlaying() {
+  if (msu_track) {
+    return msu_file != NULL;
+  } else {
+    return g_zenv.player->port_to_snes[0] != 0;
+  }
+}
+
+void ZeldaOpenMsuFile() {
+  if (msu_file) fclose(msu_file), msu_file = NULL;
+  if (msu_track == 0)
+    return;
+  char buf[40], hdr[8];
+  sprintf(buf, "msu/alttp_msu-%d.pcm", msu_track);
+  msu_file = fopen(buf, "rb");
+  if (msu_file == NULL || fread(hdr, 1, 8, msu_file) != 8 || *(uint32 *)(hdr + 0) != '1USM') {
+    if (msu_file != NULL) fclose(msu_file), msu_file = NULL;
+    zelda_apu_write(APUI00, msu_track);
+    msu_track = 0;
+    return;
+  }
+  if (msu_curr_sample != 0)
+    fseek(msu_file, msu_curr_sample * 4 + 8, SEEK_SET);
+  printf("Loading MSU PCM file: %s\n", buf);
+  msu_loop_start = *(uint32 *)(hdr + 4);
+  msu_buffer_size = msu_buffer_pos = 0;
+}
+
+void ZeldaPlayMsuAudioTrack() {
+  if (!msu_enabled) normal_playback: {
+    msu_track = 0;
+    zelda_apu_write(APUI00, music_control);
+    return;
+  }
+  if ((music_control & 0xf0) != 0xf0) {
+    msu_track = music_control;
+    msu_volume = 255;
+    msu_curr_sample = 0;
+    ZeldaOpenMsuFile();
+  } else if (msu_file == NULL) {
+    goto normal_playback;
+  }
+  zelda_apu_write(APUI00, 0xf1);  // pause spc player
+}
+
+void MixinMsuAudioData(int16 *audio_buffer, int audio_samples) {  
+  if (msu_file == NULL)
+    return;  // msu inactive
+  // handle volume fade
+  if (last_music_control >= 0xf1) {
+    if (last_music_control == 0xf1)
+      msu_volume = IntMax(msu_volume - 3, 0);
+    else if (last_music_control == 0xf2)
+      msu_volume = IntMax(msu_volume - 3, 0x40);
+    else if (last_music_control == 0xf3)
+      msu_volume = IntMin(msu_volume + 3, 0xff);
+  }
+  if (msu_volume == 0)
+    return;
+  int last_audio_samples = 0;
+  for (;;) {
+    if (msu_buffer_pos >= msu_buffer_size) {
+      msu_buffer_size = (int)fread(msu_buffer, 4, sizeof(msu_buffer) / 4, msu_file);
+      msu_buffer_pos = 0;
+    }
+    int nr = IntMin(audio_samples, msu_buffer_size - msu_buffer_pos);
+    uint8 *buf = msu_buffer + msu_buffer_pos * 4;
+    msu_buffer_pos += nr;
+    msu_curr_sample += nr;
+    int volume = msu_volume + 1;
+    if (volume == 256) {
+      for (int i = 0; i < nr; i++) {
+        audio_buffer[i * 2 + 0] += ((int16 *)buf)[i * 2 + 0];
+        audio_buffer[i * 2 + 1] += ((int16 *)buf)[i * 2 + 1];
+      }
+    } else {
+      for (int i = 0; i < nr; i++) {
+        audio_buffer[i * 2 + 0] += ((int16 *)buf)[i * 2 + 0] * volume >> 8;
+        audio_buffer[i * 2 + 1] += ((int16 *)buf)[i * 2 + 1] * volume >> 8;
+      }
+    }
+    audio_samples -= nr, audio_buffer += nr * 2;
+    if (audio_samples == 0)
+      break;
+    if (nr != 0)
+      continue;
+
+    if (last_audio_samples == audio_samples) {  // error?
+      zelda_apu_write(APUI00, msu_track);
+      fclose(msu_file), msu_file = NULL;
+      return;
+    }
+    last_audio_samples = audio_samples;
+
+    if (!kMsuTracksWithRepeat[msu_track]) {
+      fclose(msu_file), msu_file = NULL;
+      return;
+    }
+    fseek(msu_file, msu_loop_start * 4 + 8, SEEK_SET);
+    msu_curr_sample = msu_loop_start;
+  }
+}

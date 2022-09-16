@@ -72,7 +72,7 @@ void Interrupt_NMI(uint16 joypad_input) {  // 8080c9
       zelda_apu_write(APUI00, 0);
   } else if (music_control != last_music_control) {
     last_music_control = music_control;
-    zelda_apu_write(APUI00, music_control);
+    ZeldaPlayMsuAudioTrack();
     if (music_control < 0xf2)
       music_unk1 = music_control;
     music_control = 0;

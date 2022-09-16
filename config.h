@@ -45,6 +45,7 @@ typedef struct Config {
   uint8 extended_aspect_ratio;
   bool extended_aspect_ratio_nospr;
   bool display_perf_title;
+  bool enable_msu;
 } Config;
 
 extern Config g_config;

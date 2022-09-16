@@ -22,3 +22,4 @@ __pycache__
 /*.exe
 /*.out
 /snes/*.o
+/msu/alttp_msu-*.pcm

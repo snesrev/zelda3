@@ -233,6 +233,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "AudioSamples")) {
       g_config.audio_samples = (uint16)strtol(value, (char**)NULL, 10);
       return true;
+    } else if (StringEqualsNoCase(key, "EnableMSU")) {
+      g_config.enable_msu = (uint16)strtol(value, (char **)NULL, 10);
+      return true;
     }
   } else if (section == 3) {
     if (StringEqualsNoCase(key, "Autosave")) {
@@ -245,6 +248,8 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
           g_config.extended_aspect_ratio = (224 * 16 / 9 - 256) / 2;
         else if (strcmp(s, "16:10") == 0)
           g_config.extended_aspect_ratio = (224 * 16 / 10 - 256) / 2;
+        else if (strcmp(s, "4:3") == 0)
+          g_config.extended_aspect_ratio = 0;
         else if (strcmp(s, "unchanged_sprites") == 0)
           g_config.extended_aspect_ratio_nospr = true;
         else
