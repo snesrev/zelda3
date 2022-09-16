@@ -14,7 +14,7 @@ Additionally, it can be configured to also run the original machine code side by
 
 I got much assistance from spannierism's Zelda 3 JP disassembly and the other ones that documented loads of function names and variables.
 
-The game also supports enhanced aspect ratios of 16:9 or 16:10 (see ExtendedAspectRatio in zelda3.ini)
+The game also supports enhanced aspect ratios of 16:9 or 16:10 (see ExtendedAspectRatio in zelda3.ini). It also supports MSU higher quality music soundtracks.
 
 ## Dependencies
 
