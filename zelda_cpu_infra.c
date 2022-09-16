@@ -383,6 +383,8 @@ void CopyStateAfterSnapshotRestore(bool is_reset) {
   memcpy(g_zenv.dma->channel, g_snes->dma->channel, sizeof(Dma) - offsetof(Dma, channel));
   
   g_zenv.player->timer_cycles = 0;
+
+  ZeldaOpenMsuFile();
 }
 
 void SaveSnesState(ByteArray *ctx) {
@@ -695,7 +697,7 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
     turbo = false;
 
     // This is whether APUI00 is true or false, this is used by the ancilla code.
-    uint8 apui00 = g_zenv.player->port_to_snes[0] != 0;
+    uint8 apui00 = ZeldaIsMusicPlaying();
     if (apui00 != g_ram[kRam_APUI00]) {
       g_emulated_ram[kRam_APUI00] = g_ram[kRam_APUI00] = apui00;
       StateRecorder_RecordPatchByte(&state_recorder, 0x648, &apui00, 1);

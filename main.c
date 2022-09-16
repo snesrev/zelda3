@@ -184,7 +184,8 @@ int main(int argc, char** argv) {
   g_snes_width = 2 * (g_config.extended_aspect_ratio * 2 + 256);
   g_wanted_zelda_features = (g_zenv.ppu->extraLeftRight && !g_config.extended_aspect_ratio_nospr) ? kFeatures0_ExtendScreen64 : 0;
   g_ppu_render_flags = g_config.new_renderer * kPpuRenderFlags_NewRenderer | g_config.enhanced_mode7 * kPpuRenderFlags_4x4Mode7;
-  
+  msu_enabled = g_config.enable_msu;
+
   if (g_config.fullscreen == 1)
     g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
   else if (g_config.fullscreen == 2)
@@ -402,6 +403,7 @@ int main(int argc, char** argv) {
   return 0;
 }
 
+
 static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int channels, int16 *audioBuffer) {
   // generate enough samples
   if (snes) {
@@ -411,6 +413,11 @@ static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int channels, int16 
   }
 
   dsp_getSamples(GetDspForRendering(), audioBuffer, g_samples_per_block, channels);
+
+  // Mixin the msu data?
+  if (channels == 2)
+    MixinMsuAudioData(audioBuffer, g_samples_per_block);
+
   for (int i = 0; i < 10; i++) {
     if (SDL_GetQueuedAudioSize(device) <= g_samples_per_block * channels * sizeof(int16) * 6) {
       // don't queue audio if buffer is still filled

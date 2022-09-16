@@ -103,6 +103,10 @@ enum {
   kRam_CrystalRotateCounter = 0x649,
   kRam_BugsFixed = 0x64a,
   kRam_Features0 = 0x64c,
+
+  // 4 bytes holding the current msu playback sample, then 2 more more msu misc
+  kRam_MsuCurrSample = 0x650,
+
 };
 
 enum {
@@ -214,5 +218,12 @@ void Startup_InitializeMemory();
 void LoadSongBank(const uint8 *p);
 void ZeldaWriteSram();
 void ZeldaReadSram(struct Snes *snes);
+
+void ZeldaPlayMsuAudioTrack();
+void MixinMsuAudioData(int16 *audio_buffer, int audio_samples);
+void ZeldaOpenMsuFile();
+bool ZeldaIsMusicPlaying();
+
+extern bool msu_enabled;
 
 #endif  // ZELDA_RTL_H
