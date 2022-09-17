@@ -47,6 +47,7 @@ typedef struct Config {
   bool display_perf_title;
   bool enable_msu;
   bool item_switch_lr;
+  bool turn_while_dashing;
 } Config;
 
 extern Config g_config;

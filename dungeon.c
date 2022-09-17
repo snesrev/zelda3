@@ -6764,7 +6764,7 @@ void Dungeon_ResetTorchBackgroundAndPlayer() {  // 828aef
 
 void Dungeon_ResetTorchBackgroundAndPlayerInner() {  // 828b0c
   Ancilla_TerminateSelectInteractives(0);
-  if (link_is_running) {
+  if (link_is_running && !(enhanced_features0 & kFeatures0_TurnWhileDashing)) {
     link_auxiliary_state = 0;
     link_incapacitated_timer = 0;
     link_actual_vel_z = 0xff;

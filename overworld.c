@@ -518,6 +518,9 @@ void ForceNonbunnyStatus() {  // 828570
   link_need_for_poof_for_transform = 0;
   link_is_bunny = 0;
   link_is_bunny_mirror = 0;
+
+  if (enhanced_features0 & kFeatures0_TurnWhileDashing)
+    link_is_running = 0;
 }
 
 void RecoverPositionAfterDrowning() {  // 829583

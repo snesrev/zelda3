@@ -267,6 +267,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     if (StringEqualsNoCase(key, "ItemSwitchLR")) {
       g_config.item_switch_lr = (bool)strtol(value, (char **)NULL, 10);
       return true;
+    } else if (StringEqualsNoCase(key, "TurnWhileDashing")) {
+      g_config.turn_while_dashing = (bool)strtol(value, (char **)NULL, 10);
+      return true;
     }
   }
   return false;

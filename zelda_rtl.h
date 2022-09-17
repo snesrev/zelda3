@@ -116,6 +116,7 @@ enum {
 enum {
   kFeatures0_ExtendScreen64 = 1,
   kFeatures0_SwitchLR = 2,
+  kFeatures0_TurnWhileDashing = 4,
 };
 
 #define enhanced_features0 (*(uint32*)(g_ram+0x64c))

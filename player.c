@@ -1224,7 +1224,27 @@ void LinkState_Dashing() {  // 878f86
   }
 
   link_incapacitated_timer = 0;
-  if ((joypad1H_last & 0xf) && (joypad1H_last & 0xf) != kDashTab2[link_direction_facing >> 1]) {
+
+  bool want_stop_dash = false;
+
+  if (enhanced_features0 & kFeatures0_TurnWhileDashing) {
+    if (!(joypad1L_last & 0x80)) {
+      link_countdown_for_dash = 0x11;
+      want_stop_dash = true;
+    } else {
+      static const uint8 kDashCtrlsToDir[16] = { 0, 1, 2, 0, 4, 4, 4, 0, 8, 8, 8, 0, 0, 0, 0, 0 };
+      uint8 t = kDashCtrlsToDir[joypad1H_last & 0xf];
+      if (t != 0 && t != link_direction_last) {
+        link_direction = link_direction_last = t;
+        link_some_direction_bits = t;
+        Link_HandleMovingAnimation_FullLongEntry();
+      }
+    }
+  } else {
+    want_stop_dash = (joypad1H_last & 0xf) && (joypad1H_last & 0xf) != kDashTab2[link_direction_facing >> 1];
+  }
+
+  if (want_stop_dash) {
     link_player_handler_state = kPlayerState_StopDash;
     button_mask_b_y &= ~0x80;
     button_b_frames = 0;
@@ -4122,7 +4142,11 @@ endif_19:
       submodule_index = tiledetect_inroom_staircase & 0x70 ? 16 : 8;
       main_module_index = 7;
       Link_CancelDash();
+    } else if (enhanced_features0 & kFeatures0_TurnWhileDashing) {
+      // avoid weirdness in stairs
+      Link_CancelDash();
     }
+
     if ((link_last_direction_moved_towards & 2) == 0) {
       link_speed_setting = 2;
       link_speed_modifier = 1;

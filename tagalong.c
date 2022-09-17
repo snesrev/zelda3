@@ -203,6 +203,12 @@ void Follower_Initialize() {  // 899efc
   tagalong_var3 = 0;
   tagalong_var4 = 0;
   link_speed_setting = 0;
+
+  if (enhanced_features0 & kFeatures0_TurnWhileDashing) {
+    link_player_handler_state = kPlayerState_Ground;
+    link_is_running = false;
+  }
+
 }
 
 void Sprite_BecomeFollower(int k) {  // 899f39
