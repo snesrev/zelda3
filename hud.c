@@ -1540,6 +1540,8 @@ const uint16 *Hud_GetItemBoxPtr(int item) {
 }
 
 void Hud_HandleItemSwitchInputs() {
+  if (!(enhanced_features0 & kFeatures0_SwitchLR))
+    return;
   if (filtered_joypad_L & (0x20 | 0x10)) {  // left/right shoulder
     int old_item = hud_cur_item;
     for (int i = 0; ; i++) {
@@ -1562,7 +1564,7 @@ void Hud_HandleItemSwitchInputs() {
   }
 }
 
-void Hud_ReorderItem(int direction) {
+static void Hud_ReorderItem(int direction) {
   // Initialize inventory order on first use
   if (hud_inventory_order[0] == 0) {
     for (int i = 0; i < 24; i++)
