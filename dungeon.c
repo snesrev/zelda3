@@ -6605,6 +6605,7 @@ void Module07_00_PlayerControl() {  // 8288de
       main_module_index = 14;
       return;
     }
+    Hud_HandleItemSwitchInputs();
   }
   Link_Main();
 }

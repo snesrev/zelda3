@@ -14,7 +14,19 @@ Additionally, it can be configured to also run the original machine code side by
 
 I got much assistance from spannierism's Zelda 3 JP disassembly and the other ones that documented loads of function names and variables.
 
-The game also supports enhanced aspect ratios of 16:9 or 16:10 (see ExtendedAspectRatio in zelda3.ini). It also supports MSU higher quality music soundtracks.
+## Additional features
+
+Some features have been added that are not supported by the original game.
+
+Support for MSU audio tracks.
+
+Support for enhanced aspect ratios of 16:9 or 16:10.
+
+Switching current item with L/R keys.
+
+Reordering of inventory by pressing Y+Arrows.
+
+Higher quality map screen.
 
 ## Dependencies
 
@@ -77,8 +89,8 @@ The game is run with `./zelda3` and takes an optional path to the ROM-file, whic
 | B      | Z           |
 | X      | S           |
 | Y      | A           |
-| L      | D           |
-| R      | C           |
+| L      | C           |
+| R      | V           |
 
 The keys can be reconfigured in zelda3.ini
 

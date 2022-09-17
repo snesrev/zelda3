@@ -103,10 +103,6 @@ enum {
   kRam_CrystalRotateCounter = 0x649,
   kRam_BugsFixed = 0x64a,
   kRam_Features0 = 0x64c,
-
-  // 4 bytes holding the current msu playback sample, then 2 more more msu misc
-  kRam_MsuCurrSample = 0x650,
-
 };
 
 enum {
@@ -114,10 +110,20 @@ enum {
   kBugFix_PolyRenderer = 1,
   kBugFix_AncillaOverwrites = 1,
   kBugFix_Latest = 1,
-
-  // kRam_Features0
-  kFeatures0_ExtendScreen64 = 1,
 };
+
+// Enum values for kRam_Features0
+enum {
+  kFeatures0_ExtendScreen64 = 1,
+  kFeatures0_SwitchLR = 2,
+};
+
+#define enhanced_features0 (*(uint32*)(g_ram+0x64c))
+#define msu_curr_sample (*(uint32*)(g_ram+0x650))
+#define msu_volume (*(uint8*)(g_ram+0x654))
+#define msu_track (*(uint8*)(g_ram+0x655))
+
+#define hud_inventory_order ((uint8*)(g_ram + 0x225)) // 4x6 bytes
 
 extern uint32 g_wanted_zelda_features;
 

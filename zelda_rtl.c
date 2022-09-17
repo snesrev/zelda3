@@ -339,10 +339,6 @@ static const uint8 kMsuTracksWithRepeat[48] = {
   1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,
 };
 
-#define msu_curr_sample (*(uint32*)(g_ram+0x650))
-#define msu_volume (*(uint8*)(g_ram+0x654))
-#define msu_track (*(uint8*)(g_ram+0x655))
-
 bool ZeldaIsMusicPlaying() {
   if (msu_track) {
     return msu_file != NULL;

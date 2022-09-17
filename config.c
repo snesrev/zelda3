@@ -22,7 +22,7 @@ Config g_config;
 #define N 0
 static const uint16 kDefaultKbdControls[kKeys_Total] = {
   // Controls
-  _(SDLK_UP), _(SDLK_DOWN), _(SDLK_LEFT), _(SDLK_RIGHT), _(SDLK_RSHIFT), _(SDLK_RETURN), _(SDLK_x), _(SDLK_z), _(SDLK_s), _(SDLK_a), _(SDLK_d), _(SDLK_c),
+  _(SDLK_UP), _(SDLK_DOWN), _(SDLK_LEFT), _(SDLK_RIGHT), _(SDLK_RSHIFT), _(SDLK_RETURN), _(SDLK_x), _(SDLK_z), _(SDLK_s), _(SDLK_a), _(SDLK_c), _(SDLK_v),
   // LoadState
   _(SDLK_F1), _(SDLK_F2), _(SDLK_F3), _(SDLK_F4), _(SDLK_F5), _(SDLK_F6), _(SDLK_F7), _(SDLK_F8), _(SDLK_F9), _(SDLK_F10), N, N, N, N, N, N, N, N, N, N,
   // SaveState
@@ -194,6 +194,8 @@ static int GetIniSection(const char *s) {
     return 2;
   if (StringEqualsNoCase(s, "[General]"))
     return 3;
+  if (StringEqualsNoCase(s, "[Features]"))
+    return 4;
   return -1;
 }
 
@@ -234,7 +236,7 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       g_config.audio_samples = (uint16)strtol(value, (char**)NULL, 10);
       return true;
     } else if (StringEqualsNoCase(key, "EnableMSU")) {
-      g_config.enable_msu = (uint16)strtol(value, (char **)NULL, 10);
+      g_config.enable_msu = (bool)strtol(value, (char **)NULL, 10);
       return true;
     }
   } else if (section == 3) {
@@ -261,7 +263,11 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       g_config.display_perf_title = (bool)strtol(value, (char**)NULL, 10);
       return true;
     }
-
+  } else if (section == 4) {
+    if (StringEqualsNoCase(key, "ItemSwitchLR")) {
+      g_config.item_switch_lr = (bool)strtol(value, (char **)NULL, 10);
+      return true;
+    }
   }
   return false;
 }

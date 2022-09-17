@@ -184,7 +184,7 @@
 #define stk_return_addr (*(uint16*)(g_ram+0x1FE))
 #define overworld_map_state (*(uint8*)(g_ram+0x200))
 #define hud_cur_item (*(uint8*)(g_ram+0x202))
-#define hud_cur_item_hi (*(uint8*)(g_ram+0x203))
+
 #define hud_var1 (*(uint8*)(g_ram+0x204))
 #define byte_7E0205 (*(uint8*)(g_ram+0x205))
 #define byte_7E0206 (*(uint8*)(g_ram+0x206))

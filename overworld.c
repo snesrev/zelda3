@@ -775,6 +775,7 @@ void Module09_00_PlayerControl() {  // 82a53c
       main_module_index = 14;
       return;
     }
+    Hud_HandleItemSwitchInputs();
   }
   if (trigger_special_entrance)
     Overworld_AnimateEntrance();

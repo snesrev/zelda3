@@ -46,6 +46,7 @@ typedef struct Config {
   bool extended_aspect_ratio_nospr;
   bool display_perf_title;
   bool enable_msu;
+  bool item_switch_lr;
 } Config;
 
 extern Config g_config;

@@ -182,7 +182,16 @@ int main(int argc, char** argv) {
   ZeldaInitialize();
   g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
   g_snes_width = 2 * (g_config.extended_aspect_ratio * 2 + 256);
-  g_wanted_zelda_features = (g_zenv.ppu->extraLeftRight && !g_config.extended_aspect_ratio_nospr) ? kFeatures0_ExtendScreen64 : 0;
+
+
+  // Delay actually setting those features in ram until any snapshots finish playing.
+  {
+    uint32 f = 0;
+    f |= (g_zenv.ppu->extraLeftRight && !g_config.extended_aspect_ratio_nospr) ? kFeatures0_ExtendScreen64 : 0;
+    f |= g_config.item_switch_lr * kFeatures0_SwitchLR;
+    g_wanted_zelda_features = f;
+  }
+
   g_ppu_render_flags = g_config.new_renderer * kPpuRenderFlags_NewRenderer | g_config.enhanced_mode7 * kPpuRenderFlags_4x4Mode7;
   msu_enabled = g_config.enable_msu;
 

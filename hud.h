@@ -62,3 +62,5 @@ void Hud_Update_IgnoreItemBox();
 void Hud_Update_IgnoreHealth();
 void Hud_UpdateHearts(uint16 *dst, const uint16 *src, int n);
 const uint16 *Hud_GetItemBoxPtr(int item);
+
+void Hud_HandleItemSwitchInputs();
