@@ -192,6 +192,7 @@ int main(int argc, char** argv) {
     f |= g_config.turn_while_dashing * kFeatures0_TurnWhileDashing;
     f |= g_config.mirror_to_darkworld * kFeatures0_MirrorToDarkworld;
     f |= g_config.collect_items_with_sword * kFeatures0_CollectItemsWithSword;
+    f |= g_config.break_pots_with_sword * kFeatures0_BreakPotsWithSword;
     g_wanted_zelda_features = f;
   }
 

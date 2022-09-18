@@ -50,6 +50,7 @@ typedef struct Config {
   bool turn_while_dashing;
   bool mirror_to_darkworld;
   bool collect_items_with_sword;
+  bool break_pots_with_sword;
 } Config;
 
 extern Config g_config;
