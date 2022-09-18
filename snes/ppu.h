@@ -50,6 +50,8 @@ enum {
   kPpuRenderFlags_NewRenderer = 1,
   // Render mode7 upsampled by 4x4
   kPpuRenderFlags_4x4Mode7 = 2,
+  // Use 240 height instead of 224
+  kPpuRenderFlags_Height240 = 4,
 };
 
 
@@ -60,7 +62,7 @@ struct Ppu {
   uint8_t renderFlags;
   uint32_t renderPitch;
   uint8_t *renderBuffer;
-  uint8_t extraLeftCur, extraRightCur, extraLeftRight;
+  uint8_t extraLeftCur, extraRightCur, extraLeftRight, extraBottomCur;
   float mode7PerspectiveLow, mode7PerspectiveHigh;
 
   Snes* snes;
@@ -169,6 +171,6 @@ void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx);
 bool PpuBeginDrawing(Ppu *ppu, uint8_t *buffer, size_t pitch, uint32_t render_flags);
 
 void PpuSetMode7PerspectiveCorrection(Ppu *ppu, int low, int high);
-void PpuSetExtraSideSpace(Ppu *ppu, int left, int right);
+void PpuSetExtraSideSpace(Ppu *ppu, int left, int right, int bottom);
 
 #endif

@@ -162,23 +162,30 @@ void SimpleHdma_DoLine(SimpleHdma *c) {
 }
 
 void ConfigurePpuSideSpace() {
-  // Let PPU impl know about the maximum allowed extra space on the sides
-  int extra_right = 0, extra_left = 0;
+  // Let PPU impl know about the maximum allowed extra space on the sides and bottom
+  int extra_right = 0, extra_left = 0, extra_bottom = 0;
 //  printf("main %d, sub %d  (%d, %d, %d)\n", main_module_index, submodule_index, BG2HOFS_copy2, room_bounds_x.v[2 | (quadrant_fullsize_x >> 1)], quadrant_fullsize_x >> 1);
   int mod = main_module_index;
   if (mod == 14)
     mod = saved_module_for_menu;
   if (mod == 9) {
+    // outdoors
     extra_left = BG2HOFS_copy2 - ow_scroll_vars0.xstart;
     extra_right = ow_scroll_vars0.xend - BG2HOFS_copy2;
+    extra_bottom = ow_scroll_vars0.yend - BG2VOFS_copy2;
   } else if (mod == 7) {
+    // indoors
     int qm = quadrant_fullsize_x >> 1;
     extra_left = IntMax(BG2HOFS_copy2 - room_bounds_x.v[qm], 0);
     extra_right = IntMax(room_bounds_x.v[qm + 2] - BG2HOFS_copy2, 0);
+
+    int qy = quadrant_fullsize_y >> 1;
+    extra_bottom = IntMax(room_bounds_y.v[qy + 2] - BG2VOFS_copy2, 0);
   } else if (mod == 20) {
     extra_left = kPpuExtraLeftRight, extra_right = kPpuExtraLeftRight;
+    extra_bottom = 16;
   }
-  PpuSetExtraSideSpace(g_zenv.ppu, extra_left, extra_right);
+  PpuSetExtraSideSpace(g_zenv.ppu, extra_left, extra_right, extra_bottom);
 }
 
 bool ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
@@ -206,7 +213,9 @@ bool ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
   if (g_zenv.ppu->extraLeftRight != 0)
     ConfigurePpuSideSpace();
 
-  for (int i = 0; i < 225; i++) {
+  int height = render_flags & kPpuRenderFlags_Height240 ? 240 : 224;
+
+  for (int i = 0; i <= height; i++) {
     if (i == 128 && irq_flag) {
       zelda_ppu_write(BG3HOFS, selectfile_var8);
       zelda_ppu_write(BG3HOFS, selectfile_var8 >> 8);

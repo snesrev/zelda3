@@ -534,7 +534,7 @@ void CleanUpAndPrepDesertPrayerHDMA() {  // 82c7b8
   TMW_copy = TM_copy;
   TSW_copy = TS_copy;
   HDMAEN_copy = 0x80;
-  memset(hdma_table_dynamic, 0, 0x1e0);
+  memset(hdma_table_dynamic, 0, 240 * sizeof(uint16));
 }
 
 void DesertPrayer_InitializeIrisHDMA() {  // 87ea06
@@ -577,11 +577,11 @@ void DesertPrayer_BuildIrisHDMATable() {  // 87ea27
     uint8 t6 = (r0 < 256) ? r0 : (r0 < 512) ? 255 : 0;
     uint8 t7 = (r2 < 256) ? r2 : 255;
     uint16 r6 = t7 << 8 | t6;
-    if (k < 224)
+    if (k < 240)
      hdma_table_dynamic[k] = (r6 == 0xffff) ? 0xff : r6;
     if (sign16(spotlight_y_lower) || (r4 >= spotlight_y_lower && r4 < spotlight_y_upper)) {
       k = BYTE(spotlight_var4) - 2 + r14;
-      if (k < 224)
+      if (k < 240)
         hdma_table_dynamic[k] = (r6 == 0xffff) ? 0xff : r6;
       spotlight_var4++;
     }

@@ -207,6 +207,10 @@ extern uint32 g_wanted_zelda_features;
 #define R18 (*(uint16*)(g_ram+0xca))
 #define R20 (*(uint16*)(g_ram+0xcc))
 
+// Relocated the hdma table so it can fit 240 rows
+#define hdma_table_dynamic_orig_pos ((uint16*)(g_ram+0x1B00))
+#define hdma_table_dynamic ((uint16*)(g_ram+0x1DBA0))
+
 void zelda_apu_write(uint32_t adr, uint8_t val);
 void zelda_apu_write_word(uint32_t adr, uint16_t val);
 uint8_t zelda_read_apui00();

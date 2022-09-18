@@ -43,7 +43,6 @@ static void OpenOneGamepad(int i);
 
 
 enum {
-  kRenderHeight = 224 * 2,
   kDefaultFullscreen = 0,
   kDefaultWindowScale = 2,
   kMaxWindowScale = 10,
@@ -66,8 +65,7 @@ static bool g_display_perf;
 static int g_curr_fps;
 static int g_ppu_render_flags = 0;
 static bool g_run_without_emu = false;
-static int g_snes_width;
-static const int g_snes_height = kRenderHeight;
+static int g_snes_width, g_snes_height;
 
 void NORETURN Die(const char *error) {
   fprintf(stderr, "Error: %s\n", error);
@@ -182,6 +180,7 @@ int main(int argc, char** argv) {
   ZeldaInitialize();
   g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
   g_snes_width = 2 * (g_config.extended_aspect_ratio * 2 + 256);
+  g_snes_height = (g_config.extend_y ? 240 : 224) * 2;
 
 
   // Delay actually setting those features in ram until any snapshots finish playing.
@@ -196,7 +195,9 @@ int main(int argc, char** argv) {
     g_wanted_zelda_features = f;
   }
 
-  g_ppu_render_flags = g_config.new_renderer * kPpuRenderFlags_NewRenderer | g_config.enhanced_mode7 * kPpuRenderFlags_4x4Mode7;
+  g_ppu_render_flags = g_config.new_renderer * kPpuRenderFlags_NewRenderer |
+                       g_config.enhanced_mode7 * kPpuRenderFlags_4x4Mode7 |
+                       g_config.extend_y * kPpuRenderFlags_Height240;
   msu_enabled = g_config.enable_msu;
 
   if (g_config.fullscreen == 1)

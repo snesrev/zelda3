@@ -41,6 +41,7 @@ void ppu_reset(Ppu* ppu) {
   ppu->extraLeftCur = 0;
   ppu->extraRightCur = 0;
   ppu->extraLeftRight = kPpuExtraLeftRight;
+  ppu->extraBottomCur = 0;
   ppu->vramPointer = 0;
   ppu->vramIncrementOnHigh = false;
   ppu->vramIncrement = 1;
@@ -187,6 +188,15 @@ void ppu_runLine(Ppu *ppu, int line) {
     memset(&ppu->objBuffer.pixel, 0, sizeof(ppu->objBuffer.pixel));
     memset(&ppu->objBuffer.prio, 0x05, sizeof(ppu->objBuffer.prio));
     ppu->lineHasSprites = !ppu->forcedBlank && ppu_evaluateSprites(ppu, line - 1);
+
+    // outside of visible range?
+    if (line >= 225 + ppu->extraBottomCur) {
+      uint8 *dst = &ppu->renderBuffer[(line - 1) * 2 * ppu->renderPitch];
+      size_t n = sizeof(uint32) * 2 * (256 + ppu->extraLeftRight * 2);
+      memset(dst, 0, n);
+      memset(dst + ppu->renderPitch, 0, n);
+      return;
+    }
 
     // actual line
     if (ppu->renderFlags & kPpuRenderFlags_NewRenderer) {
@@ -705,9 +715,10 @@ void PpuSetMode7PerspectiveCorrection(Ppu *ppu, int low, int high) {
   ppu->mode7PerspectiveHigh = 1.0f / high;
 }
 
-void PpuSetExtraSideSpace(Ppu *ppu, int left, int right) {
+void PpuSetExtraSideSpace(Ppu *ppu, int left, int right, int bottom) {
   ppu->extraLeftCur = UintMin(left, ppu->extraLeftRight);
   ppu->extraRightCur = UintMin(right, ppu->extraLeftRight);
+  ppu->extraBottomCur = UintMin(bottom, 16);
 }
 
 static FORCEINLINE float FloatInterpolate(float x, float xmin, float xmax, float ymin, float ymax) {

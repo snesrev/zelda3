@@ -344,7 +344,7 @@ void InitializeMirrorHDMA() {  // 80fdee
   HdmaSetup(0xF2FB, 0xF2FB, 0x42, (uint8)BG1HOFS, (uint8)BG2HOFS, 0);
 
   uint16 v = BG2HOFS_copy2;
-  for (int i = 0; i < 32 * 7; i++)
+  for (int i = 0; i < 240; i++)
     hdma_table_dynamic[i] = v;
   HDMAEN_copy = 0xc0;
 }
@@ -354,11 +354,12 @@ void MirrorWarp_BuildWavingHDMATable() {  // 80fe64
   if (frame_counter & 1)
     return;
 
-  int x = 0x1a0 / 2, y = 0x1b0 / 2;
+  int y = 240 - 8;
   do {
-    hdma_table_dynamic[y] = hdma_table_dynamic[y + 2] = hdma_table_dynamic[y + 4] = hdma_table_dynamic[y + 6] = hdma_table_dynamic[x];
-    x -= 8, y -= 8;
+    hdma_table_dynamic[y] = hdma_table_dynamic[y + 2] = hdma_table_dynamic[y + 4] = hdma_table_dynamic[y + 6] = hdma_table_dynamic[y - 8];
+    y -= 8;
   } while (y != 0);
+
   int i = mirror_vars.var0 >> 1;
   int t = mirror_vars.var6 + mirror_vars.var3[i];
   if (!sign16(t - mirror_vars.var1[i] ^ mirror_vars.var1[i])) {
@@ -389,10 +390,10 @@ void MirrorWarp_BuildDewavingHDMATable() {  // 80ff2f
   MirrorWarp_RunAnimationSubmodules();
   if (frame_counter & 1)
     return;
-  int x = 0x1a0 / 2, y = 0x1b0 / 2;
+  int y = 240 - 8;
   do {
-    hdma_table_dynamic[y] = hdma_table_dynamic[y + 2] = hdma_table_dynamic[y + 4] = hdma_table_dynamic[y + 6] = hdma_table_dynamic[x];
-    x -= 8, y -= 8;
+    hdma_table_dynamic[y] = hdma_table_dynamic[y + 2] = hdma_table_dynamic[y + 4] = hdma_table_dynamic[y + 6] = hdma_table_dynamic[y - 8];
+    y -= 8;
   } while (y != 0);
 
   uint16 t = hdma_table_dynamic[0xc0] | hdma_table_dynamic[0xc8] | hdma_table_dynamic[0xd0] | hdma_table_dynamic[0xd8];

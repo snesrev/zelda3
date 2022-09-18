@@ -78,6 +78,7 @@ static void RestoreSnapshot(Snapshot *s) {
 
 static bool g_fail;
 
+// b is mine, a is theirs
 static void VerifySnapshotsEq(Snapshot *b, Snapshot *a, Snapshot *prev) {
   memcpy(b->ram, a->ram, 16);
   b->ram[0xfa1] = a->ram[0xfa1];
@@ -107,6 +108,10 @@ static void VerifySnapshotsEq(Snapshot *b, Snapshot *a, Snapshot *prev) {
 
   memcpy(&b->ram[0x1f0d], &a->ram[0x1f0d], 0x3f - 0xd);
   memcpy(b->ram + 0x138, a->ram + 0x138, 256 - 0x38); // copy the stack over
+
+  memcpy(a->ram + 0x1DBA0, b->ram + 0x1DBA0, 240 * 2);  // hdma_table
+  memcpy(b->ram + 0x1B00, b->ram + 0x1DBA0, 224 * 2);  // hdma_table (partial)
+
 
   if (memcmp(b->ram, a->ram, 0x20000)) {
     fprintf(stderr, "@%d: Memory compare failed (mine != theirs, prev):\n", frame_counter);
