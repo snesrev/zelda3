@@ -190,6 +190,7 @@ int main(int argc, char** argv) {
     f |= (g_zenv.ppu->extraLeftRight && !g_config.extended_aspect_ratio_nospr) ? kFeatures0_ExtendScreen64 : 0;
     f |= g_config.item_switch_lr * kFeatures0_SwitchLR;
     f |= g_config.turn_while_dashing * kFeatures0_TurnWhileDashing;
+    f |= g_config.mirror_to_darkworld * kFeatures0_MirrorToDarkworld;
     g_wanted_zelda_features = f;
   }
 

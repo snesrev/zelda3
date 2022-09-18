@@ -48,6 +48,7 @@ typedef struct Config {
   bool enable_msu;
   bool item_switch_lr;
   bool turn_while_dashing;
+  bool mirror_to_darkworld;
 } Config;
 
 extern Config g_config;

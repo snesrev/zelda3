@@ -2848,7 +2848,9 @@ void LinkItem_Mirror() {  // 87a91a
   }
   button_mask_b_y &= ~0x40;
 
-  if (is_standing_in_doorway || !cheatWalkThroughWalls && !player_is_indoors && !(overworld_screen_index & 0x40)) {
+  if (is_standing_in_doorway || 
+      !cheatWalkThroughWalls && !(enhanced_features0 & kFeatures0_MirrorToDarkworld) && 
+      !player_is_indoors && !(overworld_screen_index & 0x40)) {
     Ancilla_Sfx2_Near(60);
     return;
   }

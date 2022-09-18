@@ -272,6 +272,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "TurnWhileDashing")) {
       g_config.turn_while_dashing = (bool)strtol(value, (char **)NULL, 10);
       return true;
+    } else if (StringEqualsNoCase(key, "MirrorToDarkworld")) {
+      g_config.mirror_to_darkworld = (bool)strtol(value, (char **)NULL, 10);
+      return true;
     }
   }
   return false;
