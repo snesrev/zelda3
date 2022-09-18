@@ -201,8 +201,8 @@ int main(int argc, char** argv) {
   else if (g_config.fullscreen == 2)
     g_win_flags ^= SDL_WINDOW_FULLSCREEN;
 
-  // Window scale (0=50%, 1=100%, 2=200%, 3=300%, etc.)
-  g_current_window_scale = g_config.window_scale == 0 ? 1 : IntMin(g_config.window_scale * 2, kMaxWindowScale);
+  // Window scale (1=100%, 2=200%, 3=300%, etc.)
+  g_current_window_scale = (g_config.window_scale == 0) ? 2 : IntMin(g_config.window_scale, kMaxWindowScale);
 
   // audio_freq: Use common sampling rates (see user config file. values higher than 48000 are not supported.)
   if (g_config.audio_freq < 11025 || g_config.audio_freq > 48000)
