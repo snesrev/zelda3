@@ -7,7 +7,7 @@
 enum {
   kEnableLargeScreen = 1,
   // How much extra spacing to add on the sides
-  kPpuExtraLeftRight = kEnableLargeScreen ? 71 : 0,
+  kPpuExtraLeftRight = kEnableLargeScreen ? 96 : 0,
 };
 
 typedef uint8_t uint8;
