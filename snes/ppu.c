@@ -960,7 +960,7 @@ static NOINLINE void PpuDrawWholeLine(Ppu *ppu, uint y) {
   if (ppu->extraLeftRight - ppu->extraLeftCur != 0)
     memset(dst_org, 0, 2 * sizeof(uint32) * (ppu->extraLeftRight - ppu->extraLeftCur));
   if (ppu->extraLeftRight - ppu->extraRightCur != 0)
-    memset(dst_org + 2 * (kPpuXPixels - (ppu->extraLeftRight - ppu->extraRightCur)), 0, 
+    memset(dst_org + 2 * (256 + ppu->extraLeftRight * 2 - (ppu->extraLeftRight - ppu->extraRightCur)), 0,
         2 * sizeof(uint32) * (ppu->extraLeftRight - ppu->extraRightCur));
 
   // Duplicate one line
