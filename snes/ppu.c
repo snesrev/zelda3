@@ -748,18 +748,28 @@ static void PpuDrawMode7Upsampled(Ppu *ppu, uint y) {
     ycur = (ypos << 2) + j * m3;
     dst_end = dst + 4096;
 
-#define DRAW_PIXEL() \
+#define DRAW_PIXEL(mode) \
     tile = ppu->vram[(ycur >> 25 & 0x7f) * 128 + (xcur >> 25 & 0x7f)] & 0xff;  \
     pixel = ppu->vram[tile * 64 + (ycur >> 22 & 7) * 8 + (xcur >> 22 & 7)] >> 8; \
-    *(uint32*)dst = ppu->colorMapRgb[pixel]; \
+    *(uint32*)dst = (mode ? (ppu->colorMapRgb[pixel] & 0xfefefe) >> 1 : ppu->colorMapRgb[pixel]); \
     xcur += m0, ycur += m2, dst += 4;
 
-    do {
-      DRAW_PIXEL();
-      DRAW_PIXEL();
-      DRAW_PIXEL();
-      DRAW_PIXEL();
-    } while (dst != dst_end);
+    if (!ppu->halfColor) {
+      do {
+        DRAW_PIXEL(0);
+        DRAW_PIXEL(0);
+        DRAW_PIXEL(0);
+        DRAW_PIXEL(0);
+      } while (dst != dst_end);
+    } else {
+      do {
+        DRAW_PIXEL(1);
+        DRAW_PIXEL(1);
+        DRAW_PIXEL(1);
+        DRAW_PIXEL(1);
+      } while (dst != dst_end);
+
+    }
 #undef DRAW_PIXEL
     dst += (ppu->renderPitch - 4096);
   }
