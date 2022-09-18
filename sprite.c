@@ -270,28 +270,28 @@ static const uint8 kPlayerActionBoxRun_YHi[4] = {0xff, 0, 0, 0};
 static const uint8 kPlayerActionBoxRun_YLo[4] = {(uint8)-8, 16, 8, 8};
 static const uint8 kPlayerActionBoxRun_XHi[4] = {0, 0, 0xff, 0};
 static const uint8 kPlayerActionBoxRun_XLo[4] = {0, 0, (uint8)-8, 8};
-static const int8 kPlayer_SetupActionHitBox_Tab0[65] = {
+static const int8 kPlayer_SetupActionHitBox_X[65] = {
   0, 2, 0, 0, -8, 0, 2, 0, 2, 2, 1, 1, 0, 0, 0, 0,
   0, 2, 4, 4, 0, 0, -4, -4, -6, 2, 1, 1, 0, 0, 0, 0,
   0, 0, 0, 0, 2, 2, 4, 4, 2, 2, 2, 2, 0, 0, 0, 0,
   0, 0, 0, 0, -4, -4, -10, 0, 2, 2, 0, 0, 0, 0, 0, 0,
   0,
 };
-static const int8 kPlayer_SetupActionHitBox_Tab1[65] = {
+static const int8 kPlayer_SetupActionHitBox_W[65] = {
   15, 4, 8, 8, 8, 8, 12, 8, 4, 4, 6, 6, 0, 0, 0, 0,
   0, 4, 16, 12, 8, 8, 12, 11, 12, 4, 6, 6, 0, 0, 0, 0,
   0, 8, 8, 8, 10, 14, 15, 4, 4, 4, 6, 6, 0, 0, 0, 0,
   0, 8, 8, 8, 10, 14, 15, 4, 4, 4, 6, 6, 0, 0, 0, 0,
   0,
 };
-static const int8 kPlayer_SetupActionHitBox_Tab2[65] = {
+static const int8 kPlayer_SetupActionHitBox_Y[65] = {
   0, 2, 0, 2, 4, 4, 4, 7, 2, 2, 1, 1, 0, 0, 0, 0,
   0, 2, 0, 2, -4, -3, -8, 0, 0, 2, 1, 1, 0, 0, 0, 0,
   0, 0, 0, 0, -2, 0, -4, 1, 2, 2, 1, 1, 0, 0, 0, 0,
   0, 0, 0, 0, -2, 0, -4, 1, 2, 2, 1, 1, 0, 0, 0, 0,
   0,
 };
-static const int8 kPlayer_SetupActionHitBox_Tab3[65] = {
+static const int8 kPlayer_SetupActionHitBox_H[65] = {
   15, 4, 8, 2, 12, 8, 12, 8, 4, 4, 6, 6, 0, 0, 0, 0,
   0, 4, 8, 4, 12, 12, 12, 4, 8, 4, 6, 4, 0, 0, 0, 0,
   0, 8, 8, 8, 8, 8, 12, 4, 4, 4, 6, 6, 0, 0, 0, 0,
@@ -2562,6 +2562,11 @@ bool Sprite_CheckDamageToLink_ignore_layer(int k) {  // 86f15c
   if (sprite_flags4[k]) {
     SpriteHitBox hitbox;
     Link_SetupHitBox(&hitbox);
+
+    // Set hitbox to the sword hitbox if the item type is an absorbable
+    if (sprite_type[k] >= 0xd8 && sprite_type[k] <= 0xe6 && (enhanced_features0 & kFeatures0_CollectItemsWithSword))
+      Link_UpdateHitBoxWithSword(&hitbox);
+
     Sprite_SetupHitBox(k, &hitbox);
     carry = CheckIfHitBoxesOverlap(&hitbox);
   } else {
@@ -2777,15 +2782,35 @@ void Player_SetupActionHitBox(SpriteHitBox *hb) {  // 86f5e0
       }
       t = link_direction_facing * 8 + button_b_frames + 1;
     }
-    int x = link_x_coord + (int8)(kPlayer_SetupActionHitBox_Tab0[t] + player_oam_x_offset);
-    int y = link_y_coord + (int8)(kPlayer_SetupActionHitBox_Tab2[t] + player_oam_y_offset);
+    int x = link_x_coord + (int8)(kPlayer_SetupActionHitBox_X[t] + player_oam_x_offset);
+    int y = link_y_coord + (int8)(kPlayer_SetupActionHitBox_Y[t] + player_oam_y_offset);
     hb->r0_xlo = x;
     hb->r8_xhi = x >> 8;
     hb->r1_ylo = y;
     hb->r9_yhi = y >> 8;
-    hb->r2 = kPlayer_SetupActionHitBox_Tab1[t];
-    hb->r3 = kPlayer_SetupActionHitBox_Tab3[t];
+    hb->r2 = kPlayer_SetupActionHitBox_W[t];
+    hb->r3 = kPlayer_SetupActionHitBox_H[t];
   }
+}
+
+void Link_UpdateHitBoxWithSword(SpriteHitBox *hb) {  // new
+  if (link_spin_attack_step_counter != 0 || sign8(button_b_frames) ||
+      kPlayer_SetupActionHitBox_Tab4[button_b_frames])
+    return;
+  int t = link_direction_facing * 8 + button_b_frames + 1, r;
+  int x = link_x_coord + (int8)(kPlayer_SetupActionHitBox_X[t] + player_oam_x_offset);
+  int y = link_y_coord + (int8)(kPlayer_SetupActionHitBox_Y[t] + player_oam_y_offset);
+  // Reduce size of hitbox if 'too' big.
+  hb->r2 = kPlayer_SetupActionHitBox_W[t];
+  if (hb->r2 - 2 >= 0)
+    r = IntMin(6, hb->r2 - 2), hb->r2 -= r, x += r >> 1;
+  hb->r3 = kPlayer_SetupActionHitBox_H[t];
+  if (hb->r3 - 2 >= 0)
+    r = IntMin(6, hb->r3 - 2), hb->r3 -= r, y += r >> 1;
+  hb->r0_xlo = x;
+  hb->r8_xhi = x >> 8;
+  hb->r1_ylo = y;
+  hb->r9_yhi = y >> 8;
 }
 
 void Sprite_DoHitBoxesFast(int k, SpriteHitBox *hb) {  // 86f645

@@ -49,6 +49,7 @@ typedef struct Config {
   bool item_switch_lr;
   bool turn_while_dashing;
   bool mirror_to_darkworld;
+  bool collect_items_with_sword;
 } Config;
 
 extern Config g_config;

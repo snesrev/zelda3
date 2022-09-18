@@ -118,6 +118,7 @@ enum {
   kFeatures0_SwitchLR = 2,
   kFeatures0_TurnWhileDashing = 4,
   kFeatures0_MirrorToDarkworld = 8,
+  kFeatures0_CollectItemsWithSword = 16,
 };
 
 #define enhanced_features0 (*(uint32*)(g_ram+0x64c))

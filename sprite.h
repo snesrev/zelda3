@@ -219,6 +219,7 @@ uint8 Sprite_CheckDamageFromLink(int k);
 void Sprite_AttemptDamageToLinkWithCollisionCheck(int k);
 void Sprite_AttemptDamageToLinkPlusRecoil(int k);
 void Player_SetupActionHitBox(SpriteHitBox *hb);
+void Link_UpdateHitBoxWithSword(SpriteHitBox *hb);
 void Sprite_DoHitBoxesFast(int k, SpriteHitBox *hb);
 void Sprite_ApplyRecoilToLink(int k, uint8 vel);
 void Link_PlaceWeaponTink();
