@@ -804,7 +804,7 @@
 #define bird_travel_y_lo ((uint8*)(g_ram+0x1AD0))
 #define bird_travel_y_hi ((uint8*)(g_ram+0x1AE0))
 #define birdtravel_var1 ((uint8*)(g_ram+0x1AF0))
-#define mode7_hdma_table ((uint16*)(g_ram+0x1B00))
+#define hdma_table_dynamic ((uint16*)(g_ram+0x1B00))
 #define text_msgbox_topleft_copy (*(uint16*)(g_ram+0x1CD0))
 #define text_msgbox_topleft (*(uint16*)(g_ram+0x1CD2))
 #define text_render_state (*(uint8*)(g_ram+0x1CD4))

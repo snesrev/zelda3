@@ -995,7 +995,7 @@ void Attract_ShowTimedTextMessage() {  // 8cf766
 
 void Attract_ControlMapZoom() {  // 8cf783
   for (int i = 223; i >= 0; i--)
-    mode7_hdma_table[i] = kMapMode_Zooms1[i] * timer_for_mode7_zoom >> 8;
+    hdma_table_dynamic[i] = kMapMode_Zooms1[i] * timer_for_mode7_zoom >> 8;
 }
 
 void Attract_BuildBackgrounds() {  // 8cf7e6

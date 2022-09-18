@@ -106,9 +106,9 @@ const uint8 *SimpleHdma_GetPtr(uint32 p) {
   case 0xABDDD: return kAttractIndirectHdmaTab;   // mode7
   case 0x2c80c: return kHdmaTableForPrayingScene;
 
-  case 0x1b00: return (uint8 *)mode7_hdma_table;
-  case 0x1be0: return (uint8 *)mode7_hdma_table + 0xe0;
-  case 0x1bf0: return (uint8 *)mode7_hdma_table + 0xf0;
+  case 0x1b00: return (uint8 *)hdma_table_dynamic;
+  case 0x1be0: return (uint8 *)hdma_table_dynamic + 0xe0;
+  case 0x1bf0: return (uint8 *)hdma_table_dynamic + 0xf0;
   case 0xadd27: return (uint8*)kMapMode_Zooms1;
   case 0xade07: return (uint8*)kMapMode_Zooms1 + 0xe0;
   case 0xadee7: return (uint8*)kMapMode_Zooms2;
@@ -198,7 +198,7 @@ bool ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
     else if (hdma_chans[0].table == kMapModeHdma1)
       PpuSetMode7PerspectiveCorrection(g_zenv.ppu, kMapMode_Zooms2[0], kMapMode_Zooms2[223]);
     else if (hdma_chans[0].table == kAttractIndirectHdmaTab)
-      PpuSetMode7PerspectiveCorrection(g_zenv.ppu, mode7_hdma_table[0], mode7_hdma_table[223]);
+      PpuSetMode7PerspectiveCorrection(g_zenv.ppu, hdma_table_dynamic[0], hdma_table_dynamic[223]);
     else
       PpuSetMode7PerspectiveCorrection(g_zenv.ppu, 0, 0);
   }

@@ -261,7 +261,7 @@ static void KillAghanim_Func4() {
 static void KillAghanim_Func5() {
   HdmaSetup(0, 0xf2fb, 0x41, 0, (uint8)WH0, 0);
   for (int i = 0; i < 224; i++)
-    mode7_hdma_table[i] = 0xff00;
+    hdma_table_dynamic[i] = 0xff00;
   palette_filter_countdown = 0;
   darkening_or_lightening_screen = 0;
   dialogue_message_index = 0x35;
