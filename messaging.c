@@ -364,7 +364,7 @@ uint8 GetOtherDungmapInfo(int count) {
 void DungMap_4() {
   BG2VOFS_copy2 += dungmap_var4;
   dungmap_var5 -= dungmap_var4;
-  if (!--byte_7E0205)
+  if (!--bottle_menu_expand_row)
     overworld_map_state--;
 }
 

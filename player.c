@@ -2378,7 +2378,7 @@ void LinkItem_Bottle() {  // 87a15b
   if (!CheckYButtonPress())
     return;
   button_mask_b_y &= ~0x40;
-  int btidx = link_item_bottles - 1;
+  int btidx = link_item_bottle_index - 1;
   uint8 b = link_bottle_info[btidx];
   if (b == 0)
     return;

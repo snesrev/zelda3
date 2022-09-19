@@ -186,7 +186,7 @@
 #define hud_cur_item (*(uint8*)(g_ram+0x202))
 
 #define hud_var1 (*(uint8*)(g_ram+0x204))
-#define byte_7E0205 (*(uint8*)(g_ram+0x205))
+#define bottle_menu_expand_row (*(uint8*)(g_ram+0x205))
 #define byte_7E0206 (*(uint8*)(g_ram+0x206))
 #define timer_for_flashing_circle (*(uint8*)(g_ram+0x207))
 #define animate_heart_refill_countdown (*(uint8*)(g_ram+0x208))
@@ -1067,7 +1067,7 @@
 #define link_item_flute (*(uint8*)(g_ram+0xF34C))
 #define link_item_bug_net (*(uint8*)(g_ram+0xF34D))
 #define link_item_book_of_mudora (*(uint8*)(g_ram+0xF34E))
-#define link_item_bottles (*(uint8*)(g_ram+0xF34F))
+#define link_item_bottle_index (*(uint8*)(g_ram+0xF34F))
 #define link_item_cane_somaria (*(uint8*)(g_ram+0xF350))
 #define link_item_cane_byrna (*(uint8*)(g_ram+0xF351))
 #define link_item_cape (*(uint8*)(g_ram+0xF352))

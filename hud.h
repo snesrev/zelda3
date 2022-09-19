@@ -33,7 +33,7 @@ void Hud_RestoreNormalMenu();
 void Hud_SearchForEquippedItem();
 uint16 Hud_GetPaletteMask(uint8 what);
 void Hud_DrawYButtonItems(uint16 mask);
-void Hud_DrawUnknownBox(uint16 palmask);
+void Hud_DrawTopRightBox(uint16 palmask);
 void Hud_DrawAbilityText(uint16 palmask);
 void Hud_DrawAbilityIcons();
 void Hud_DrawGlovesText(uint8 idx);

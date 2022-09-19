@@ -18,6 +18,10 @@ static void Hud_DrawItem(uint16 a, const ItemBoxGfx *src);
 const uint8 kMaxBombsForLevel[] = { 10, 15, 20, 25, 30, 35, 40, 50 };
 const uint8 kMaxArrowsForLevel[] = { 30, 35, 40, 45, 50, 55, 60, 70 };
 static const uint8 kMaxHealthForLevel[] = { 9, 9, 9, 9, 9, 9, 9, 9, 17, 17, 17, 17, 17, 17, 17, 25, 25, 25, 25, 25, 25 };
+
+#define HUDXY(x, y) ((x) + (y) * 32)
+
+
 static const uint16 kHudItemInVramPtr[20] = {
   0x11c8, 0x11ce, 0x11d4, 0x11da, 0x11e0,
   0x1288, 0x128e, 0x1294, 0x129a, 0x12a0,
@@ -599,7 +603,7 @@ void Hud_Init() {  // 8dddab
   Hud_SearchForEquippedItem();
 
   Hud_DrawYButtonItems(Hud_GetPaletteMask(1));
-  Hud_DrawUnknownBox(Hud_GetPaletteMask(1));
+  Hud_DrawTopRightBox(Hud_GetPaletteMask(1));
 
   Hud_DrawAbilityText(Hud_GetPaletteMask(1));
   Hud_DrawAbilityIcons();
@@ -619,8 +623,8 @@ void Hud_Init() {  // 8dddab
   if (or_all) {
     uint8 or_bottle = link_bottle_info[0] | link_bottle_info[1] | link_bottle_info[2] | link_bottle_info[3];
     if (or_bottle == 0) {
-      link_item_bottles = 0;
-    } else if (!link_item_bottles) {
+      link_item_bottle_index = 0;
+    } else if (!link_item_bottle_index) {
       uint8 bottle_pos = 1;
       if (!link_bottle_info[0]) {
         bottle_pos++;
@@ -630,7 +634,7 @@ void Hud_Init() {  // 8dddab
             bottle_pos++;
         }
       }
-      link_item_bottles = bottle_pos;
+      link_item_bottle_index = bottle_pos;
     }
 
     if (!Hud_DoWeHaveThisItem())
@@ -791,18 +795,19 @@ void Hud_CloseMenu() {  // 8ddfba
 }
 
 void Hud_GotoBottleMenu() {  // 8ddffb
-  byte_7E0205 = 0;
+  bottle_menu_expand_row = 0;
   overworld_map_state++;
 }
 
 void Hud_InitBottleMenu() {  // 8de002
-  int r = byte_7E0205;
+  int r = bottle_menu_expand_row;
+  uint16 *dst = uvram_screen.row[0].col;
   for (int i = 21; i <= 30; i++)
-    uvram_screen.row[11 + r].col[i] = 0x207f;
+    dst[HUDXY(i, 11 + r)] = 0x207f;
 
-  if (++byte_7E0205 == 19) {
+  if (++bottle_menu_expand_row == 19) {
     overworld_map_state++;
-    byte_7E0205 = 17;
+    bottle_menu_expand_row = 17;
   }
   nmi_subroutine_index = 1;
   BYTE(nmi_load_target_addr) = 0x22;
@@ -813,17 +818,18 @@ void Hud_ExpandBottleMenu() {  // 8de08c
   static const uint16 kBottleMenuTop2[] = { 0x28FC, 0x24F5, 0x24F5, 0x24F5, 0x24F5, 0x24F5, 0x24F5, 0x24F5, 0x24F5, 0x68FC };
   static const uint16 kBottleMenuBottom[] = { 0xA8FB, 0xA8F9, 0xA8F9, 0xA8F9, 0xA8F9, 0xA8F9, 0xA8F9, 0xA8F9, 0xA8F9, 0xE8FB };
 
-  int r = byte_7E0205;
+  int r = bottle_menu_expand_row;
+  uint16 *dst = uvram_screen.row[0].col;
   for (int i = 0; i < 10; i++)
-    uvram_screen.row[11 + r].col[21 + i] = kBottleMenuTop[i];
+    dst[HUDXY(21 + i, 11 + r)] = kBottleMenuTop[i];
 
   for (int i = 0; i < 10; i++)
-    uvram_screen.row[12 + r].col[21 + i] = kBottleMenuTop2[i];
+    dst[HUDXY(21 + i, 12 + r)] = kBottleMenuTop2[i];
 
   for (int i = 0; i < 10; i++)
-    uvram_screen.row[29].col[21 + i] = kBottleMenuBottom[i];
+    dst[HUDXY(21 + i, 29)] = kBottleMenuBottom[i];
 
-  if (sign8(--byte_7E0205))
+  if (sign8(--bottle_menu_expand_row))
     overworld_map_state++;
   nmi_subroutine_index = 1;
   BYTE(nmi_load_target_addr) = 0x22;
@@ -845,12 +851,12 @@ void Hud_BottleMenu() {  // 8de0df
     Hud_DrawYButtonItems(Hud_GetPaletteMask(1));
     Hud_DrawSelectedYButtonItem();
     overworld_map_state++;
-    byte_7E0205 = 0;
+    bottle_menu_expand_row = 0;
     return;
   }
   Hud_UpdateBottleMenu();
   if (filtered_joypad_H & 12) {
-    uint8 old_val = link_item_bottles - 1, val = old_val;
+    uint8 old_val = link_item_bottle_index - 1, val = old_val;
 
     if (filtered_joypad_H & 8) {
       do {
@@ -862,7 +868,7 @@ void Hud_BottleMenu() {  // 8de0df
       } while (!link_bottle_info[val]);
     }
     if (old_val != val) {
-      link_item_bottles = val + 1;
+      link_item_bottle_index = val + 1;
       timer_for_flashing_circle = 16;
       sound_effect_2 = 32;
     }
@@ -870,10 +876,10 @@ void Hud_BottleMenu() {  // 8de0df
 }
 
 void Hud_UpdateBottleMenu() {  // 8de17f
-
+  uint16 *dst = uvram_screen.row[0].col;
   for (int y = 12; y <= 28; y++)
     for (int x = 0; x < 8; x++)
-      uvram_screen.row[y].col[22 + x] = 0x24f5;
+      dst[HUDXY(22 + x, y)] = 0x24f5;
 
   Hud_DrawItem(0x1372, &kHudItemBottles[link_bottle_info[0]]);
   Hud_DrawItem(0x1472, &kHudItemBottles[link_bottle_info[1]]);
@@ -881,41 +887,41 @@ void Hud_UpdateBottleMenu() {  // 8de17f
   Hud_DrawItem(0x1672, &kHudItemBottles[link_bottle_info[3]]);
   
   int bottle_vram_pos = kHudItemInVramPtr[Hud_GetCurrentItemPosition()];
-  Hud_DrawItem(bottle_vram_pos, &kHudItemBottles[link_item_bottles ? link_bottle_info[link_item_bottles - 1] : 0]);
+  Hud_DrawItem(bottle_vram_pos, &kHudItemBottles[link_item_bottle_index ? link_bottle_info[link_item_bottle_index - 1] : 0]);
 
   uint16 *p = (uint16 *)&g_ram[bottle_vram_pos];
-  uvram_screen.row[6].col[25] = p[0];
-  uvram_screen.row[6].col[26] = p[1];
-  uvram_screen.row[7].col[25] = p[32];
-  uvram_screen.row[7].col[26] = p[33];
+  dst[HUDXY(25, 6)] = p[0];
+  dst[HUDXY(26, 6)] = p[1];
+  dst[HUDXY(25, 7)] = p[32];
+  dst[HUDXY(26, 7)] = p[33];
 
   if (timer_for_flashing_circle & 0x10) {
-    int o = ((link_item_bottles - 1) * 0x100 + 0x88) / 2;
+    int o = ((link_item_bottle_index - 1) * 0x100 + 0x88) / 2;
 
-    uvram_screen.row[10].col[21 + o] = 0x3C61;
-    uvram_screen.row[10].col[22 + o] = 0x3C61 | 0x4000;
+    dst[HUDXY(21 + o, 10)] = 0x3C61;
+    dst[HUDXY(22 + o, 10)] = 0x3C61 | 0x4000;
 
-    uvram_screen.row[11].col[20 + o] = 0x3C70;
-    uvram_screen.row[11].col[23 + o] = 0x3C70 | 0x4000;
+    dst[HUDXY(20 + o, 11)] = 0x3C70;
+    dst[HUDXY(23 + o, 11)] = 0x3C70 | 0x4000;
 
-    uvram_screen.row[12].col[20 + o] = 0xBC70;
-    uvram_screen.row[12].col[23 + o] = 0xBC70 | 0x4000;
+    dst[HUDXY(20 + o, 12)] = 0xBC70;
+    dst[HUDXY(23 + o, 12)] = 0xBC70 | 0x4000;
 
-    uvram_screen.row[13].col[21 + o] = 0xBC61;
-    uvram_screen.row[13].col[22 + o] = 0xBC61 | 0x4000;
+    dst[HUDXY(21 + o, 13)] = 0xBC61;
+    dst[HUDXY(22 + o, 13)] = 0xBC61 | 0x4000;
 
-    uvram_screen.row[10].col[20 + o] = 0x3C60;
-    uvram_screen.row[10].col[23 + o] = 0x3C60 | 0x4000;
+    dst[HUDXY(20 + o, 10)] = 0x3C60;
+    dst[HUDXY(23 + o, 10)] = 0x3C60 | 0x4000;
 
-    uvram_screen.row[13].col[23 + o] = 0x3C60 | 0xC000;
-    uvram_screen.row[13].col[20 + o] = 0x3C60 | 0x8000;
+    dst[HUDXY(23 + o, 13)] = 0x3C60 | 0xC000;
+    dst[HUDXY(20 + o, 13)] = 0x3C60 | 0x8000;
   }
 
-  if (link_item_bottles) {
-    const uint16 *src = kHudBottlesGfx + (link_bottle_info[link_item_bottles - 1] - 1) * 16;
+  if (link_item_bottle_index) {
+    const uint16 *src = kHudBottlesGfx + (link_bottle_info[link_item_bottle_index - 1] - 1) * 16;
     for (int i = 0; i < 8; i++) {
-      uvram_screen.row[8].col[22 + i] = src[i];
-      uvram_screen.row[9].col[22 + i] = src[i + 8];
+      dst[HUDXY(22 + i, 8)] = src[i];
+      dst[HUDXY(22 + i, 9)] = src[i + 8];
     }
   }
 
@@ -924,10 +930,11 @@ void Hud_UpdateBottleMenu() {  // 8de17f
 }
 
 void Hud_EraseBottleMenu() {  // 8de2fd
-  int r = byte_7E0205;
+  uint16 *dst = uvram_screen.row[0].col;
+  int r = bottle_menu_expand_row;
   for (int i = 0; i < 10; i++)
-    uvram_screen.row[11 + r].col[21 + i] = 0x207f;
-  if (++byte_7E0205 == 19)
+    dst[HUDXY(21 + i, 11 + r)] = 0x207f;
+  if (++bottle_menu_expand_row == 19)
     overworld_map_state++;
   nmi_subroutine_index = 1;
   BYTE(nmi_load_target_addr) = 0x22;
@@ -977,31 +984,32 @@ uint16 Hud_GetPaletteMask(uint8 what) {  // 8de3c8
 
 void Hud_DrawYButtonItems(uint16 mask) {  // 8de3d9
   uint16 t;
+  uint16 *dst = uvram_screen.row[0].col;
 
   t = 0x3CFB & mask;
-  uvram_screen.row[5].col[1] = t;
-  uvram_screen.row[19].col[1] = (t |= 0x8000);
-  uvram_screen.row[19].col[19] = (t |= 0x4000);
-  uvram_screen.row[5].col[19] = (t ^= 0x8000);
+  dst[HUDXY(1, 5)] = t;
+  dst[HUDXY(1, 19)] = (t |= 0x8000);
+  dst[HUDXY(19, 19)] = (t |= 0x4000);
+  dst[HUDXY(19, 5)] = (t ^= 0x8000);
 
   for (int i = 6; i < 19; i++) {
-    uvram_screen.row[i].col[1] = (t = 0x3cfc & mask);
-    uvram_screen.row[i].col[19] = (t |= 0x4000);
+    dst[HUDXY(1, i)] = (t = 0x3cfc & mask);
+    dst[HUDXY(19, i)] = (t |= 0x4000);
   }
 
   for (int i = 2; i < 19; i++) {
-    uvram_screen.row[5].col[i] = (t = 0x3CF9 & mask);
-    uvram_screen.row[19].col[i] = (t |= 0x8000);
+    dst[HUDXY(i, 5)] = (t = 0x3CF9 & mask);
+    dst[HUDXY(i, 19)] = (t |= 0x8000);
   }
 
   for (int y = 6; y < 19; y++) {
     for (int x = 2; x < 19; x++)
-      uvram_screen.row[y].col[x] = 0x24F5;
+      dst[HUDXY(x, y)] = 0x24F5;
   }
-  uvram_screen.row[6].col[2] = 0x3CF0;
-  uvram_screen.row[7].col[2] = 0x3CF1;
-  uvram_screen.row[5].col[3] = 0x246E;
-  uvram_screen.row[5].col[4] = 0x246F;
+  dst[HUDXY(2, 6)] = 0x3CF0;
+  dst[HUDXY(2, 7)] = 0x3CF1;
+  dst[HUDXY(3, 5)] = 0x246E;
+  dst[HUDXY(4, 5)] = 0x246F;
 
   const ItemBoxGfx *item_box_gfxs[] = {
     &kHudItemBow[link_item_bow],
@@ -1019,7 +1027,7 @@ void Hud_DrawYButtonItems(uint16 mask) {  // 8de3d9
     &kHudItemFlute[link_item_flute],
     &kHudItemBugNet[link_item_bug_net],
     &kHudItemBookMudora[link_item_book_of_mudora],
-    &kHudItemBottles[link_item_bottles ? link_bottle_info[link_item_bottles - 1] : 0],
+    &kHudItemBottles[link_item_bottle_index ? link_bottle_info[link_item_bottle_index - 1] : 0],
     &kHudItemCaneSomaria[link_item_cane_somaria],
     &kHudItemCaneByrna[link_item_cane_byrna],
     &kHudItemCape[link_item_cape],
@@ -1032,94 +1040,98 @@ void Hud_DrawYButtonItems(uint16 mask) {  // 8de3d9
   }
 }
 
-void Hud_DrawUnknownBox(uint16 palmask) {  // 8de647
+void Hud_DrawTopRightBox(uint16 palmask) {  // 8de647
   uint16 t;
+  uint16 *dst = uvram_screen.row[0].col;
 
   t = 0x3CFB & palmask;
-  uvram_screen.row[5].col[21] = t;
-  uvram_screen.row[10].col[21] = (t |= 0x8000);
-  uvram_screen.row[10].col[30] = (t |= 0x4000);
-  uvram_screen.row[5].col[30] = (t ^= 0x8000);
+  dst[HUDXY(21, 5)] = t;
+  dst[HUDXY(21, 10)] = (t |= 0x8000);
+  dst[HUDXY(30, 10)] = (t |= 0x4000);
+  dst[HUDXY(30, 5)] = (t ^= 0x8000);
+
 
   t = 0x3CFC & palmask;
   for (int i = 0; i < 4; i++) {
-    uvram_screen.row[6 + i].col[21] = t;
-    uvram_screen.row[6 + i].col[30] = t | 0x4000;
+    dst[HUDXY(21, 6 + i)] = t;
+    dst[HUDXY(30, 6 + i)] = t | 0x4000;
   }
 
   t = 0x3CF9 & palmask;
   for (int i = 0; i < 8; i++) {
-    uvram_screen.row[5].col[22 + i] = t;
-    uvram_screen.row[10].col[22 + i] = t | 0x8000;
+    dst[HUDXY(22 + i, 5)] = t;
+    dst[HUDXY(22 + i, 10)] = t | 0x8000;
   }
 
   for (int i = 0; i < 8; i++) {
-    uvram_screen.row[6].col[22 + i] = 0x24F5;
-    uvram_screen.row[7].col[22 + i] = 0x24F5;
-    uvram_screen.row[8].col[22 + i] = 0x24F5;
-    uvram_screen.row[9].col[22 + i] = 0x24F5;
+    dst[HUDXY(22 + i, 6)] = 0x24F5;
+    dst[HUDXY(22 + i, 7)] = 0x24F5;
+    dst[HUDXY(22 + i, 8)] = 0x24F5;
+    dst[HUDXY(22 + i, 9)] = 0x24F5;
   }
 }
 
 void Hud_DrawAbilityText(uint16 palmask) {  // 8de6b6
+  uint16 *dst = uvram_screen.row[0].col;
+
   for (int i = 0; i < 17; i++) {
-    uvram_screen.row[22].col[2 + i] = 0x24F5;
-    uvram_screen.row[23].col[2 + i] = 0x24F5;
-    uvram_screen.row[24].col[2 + i] = 0x24F5;
-    uvram_screen.row[25].col[2 + i] = 0x24F5;
-    uvram_screen.row[26].col[2 + i] = 0x24F5;
-    uvram_screen.row[27].col[2 + i] = 0x24F5;
-    uvram_screen.row[28].col[2 + i] = 0x24F5;
+    dst[HUDXY(2 + i, 22)] = 0x24F5;
+    dst[HUDXY(2 + i, 23)] = 0x24F5;
+    dst[HUDXY(2 + i, 24)] = 0x24F5;
+    dst[HUDXY(2 + i, 25)] = 0x24F5;
+    dst[HUDXY(2 + i, 26)] = 0x24F5;
+    dst[HUDXY(2 + i, 27)] = 0x24F5;
+    dst[HUDXY(2 + i, 28)] = 0x24F5;
   }
 
   uint8 flags = link_ability_flags;
   const uint16 *src = kHudAbilityText;
-  uint16 *dst = &uvram_screen.row[22].col[4];
+  uint16 *dst2 = &dst[HUDXY(4, 22)];
   for (int i = 0; i < 2; i++) {
     for (int j = 0; j < 4; j++) {
       if (flags & 0x80) {
-        dst[0] = src[0];
-        dst[1] = src[1];
-        dst[2] = src[2];
-        dst[3] = src[3];
-        dst[4] = src[4];
-        dst[32 + 0] = src[5];
-        dst[32 + 1] = src[6];
-        dst[32 + 2] = src[7];
-        dst[32 + 3] = src[8];
-        dst[32 + 4] = src[9];
+        dst2[0] = src[0];
+        dst2[1] = src[1];
+        dst2[2] = src[2];
+        dst2[3] = src[3];
+        dst2[4] = src[4];
+        dst2[32 + 0] = src[5];
+        dst2[32 + 1] = src[6];
+        dst2[32 + 2] = src[7];
+        dst2[32 + 3] = src[8];
+        dst2[32 + 4] = src[9];
       }
       src += 10;
-      dst += 5;
+      dst2 += 5;
       flags <<= 1;
     }
-    dst += 2 * 32 - 5 * 4;
+    dst2 += 2 * 32 - 5 * 4;
   }
 
   uint16 t;
 
   t = 0x24FB & palmask;
-  uvram_screen.row[21].col[1] = t;
-  uvram_screen.row[29].col[1] = (t |= 0x8000);
-  uvram_screen.row[29].col[19] = (t |= 0x4000);
-  uvram_screen.row[21].col[19] = (t ^= 0x8000);
+  dst[HUDXY(1, 21)] = t;
+  dst[HUDXY(1, 29)] = (t |= 0x8000);
+  dst[HUDXY(19, 29)] = (t |= 0x4000);
+  dst[HUDXY(19, 21)] = (t ^= 0x8000);
 
   t = 0x24FC & palmask;
   for (int i = 0; i < 7; i++) {
-    uvram_screen.row[22 + i].col[1] = t;
-    uvram_screen.row[22 + i].col[19] = t | 0x4000;
+    dst[HUDXY(1, 22 + i)] = t;
+    dst[HUDXY(19, 22 + i)] = t | 0x4000;
   }
 
   t = 0x24F9 & palmask;
   for (int i = 0; i < 17; i++) {
-    uvram_screen.row[21].col[2 + i] = t;
-    uvram_screen.row[29].col[2 + i] = t | 0x8000;
+    dst[HUDXY(2 + i, 21)] = t;
+    dst[HUDXY(2 + i, 29)] = t | 0x8000;
   }
 
-  uvram_screen.row[22].col[2] = 0xA4F0;
-  uvram_screen.row[23].col[2] = 0x24F2;
-  uvram_screen.row[21].col[3] = 0x2482;
-  uvram_screen.row[21].col[4] = 0x2483;
+  dst[HUDXY(2, 22)] = 0xA4F0;
+  dst[HUDXY(2, 23)] = 0x24F2;
+  dst[HUDXY(3, 21)] = 0x2482;
+  dst[HUDXY(4, 21)] = 0x2483;
 }
 
 void Hud_DrawAbilityIcons() {  // 8de7b7
@@ -1132,7 +1144,8 @@ void Hud_DrawAbilityIcons() {  // 8de7b7
 
 void Hud_DrawGlovesText(uint8 idx) {  // 8de81a
   const uint16 *src = kHudGlovesText + idx * 10;
-  uint16 *dst = &uvram_screen.row[22].col[4];
+  uint16 *dst = uvram_screen.row[0].col;
+  dst = &dst[HUDXY(4, 22)];
   memcpy(dst, src, sizeof(uint16) * 5);
   memcpy(dst + 32, src + 5, sizeof(uint16) * 5);
 }
@@ -1146,8 +1159,9 @@ void Hud_DrawProgressIcons() {  // 8de9c8
 
 void Hud_DrawProgressIcons_Pendants() {  // 8de9d3
   const uint16 *src = kProgressIconPendantsBg;
+  uint16 *dst = uvram_screen.row[0].col;
   for (int y = 0; y < 9; y++) {
-    memcpy(&uvram_screen.row[11 + y].col[21], src, sizeof(uint16) * 10);
+    memcpy(&dst[HUDXY(21, 11 + y)], src, sizeof(uint16) * 10);
     src += 10;
   }
 
@@ -1158,46 +1172,48 @@ void Hud_DrawProgressIcons_Pendants() {  // 8de9d3
 
 void Hud_DrawProgressIcons_Crystals() {  // 8dea62
   const uint16 *src = kProgressIconCrystalsBg;
+  uint16 *dst = uvram_screen.row[0].col;
   for (int y = 0; y < 9; y++, src += 10)
-    memcpy(&uvram_screen.row[11 + y].col[21], src, sizeof(uint16) * 10);
+    memcpy(&dst[HUDXY(21, 11 + y)], src, sizeof(uint16) * 10);
 
   uint8 f = link_has_crystals;
   if (f & 1) {
-    uvram_screen.row[14].col[24] = 0x2D44;
-    uvram_screen.row[14].col[25] = 0x2D45;
+    dst[HUDXY(24, 14)] = 0x2D44;
+    dst[HUDXY(25, 14)] = 0x2D45;
   }
   if (f & 2) {
-    uvram_screen.row[14].col[26] = 0x2D44;
-    uvram_screen.row[14].col[27] = 0x2D45;
+    dst[HUDXY(26, 14)] = 0x2D44;
+    dst[HUDXY(27, 14)] = 0x2D45;
   }
   if (f & 4) {
-    uvram_screen.row[16].col[23] = 0x2D44;
-    uvram_screen.row[16].col[24] = 0x2D45;
+    dst[HUDXY(23, 16)] = 0x2D44;
+    dst[HUDXY(24, 16)] = 0x2D45;
   }
   if (f & 8) {
-    uvram_screen.row[16].col[25] = 0x2D44;
-    uvram_screen.row[16].col[26] = 0x2D45;
+    dst[HUDXY(25, 16)] = 0x2D44;
+    dst[HUDXY(26, 16)] = 0x2D45;
   }
   if (f & 16) {
-    uvram_screen.row[16].col[27] = 0x2D44;
-    uvram_screen.row[16].col[28] = 0x2D45;
+    dst[HUDXY(27, 16)] = 0x2D44;
+    dst[HUDXY(28, 16)] = 0x2D45;
   }
   if (f & 32) {
-    uvram_screen.row[18].col[24] = 0x2D44;
-    uvram_screen.row[18].col[25] = 0x2D45;
+    dst[HUDXY(24, 18)] = 0x2D44;
+    dst[HUDXY(25, 18)] = 0x2D45;
   }
   if (f & 64) {
-    uvram_screen.row[18].col[26] = 0x2D44;
-    uvram_screen.row[18].col[27] = 0x2D45;
+    dst[HUDXY(26, 18)] = 0x2D44;
+    dst[HUDXY(27, 18)] = 0x2D45;
   }
 }
 
 void Hud_DrawSelectedYButtonItem() {  // 8deb3a
   uint16 *p = (uint16 *)&g_ram[kHudItemInVramPtr[Hud_GetCurrentItemPosition()]];
-  uvram_screen.row[6].col[25] = p[0];
-  uvram_screen.row[6].col[26] = p[1];
-  uvram_screen.row[7].col[25] = p[32];
-  uvram_screen.row[7].col[26] = p[33];
+  uint16 *dst = uvram_screen.row[0].col;
+  dst[HUDXY(25, 6)] = p[0];
+  dst[HUDXY(26, 6)] = p[1];
+  dst[HUDXY(25, 7)] = p[32];
+  dst[HUDXY(26, 7)] = p[33];
 
   if (timer_for_flashing_circle & 0x10) {
     p[-32] = 0x3C61;
@@ -1221,8 +1237,8 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
 
   const uint16 *src_p;
 
-  if (hud_cur_item == 16 && link_item_bottles) {
-    src_p = &kHudBottlesItemText[(link_bottle_info[link_item_bottles - 1] - 1) * 16];
+  if (hud_cur_item == 16 && link_item_bottle_index) {
+    src_p = &kHudBottlesItemText[(link_bottle_info[link_item_bottle_index - 1] - 1) * 16];
   } else if (hud_cur_item == 5 && link_item_mushroom != 1) {
     src_p = &kHudMushroomItemText[(link_item_mushroom - 2) * 16];
   } else if (hud_cur_item == 20 && link_item_mirror != 1) {
@@ -1234,8 +1250,8 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
   } else {
     src_p = &kHudItemText[(hud_cur_item - 1) * 16];
   }
-  memcpy(&uvram_screen.row[8].col[22], src_p + 0, sizeof(uint16) * 8);
-  memcpy(&uvram_screen.row[9].col[22], src_p + 8, sizeof(uint16) * 8);
+  memcpy(&dst[HUDXY(22, 8)], src_p + 0, sizeof(uint16) * 8);
+  memcpy(&dst[HUDXY(22, 9)], src_p + 8, sizeof(uint16) * 8);
 }
 
 void Hud_DrawMoonPearl() {  // 8dece9
@@ -1244,32 +1260,33 @@ void Hud_DrawMoonPearl() {  // 8dece9
 
 void Hud_DrawEquipment(uint16 palmask) {  // 8ded29
   uint16 t = palmask & 0x28FB;
-  uvram_screen.row[21].col[21] = t | 0x0000;
-  uvram_screen.row[29].col[21] = t | 0x8000;
-  uvram_screen.row[29].col[30] = t | 0xC000;
-  uvram_screen.row[21].col[30] = t | 0x4000;
+  uint16 *dst = uvram_screen.row[0].col;
+  dst[HUDXY(21, 21)] = t | 0x0000;
+  dst[HUDXY(21, 29)] = t | 0x8000;
+  dst[HUDXY(30, 29)] = t | 0xC000;
+  dst[HUDXY(30, 21)] = t | 0x4000;
 
   t = 0x28FC & palmask;
   for (int i = 0; i < 7; i++) {
-    uvram_screen.row[22 + i].col[21] = t;
-    uvram_screen.row[22 + i].col[30] = t | 0x4000;
+    dst[HUDXY(21, 22 + i)] = t;
+    dst[HUDXY(30, 22 + i)] = t | 0x4000;
   }
 
   t = 0x28F9 & palmask;
   for (int i = 0; i < 8; i++) {
-    uvram_screen.row[21].col[22 + i] = t;
-    uvram_screen.row[29].col[22 + i] = t | 0x8000;
+    dst[HUDXY(22 + i, 21)] = t;
+    dst[HUDXY(22 + i, 29)] = t | 0x8000;
   }
 
   for (int i = 0; i < 7; i++) {
     for (int j = 0; j < 8; j++)
-      uvram_screen.row[22 + i].col[22 + j] = 0x24F5;
+      dst[HUDXY(22 + j, 22 + i)] = 0x24F5;
   }
 
   // Draw dotted lines
   t = 0x28D7 & palmask;
   for (int i = 0; i < 8; i++)
-    uvram_screen.row[25].col[22 + i] = t;
+    dst[HUDXY(22 + i, 25)] = t;
 
   static const uint16 kHudEquipmentDungeonItemText[16] = {
     0x2479, 0x247a, 0x247b, 0x247c, 0x248c, 0x24f5, 0x24f5, 0x24f5,
@@ -1277,12 +1294,12 @@ void Hud_DrawEquipment(uint16 palmask) {  // 8ded29
   };
 
   for (int i = 0; i < 8; i++) {
-    uvram_screen.row[22].col[22 + i] = kHudEquipmentDungeonItemText[i + 0] & palmask;
-    uvram_screen.row[26].col[22 + i] = kHudEquipmentDungeonItemText[i + 8] & palmask;
+    dst[HUDXY(22 + i, 22)] = kHudEquipmentDungeonItemText[i + 0] & palmask;
+    dst[HUDXY(22 + i, 26)] = kHudEquipmentDungeonItemText[i + 8] & palmask;
   }
   if (cur_palace_index_x2 == 0xff) {
     for (int i = 0; i < 8; i++)
-      uvram_screen.row[26].col[22 + i] = 0x24F5;
+      dst[HUDXY(22 + i, 26)] = 0x24F5;
     Hud_DrawItem(0x16f2, &kHudItemHeartPieces[link_heart_pieces]);
   }
   Hud_DrawItem(0x15ec, &kHudItemSword[link_sword_type == 0xff ? 0 : link_sword_type]);
@@ -1316,57 +1333,58 @@ void Hud_DrawCompass() {  // 8def39
 
 void Hud_DrawBottleMenu(uint16 palmask) {  // 8def67
   uint16 t = 0x28FB & palmask;
-  uvram_screen.row[11].col[21] = t;
-  uvram_screen.row[29].col[21] = t | 0x8000;
-  uvram_screen.row[29].col[30] = t | 0xC000;
-  uvram_screen.row[11].col[30] = t | 0x4000;
+  uint16 *dst = uvram_screen.row[0].col;
+  dst[HUDXY(21, 11)] = t;
+  dst[HUDXY(21, 29)] = t | 0x8000;
+  dst[HUDXY(30, 29)] = t | 0xC000;
+  dst[HUDXY(30, 11)] = t | 0x4000;
 
   t = 0x28FC & palmask;
   for (int i = 0; i < 17; i++) {
-    uvram_screen.row[12 + i].col[21] = t;
-    uvram_screen.row[12 + i].col[30] = t | 0x4000;
+    dst[HUDXY(21, 12 + i)] = t;
+    dst[HUDXY(30, 12 + i)] = t | 0x4000;
   }
   t = 0x28F9 & palmask;
   for (int i = 0; i < 8; i++) {
-    uvram_screen.row[11].col[22 + i] = t;
-    uvram_screen.row[29].col[22 + i] = t | 0x8000;
+    dst[HUDXY(22 + i, 11)] = t;
+    dst[HUDXY(22 + i, 29)] = t | 0x8000;
   }
   for (int y = 12; y <= 28; y++)
     for (int x = 0; x < 8; x++)
-      uvram_screen.row[y].col[22 + x] = 0x24f5;
+      dst[HUDXY(22 + x, y)] = 0x24f5;
 
   Hud_DrawItem(0x1372, &kHudItemBottles[link_bottle_info[0]]);
   Hud_DrawItem(0x1472, &kHudItemBottles[link_bottle_info[1]]);
   Hud_DrawItem(0x1572, &kHudItemBottles[link_bottle_info[2]]);
   Hud_DrawItem(0x1672, &kHudItemBottles[link_bottle_info[3]]);
-  Hud_DrawItem(0x1408, &kHudItemBottles[link_bottle_info[link_item_bottles - 1]]);
+  Hud_DrawItem(0x1408, &kHudItemBottles[link_bottle_info[link_item_bottle_index - 1]]);
 
   uint16 *p = (uint16 *)&g_ram[kHudItemInVramPtr[hud_cur_item - 1]];
 
-  uvram_screen.row[6].col[25] = p[0];
-  uvram_screen.row[6].col[26] = p[1];
-  uvram_screen.row[7].col[25] = p[32];
-  uvram_screen.row[7].col[26] = p[33];
+  dst[HUDXY(25, 6)] = p[0];
+  dst[HUDXY(26, 6)] = p[1];
+  dst[HUDXY(25, 7)] = p[32];
+  dst[HUDXY(26, 7)] = p[33];
 
-  int o = ((link_item_bottles - 1) * 0x100 + 0x88) / 2;
+  int o = ((link_item_bottle_index - 1) * 0x100 + 0x88) / 2;
 
-  uvram_screen.row[10].col[21 + o] = 0x3C61;
-  uvram_screen.row[10].col[22 + o] = 0x3C61 | 0x4000;
+  dst[HUDXY(21 + o, 10)] = 0x3C61;
+  dst[HUDXY(22 + o, 10)] = 0x3C61 | 0x4000;
 
-  uvram_screen.row[11].col[20 + o] = 0x3C70;
-  uvram_screen.row[11].col[23 + o] = 0x3C70 | 0x4000;
+  dst[HUDXY(20 + o, 11)] = 0x3C70;
+  dst[HUDXY(23 + o, 11)] = 0x3C70 | 0x4000;
 
-  uvram_screen.row[12].col[20 + o] = 0xBC70;
-  uvram_screen.row[12].col[23 + o] = 0xBC70 | 0x4000;
+  dst[HUDXY(20 + o, 12)] = 0xBC70;
+  dst[HUDXY(23 + o, 12)] = 0xBC70 | 0x4000;
 
-  uvram_screen.row[13].col[21 + o] = 0xBC61;
-  uvram_screen.row[13].col[22 + o] = 0xBC61 | 0x4000;
+  dst[HUDXY(21 + o, 13)] = 0xBC61;
+  dst[HUDXY(22 + o, 13)] = 0xBC61 | 0x4000;
 
-  uvram_screen.row[10].col[20 + o] = 0x3C60;
-  uvram_screen.row[10].col[23 + o] = 0x3C60 | 0x4000;
+  dst[HUDXY(20 + o, 10)] = 0x3C60;
+  dst[HUDXY(23 + o, 10)] = 0x3C60 | 0x4000;
 
-  uvram_screen.row[13].col[23 + o] = 0x3C60 | 0xC000;
-  uvram_screen.row[13].col[20 + o] = 0x3C60 | 0x8000;
+  dst[HUDXY(23 + o, 13)] = 0x3C60 | 0xC000;
+  dst[HUDXY(20 + o, 13)] = 0x3C60 | 0x8000;
 
   timer_for_flashing_circle = 16;
 }
