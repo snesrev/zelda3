@@ -258,20 +258,25 @@ int main(int argc, char** argv) {
   }
   SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
 
-  SDL_AudioSpec want = { 0 }, have;
   SDL_AudioDeviceID device;
-  want.freq = g_config.audio_freq;
-  want.format = AUDIO_S16;
-  want.channels = g_config.audio_channels;
-  want.samples = g_config.audio_samples;
-  device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
-  if(device == 0) {
-    printf("Failed to open audio device: %s\n", SDL_GetError());
-    return 1;
+  SDL_AudioSpec want = { 0 }, have;
+  int16_t* audioBuffer;
+
+  if (g_config.enable_audio)
+  {
+    want.freq = g_config.audio_freq;
+    want.format = AUDIO_S16;
+    want.channels = g_config.audio_channels;
+    want.samples = g_config.audio_samples;
+    device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
+    if (device == 0) {
+      printf("Failed to open audio device: %s\n", SDL_GetError());
+      return 1;
+    }
+    g_samples_per_block = (534 * have.freq) / 32000;
+    audioBuffer = (int16_t*)malloc(g_samples_per_block * have.channels * sizeof(int16));
+    SDL_PauseAudioDevice(device, 0);
   }
-  g_samples_per_block = (534 * have.freq) / 32000;
-  int16_t *audioBuffer = (int16_t * )malloc(g_samples_per_block * have.channels * sizeof(int16));
-  SDL_PauseAudioDevice(device, 0);
 
   Snes *snes = snes_init(g_emulated_ram), *snes_run = NULL;
   if (argc >= 2 && !g_run_without_emu) {
@@ -365,7 +370,8 @@ int main(int argc, char** argv) {
 
 
     uint64 t1 = SDL_GetPerformanceCounter();
-    PlayAudio(snes_run, device, have.channels, audioBuffer);
+    if (g_config.enable_audio)
+      PlayAudio(snes_run, device, have.channels, audioBuffer);
     uint64 t2 = SDL_GetPerformanceCounter();
 
     RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
@@ -408,7 +414,8 @@ int main(int argc, char** argv) {
   // clean sdl
   SDL_PauseAudioDevice(device, 1);
   SDL_CloseAudioDevice(device);
-  free(audioBuffer);
+  if (g_config.enable_audio)
+    free(audioBuffer);
   SDL_DestroyTexture(texture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
