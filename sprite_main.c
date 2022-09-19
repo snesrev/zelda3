@@ -6069,7 +6069,7 @@ void Sprite_Witch(int k) {  // 85e3fb
     } else if (link_item_mushroom == 1) {
       if (!(joypad1H_last & 0x40)) {
         Sprite_ShowSolicitedMessage(k, 0x4c);
-      } else if (Sprite_CheckDamageToLink_same_layer(k) && hud_cur_item == 5) {
+      } else if (Sprite_CheckDamageToLink_same_layer(k) && hud_cur_item == kHudItem_Mushroom) {
         Witch_AcceptShroom(k);
       }
     } else {
@@ -6884,7 +6884,7 @@ void BombosTablet(int k) {  // 85f355
     return;
 
   int j = 1;
-  if (!(hud_cur_item == 15 && (filtered_joypad_H & 0x40)) && (j = 0, !(filtered_joypad_L & 0x80)))
+  if (!(hud_cur_item == kHudItem_BookMudora && (filtered_joypad_H & 0x40)) && (j = 0, !(filtered_joypad_L & 0x80)))
     return;
   if (j) {
     player_handler_timer = 0;
@@ -6909,7 +6909,7 @@ void EtherTablet(int k) {  // 85f3c4
     return;
 
   int j = 1;
-  if (!(hud_cur_item == 15 && (filtered_joypad_H & 0x40)) && (j = 0, !(filtered_joypad_L & 0x80)))
+  if (!(hud_cur_item == kHudItem_BookMudora && (filtered_joypad_H & 0x40)) && (j = 0, !(filtered_joypad_L & 0x80)))
     return;
 
   if (j) {
@@ -10160,7 +10160,7 @@ void Sprite_FluteKid_Stumpy(int k) {  // 86b040
     sprite_ai_state[k] = 0;
     break;
   case 3:  // wait for music
-    if (hud_cur_item == 13 && joypad1H_last & 0x40) {
+    if (hud_cur_item == kHudItem_Flute && joypad1H_last & 0x40) {
       sprite_ai_state[k] = 4;
       music_control = 0xf2;
       sound_effect_1 = 0;
@@ -10447,7 +10447,7 @@ void Smithy_Main(int k) {  // 86b34e
 }
 
 bool Smithy_ListenForHammer(int k) {  // 86b43d
-  return sprite_delay_aux1[k] == 0 && hud_cur_item == 12 && (link_item_in_hand & 2) && player_handler_timer == 2 && Sprite_CheckDamageToLink_same_layer(k);
+  return sprite_delay_aux1[k] == 0 && hud_cur_item == kHudItem_Hammer && (link_item_in_hand & 2) && player_handler_timer == 2 && Sprite_CheckDamageToLink_same_layer(k);
 }
 
 int Smithy_SpawnDwarfPal(int k) {  // 86b5a6
@@ -12929,7 +12929,7 @@ void Sprite_FluteDad(int k) {  // 8dc343
   } else if (link_item_flute < 2) {
     Sprite_ShowSolicitedMessage(k, 0xa1);
   } else if (!(Sprite_ShowSolicitedMessage(k, 0xa4) & 0x100) &&
-             hud_cur_item == 13 && (joypad1H_last&0x40) && Sprite_CheckDamageToLink_same_layer(k)) {
+             hud_cur_item == kHudItem_Flute && (joypad1H_last&0x40) && Sprite_CheckDamageToLink_same_layer(k)) {
     Sprite_ShowMessageUnconditional(0xa2);
     sprite_ai_state[k]++;
     sprite_graphics[k] = 2;
@@ -24290,9 +24290,7 @@ int ReleaseBeeFromBottle(int x_value) {  // 9edccf
     sprite_floor[j] = link_is_on_lower_level;
     Sprite_SetX(j, link_x_coord + 8);
     Sprite_SetY(j, link_y_coord + 16);
-
-    uint8 t = (&link_item_bow)[hud_cur_item - 1];
-    if (link_bottle_info[t - 1] == 8)
+    if (link_bottle_info[link_item_bottle_index - 1] == 8)
       sprite_head_dir[j] = 1;
     InitializeSpawnedBee(j);
     sprite_x_vel[j] = kSpawnBee_XY[GetRandomNumber() & 7];
@@ -24466,7 +24464,7 @@ void Sprite_B3_PedestalPlaque(int k) {  // 9ee044
   if (BYTE(overworld_screen_index) != 48) {
     if (link_direction_facing || !Sprite_CheckDamageToLink_same_layer(k))
       return;
-    if (hud_cur_item != 15 || !(filtered_joypad_H & 0x40)) {
+    if (hud_cur_item != kHudItem_BookMudora || !(filtered_joypad_H & 0x40)) {
       if (!(filtered_joypad_L & 0x80))
         return;
       Sprite_ShowMessageUnconditional(0xb6);
@@ -24479,7 +24477,7 @@ void Sprite_B3_PedestalPlaque(int k) {  // 9ee044
   } else {
     if (link_direction_facing || !Sprite_CheckDamageToLink_same_layer(k))
       return;
-    if (hud_cur_item != 15 || !(filtered_joypad_H & 0x40)) {
+    if (hud_cur_item != kHudItem_BookMudora || !(filtered_joypad_H & 0x40)) {
       if (!(filtered_joypad_L & 0x80))
         return;
       Sprite_ShowMessageUnconditional(0xbc);

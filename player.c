@@ -1979,6 +1979,7 @@ void Link_HandleYItem() {  // 879b0e
   case 18: LinkItem_CaneOfSomaria(); break;
   case 19: LinkItem_Cape(); break;
   case 20: LinkItem_Mirror(); break;
+  case 21: LinkItem_Shovel(); break;
   default:
     assert(0);
   }

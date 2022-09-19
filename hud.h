@@ -1,6 +1,22 @@
 #pragma once
 #include "types.h"
 
+enum kHudItems {
+
+  kHudItem_Bombs = 4,
+  kHudItem_Mushroom = 5,
+  kHudItem_Hammer = 12,
+  kHudItem_Flute = 13,
+  kHudItem_BookMudora = 15,
+  kHudItem_BottleOld = 16,
+  
+  kHudItem_Shovel = 16,
+  kHudItem_Bottle1 = 21,
+  kHudItem_Bottle2 = 22,
+  kHudItem_Bottle3 = 23,
+  kHudItem_Bottle4 = 24,
+};
+
 void Hud_RefreshIcon();
 uint8 CheckPalaceItemPosession();
 void Hud_GotoPrevItem();
@@ -27,27 +43,18 @@ void Hud_GotoBottleMenu();
 void Hud_InitBottleMenu();
 void Hud_ExpandBottleMenu();
 void Hud_BottleMenu();
-void Hud_UpdateBottleMenu();
+void Hud_DrawBottleMenu_Update();
 void Hud_EraseBottleMenu();
 void Hud_RestoreNormalMenu();
 void Hud_SearchForEquippedItem();
-uint16 Hud_GetPaletteMask(uint8 what);
-void Hud_DrawYButtonItems(uint16 mask);
-void Hud_DrawTopRightBox(uint16 palmask);
-void Hud_DrawAbilityText(uint16 palmask);
-void Hud_DrawAbilityIcons();
-void Hud_DrawGlovesText(uint8 idx);
+void Hud_DrawYButtonItems();
+void Hud_DrawAbilityBox();
 void Hud_DrawProgressIcons();
 void Hud_DrawProgressIcons_Pendants();
 void Hud_DrawProgressIcons_Crystals();
 void Hud_DrawSelectedYButtonItem();
-void Hud_DrawMoonPearl();
-void Hud_DrawEquipment(uint16 palmask);
-void Hud_DrawShield();
-void Hud_DrawArmor();
-void Hud_DrawMapAndBigKey();
-void Hud_DrawCompass();
-void Hud_DrawBottleMenu(uint16 palmask);
+void Hud_DrawEquipmentBox();
+void Hud_DrawBottleMenu();
 void Hud_IntToDecimal(unsigned int number, uint8 *out);
 bool Hud_RefillHealth();
 void Hud_AnimateHeartRefill();
