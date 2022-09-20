@@ -260,10 +260,9 @@ int main(int argc, char** argv) {
 
   SDL_AudioDeviceID device;
   SDL_AudioSpec want = { 0 }, have;
-  int16_t* audioBuffer;
+  int16_t* audioBuffer = NULL;
 
-  if (g_config.enable_audio)
-  {
+  if (g_config.enable_audio) {
     want.freq = g_config.audio_freq;
     want.format = AUDIO_S16;
     want.channels = g_config.audio_channels;
@@ -370,7 +369,7 @@ int main(int argc, char** argv) {
 
 
     uint64 t1 = SDL_GetPerformanceCounter();
-    if (g_config.enable_audio)
+    if (audioBuffer)
       PlayAudio(snes_run, device, have.channels, audioBuffer);
     uint64 t2 = SDL_GetPerformanceCounter();
 
@@ -412,10 +411,11 @@ int main(int argc, char** argv) {
   // clean snes
   snes_free(snes);
   // clean sdl
-  SDL_PauseAudioDevice(device, 1);
-  SDL_CloseAudioDevice(device);
-  if (g_config.enable_audio)
-    free(audioBuffer);
+  if (g_config.enable_audio) {
+    SDL_PauseAudioDevice(device, 1);
+    SDL_CloseAudioDevice(device);
+  }
+  free(audioBuffer);
   SDL_DestroyTexture(texture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
