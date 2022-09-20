@@ -24281,11 +24281,11 @@ void InitializeSpawnedBee(int k) {  // 9edc9b
   sprite_y_vel[k] = kSpawnBee_InitVel[GetRandomNumber() & 7];
 }
 
-int ReleaseBeeFromBottle() {  // 9edccf
+int ReleaseBeeFromBottle(int x_value) {  // 9edccf
   static const int8 kSpawnBee_XY[8] = {8, 2, -2, -8, 10, 5, -5, -10};
 
   SpriteSpawnInfo info;
-  int j = Sprite_SpawnDynamically(0, 0xb2, &info);
+  int j = Sprite_SpawnDynamically(x_value, 0xb2, &info);
   if (j >= 0) {
     sprite_floor[j] = link_is_on_lower_level;
     Sprite_SetX(j, link_x_coord + 8);
@@ -24391,7 +24391,7 @@ void Sprite_B2_PlayerBee(int k) {  // 9ede63
     Point16U pt2;
     if (!PlayerBee_FindTarget(k, &pt2)) {
       pt2.x = link_x_coord + (GetRandomNumber() & 3) * 5;
-      pt2.x = link_y_coord + (GetRandomNumber() & 3) * 5;
+      pt2.y = link_y_coord + (GetRandomNumber() & 3) * 5;
     }
     if ((k ^ frame_counter) & 7)
       return;

@@ -873,7 +873,7 @@ void Sprite_79_Bee(int k);
 void Bee_DormantHive(int k);
 void SpawnBeeFromHive(int k);
 void InitializeSpawnedBee(int k);
-int ReleaseBeeFromBottle();
+int ReleaseBeeFromBottle(int x_value);
 void Bee_Main(int k);
 int Sprite_Find_EmptyBottle();
 void Bee_HandleInteractions(int k);

@@ -2421,8 +2421,8 @@ fail:
       goto fail;
     link_bottle_info[btidx] = 2;
     Hud_Rebuild();
-  } else if (b == 7) {  // bee
-    if (!ReleaseBeeFromBottle())
+  } else if (b == 7 || b == 8) {  // bad/good bee
+    if (!ReleaseBeeFromBottle(btidx))
       goto fail;
     link_bottle_info[btidx] = 2;
     Hud_Rebuild();
