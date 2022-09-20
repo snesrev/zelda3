@@ -3712,7 +3712,7 @@ void Sprite_DisableAll() {  // 89c22f
   flag_block_link_menu = 0;
   byte_7E0FFD = 0;
   byte_7E0FC6 = 0;
-  byte_7E03FC = 0;
+  is_archer_or_shovel_game = 0;
   for (int k = 7; k >= 0; k--)
     overlord_type[k] = 0;
   for (int k = 29; k >= 0; k--)

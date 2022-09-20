@@ -1932,31 +1932,31 @@ void Link_HandleYItem() {  // 879b0e
   if (button_b_frames && button_b_frames < 9)
     return;
 
-  if (link_is_bunny_mirror && (eq_selected_y_item != 11 && eq_selected_y_item != 20))
+  if (link_is_bunny_mirror && (current_item_y != 11 && current_item_y != 20))
     return;
 
-  if (byte_7E03FC && !link_is_bunny_mirror) {
-    if (byte_7E03FC == 2)
+  if (is_archer_or_shovel_game && !link_is_bunny_mirror) {
+    if (is_archer_or_shovel_game == 2)
       LinkItem_Bow();
     else
       LinkItem_Shovel();
     return;
   }
 
-  if (eq_selected_y_item != eq_selected_y_item_copy) {
-    if (eq_selected_y_item_copy == 8 && (link_item_flute & 2))
+  if (current_item_y != current_item_active) {
+    if (current_item_active == 8 && (link_item_flute & 2))
       button_mask_b_y &= ~0x40;
-    if (eq_selected_y_item_copy == 19 && link_cape_mode)
+    if (current_item_active == 19 && link_cape_mode)
       Link_ForceUnequipCape();
   }
 
   if ((link_item_in_hand | link_position_mode) == 0)
-    eq_selected_y_item_copy = eq_selected_y_item;
+    current_item_active = current_item_y;
 
-  if (eq_selected_y_item_copy == 5 || eq_selected_y_item_copy == 6)
-    eq_selected_rod = eq_selected_y_item_copy - 5 + 1;
+  if (current_item_active == 5 || current_item_active == 6)
+    eq_selected_rod = current_item_active - 5 + 1;
 
-  switch (eq_selected_y_item_copy) {
+  switch (current_item_active) {
   case 0:
     break;
   case 1: LinkItem_Bombs(); break;
@@ -2525,7 +2525,7 @@ void LinkItem_Shovel() {  // 87a32c
       Ancilla_Sfx2_Near(5);
     } else {
       AncillaAdd_ShovelDirt(23, 0); // shovel dirt
-      if (byte_7E03FC)
+      if (is_archer_or_shovel_game)
         DiggingGameGuy_AttemptPrizeSpawn();
       Ancilla_Sfx2_Near(18);
     }
@@ -3219,8 +3219,8 @@ void Link_HandleCape_passive_LiftCheck() {  // 87ae88
 }
 
 void Player_CheckHandleCapeStuff() {  // 87ae8f
-  if (link_cape_mode && eq_selected_y_item_copy == 19) {
-    if (eq_selected_y_item_copy == eq_selected_y_item) {
+  if (link_cape_mode && current_item_active == 19) {
+    if (current_item_active == current_item_y) {
       if (--cape_decrement_counter)
         return;
       cape_decrement_counter = kCapeDepletionTimers[link_magic_consumption];
@@ -6152,7 +6152,7 @@ void Link_ResetProperties_A() {  // 87f1a3
   link_is_bunny_mirror = 0;
   BYTE(link_timer_tempbunny) = 0;
   link_need_for_poof_for_transform = 0;
-  byte_7E03FC = 0;
+  is_archer_or_shovel_game = 0;
   link_need_for_pullforrupees_sprite = 0;
   BYTE(bit9_of_xcoord) = 0;
   link_something_with_hookshot = 0;

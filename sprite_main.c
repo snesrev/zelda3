@@ -13664,7 +13664,7 @@ void ShopKeeper_RapidTerminateReceiveItem() {  // 8ffaea
 }
 
 void Sprite_InitializeSecondaryItemMinigame(int what) {  // 8ffd86
-  byte_7E03FC = what;
+  is_archer_or_shovel_game = what;
   Link_ResetProperties_C();
   for (int k = 4; k >= 0; k--) {
     if (ancilla_type[k] == 0x30 || ancilla_type[k] == 0x31) {
@@ -19471,7 +19471,7 @@ void Sprite_D5_DigGameGuy(int k) {  // 9dfc38
       return;
     music_control = 9;
     sprite_ai_state[k]++;
-    byte_7E03FC = 0;
+    is_archer_or_shovel_game = 0;
     dialogue_message_index = 0x18a;
     Sprite_ShowMessageMinimal();
     super_bomb_indicator_unk2 = 254;

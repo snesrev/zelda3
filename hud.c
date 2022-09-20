@@ -647,7 +647,7 @@ void Hud_UpdateEquippedItem() {  // 8ddfaf
     link_item_bottle_index = hud_cur_item - kHudItem_Bottle1 + 1;
 
   assert(hud_cur_item < 25);
-  eq_selected_y_item = kNewStyleInventory ? kHudItemToItemNew[hud_cur_item] : kHudItemToItemOrg[hud_cur_item];
+  current_item_y = kNewStyleInventory ? kHudItemToItemNew[hud_cur_item] : kHudItemToItemOrg[hud_cur_item];
 }
 
 void Hud_CloseMenu() {  // 8ddfba
@@ -660,7 +660,7 @@ void Hud_CloseMenu() {  // 8ddfba
   main_module_index = saved_module_for_menu;
   if (submodule_index)
     Hud_RestoreTorchBackground();
-  if (eq_selected_y_item != 5 && eq_selected_y_item != 6) {
+  if (current_item_y != 5 && current_item_y != 6) {
     eq_debug_variable = 2;
     link_debug_value_1 = 0;
   } else {

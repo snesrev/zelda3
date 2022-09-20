@@ -980,7 +980,7 @@ continue_after_set:
       assert(link_state_bits == 0);
       oam_pal = kPlayerOam_Rod[eq_selected_rod - 1] << 8;
     }
-    if ((link_position_mode & 8) && eq_selected_y_item == 13)
+    if ((link_position_mode & 8) && current_item_y == 13)
       oam_pal = 0x400;  // cane of byrna
 
     int oam_pos = ((scratch_0_var ? kSwordStuff_oam_index_ptrs_1 : kSwordStuff_oam_index_ptrs_0)[r4loc] + sort_sprites_offset_into_oam_buffer)>>2;

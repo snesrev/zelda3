@@ -4627,7 +4627,7 @@ void Ancilla31_ByrnaSpark(int k) {  // 88dc70
 
   uint8 flags = 2;
   if (submodule_index == 0) {
-    if (eq_selected_y_item != 13) {
+    if (current_item_y != 13) {
 kill_me:
       link_disable_sprite_damage = 0;
       ancilla_type[k] = 0;
@@ -6553,7 +6553,7 @@ void AncillaAdd_MagicPowder(uint8 a, uint8 y) {  // 8992f0
     Ancilla_SetXY(k, link_x_coord + kMagicPower_X[j], link_y_coord + kMagicPower_Y[j]);
     Ancilla_CheckTileCollision(k);
     byte_7E0333 = ancilla_tile_attr[k];
-    if (eq_selected_y_item_copy == 9) {
+    if (current_item_active == 9) {
       ancilla_type[k] = 0;
       return;
     }
@@ -7111,7 +7111,7 @@ uint8 Ancilla_TerminateSelectInteractives(uint8 y) {  // 89ac6b
   tagalong_event_flags = 0;
   byte_7E02F3 = 0;
   flag_for_boomerang_in_place = 0;
-  byte_7E03FC = 0;
+  is_archer_or_shovel_game = 0;
   link_disable_sprite_damage = 0;
   byte_7E03FD = 0;
   link_electrocute_on_touch = 0;
