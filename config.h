@@ -52,6 +52,7 @@ typedef struct Config {
   bool mirror_to_darkworld;
   bool collect_items_with_sword;
   bool break_pots_with_sword;
+  bool disable_low_health_beep;
 } Config;
 
 extern Config g_config;

@@ -406,7 +406,8 @@ void Hud_RefillLogic() {  // 8ddb92
     if (link_lowlife_countdown_timer_beep) {
       link_lowlife_countdown_timer_beep--;
     } else if (!sound_effect_1) {
-      sound_effect_1 = 43;
+      if (!(enhanced_features0 & kFeatures0_DisableLowHealthBeep))
+        sound_effect_1 = 43;
       link_lowlife_countdown_timer_beep = 32 - 1;
     }
   }

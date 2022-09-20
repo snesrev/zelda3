@@ -288,6 +288,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "BreakPotsWithSword")) {
       g_config.break_pots_with_sword = (bool)strtol(value, (char **)NULL, 10);
       return true;
+    } else if (StringEqualsNoCase(key, "DisableLowHealthBeep")) {
+      g_config.disable_low_health_beep = (bool)strtol(value, (char **)NULL, 10);
+      return true;
     }
   }
   return false;
