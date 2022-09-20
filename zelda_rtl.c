@@ -210,7 +210,7 @@ bool ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
       PpuSetMode7PerspectiveCorrection(g_zenv.ppu, 0, 0);
   }
 
-  if (g_zenv.ppu->extraLeftRight != 0)
+  if (g_zenv.ppu->extraLeftRight != 0 || render_flags & kPpuRenderFlags_Height240)
     ConfigurePpuSideSpace();
 
   int height = render_flags & kPpuRenderFlags_Height240 ? 240 : 224;
