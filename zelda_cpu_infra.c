@@ -375,6 +375,8 @@ void loadFunc(void *ctx, void *data, size_t data_size) {
 }
 
 void CopyStateAfterSnapshotRestore(bool is_reset) {
+  memcpy(g_snes->ram + 0x1DBA0, g_snes->ram + 0x1b00, 224 * 2); // hdma table was moved
+
   memcpy(g_zenv.ram, g_snes->ram, 0x20000);
   memcpy(g_zenv.sram, g_snes->cart->ram, g_snes->cart->ramSize);
   memcpy(g_zenv.ppu->vram, &g_snes->ppu->vram, offsetof(Ppu, ppu2openBus) + 1 - offsetof(Ppu, vram));
@@ -387,6 +389,8 @@ void CopyStateAfterSnapshotRestore(bool is_reset) {
 
   memcpy(g_zenv.dma->channel, g_snes->dma->channel, sizeof(Dma) - offsetof(Dma, channel));
   
+  
+
   g_zenv.player->timer_cycles = 0;
 
   ZeldaOpenMsuFile();
@@ -394,6 +398,8 @@ void CopyStateAfterSnapshotRestore(bool is_reset) {
 
 void SaveSnesState(ByteArray *ctx) {
   MakeSnapshot(&g_snapshot_before);
+
+  memcpy(g_zenv.ram + 0x1b00, g_zenv.ram + 0x1DBA0, 224 * 2); // hdma table was moved
 
   // Copy from my state into the emulator
   memcpy(&g_snes->ppu->vram, g_zenv.ppu->vram, offsetof(Ppu, ppu2openBus) + 1 - offsetof(Ppu, vram));
@@ -746,14 +752,16 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
   MakeMySnapshot(&g_snapshot_mine);
   MakeSnapshot(&g_snapshot_theirs);
 
-  // Compare both snapshots
+  // Compare both snapshots before we run the frame, to see they match
   VerifySnapshotsEq(&g_snapshot_mine, &g_snapshot_theirs, &g_snapshot_before);
   if (g_fail) {
     printf("early fail\n");
+    assert(0);
     return turbo;
   }
 
   // Run orig version then snapshot
+again_theirs:
   snes->input1->currentState = input_state;
   RunEmulatedSnesFrame(snes, run_what);
   MakeSnapshot(&g_snapshot_theirs);
@@ -770,9 +778,11 @@ again_mine:
   if (g_fail) {
     g_fail = false;
     RestoreMySnapshot(&g_snapshot_before);
-    // RestoreSnapshot(&g_snapshot_before);
     //SaveLoadSlot(kSaveLoad_Save, 0);
-    goto again_mine;
+    if (0) 
+      goto again_mine;
+    RestoreSnapshot(&g_snapshot_before);
+    goto again_theirs;
   }
 
   return turbo;
