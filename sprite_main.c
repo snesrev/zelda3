@@ -19139,11 +19139,11 @@ void Toppo_Flustered(int k) {  // 9df3d4
     if (Sprite_CheckDamageToLink(k)) {
       dialogue_message_index = 0x174;
       Sprite_ShowMessageMinimal();
-      sprite_subtype2[k] = 1;
+      sprite_subtype[k] = 1;
     }
-  } else if (sprite_subtype[k] < 10) {
+  } else if (sprite_subtype[k] < 16) {
     sprite_subtype[k]++;
-  } else if (sprite_subtype[k] == 10) {
+  } else if (sprite_subtype[k] == 16) {
     sprite_flags5[k] = 0;
     sprite_state[k] = 6;
     sprite_delay_main[k] = 15;
