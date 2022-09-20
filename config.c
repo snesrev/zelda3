@@ -226,7 +226,10 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       return true;
     }
   } else if (section == 2) {
-    if (StringEqualsNoCase(key, "AudioFreq")) {
+    if (StringEqualsNoCase(key, "EnableAudio")) {
+      g_config.enable_audio = (bool)strtol(value, (char**)NULL, 10);
+      return true;
+    } else if (StringEqualsNoCase(key, "AudioFreq")) {
       g_config.audio_freq = (uint16)strtol(value, (char**)NULL, 10);
       return true;
     } else if (StringEqualsNoCase(key, "AudioChannels")) {
