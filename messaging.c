@@ -1278,19 +1278,28 @@ void WorldMap_Brighten() {  // 8abaaa
     overworld_map_state++;
 }
 
+bool DidPressButtonForMap() {
+  if (hud_cur_item_x != 0)
+    return filtered_joypad_H & 0x20;  // select
+  else
+    return filtered_joypad_L & 0x40;  // x
+}
+
 void WorldMap_PlayerControl() {  // 8abae6
   if (overworld_map_flags & 0x80) {
     overworld_map_flags &= ~0x80;
     OverworldMap_SetupHdma();
   }
 
-  if (!overworld_map_flags && filtered_joypad_L & 0x40) { // X
+  if (!overworld_map_flags && DidPressButtonForMap()) { // X
+    // getout
     overworld_map_state++;
     return;
   }
   if (BYTE(dung_draw_width_indicator)) {
     BYTE(dung_draw_width_indicator)--;
-  } else if (filtered_joypad_L & 0x70) {
+  } else if (filtered_joypad_L & 0x30 || DidPressButtonForMap()) {
+    // next zoom level
     sound_effect_2 = 36;
     BYTE(dung_draw_width_indicator) = 8;
 
@@ -1968,8 +1977,15 @@ void DungeonMap_HandleInputAndSprites() {  // 8ae954
   DungeonMap_DrawSprites();
 }
 
+static inline bool WantExitDungeonMap() {
+  if (hud_cur_item_x != 0)
+    return filtered_joypad_H & 0x20;  // Select
+  else
+    return filtered_joypad_L & 0x40;  // X
+}
+
 void DungeonMap_HandleInput() {  // 8ae95b
-  if (filtered_joypad_L & 0x40) {
+  if (WantExitDungeonMap()) {
     overworld_map_state += 2;
     dungmap_init_state = 0;
   } else {
@@ -3070,3 +3086,16 @@ void Death_PrepFaint() {  // 8ffa6f
   index_of_changable_dungeon_objs[0] = index_of_changable_dungeon_objs[1] = 0;
 }
 
+
+
+void DisplaySelectMenu() {
+  choice_in_multiselect_box_bak = choice_in_multiselect_box;
+  dialogue_message_index = 0x186;
+  uint8 bak = main_module_index;
+  Main_ShowTextMessage();
+  main_module_index = bak;
+  subsubmodule_index = 0;
+  submodule_index = 11;
+  saved_module_for_menu = main_module_index;
+  main_module_index = 14;
+}

@@ -760,7 +760,8 @@ void Module09_00_PlayerControl() {  // 82a53c
       main_module_index = 14;
       return;
     }
-    if (filtered_joypad_L & 0x40) {
+
+    if (DidPressButtonForMap()) {
       overworld_map_state = 0;
       submodule_index = 7;
       saved_module_for_menu = main_module_index;
@@ -768,15 +769,7 @@ void Module09_00_PlayerControl() {  // 82a53c
       return;
     }
     if (joypad1H_last & 0x20) {
-      choice_in_multiselect_box_bak = choice_in_multiselect_box;
-      dialogue_message_index = 0x186;
-      int bak = main_module_index;
-      Main_ShowTextMessage();
-      main_module_index = bak;
-      subsubmodule_index = 0;
-      submodule_index = 11;
-      saved_module_for_menu = main_module_index;
-      main_module_index = 14;
+      DisplaySelectMenu();
       return;
     }
     Hud_HandleItemSwitchInputs();

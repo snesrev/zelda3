@@ -137,3 +137,5 @@ void DungMap_FadeMapToBlack();
 void DungMap_RestoreOld();
 void Death_PlayerSwoon();
 void Death_PrepFaint();
+void DisplaySelectMenu();
+bool DidPressButtonForMap();

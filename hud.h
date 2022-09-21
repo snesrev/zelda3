@@ -19,8 +19,6 @@ enum kHudItems {
 
 void Hud_RefreshIcon();
 uint8 CheckPalaceItemPosession();
-void Hud_GotoPrevItem();
-void Hud_GotoNextItem();
 void Hud_FloorIndicator();
 void Hud_RemoveSuperBombIndicator();
 void Hud_SuperBombIndicator();
@@ -30,13 +28,10 @@ void Hud_ClearTileMap();
 void Hud_Init();
 void Hud_BringMenuDown();
 void Hud_ChooseNextMode();
-bool Hud_DoWeHaveThisItem();
-void Hud_EquipPrevItem();
-void Hud_EquipNextItem();
-void Hud_EquipItemAbove();
-void Hud_EquipItemBelow();
+bool Hud_DoWeHaveThisItem(uint8 item);
 void Hud_NormalMenu();
 void Hud_UpdateHud();
+uint8 Hud_LookupInventoryItem(uint8 item);
 void Hud_UpdateEquippedItem();
 void Hud_CloseMenu();
 void Hud_GotoBottleMenu();

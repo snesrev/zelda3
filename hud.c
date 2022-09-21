@@ -1,13 +1,8 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <stdint.h>
-#include <stdbool.h>
-#include <assert.h>
+#include "hud.h"
 #include "zelda_rtl.h"
 
 #include "variables.h"
-#include "hud.h"
+#include "messaging.h"
 
 enum {
   kNewStyleInventory = 0,
@@ -19,6 +14,12 @@ typedef struct ItemBoxGfx {
 } ItemBoxGfx;
 
 static void Hud_DrawItem(uint16 *dst, const ItemBoxGfx *src);
+static bool Hud_DoWeHaveThisItem(uint8 item);
+static void Hud_EquipPrevItem(uint8 *item);
+static void Hud_EquipNextItem(uint8 *item);
+static int Hud_GetItemPosition(int item);
+static void Hud_ReorderItem(int direction);
+
 
 const uint8 kMaxBombsForLevel[] = { 10, 15, 20, 25, 30, 35, 40, 50 };
 const uint8 kMaxArrowsForLevel[] = { 30, 35, 40, 45, 50, 55, 60, 70 };
@@ -224,8 +225,6 @@ static const uint16 kUpdateMagicPowerTilemap[17][4] = {
 static const uint16 kDungFloorIndicator_Gfx0[11] = { 0x2508, 0x2509, 0x2509, 0x250a, 0x250b, 0x250c, 0x250d, 0x251d, 0xe51c, 0x250e, 0x7f };
 static const uint16 kDungFloorIndicator_Gfx1[11] = { 0x2518, 0x2519, 0xa509, 0x251a, 0x251b, 0x251c, 0x2518, 0xa51d, 0xe50c, 0xa50e, 0x7f };
 
-static int Hud_GetCurrentItemPosition();
-static void Hud_ReorderItem(int direction);
 
 void Hud_RefreshIcon() {
   Hud_SearchForEquippedItem();
@@ -252,34 +251,36 @@ uint8 CheckPalaceItemPosession() {
   }
 }
 
-// Returns the zero based index of the currently selected hud item
-static int Hud_GetCurrentItemPosition() {
+// Returns the zero based index of the currently selected hud item,
+// or -1 if the item is item 0.
+static int Hud_GetItemPosition(int item) {
+  if (item <= 0)
+    return -1;
   if (hud_inventory_order[0] != 0) {
     int i = 0;
-    for (; i < kHudItemCount - 1 && hud_inventory_order[i] != hud_cur_item; i++) {}
+    for (; i < kHudItemCount - 1 && hud_inventory_order[i] != item; i++) {}
     return i;
   } else {
-    return hud_cur_item ? hud_cur_item - 1 : hud_cur_item;
+    return item ? item - 1 : item;
   }
 }
 
-void Hud_GotoPrevItem() {
+static void Hud_GotoPrevItem(uint8 *item, uint8 first_item_index) {
   if (hud_inventory_order[0] != 0) {
-    int i = Hud_GetCurrentItemPosition();
-    hud_cur_item = hud_inventory_order[i == 0 ? kHudItemCount - 1 : i - 1];
+    int pos = Hud_GetItemPosition(*item);
+    *item = (pos == 0 && !first_item_index) ? 0 :
+        hud_inventory_order[(pos <= 0 ? kHudItemCount : pos) - 1];
   } else {
-    if (--hud_cur_item < 1)
-      hud_cur_item = kHudItemCount;
+    *item = (*item > first_item_index) ? *item - 1 : kHudItemCount;
   }
 }
 
-void Hud_GotoNextItem() {
+static void Hud_GotoNextItem(uint8 *item, uint8 first_item_index) {
   if (hud_inventory_order[0] != 0) {
-    int i = Hud_GetCurrentItemPosition();
-    hud_cur_item = hud_inventory_order[i >= kHudItemCount - 1 ? 0 : i + 1];
+    int i = Hud_GetItemPosition(*item);
+    *item = hud_inventory_order[((uint)i >= kHudItemCount - 1) ? 0 : i + 1];
   } else {
-    if (++hud_cur_item > kHudItemCount)
-      hud_cur_item = 1;
+    *item = (*item < kHudItemCount) ? *item + 1 : first_item_index;
   }
 }
 
@@ -472,10 +473,10 @@ void Hud_ClearTileMap() {  // 8ddd5a
 }
 
 bool Hud_HaveAnyItems() { // new
-  uint8 or_all = 0;
   for (int i = 0; i < 20; i++)
-    or_all |= (&link_item_bow)[i];
-  return or_all != 0;
+    if ((&link_item_bow)[i])
+      return true;
+  return false;
 }
 
 void Hud_Init() {  // 8dddab
@@ -484,20 +485,9 @@ void Hud_Init() {  // 8dddab
   Hud_DrawAbilityBox();
   Hud_DrawProgressIcons();
   Hud_DrawEquipmentBox();
+  Hud_DrawSelectedYButtonItem();
 
-  if (Hud_HaveAnyItems()) {
-    int first_bottle = 0;
-    while (first_bottle < 4 && link_bottle_info[first_bottle] == 0)
-      first_bottle++;
-    if (first_bottle == 4)
-      link_item_bottle_index = 0;
-    else if (link_item_bottle_index == 0)
-      link_item_bottle_index = first_bottle + 1;
-
-    if (!Hud_DoWeHaveThisItem())
-      Hud_EquipNextItem();
-
-    Hud_DrawSelectedYButtonItem();
+  if (Hud_HaveAnyItems()) {    
     if (hud_cur_item == kHudItem_BottleOld && !kNewStyleInventory) {
       timer_for_flashing_circle = 16;
       Hud_DrawBottleMenu();
@@ -520,10 +510,10 @@ void Hud_ChooseNextMode() {  // 8dde6e
   if (Hud_HaveAnyItems()) {
     nmi_subroutine_index = 1;
     BYTE(nmi_load_target_addr) = 0x22;
-    if (!Hud_DoWeHaveThisItem())
-      Hud_EquipNextItem();
 
     Hud_DrawSelectedYButtonItem();
+
+    // Pick either the bottle state or normal one
     overworld_map_state = (hud_cur_item == kHudItem_BottleOld && !kNewStyleInventory) ? 10 : 4;
   } else {
     if (filtered_joypad_H)
@@ -531,45 +521,46 @@ void Hud_ChooseNextMode() {  // 8dde6e
   }
 }
 
-bool Hud_DoWeHaveThisItem() {  // 8ddeb0
-  assert(hud_cur_item != 0);
+static bool Hud_DoWeHaveThisItem(uint8 item) {  // 8ddeb0
+  if (item == 0)
+    return true;  // for the x item, 0 is valid
 
-  if (hud_cur_item == kHudItem_Flute && kNewStyleInventory)
+  if (item == kHudItem_Flute && kNewStyleInventory)
     return link_item_flute >= 2;
 
-  if (hud_cur_item == kHudItem_Shovel && kNewStyleInventory)
+  if (item == kHudItem_Shovel && kNewStyleInventory)
     return link_item_flute >= 1;
 
-  if (hud_cur_item >= kHudItem_Bottle1)
-    return link_bottle_info[hud_cur_item - kHudItem_Bottle1] != 0;
+  if (item >= kHudItem_Bottle1)
+    return link_bottle_info[item - kHudItem_Bottle1] != 0;
 
-  return (&link_item_bow)[hud_cur_item - 1] != 0;
+  return (&link_item_bow)[item - 1] != 0;
 }
 
-void Hud_EquipPrevItem() {  // 8dded9
+static void Hud_EquipPrevItem(uint8 *item) {  // 8dded9
   do {
-    Hud_GotoPrevItem();
-  } while (!Hud_DoWeHaveThisItem());
+    Hud_GotoPrevItem(item, item == &hud_cur_item);
+  } while (!Hud_DoWeHaveThisItem(*item));
 }
 
-void Hud_EquipNextItem() {  // 8ddee2
+static void Hud_EquipNextItem(uint8 *item) {  // 8ddee2
   do {
-    Hud_GotoNextItem();
-  } while (!Hud_DoWeHaveThisItem());
+    Hud_GotoNextItem(item, item == &hud_cur_item);
+  } while (!Hud_DoWeHaveThisItem(*item));
 }
 
-void Hud_EquipItemAbove() {  // 8ddeeb
+static void Hud_EquipItemAbove(uint8 *item) {  // 8ddeeb
   do {
     for(int i = 0; i < (kNewStyleInventory ? 6 : 5); i++)
-      Hud_GotoPrevItem();
-  } while (!Hud_DoWeHaveThisItem());
+      Hud_GotoPrevItem(item, 1);
+  } while (!Hud_DoWeHaveThisItem(*item));
 }
 
-void Hud_EquipItemBelow() {  // 8ddf00
+static void Hud_EquipItemBelow(uint8 *item) {  // 8ddf00
   do {
     for (int i = 0; i < (kNewStyleInventory ? 6 : 5); i++)
-      Hud_GotoNextItem();
-  } while (!Hud_DoWeHaveThisItem());
+      Hud_GotoNextItem(item, 1);
+  } while (!Hud_DoWeHaveThisItem(*item));
 }
 
 void Hud_NormalMenu() {  // 8ddf15
@@ -577,13 +568,21 @@ void Hud_NormalMenu() {  // 8ddf15
   if (!BYTE(joypad1H_last))
     BYTE(tmp1) = 0;
 
-  if (filtered_joypad_H & 0x10) {
+  if (filtered_joypad_H & 0x10) {  // start
     overworld_map_state = 5;
     sound_effect_2 = 18;
     return;
   }
 
-  if (joypad1H_last & 0x40 && enhanced_features0 & kFeatures0_SwitchLR) {
+  // Allow select to open the save/exit thing
+  if (joypad1H_last & 0x20 && sram_progress_indicator) {  // select
+    BG3VOFS_copy2 = -8;
+    Hud_CloseMenu();
+    DisplaySelectMenu();
+    return;
+  }
+
+  if (joypad1H_last & 0x40 && !(joypad1L_last & 0x40) && (enhanced_features0 & kFeatures0_SwitchLR)) {
     if (filtered_joypad_H & 8) {
       Hud_ReorderItem(kNewStyleInventory ? -6 : -5);
     } else if (filtered_joypad_H & 4) {
@@ -594,18 +593,20 @@ void Hud_NormalMenu() {  // 8ddf15
       Hud_ReorderItem(1);
     }
   } else if (!BYTE(tmp1)) {
-    uint16 old_item = hud_cur_item;
+    // If the x button is down, then move the blue circle
+    uint8 *item_p = (joypad1L_last & 0x40 && (enhanced_features0 & kFeatures0_SwitchLR)) ? &hud_cur_item_x : &hud_cur_item;
+    uint16 old_item = *item_p;
     if (filtered_joypad_H & 8) {
-      Hud_EquipItemAbove();
+      Hud_EquipItemAbove(item_p);
     } else if (filtered_joypad_H & 4) {
-      Hud_EquipItemBelow();
+      Hud_EquipItemBelow(item_p);
     } else if (filtered_joypad_H & 2) {
-      Hud_EquipPrevItem();
+      Hud_EquipPrevItem(item_p);
     } else if (filtered_joypad_H & 1) {
-      Hud_EquipNextItem();
+      Hud_EquipNextItem(item_p);
     }
     BYTE(tmp1) = filtered_joypad_H;
-    if (hud_cur_item != old_item) {
+    if (*item_p != old_item) {
       timer_for_flashing_circle = 16;
       sound_effect_2 = 32;
     }
@@ -626,9 +627,9 @@ void Hud_UpdateHud() {  // 8ddfa9
   Hud_UpdateEquippedItem();
 }
 
-void Hud_UpdateEquippedItem() {  // 8ddfaf
-  static const uint8 kHudItemToItemOrg[21] = { 
-    0, 
+uint8 Hud_LookupInventoryItem(uint8 item) {
+  static const uint8 kHudItemToItemOrg[21] = {
+    0,
     3,  2, 14, 1,  10,  5,
     6, 15, 16, 17,  9,  4,
     8,  7, 12, 11, 18, 13,
@@ -642,12 +643,16 @@ void Hud_UpdateEquippedItem() {  // 8ddfaf
     8,  7, 12, 21, 18, 13, // 8 is ocarina / shovel combined. moved shovel to 21.
     19, 20,11, 11, 11, 11, // 11 means bottle
   };
+  return kNewStyleInventory ? kHudItemToItemNew[item] : kHudItemToItemOrg[item];
+}
+
+void Hud_UpdateEquippedItem() {  // 8ddfaf
 
   if (hud_cur_item >= kHudItem_Bottle1)
     link_item_bottle_index = hud_cur_item - kHudItem_Bottle1 + 1;
 
   assert(hud_cur_item < 25);
-  current_item_y = kNewStyleInventory ? kHudItemToItemNew[hud_cur_item] : kHudItemToItemOrg[hud_cur_item];
+  current_item_y = Hud_LookupInventoryItem(hud_cur_item);
 }
 
 void Hud_CloseMenu() {  // 8ddfba
@@ -712,9 +717,9 @@ void Hud_BottleMenu() {  // 8de0df
     overworld_map_state = 5;
   } else if (filtered_joypad_H & 3) {
     if (filtered_joypad_H & 2) {
-      Hud_EquipPrevItem();
+      Hud_EquipPrevItem(&hud_cur_item);
     } else {
-      Hud_EquipNextItem();
+      Hud_EquipNextItem(&hud_cur_item);
     }
     timer_for_flashing_circle = 16;
     sound_effect_2 = 32;
@@ -793,19 +798,20 @@ static void Hud_DrawBox(uint16 *dst, int x1, int y1, int x2, int y2, uint8 palet
   }
 }
 
-static void Hud_DrawFlashingCircle(uint16 *p) {  // new
-  p[HUDXY(0, -1)] = 0x3C61;
-  p[HUDXY(1, -1)] = 0x3C61 | 0x4000;
-  p[HUDXY(-1, 0)] = 0x3C70;
-  p[HUDXY(2, 0)] = 0x3C70 | 0x4000;
-  p[HUDXY(-1, 1)] = 0xBC70;
-  p[HUDXY(2, 1)] = 0xBC70 | 0x4000;
-  p[HUDXY(0, 2)] = 0xBC61;
-  p[HUDXY(1, 2)] = 0xBC61 | 0x4000;
-  p[HUDXY(-1, -1)] = 0x3C60;
-  p[HUDXY(2, -1)] = 0x3C60 | 0x4000;
-  p[HUDXY(2, 2)] = 0x3C60 | 0xC000;
-  p[HUDXY(-1, 2)] = 0x3C60 | 0x8000;
+static void Hud_DrawFlashingCircle(uint16 *p, uint8 palette) {  // new
+  int pp = palette << 10;
+  p[HUDXY(0, -1)] = pp | 0x2061;
+  p[HUDXY(1, -1)] = pp | 0x2061 | 0x4000;
+  p[HUDXY(-1, 0)] = pp | 0x2070;
+  p[HUDXY(2, 0)] = pp | 0x2070 | 0x4000;
+  p[HUDXY(-1, 1)] = pp | 0xa070;
+  p[HUDXY(2, 1)] = pp | 0xa070 | 0x4000;
+  p[HUDXY(0, 2)] = pp | 0xa061;
+  p[HUDXY(1, 2)] = pp | 0xa061 | 0x4000;
+  p[HUDXY(-1, -1)] = pp | 0x2060;
+  p[HUDXY(2, -1)] = pp | 0x2060 | 0x4000;
+  p[HUDXY(2, 2)] = pp | 0x2060 | 0xC000;
+  p[HUDXY(-1, 2)] = pp | 0x2060 | 0x8000;
 }
 
 void Hud_DrawBottleMenu() {  // 8def67
@@ -816,7 +822,7 @@ void Hud_DrawBottleMenu() {  // 8def67
   const ItemBoxGfx *p = &kHudItemBottles[link_bottle_info[link_item_bottle_index - 1]];
   Hud_DrawItem(uvram_screen.row[0].col + kHudItemInVramPtr[15], p);
   if (timer_for_flashing_circle & 0x10)
-    Hud_DrawFlashingCircle(dst + HUDXY(25, 13 + (link_item_bottle_index - 1) * 4));
+    Hud_DrawFlashingCircle(dst + HUDXY(25, 13 + (link_item_bottle_index - 1) * 4), 7);
 }
 
 
@@ -848,14 +854,22 @@ void Hud_RestoreNormalMenu() {  // 8de346
 }
 
 void Hud_SearchForEquippedItem() {  // 8de399
+  int first_bottle = 0;
+  while (first_bottle < 4 && link_bottle_info[first_bottle] == 0)
+    first_bottle++;
+  if (first_bottle == 4)
+    link_item_bottle_index = 0;
+  else if (link_item_bottle_index == 0)
+    link_item_bottle_index = first_bottle + 1;
+
   if (!Hud_HaveAnyItems()) {
     hud_cur_item = 0;
     hud_var1 = 0;
   } else {
     if (!hud_cur_item)
       hud_cur_item = 1;
-    if (!Hud_DoWeHaveThisItem())
-      Hud_EquipNextItem();
+    if (!Hud_DoWeHaveThisItem(hud_cur_item))
+      Hud_EquipNextItem(&hud_cur_item);
   }
 }
 
@@ -880,11 +894,18 @@ void Hud_DrawYButtonItems() {  // 8de3d9
   uint16 *dst = uvram_screen.row[0].col;
   int x = kNewStyleInventory ? 0 : 1;
 
-  Hud_DrawBox(dst, x, 5, 20 - x, 19, 7);
+  bool is_x = (joypad1L_last & 0x40 && (enhanced_features0 & kFeatures0_SwitchLR));
+  uint8 palette = is_x ? 3 : 7;
+  Hud_DrawBox(dst, x, 5, 20 - x, 19, palette);
 
   if (!kNewStyleInventory) {
-    dst[HUDXY(2, 6)] = 0x3CF0;
-    dst[HUDXY(2, 7)] = 0x3CF1;
+    if (palette == 3) {
+      dst[HUDXY(2, 6)] = 0x2CF0;
+      dst[HUDXY(2, 7)] = 0x2CF0 | 0x8000;
+    } else {
+      dst[HUDXY(2, 6)] = 0x3CF0;
+      dst[HUDXY(2, 7)] = 0x3CF1;
+    }
   }
   dst[HUDXY(x + 2, 5)] = 0x246E;
   dst[HUDXY(x + 3, 5)] = 0x246F;
@@ -1061,7 +1082,8 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
     0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x2555, 0x255b, 0x2564, 0x2563, 0x2554, 0x24f5, 0x24f5, 0x24f5
   };
   static const uint16 kHudMirrorItemText[16] = {
-    0x255c, 0x2550, 0x2556, 0x2558, 0x2552, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x255c, 0x2558, 0x2561, 0x2561, 0x255e, 0x2561
+    0x255c, 0x2550, 0x2556, 0x2558, 0x2552, 0x24f5, 0x24f5, 0x24f5,
+    0x24f5, 0x24f5, 0x255c, 0x2558, 0x2561, 0x2561, 0x255e, 0x2561
   };
   static const uint16 kHudBowItemText[48] = {
     0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x256b, 0x256c, 0x256e, 0x256f, 0x257c, 0x257d, 0x257e, 0x257f,
@@ -1092,33 +1114,50 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
     0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5, 0x24f5,
   };
 
+#define L(x) (x == ' ' ? 0x24f5 : 0x2550 + x - 'A')
+  const uint16 kNotAssignedItemText[16] = {
+    L('N'), L('O'), L('T'), L(' '), L(' '), L(' '), L(' '), L(' '),
+    L('A'), L('S'), L('S'), L('I'), L('G'), L('N'), L('E'), L('D'),
+  };
+#undef L
+
   uint16 *dst_org = uvram_screen.row[0].col;
   uint16 *dst_box = dst_org + (kNewStyleInventory ? 1 : 0);
-  Hud_DrawBox(dst_box, 21, 5, 21 + 9, 10, 7);
 
-  uint16 *p = dst_org + kHudItemInVramPtr[Hud_GetCurrentItemPosition()];
-  Hud_Copy2x2(dst_box + HUDXY(25, 6), p);
+  bool is_x = (joypad1L_last & 0x40 && (enhanced_features0 & kFeatures0_SwitchLR));
+  uint8 palette = is_x ? 3 : 7;
+  Hud_DrawBox(dst_box, 21, 5, 21 + 9, 10, palette);
 
-  if (timer_for_flashing_circle & 0x10)
-    Hud_DrawFlashingCircle(p);
+  // Display either the current item or the item assigned
+  // to the x key.
+  int item = is_x ? hud_cur_item_x : hud_cur_item;
+
+  if (item != 0) {
+    uint16 *p = dst_org + kHudItemInVramPtr[Hud_GetItemPosition(item)];
+    Hud_Copy2x2(dst_box + HUDXY(25, 6), p);
+    if (timer_for_flashing_circle & 0x10)
+      Hud_DrawFlashingCircle(p, palette);
+  }
 
   const uint16 *src_p;
-  if (hud_cur_item == kHudItem_BottleOld && !kNewStyleInventory && link_item_bottle_index) {
+  if (item == kHudItem_BottleOld && !kNewStyleInventory && link_item_bottle_index) {
     src_p = &kHudBottlesItemText[(link_bottle_info[link_item_bottle_index - 1] - 1) * 16];
-  } else if (hud_cur_item == 5 && link_item_mushroom != 1) {
+  } else if (item == 5 && link_item_mushroom != 1) {
     src_p = &kHudMushroomItemText[(link_item_mushroom - 2) * 16];
-  } else if (hud_cur_item == 20 && link_item_mirror != 1) {
+  } else if (item == 20 && link_item_mirror != 1) {
     src_p = &kHudMirrorItemText[(link_item_mirror - 2) * 16];
-  } else if (hud_cur_item == 13 && link_item_flute != 1) {
+  } else if (item == 13 && link_item_flute != 1) {
     src_p = &kHudFluteItemText[(link_item_flute - 2) * 16];
-  } else if (hud_cur_item == 1 && link_item_bow != 1) {
+  } else if (item == 1 && link_item_bow != 1) {
     src_p = &kHudBowItemText[(link_item_bow - 2) * 16];
-  } else if (hud_cur_item >= kHudItem_Bottle1 && hud_cur_item <= kHudItem_Bottle4) {
-    src_p = &kHudBottlesItemText[(link_bottle_info[hud_cur_item - kHudItem_Bottle1] - 1) * 16];
-  } else if (hud_cur_item == kHudItem_Shovel) {
+  } else if (item >= kHudItem_Bottle1 && item <= kHudItem_Bottle4) {
+    src_p = &kHudBottlesItemText[(link_bottle_info[item - kHudItem_Bottle1] - 1) * 16];
+  } else if (item == kHudItem_Shovel) {
     src_p = &kHudItemText[(13 - 1) * 16];
+  } else if (item == 0) {
+    src_p = is_x ? kNotAssignedItemText : &kHudItemText[(20 - 1) * 16];
   } else {
-    src_p = &kHudItemText[(hud_cur_item - 1) * 16];
+    src_p = &kHudItemText[(item - 1) * 16];
   }
   Hud_DrawNxN(dst_box + HUDXY(22, 8), src_p, 8, 2);
 }
@@ -1344,10 +1383,10 @@ void Hud_HandleItemSwitchInputs() {
         break;
       }
       if (filtered_joypad_L & 0x20)
-        Hud_GotoPrevItem();
+        Hud_GotoPrevItem(&hud_cur_item, 1);
       else
-        Hud_GotoNextItem();
-      if (Hud_DoWeHaveThisItem())
+        Hud_GotoNextItem(&hud_cur_item, 1);
+      if (Hud_DoWeHaveThisItem(hud_cur_item))
         break;
     }
     if (hud_cur_item != old_item) {
@@ -1364,7 +1403,7 @@ static void Hud_ReorderItem(int direction) {
     for (int i = 0; i < 24; i++)
       hud_inventory_order[i] = i + 1;
   }
-  int old_pos = Hud_GetCurrentItemPosition(), new_pos = old_pos + direction;
+  int old_pos = Hud_GetItemPosition(hud_cur_item), new_pos = old_pos + direction;
   if (new_pos < 0)
     new_pos += kHudItemCount;
   else if (new_pos >= kHudItemCount)

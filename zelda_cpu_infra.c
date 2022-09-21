@@ -748,6 +748,9 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
     return turbo;
   }
 
+  if (g_fail)
+    return false;
+
   MakeSnapshot(&g_snapshot_before);
   MakeMySnapshot(&g_snapshot_mine);
   MakeSnapshot(&g_snapshot_theirs);
@@ -756,8 +759,8 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
   VerifySnapshotsEq(&g_snapshot_mine, &g_snapshot_theirs, &g_snapshot_before);
   if (g_fail) {
     printf("early fail\n");
-    assert(0);
-    return turbo;
+    //assert(0);
+    //return turbo;
   }
 
   // Run orig version then snapshot
@@ -776,13 +779,19 @@ again_mine:
   VerifySnapshotsEq(&g_snapshot_mine, &g_snapshot_theirs, &g_snapshot_before);
   
   if (g_fail) {
-    g_fail = false;
-    RestoreMySnapshot(&g_snapshot_before);
-    //SaveLoadSlot(kSaveLoad_Save, 0);
-    if (0) 
-      goto again_mine;
-    RestoreSnapshot(&g_snapshot_before);
-    goto again_theirs;
+//    g_fail = false;
+    if (1) {
+      RestoreMySnapshot(&g_snapshot_before);
+      //SaveLoadSlot(kSaveLoad_Save, 0);
+      if (0)
+        goto again_mine;
+      RestoreSnapshot(&g_snapshot_before);
+      goto again_theirs;
+    }
+    if (1) {
+      MakeSnapshot(&g_snapshot_theirs);
+      RestoreMySnapshot(&g_snapshot_theirs);      
+    }
   }
 
   return turbo;

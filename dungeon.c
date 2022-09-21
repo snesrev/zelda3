@@ -14,6 +14,7 @@
 #include "player_oam.h"
 #include "tables/generated_dungeon_rooms.h"
 #include "tagalong.h"
+#include "messaging.h"
 
 // todo: move to config
 static const uint16 kBossRooms[] = {
@@ -6583,32 +6584,26 @@ void Dungeon_HandleEdgeTransitionMovement(int dir) {  // 8288c5
 
 void Module07_00_PlayerControl() {  // 8288de
   if (!(flag_custom_spell_anim_active | flag_is_link_immobilized | flag_block_link_menu)) {
-    if (filtered_joypad_H & 0x10) {
+    if (filtered_joypad_H & 0x10) {  // start
       overworld_map_state = 0;
       submodule_index = 1;
       saved_module_for_menu = main_module_index;
       main_module_index = 14;
       return;
-    }
-    if (filtered_joypad_L & 0x40 && (uint8)cur_palace_index_x2 != 0xff && (uint8)dungeon_room_index) {
-      overworld_map_state = 0;
-      submodule_index = 3;
-      saved_module_for_menu = main_module_index;
-      main_module_index = 14;
-      return;
-    }
-    if (joypad1H_last & 0x20 && sram_progress_indicator) {
-      choice_in_multiselect_box_bak = choice_in_multiselect_box;
-      dialogue_message_index = 0x186;
-      uint8 bak = main_module_index;
-      Main_ShowTextMessage();
-      main_module_index = bak;
-      subsubmodule_index = 0;
-      overworld_map_state = 0;
-      submodule_index = 11;
-      saved_module_for_menu = main_module_index;
-      main_module_index = 14;
-      return;
+    } else if (DidPressButtonForMap()) {  // x
+      if ((uint8)cur_palace_index_x2 != 0xff && (uint8)dungeon_room_index) {
+        overworld_map_state = 0;
+        submodule_index = 3;
+        saved_module_for_menu = main_module_index;
+        main_module_index = 14;
+        return;
+      }
+    } else if (joypad1H_last & 0x20) {  // select
+      if (sram_progress_indicator) {
+        overworld_map_state = 0;
+        DisplaySelectMenu();
+        return;
+      }
     }
     Hud_HandleItemSwitchInputs();
   }

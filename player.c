@@ -1932,7 +1932,9 @@ void Link_HandleYItem() {  // 879b0e
   if (button_b_frames && button_b_frames < 9)
     return;
 
-  if (link_is_bunny_mirror && (current_item_y != 11 && current_item_y != 20))
+  uint8 item = current_item_y;
+
+  if (link_is_bunny_mirror && (item != 11 && item != 20))
     return;
 
   if (is_archer_or_shovel_game && !link_is_bunny_mirror) {
@@ -1943,15 +1945,30 @@ void Link_HandleYItem() {  // 879b0e
     return;
   }
 
-  if (current_item_y != current_item_active) {
+  uint8 old_down = joypad1H_last, old_pressed = filtered_joypad_H, old_bottle = link_item_bottle_index;
+  if ((link_item_in_hand | link_position_mode) == 0) {
+    // Is X held down?
+    if (joypad1L_last & 0x40 && !(old_down & 0x40) && hud_cur_item_x != 0) {
+      
+      if (hud_cur_item_x >= kHudItem_Bottle1)
+        link_item_bottle_index = hud_cur_item_x - kHudItem_Bottle1 + 1;
+      item = Hud_LookupInventoryItem(hud_cur_item_x);
+      // Pretend it's actually Y that's down
+      joypad1H_last = old_down | 0x40;
+      filtered_joypad_H = old_pressed | filtered_joypad_L & 0x40;
+    }
+  }
+
+  if (item != current_item_active) {
     if (current_item_active == 8 && (link_item_flute & 2))
       button_mask_b_y &= ~0x40;
     if (current_item_active == 19 && link_cape_mode)
       Link_ForceUnequipCape();
   }
 
+
   if ((link_item_in_hand | link_position_mode) == 0)
-    current_item_active = current_item_y;
+    current_item_active = item;
 
   if (current_item_active == 5 || current_item_active == 6)
     eq_selected_rod = current_item_active - 5 + 1;
@@ -1983,6 +2000,10 @@ void Link_HandleYItem() {  // 879b0e
   default:
     assert(0);
   }
+
+  joypad1H_last = old_down;
+  filtered_joypad_H = old_pressed;
+  link_item_bottle_index = old_bottle;
 }
 
 void Link_HandleAPress() {  // 879baa
