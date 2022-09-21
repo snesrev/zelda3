@@ -28,7 +28,6 @@ void Hud_ClearTileMap();
 void Hud_Init();
 void Hud_BringMenuDown();
 void Hud_ChooseNextMode();
-bool Hud_DoWeHaveThisItem(uint8 item);
 void Hud_NormalMenu();
 void Hud_UpdateHud();
 uint8 Hud_LookupInventoryItem(uint8 item);
