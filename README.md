@@ -18,6 +18,8 @@ I got much assistance from spannierism's Zelda 3 JP disassembly and the other on
 
 Some features have been added that are not supported by the original game.
 
+Secondary item slot on button X (Hold X in inventory to select).
+
 Support for MSU audio tracks.
 
 Support for enhanced aspect ratios of 16:9 or 16:10.
@@ -27,6 +29,10 @@ Switching current item with L/R keys.
 Reordering of inventory by pressing Y+Arrows.
 
 Higher quality map screen.
+
+Disable low health beep.
+
+Pick up items and destroy pots with Sword.
 
 ## Dependencies
 
