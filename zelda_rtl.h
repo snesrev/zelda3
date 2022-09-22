@@ -121,6 +121,7 @@ enum {
   kFeatures0_CollectItemsWithSword = 16,
   kFeatures0_BreakPotsWithSword = 32,
   kFeatures0_DisableLowHealthBeep = 64,
+  kFeatures0_SkipIntroOnKeypress = 128,
 };
 
 #define enhanced_features0 (*(uint32*)(g_ram+0x64c))

@@ -291,6 +291,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "DisableLowHealthBeep")) {
       g_config.disable_low_health_beep = (bool)strtol(value, (char **)NULL, 10);
       return true;
+    } else if (StringEqualsNoCase(key, "SkipIntroOnKeypress")) {
+      g_config.skip_intro_on_keypress = (bool)strtol(value, (char **)NULL, 10);
+      return true;
     }
   }
   return false;

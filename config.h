@@ -53,6 +53,7 @@ typedef struct Config {
   bool collect_items_with_sword;
   bool break_pots_with_sword;
   bool disable_low_health_beep;
+  bool skip_intro_on_keypress;
 } Config;
 
 extern Config g_config;

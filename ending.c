@@ -510,7 +510,9 @@ void Polyhedral_InitializeThread() {  // 89f7de
 }
 
 void Module00_Intro() {  // 8cc120
-  if (submodule_index >= 8 && ((filtered_joypad_L & 0xc0 | filtered_joypad_H) & 0xd0)) {
+  uint8 skip_at = enhanced_features0 & kFeatures0_SkipIntroOnKeypress ? 4 : 8;
+
+  if (submodule_index >= skip_at && ((filtered_joypad_L & 0xc0 | filtered_joypad_H) & 0xd0)) {
     FadeMusicAndResetSRAMMirror();
     return;
   }
