@@ -54,6 +54,7 @@ typedef struct Config {
   bool break_pots_with_sword;
   bool disable_low_health_beep;
   bool skip_intro_on_keypress;
+  bool show_max_items_in_yellow;
 } Config;
 
 extern Config g_config;

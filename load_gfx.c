@@ -2056,6 +2056,10 @@ void Palette_Load_DungeonMapBG() {  // 9bee3a
 void Palette_Load_HUD() {  // 9bee52
   const uint16 *src = kHudPalData + hud_palette * 32;
   Palette_LoadMultiple(src, 0x0, 15, 1);
+  if (hud_palette == 0 && (enhanced_features0 & kFeatures0_ShowMaxItemsInYellow)) {
+    const uint16 kYellowTextPalette[] = { 0,  0x2bc, 0x3fff, 0 };
+    Palette_LoadSingle(kYellowTextPalette, 6 * 4 * 2, 3);
+  }
 }
 
 void Palette_Load_DungeonSet() {  // 9bee74

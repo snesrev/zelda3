@@ -722,9 +722,9 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
         StateRecorder_RecordPatchByte(&state_recorder, kRam_BugsFixed, &g_ram[kRam_BugsFixed], 1);
       }
 
-      if (g_ram[kRam_Features0] != g_wanted_zelda_features) {
-        g_emulated_ram[kRam_Features0] = g_ram[kRam_Features0] = g_wanted_zelda_features;
-        StateRecorder_RecordPatchByte(&state_recorder, kRam_Features0, &g_ram[kRam_Features0], 1);
+      if (enhanced_features0 != g_wanted_zelda_features) {
+        *(uint32*)&g_emulated_ram[kRam_Features0] = enhanced_features0 = g_wanted_zelda_features;
+        StateRecorder_RecordPatchByte(&state_recorder, kRam_Features0, (uint8*)&enhanced_features0, 4);
       }
     }
   }
@@ -742,7 +742,7 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
     g_emulated_ram[kRam_CrystalRotateCounter] = g_ram[kRam_CrystalRotateCounter];
   }
   
-  if (snes == NULL || g_ram[kRam_Features0] != 0) {
+  if (snes == NULL || enhanced_features0 != 0) {
     // can't compare against real impl when running with extra features.
     ZeldaRunFrame(input_state, run_what);
     return turbo;

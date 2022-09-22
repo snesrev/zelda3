@@ -1420,3 +1420,6 @@
 #define R18 (*(uint16*)(g_ram+0xca))
 #define R20 (*(uint16*)(g_ram+0xcc))
 
+// Relocated the hdma table so it can fit 240 rows
+#define hdma_table_dynamic_orig_pos ((uint16*)(g_ram+0x1B00))
+#define hdma_table_dynamic ((uint16*)(g_ram+0x1DBA0))

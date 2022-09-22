@@ -194,6 +194,7 @@ int main(int argc, char** argv) {
     f |= g_config.break_pots_with_sword * kFeatures0_BreakPotsWithSword;
     f |= g_config.disable_low_health_beep * kFeatures0_DisableLowHealthBeep;
     f |= g_config.skip_intro_on_keypress * kFeatures0_SkipIntroOnKeypress;
+    f |= g_config.show_max_items_in_yellow * kFeatures0_ShowMaxItemsInYellow;
     g_wanted_zelda_features = f;
   }
 

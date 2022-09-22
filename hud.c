@@ -1347,17 +1347,28 @@ void Hud_Update_IgnoreHealth() {  // 8dfc09
   uint8 d[3];
 
   Hud_IntToDecimal(link_rupees_actual, d);
-  hud_tile_indices_buffer[0x28] = 0x2400 | d[0];
-  hud_tile_indices_buffer[0x29] = 0x2400 | d[1];
-  hud_tile_indices_buffer[0x2A] = 0x2400 | d[2];
+
+
+  const uint16 base_tiles[2] = {
+    0x2800,
+    (enhanced_features0 & kFeatures0_ShowMaxItemsInYellow) ? 0x3800 : 0x2800,
+  };
+
+  int base_tile = base_tiles[link_rupees_actual == 999];
+  hud_tile_indices_buffer[0x28] = base_tile | d[0];
+  hud_tile_indices_buffer[0x29] = base_tile | d[1];
+  hud_tile_indices_buffer[0x2A] = base_tile | d[2];
 
   Hud_IntToDecimal(link_item_bombs, d);
-  hud_tile_indices_buffer[0x2C] = 0x2400 | d[1];
-  hud_tile_indices_buffer[0x2D] = 0x2400 | d[2];
+  base_tile = base_tiles[link_item_bombs == kMaxBombsForLevel[link_bomb_upgrades]];
+
+  hud_tile_indices_buffer[0x2C] = base_tile | d[1];
+  hud_tile_indices_buffer[0x2D] = base_tile | d[2];
 
   Hud_IntToDecimal(link_num_arrows, d);
-  hud_tile_indices_buffer[0x2F] = 0x2400 | d[1];
-  hud_tile_indices_buffer[0x30] = 0x2400 | d[2];
+  base_tile = base_tiles[link_num_arrows == kMaxArrowsForLevel[link_arrow_upgrades]];
+  hud_tile_indices_buffer[0x2F] = base_tile | d[1];
+  hud_tile_indices_buffer[0x30] = base_tile | d[2];
 
   d[2] = 0x7f;
   if (link_num_keys != 0xff)
