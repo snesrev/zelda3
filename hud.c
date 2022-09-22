@@ -1350,8 +1350,8 @@ void Hud_Update_IgnoreHealth() {  // 8dfc09
 
 
   const uint16 base_tiles[2] = {
-    0x2800,
-    (enhanced_features0 & kFeatures0_ShowMaxItemsInYellow) ? 0x3800 : 0x2800,
+    0x2400,
+    (enhanced_features0 & kFeatures0_ShowMaxItemsInYellow) ? 0x3400 : 0x2400,
   };
 
   int base_tile = base_tiles[link_rupees_actual == 999];
