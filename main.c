@@ -358,14 +358,19 @@ int main(int argc, char** argv) {
       continue;
     }
 
+    uint64 t0 = SDL_GetPerformanceCounter();
+
     // Clear gamepad inputs when joypad directional inputs to avoid wonkiness
     int inputs = g_input1_state;
     if (g_input1_state & 0xf0)
       g_gamepad_buttons = 0;
+    inputs |= g_gamepad_buttons;
 
-    uint64 t0 = SDL_GetPerformanceCounter();
+    // Avoid up/down and left/right from being pressed at the same time
+    if ((inputs & 0x30) == 0x30) inputs ^= 0x30;
+    if ((inputs & 0xc0) == 0xc0) inputs ^= 0xc0;
 
-    bool is_turbo = RunOneFrame(snes_run, g_input1_state | g_gamepad_buttons, (frameCtr++ & 0x7f) != 0 && g_turbo);
+    bool is_turbo = RunOneFrame(snes_run, inputs, (frameCtr++ & 0x7f) != 0 && g_turbo);
 
     if (is_turbo)
       continue;
