@@ -206,8 +206,14 @@ void ppu_runLine(Ppu *ppu, int line) {
         ppu_calculateMode7Starts(ppu, line);
       for (int x = 0; x < 256; x++)
         ppu_handlePixel(ppu, x, line);
+
       uint8 *dst = ppu->renderBuffer + ((line - 1) * 2 * ppu->renderPitch);
-      memcpy(dst + ppu->renderPitch, dst, 512 * 4);
+
+      if (ppu->extraLeftRight != 0) {
+        memset(dst, 0, 2 * sizeof(uint32) * ppu->extraLeftRight);
+        memset(dst + 2 * sizeof(uint32) * (256 + ppu->extraLeftRight), 0, 2 * sizeof(uint32) * ppu->extraLeftRight);
+      }
+      memcpy(dst + ppu->renderPitch, dst, 2 * sizeof(uint32) * (256 + ppu->extraLeftRight * 2));
     }
   }
 }
@@ -1031,7 +1037,7 @@ static void ppu_handlePixel(Ppu* ppu, int x, int y) {
     }
   }
   int row = y - 1;
-  uint8 *pixelBuffer = (uint8*) &ppu->renderBuffer[row * 2 * ppu->renderPitch + x * 8];
+  uint8 *pixelBuffer = (uint8*) &ppu->renderBuffer[row * 2 * ppu->renderPitch + (x + ppu->extraLeftRight) * 8];
   pixelBuffer[0] = ((b2 << 3) | (b2 >> 2)) * ppu->brightness / 15;
   pixelBuffer[1] = ((g2 << 3) | (g2 >> 2)) * ppu->brightness / 15;
   pixelBuffer[2] = ((r2 << 3) | (r2 >> 2)) * ppu->brightness / 15;
