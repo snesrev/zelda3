@@ -587,8 +587,9 @@ static void Hud_EquipItemAbove(uint8 *item) {  // 8ddeeb
 }
 
 static void Hud_EquipItemBelow(uint8 *item) {  // 8ddf00
+  int num = *item == 0 ? 1 : (kNewStyleInventory ? 6 : 5);
   do {
-    for (int i = 0; i < (kNewStyleInventory ? 6 : 5); i++)
+    for (int i = 0; i < num; i++)
       Hud_GotoNextItem(item, 1);
   } while (!Hud_DoWeHaveThisItem(*item));
 }
