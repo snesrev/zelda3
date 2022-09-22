@@ -4,6 +4,6 @@ labels: [enhancement]
 body:
   - type: textarea
     attributes:
-      label: What feature do you want to get added?
+      label: What feature do you want to get added? And how it will work?
     validations:
       required: true
