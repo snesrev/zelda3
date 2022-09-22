@@ -1867,7 +1867,7 @@ bool Sprite_PrepOamCoordOrDoubleRet(int k, PrepOamCoordsRet *ret) {  // 86e41e
   R2 = y - sprite_z[k];
   ret->flags = sprite_oam_flags[k] ^ sprite_obj_prio[k];
   ret->r4 = 0;
-  int xt = (g_ram[kRam_Features0] & kFeatures0_ExtendScreen64) ? 0x40 : 0;
+  int xt = (enhanced_features0 & kFeatures0_ExtendScreen64) ? 0x40 : 0;
 
   if ((uint16)(x + 0x40 + xt) >= (0x170 + xt * 2) ||
       (uint16)(y + 0x40) >= 0x170 && !(sprite_flags4[k] & 0x20)) {
@@ -3841,7 +3841,7 @@ void Sprite_ActivateAllProxima() {  // 89c55e
   uint8 bak1 = byte_7E069E[1];
   byte_7E069E[1] = 0xff;
 
-  int xt = (g_ram[kRam_Features0] & kFeatures0_ExtendScreen64) ? 0x40 : 0;
+  int xt = (enhanced_features0 & kFeatures0_ExtendScreen64) ? 0x40 : 0;
   BG2HOFS_copy2 -= xt;
   for (int i = 21 + (xt >> 3); i >= 0; i--) {
     Sprite_ActivateWhenProximal();
@@ -3866,7 +3866,7 @@ void Sprite_ProximityActivation() {  // 89c58f
 
 void Sprite_ActivateWhenProximal() {  // 89c5bb
   if (byte_7E069E[1]) {
-    int xt = (g_ram[kRam_Features0] & kFeatures0_ExtendScreen64) ? 0x40 : 0;
+    int xt = (enhanced_features0 & kFeatures0_ExtendScreen64) ? 0x40 : 0;
     uint16 x = BG2HOFS_copy2 + (sign8(byte_7E069E[1]) ? -0x10 - xt : 0x110 + xt);
     uint16 y = BG2VOFS_copy2 - 0x30;
     for (int i = 21; i >= 0; i--, y += 16)
@@ -3876,7 +3876,7 @@ void Sprite_ActivateWhenProximal() {  // 89c5bb
 
 void Sprite_ActivateWhenProximalBig() {  // 89c5fa
   if (byte_7E069E[0]) {
-    int xt = (g_ram[kRam_Features0] & kFeatures0_ExtendScreen64) ? 0x40 : 0;
+    int xt = (enhanced_features0 & kFeatures0_ExtendScreen64) ? 0x40 : 0;
     uint16 x = BG2HOFS_copy2 - 0x30 - xt;
     uint16 y = BG2VOFS_copy2 + (sign8(byte_7E069E[0]) ? -0x10 : 0x110);
     for (int i = 21 + (xt >> 3); i >= 0; i--, x += 16)
