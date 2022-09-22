@@ -1,5 +1,5 @@
 name: Bug report
-description: Report bugs with the mod itself.
+description: Report bugs here.
 labels: [bug]
 body:
   - type: textarea
