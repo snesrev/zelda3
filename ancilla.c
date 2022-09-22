@@ -5752,7 +5752,7 @@ void Ancilla_PrepAdjustedOamCoord(int k, Point16U *info) {  // 88f6a4
 uint8 Ancilla_SetOam_XY(OamEnt *oam, uint16 x, uint16 y) {  // 88f6e1
   uint8 rv = 0;
   uint8 yval = 0xf0;
-  int xt = (g_ram[kRam_Features0] & kFeatures0_ExtendScreen64) ? 0x40 : 0;
+  int xt = enhanced_features0 ? 0x40 : 0;
   if ((uint16)(x + xt) < 256 + xt * 2 && y < 256) {
     rv = (x >> 8) & 1;
     oam->x = x;
@@ -7307,7 +7307,7 @@ int DashTremor_TwiddleOffset(int k) {  // 8ffafe
 }
 
 void Ancilla_TerminateIfOffscreen(int j) {  // 8ffd52
-  int xt = (g_ram[kRam_Features0] & kFeatures0_ExtendScreen64) ? 0x40 : 0;
+  int xt = (enhanced_features0 & kFeatures0_ExtendScreen64) ? 0x40 : 0;
   uint16 x = Ancilla_GetX(j) - BG2HOFS_copy2 + xt;
   uint16 y = Ancilla_GetY(j) - BG2VOFS_copy2;
   if (x >= 244 + xt * 2 || y >= 240)
