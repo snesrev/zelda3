@@ -1,8 +1,8 @@
-### Description of Changes
-<!-- Brief description or overview on what was changed in the PR -->
+### Description
+<!-- What is the purpose of this PR and what it adds? -->
 
-### Rationale behind Changes
-<!-- Why were these changes made?  What problem does it solve / area does it improve? -->
+### Will this Pull Request break anything? 
+<!-- Will it break the compiling? -->
 
 ### Suggested Testing Steps
-<!-- If applicable, including examples you've already tested with / recommendations for how to test further is very helpful! -->
+<!-- See if the compiling fails/break anything in the game. -->
