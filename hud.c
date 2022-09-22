@@ -151,6 +151,23 @@ static const ItemBoxGfx kHudItemMirror[4] = {
   {0x2c62, 0x2c63, 0x2c72, 0x2c73},
   {0x2886, 0x2887, 0x2888, 0x2889},
 };
+static const ItemBoxGfx kHudItemGloves[3] = {
+  {0x20f5, 0x20f5, 0x20f5, 0x20f5},
+  {0x2130, 0x2131, 0x2140, 0x2141},
+  {0x28da, 0x28db, 0x28ea, 0x28eb},
+};
+static const ItemBoxGfx kHudItemBoots[2] = {
+  {0x20f5, 0x20f5, 0x20f5, 0x20f5},
+  {0x3429, 0x342a, 0x342b, 0x342c},
+};
+static const ItemBoxGfx kHudItemFlippers[2] = {
+  {0x20f5, 0x20f5, 0x20f5, 0x20f5},
+  {0x2c9a, 0x2c9b, 0x2c9d, 0x2c9e},
+};
+static const ItemBoxGfx kHudItemMoonPearl[2] = {
+  {0x20f5, 0x20f5, 0x20f5, 0x20f5},
+  {0x2433, 0x2434, 0x2435, 0x2436},
+};
 static const ItemBoxGfx kHudItemEmpty[1] = {
   {0x20f5, 0x20f5, 0x20f5, 0x20f5},
 };
@@ -181,7 +198,7 @@ static const uint16 kHudTilemap[165] = {
   0x207f, 0x207f, 0xa850, 0x2856, 0xe850,
 };
 
-static const ItemBoxGfx * const kHudItemBoxGfxPtrs[20] = {
+static const ItemBoxGfx * const kHudItemBoxGfxPtrs[] = {
   kHudItemBow,
   kHudItemBoomerang,
   kHudItemHookshot,
@@ -202,6 +219,19 @@ static const ItemBoxGfx * const kHudItemBoxGfxPtrs[20] = {
   kHudItemCaneByrna,
   kHudItemCape,
   kHudItemMirror,
+  kHudItemGloves,
+  kHudItemBoots,
+  kHudItemFlippers,
+  kHudItemMoonPearl,
+  kHudItemEmpty,
+  kHudItemSword,
+  kHudItemShield,
+  kHudItemArmor,
+  kHudItemBottles,
+  kHudItemBottles,
+  kHudItemBottles,
+  kHudItemBottles,
+
 };
 static const uint16 kUpdateMagicPowerTilemap[17][4] = {
   {0x3cf5, 0x3cf5, 0x3cf5, 0x3cf5},
@@ -930,23 +960,6 @@ void Hud_DrawAbilityBox() {  // 8de6b6
   static const uint16 kHudGlovesText[20] = {
     0x2cf5, 0x2cf5, 0x2cf5, 0x2cf5, 0x2cf5, 0x2d5b, 0x2d58, 0x2d55, 0x2d63, 0x2d28,
     0x2cf5, 0x2cf5, 0x2cf5, 0x2cf5, 0x2cf5, 0x2d5b, 0x2d58, 0x2d55, 0x2d63, 0x2d29,
-  };
-  static const ItemBoxGfx kHudItemGloves[3] = {
-    {0x20f5, 0x20f5, 0x20f5, 0x20f5},
-    {0x2130, 0x2131, 0x2140, 0x2141},
-    {0x28da, 0x28db, 0x28ea, 0x28eb},
-  };
-  static const ItemBoxGfx kHudItemBoots[2] = {
-    {0x20f5, 0x20f5, 0x20f5, 0x20f5},
-    {0x3429, 0x342a, 0x342b, 0x342c},
-  };
-  static const ItemBoxGfx kHudItemFlippers[2] = {
-    {0x20f5, 0x20f5, 0x20f5, 0x20f5},
-    {0x2c9a, 0x2c9b, 0x2c9d, 0x2c9e},
-  };
-  static const ItemBoxGfx kHudItemMoonPearl[2] = {
-    {0x20f5, 0x20f5, 0x20f5, 0x20f5},
-    {0x2433, 0x2434, 0x2435, 0x2436},
   };
   uint16 *dst = uvram_screen.row[0].col;
   int x = kNewStyleInventory ? 0 : 1;
