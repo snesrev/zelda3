@@ -20,6 +20,8 @@ Some features have been added that are not supported by the original game.
 
 Secondary item slot on button X (Hold X in inventory to select).
 
+Displays max rupees, bombs and arrows with yellow or orange color.
+
 Support for MSU audio tracks.
 
 Support for enhanced aspect ratios of 16:9 or 16:10.
