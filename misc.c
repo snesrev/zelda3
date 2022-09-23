@@ -15,8 +15,7 @@
 #include "ending.h"
 #include "attract.h"
 #include "snes/snes_regs.h"
-#include "tables/generated_predefined_tiles.h"
-#include "tables/generated_sound_banks.h"
+#include "assets.h"
 
 static void KillAgahnim_LoadMusic();
 static void KillAghanim_Init();

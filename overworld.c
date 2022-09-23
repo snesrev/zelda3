@@ -10,11 +10,7 @@
 #include "messaging.h"
 #include "player_oam.h"
 #include "snes/snes_regs.h"
-#include "tables/generated_map32_to_map16.h"
-#include "tables/generated_map16_to_map8.h"
-#include "tables/generated_overworld_tables.h"
-#include "tables/generated_overworld.h"
-#include "tables/generated_enemy_damage_data.h"
+#include "assets.h"
 
 const uint16 kOverworld_OffsetBaseX[64] = {
   0,     0, 0x400, 0x600, 0x600, 0xa00, 0xa00, 0xe00,
@@ -2021,7 +2017,7 @@ void FluteMenu_LoadSelectedScreenPalettes() {  // 82ecdd
 }
 
 void FindPartnerWhirlpoolExit() {  // 82ed08
-  int j = FindInWordArray(kWhirlpoolAreas, overworld_screen_index, countof(kWhirlpoolAreas));
+  int j = FindInWordArray(kWhirlpoolAreas, overworld_screen_index, kWhirlpoolAreas_SIZE / 2);
   if (j >= 0) {
     num_memorized_tiles = 0;
     Overworld_LoadBirdTravelPos(j + 9);
@@ -2450,13 +2446,24 @@ void Overworld_DecompressAndDrawAllQuadrants() {  // 82f54a
   Overworld_DecompressAndDrawOneQuadrant((uint16 *)&g_ram[0x3040], si + 9);
 }
 
+static const uint8 *GetOverworldHibytes(int i) {
+  return kOverworld_Hibytes_Comp + *(uint32 *)(kOverworld_Hibytes_Comp + i * 4);
+}
+
+static const uint8 *GetOverworldLobytes(int i) {
+  return kOverworld_Lobytes_Comp + *(uint32 *)(kOverworld_Lobytes_Comp + i * 4);
+}
+
+
 void Overworld_DecompressAndDrawOneQuadrant(uint16 *dst, int screen) {  // 82f595
   int rv;
-  rv = Decompress_bank02(&g_ram[0x14400], kOverworld_Hibytes_Comp[screen]);
+
+
+  rv = Decompress_bank02(&g_ram[0x14400], GetOverworldHibytes(screen));
   for (int i = 0; i < 256; i++)
     g_ram[0x14001 + i * 2] = g_ram[0x14400 + i];
 
-  rv = Decompress_bank02(&g_ram[0x14400], kOverworld_Lobytes_Comp[screen]);
+  rv = Decompress_bank02(&g_ram[0x14400], GetOverworldLobytes(screen));
   for (int i = 0; i < 256; i++)
     g_ram[0x14000 + i * 2] = g_ram[0x14400 + i];
 
@@ -2480,6 +2487,7 @@ void Overworld_ParseMap32Definition(uint16 *dst, uint16 input) {  // 82f691
     int x = (a >> 1) + (a >> 2);
     const uint8 *ov;
     ov = kMap32ToMap16_0 + x;
+
     map16_decode_0[0] = ov[0];
     map16_decode_0[2] = ov[1];
     map16_decode_0[4] = ov[2];
@@ -2587,7 +2595,7 @@ void MirrorBonk_RecoverChangedTiles() {  // 82fe47
 
 void DecompressEnemyDamageSubclasses() {  // 82fe71
   uint8 *tmp = &g_ram[0x14000];
-  memcpy(tmp, kEnemyDamageData, sizeof(kEnemyDamageData));
+  memcpy(tmp, kEnemyDamageData, kEnemyDamageData_SIZE);
   for (int i = 0; i < 0x1000; i += 2) {
     uint8 t = *tmp++;
     enemy_damage_data[i + 0] = t >> 4;

@@ -20,6 +20,7 @@
 
 #include "zelda_rtl.h"
 #include "config.h"
+#include "assets.h"
 
 extern Dsp *GetDspForRendering();
 extern Snes *g_snes;
@@ -40,7 +41,7 @@ static void HandleInput(int keyCode, int modCode, bool pressed);
 static void HandleGamepadInput(int button, bool pressed);
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
-
+static void LoadAssets();
 
 enum {
   kDefaultFullscreen = 0,
@@ -176,6 +177,7 @@ int main(int argc, char** argv) {
   SwitchDirectory();
   ParseConfigFile();
   AfterConfigParse();
+  LoadAssets();
 
   ZeldaInitialize();
   g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
@@ -694,4 +696,33 @@ static bool LoadRom(const char *name, Snes *snes) {
   return result;
 }
 
+const uint8 *g_asset_ptrs[kNumberOfAssets];
+uint32 g_asset_sizes[kNumberOfAssets];
+
+static void LoadAssets() {
+  size_t length = 0;
+  uint8 *data = ReadFile("tables/zelda3_assets.dat", &length);
+  if (!data)
+    data = ReadFile("zelda3_assets.dat", &length);
+  if (!data) Die("Failed to read zelda3_assets.dat");
+
+  static const char kAssetsSig[] = { kAssets_Sig };
+
+  if (length < 16 + 32 + 32 + 8 + kNumberOfAssets * 4 ||
+      memcmp(data, kAssetsSig, 48) != 0 ||
+      *(uint32*)(data + 80) != kNumberOfAssets)
+    Die("Invalid assets file");
+
+  uint32 offset = 88 + kNumberOfAssets * 4 + *(uint32 *)(data + 84);
+
+  for (size_t i = 0; i < kNumberOfAssets; i++) {
+    uint32 size = *(uint32 *)(data + 88 + i * 4);
+    offset = (offset + 3) & ~3;
+    if ((uint64)offset + size > length)
+      Die("Assets file corruption");
+    g_asset_sizes[i] = size;
+    g_asset_ptrs[i] = data + offset;
+    offset += size;
+  }
+}
 

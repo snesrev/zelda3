@@ -246,6 +246,9 @@
     <ClInclude Include="platform\win32\volume_control.h">
       <Filter>Platform</Filter>
     </ClInclude>
+    <ClInclude Include="assets.h">
+      <Filter>Zelda</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

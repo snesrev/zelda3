@@ -10,10 +10,10 @@
 #include "misc.h"
 #include "messaging.h"
 #include "player_oam.h"
-#include "tables/generated_ending.h"
 #include "sprite_main.h"
 #include "ancilla.h"
 #include "hud.h"
+#include "assets.h"
 
 static const uint16 kPolyhedralPalette[8] = { 0, 0x14d, 0x1b0, 0x1f3, 0x256, 0x279, 0x2fd, 0x35f };
 

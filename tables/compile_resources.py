@@ -5,6 +5,7 @@ from PIL import Image
 import yaml
 import tables
 import compile_music
+import array, hashlib, struct
 
 print_int_array = util.print_int_array
 
@@ -15,9 +16,27 @@ def flatten(xss):
   
 def invert_dict(xs):
   return {s:i for i,s in xs.items()}
-    
+
+assets = {}
+
+
+def add_asset_uint8(name, data):
+  assert name not in assets
+  assets[name] = ('uint8', bytes(array.array('B', data)))
+
+def add_asset_uint16(name, data):
+  assert name not in assets
+  assets[name] = ('uint16', bytes(array.array('H', data)))
+
+def add_asset_int8(name, data):
+  assert name not in assets
+  assets[name] = ('int8', bytes(array.array('b', data)))
+
+def add_asset_int16(name, data):
+  assert name not in assets
+  assets[name] = ('int16', bytes(array.array('h', data)))
+
 def print_map32_to_map16():
-  f = open(PATH+'generated_map32_to_map16.h', 'w')
   tab = {}
   for line in open(PATH + 'map32_to_map16.txt'):
     line = line.strip()
@@ -39,14 +58,13 @@ def print_map32_to_map16():
     for j in range(4):
       res[j].extend(pack(tab[i][j], tab[i+1][j], tab[i+2][j], tab[i+3][j]))
 
-  print_int_array('kMap32ToMap16_0', res[0], 'uint8', True, 16, file = f)
-  print_int_array('kMap32ToMap16_1', res[1], 'uint8', True, 16, file = f)
-  print_int_array('kMap32ToMap16_2', res[2], 'uint8', True, 16, file = f)
-  print_int_array('kMap32ToMap16_3', res[3], 'uint8', True, 16, file = f)
-  f.close()
+  add_asset_uint8('kMap32ToMap16_0', res[0])
+  add_asset_uint8('kMap32ToMap16_1', res[1])
+  add_asset_uint8('kMap32ToMap16_2', res[2])
+  add_asset_uint8('kMap32ToMap16_3', res[3])
+
   
 def print_dialogue():
-  f = open(PATH+'generated_dialogue.h', 'w')
   new_r = []
   offs = []
   for line in open(PATH + 'dialogue.txt'):
@@ -57,9 +75,8 @@ def print_dialogue():
     r = text_compression.compress_string(b)
     new_r.extend(r)
 
-  print_int_array('kDialogueOffs', offs, 'uint16', True, 16, file = f)   
-  print_int_array('kDialogueText', new_r, 'uint8', True, 16, file = f)
-  f.close()
+  add_asset_uint16('kDialogueOffs', offs)
+  add_asset_uint8('kDialogueText', new_r)
 
 ROM = util.LoadedRom(sys.argv[1] if len(sys.argv) >= 2 else None)
 
@@ -110,93 +127,71 @@ def compress_store(r):
   rr.append(0xff)
   return rr
   
-def print_images():
-  rall = []
-  f = open(PATH+'generated_images.h', 'w')
-  for i in range(12):
-    r = ROM.get_bytes(kCompSpritePtrs[i], 0x600)
-    rall.append('kSprGfx_%d' % i)
-    print_int_array('kSprGfx_%d' % i, r, 'uint8', True, 64, file = f)
+def pack_u32_arrays(arr):
+  all_offs, offs = [], len(arr) * 4
+  for i in range(len(arr)):
+    all_offs.append(offs)
+    offs += len(arr[i])
+  return b''.join([struct.pack('I', i) for i in all_offs] + arr)
 
+def print_images():
+  lengths = b''
+  all = []
+  for i in range(12):
+    all.append(bytes(ROM.get_bytes(kCompSpritePtrs[i], 0x600)))
   for i in range(12, 108):
     decomp, comp_len = util.decomp(kCompSpritePtrs[i], ROM.get_byte, False, True)
-    r = ROM.get_bytes(kCompSpritePtrs[i], comp_len)
+    all.append(bytes(ROM.get_bytes(kCompSpritePtrs[i], comp_len)))
+  add_asset_uint8('kSprGfx', pack_u32_arrays(all))
 
-    #print('%d: %d -> %d' % (i, len(compress_store(decomp)), comp_len))
-    rall.append('kSprGfx_%d' % i)
-    print_int_array('kSprGfx_%d' % i, r, 'uint8', True, 64, file = f)
-
-  print_int_array('kSprGfx', rall, 'uint8 *const', None, 8, file = f)
-
-  rall = []
+  all = []
   for i in range(len(kCompBgPtrs)):
     decomp, comp_len = util.decomp(kCompBgPtrs[i], ROM.get_byte, False, True)
-    r = ROM.get_bytes(kCompBgPtrs[i], comp_len)
+    all.append(bytes(ROM.get_bytes(kCompBgPtrs[i], comp_len)))
+  add_asset_uint8('kBgGfx', pack_u32_arrays(all))
 
-    #print('%d: %d -> %d' % (i, len(compress_store(decomp)), comp_len))
-    rall.append('kBgGfx_%d' % i)
-    print_int_array('kBgGfx_%d' % i, r, 'uint8', True, 64, file = f)
-    
-  print_int_array('kBgGfx', rall, 'uint8 *const', None, 8, file = f)
-
-  f.close()
 
 
 def print_misc():
-  f = open(PATH+'generated_overworld_map.h', 'w')
-  print_int_array('kOverworldMapGfx', ROM.get_bytes(0x18c000, 0x4000), 'uint8', True, 64, file = f)
-  print_int_array('kLightOverworldTilemap', ROM.get_bytes(0xac727, 4096), 'uint8', True, 64, file = f)
-  print_int_array('kDarkOverworldTilemap', ROM.get_bytes(0xaD727, 1024), 'uint8', True, 64, file = f)
-  f.close()
+  add_asset_uint8('kOverworldMapGfx', ROM.get_bytes(0x18c000, 0x4000))
+  add_asset_uint8('kLightOverworldTilemap', ROM.get_bytes(0xac727, 4096))
+  add_asset_uint8('kDarkOverworldTilemap', ROM.get_bytes(0xaD727, 1024))
 
-  f = open(PATH+'generated_predefined_tiles.h', 'w')
-  print_int_array('kPredefinedTileData', ROM.get_words(0x9B52, 6438), 'uint16', False, 16, file = f)
-  f.close()
+  add_asset_uint16('kPredefinedTileData', ROM.get_words(0x9B52, 6438))
 
-  f = open(PATH+'generated_font.h', 'w')
-  print_int_array('kFontData', ROM.get_words(0xe8000, 2048), 'uint16', False, 16, file = f)
-  f.close()
+  add_asset_uint16('kFontData', ROM.get_words(0xe8000, 2048))
 
-  f = open(PATH+'generated_map16_to_map8.h', 'w')
-  print_int_array('kMap16ToMap8', ROM.get_words(0x8f8000, 3752 * 4), 'uint16', False, 16, file = f)
-  f.close()
+  add_asset_uint16('kMap16ToMap8', ROM.get_words(0x8f8000, 3752 * 4))
 
-  f = open(PATH+'generated_ancilla.h', 'w')
-  print_int_array('kGeneratedWishPondItem', ROM.get_bytes(0x888450, 256), 'uint8', False, 16, file = f)
-  print_int_array('kGeneratedBombosArr', ROM.get_bytes(0x8890FC, 256), 'uint8', False, 16, file = f)
-  f.close()
+  add_asset_uint8('kGeneratedWishPondItem', ROM.get_bytes(0x888450, 256))
+  add_asset_uint8('kGeneratedBombosArr', ROM.get_bytes(0x8890FC, 256))
 
-  f = open(PATH+'generated_ending.h', 'w')
-  print_int_array('kGeneratedEndSequence15', ROM.get_bytes(0x8ead25, 256), 'uint8', False, 16, file = f)
-  print_int_array('kEnding_Credits_Text', ROM.get_bytes(0x8EB178, 1989), 'uint8', False, 16, file = f)
-  print_int_array('kEnding_Credits_Offs', ROM.get_words(0x8EB93d, 394), 'uint16', False, 16, file = f)
-  print_int_array('kEnding_MapData', ROM.get_words(0x8EB038, 160), 'uint16', False, 16, file = f)
-  print_int_array('kEnding0_Offs', ROM.get_words(0x8EC2E1, 17), 'uint16', False, 16, file = f)
-  print_int_array('kEnding0_Data', ROM.get_bytes(0x8EBF4C, 917), 'uint8', False, 16, file = f)
-  f.close()
+  add_asset_uint8('kGeneratedEndSequence15', ROM.get_bytes(0x8ead25, 256))
+  add_asset_uint8('kEnding_Credits_Text', ROM.get_bytes(0x8EB178, 1989))
+  add_asset_uint16('kEnding_Credits_Offs', ROM.get_words(0x8EB93d, 394))
+  add_asset_uint16('kEnding_MapData', ROM.get_words(0x8EB038, 160))
+  add_asset_uint16('kEnding0_Offs', ROM.get_words(0x8EC2E1, 17))
+  add_asset_uint8('kEnding0_Data', ROM.get_bytes(0x8EBF4C, 917))
 
-  f = open(PATH+'generated_palettes.h', 'w')
-  print_int_array('kPalette_DungBgMain', ROM.get_words(0x9BD734, 1800), 'uint16', False, 15, file = f)
-  print_int_array('kPalette_MainSpr', ROM.get_words(0x9BD218, 120), 'uint16', False, 15, file = f)
+  add_asset_uint16('kPalette_DungBgMain', ROM.get_words(0x9BD734, 1800))
+  add_asset_uint16('kPalette_MainSpr', ROM.get_words(0x9BD218, 120))
 
-  print_int_array('kPalette_ArmorAndGloves', ROM.get_words(0x9BD308, 75), 'uint16', False, 15, file = f)
-  print_int_array('kPalette_Sword', ROM.get_words(0x9BD630, 12), 'uint16', False, 3, file = f)
-  print_int_array('kPalette_Shield', ROM.get_words(0x9BD648, 12), 'uint16', False, 4, file = f)
+  add_asset_uint16('kPalette_ArmorAndGloves', ROM.get_words(0x9BD308, 75))
+  add_asset_uint16('kPalette_Sword', ROM.get_words(0x9BD630, 12))
+  add_asset_uint16('kPalette_Shield', ROM.get_words(0x9BD648, 12))
 
-  print_int_array('kPalette_SpriteAux3', ROM.get_words(0x9BD39E, 84), 'uint16', False, 7, file = f)
-  print_int_array('kPalette_MiscSprite_Indoors', ROM.get_words(0x9BD446, 77), 'uint16', False, 7, file = f)
-  print_int_array('kPalette_SpriteAux1', ROM.get_words(0x9BD4E0, 168), 'uint16', False, 7, file = f)
+  add_asset_uint16('kPalette_SpriteAux3', ROM.get_words(0x9BD39E, 84))
+  add_asset_uint16('kPalette_MiscSprite_Indoors', ROM.get_words(0x9BD446, 77))
+  add_asset_uint16('kPalette_SpriteAux1', ROM.get_words(0x9BD4E0, 168))
 
-  print_int_array('kPalette_OverworldBgMain', ROM.get_words(0x9BE6C8, 210), 'uint16', False, 7, file = f)
-  print_int_array('kPalette_OverworldBgAux12', ROM.get_words(0x9BE86C, 420), 'uint16', False, 21, file = f)
-  print_int_array('kPalette_OverworldBgAux3', ROM.get_words(0x9BE604, 98), 'uint16', False, 7, file = f)
-  print_int_array('kPalette_PalaceMapBg', ROM.get_words(0x9BE544, 96), 'uint16', False,16, file = f)
-  print_int_array('kPalette_PalaceMapSpr', ROM.get_words(0x9BD70A, 21), 'uint16', False,7, file = f)
-  print_int_array('kHudPalData', ROM.get_words(0x9BD660, 64), 'uint16', False, 16, file = f)
+  add_asset_uint16('kPalette_OverworldBgMain', ROM.get_words(0x9BE6C8, 210))
+  add_asset_uint16('kPalette_OverworldBgAux12', ROM.get_words(0x9BE86C, 420))
+  add_asset_uint16('kPalette_OverworldBgAux3', ROM.get_words(0x9BE604, 98))
+  add_asset_uint16('kPalette_PalaceMapBg', ROM.get_words(0x9BE544, 96))
+  add_asset_uint16('kPalette_PalaceMapSpr', ROM.get_words(0x9BD70A, 21))
+  add_asset_uint16('kHudPalData', ROM.get_words(0x9BD660, 64))
 
-  print_int_array('kOverworldMapPaletteData', ROM.get_words(0x8ADB27, 256), 'uint16', False, 16, file = f)
-
-  f.close()
+  add_asset_uint16('kOverworldMapPaletteData', ROM.get_words(0x8ADB27, 256))
 
 g_overworld_yaml_cache = {}
 def load_overworld_yaml(room):
@@ -206,25 +201,19 @@ def load_overworld_yaml(room):
     
 
 def print_overworld():
-  f = open(PATH+'generated_overworld.h', 'w')
-
   r = []
   for i in range(160):
     addr = ROM.get_24(0x82F94D + i * 3)
     decomp, comp_len = util.decomp(addr, ROM.get_byte, True, True)
-    r.append('kOverworld_Hibytes_Comp_%d' % i)
-    print_int_array('kOverworld_Hibytes_Comp_%d' % i, ROM.get_bytes(addr, comp_len), 'uint8', True, 64, file = f)
-  print_int_array('kOverworld_Hibytes_Comp', r, 'uint8 *const', None, 8, file = f)
+    r.append(bytes(ROM.get_bytes(addr, comp_len)))
+  add_asset_uint8('kOverworld_Hibytes_Comp', pack_u32_arrays(r))
 
   r = []
   for i in range(160):
     addr = ROM.get_24(0x82FB2D + i * 3)
     decomp, comp_len = util.decomp(addr, ROM.get_byte, True, True)
-    r.append('kOverworld_Lobytes_Comp_%d' % i)
-    print_int_array('kOverworld_Lobytes_Comp_%d' % i, ROM.get_bytes(addr, comp_len), 'uint8', True, 64, file = f)
-  print_int_array('kOverworld_Lobytes_Comp', r, 'uint8 *const', None, 8, file = f)
-
-  f.close()
+    r.append(bytes(ROM.get_bytes(addr, comp_len)))
+  add_asset_uint8('kOverworld_Lobytes_Comp', pack_u32_arrays(r))
 
 def is_area_head(i):
   return i >= 128 or ROM.get_byte(0x82A5EC + (i & 63)) == (i & 63)
@@ -236,11 +225,20 @@ class OutArrays:
     t = [initializer] * size
     self.arrs.append((type, name, t, items_per_line))
     setattr(self, name, t)
-  def write(self, f):
+  def write(self):
     for type, name, arr, items_per_line in self.arrs:
       for i, j in enumerate(arr):
         assert isinstance(j, int), (name, i, j, arr)
-      print_int_array(name, arr, type, True, items_per_line, file = f)
+      if type == 'uint8':
+        add_asset_uint8(name, arr)
+      elif type == 'uint16':
+        add_asset_uint16(name, arr)
+      elif type == 'int8':
+        add_asset_int8(name, arr)
+      elif type == 'int16':
+        add_asset_int16(name, arr)
+      else:
+        assert 0, type
     
 def print_overworld_tables():
   A = OutArrays()
@@ -446,35 +444,25 @@ def print_overworld_tables():
   do_sprite_range(0, 64, 'Sprites.SecondPart', [2], 2)
   do_sprite_range(64, 144, 'Sprites', [1, 2], 3)
 
-  f = open(PATH+'generated_overworld_tables.h', 'w')
-  A.write(f)
-  print_int_array('kMap8DataToTileAttr', ROM.get_bytes(0x8E9459, 512), 'uint8', False, 16, file = f)
-  print_int_array('kSomeTileAttr', ROM.get_bytes(0x9bf110, 3824), 'uint8', False, 16, file = f)
-  f.close()  
+  A.write()
+  add_asset_uint8('kMap8DataToTileAttr', ROM.get_bytes(0x8E9459, 512))
+  add_asset_uint8('kSomeTileAttr', ROM.get_bytes(0x9bf110, 3824))
 
 
 def print_dungeon_map():
-  f = open(PATH+'generated_dungeon_map.h', 'w')
-
   r, r2 = [], []
-  name = 'kDungMap_FloorLayout'
-  name2 = 'kDungMap_Tiles'
   for i in range(14):
     kSizes = [75, 125, 50, 75, 175, 75, 50, 75, 50, 200, 150, 75, 100, 200]
     addr = 0xa0000 + ROM.get_word(0x8AF605 + i * 2)
-    r.append('%s_%d' % (name, i))
-    bytes = ROM.get_bytes(addr, kSizes[i])
-    nonzero_bytes = len(bytes) - bytes.count(0xf)
-    print_int_array(r[-1], bytes, 'uint8', False, 25, file = f)
+    b = ROM.get_bytes(addr, kSizes[i])
+    nonzero_bytes = len(b) - b.count(0xf)
+    r.append(bytes(b))
     addr = 0xa0000 + ROM.get_word(0x8AFBE4 + i * 2)
-    r2.append('%s_%d' % (name2, i))
-    bytes = ROM.get_bytes(addr, nonzero_bytes)
-    print_int_array(r2[-1], bytes, 'uint8', False, 25, file = f)
+    b = ROM.get_bytes(addr, nonzero_bytes)
+    r2.append(bytes(b))
     
-  print_int_array(name, r, 'uint8 *const', None, 4, file = f)
-  print_int_array(name2, r2, 'uint8 *const', None, 4, file = f)
-  f.close()
-
+  add_asset_uint8('kDungMap_FloorLayout', pack_u32_arrays(r))
+  add_asset_uint8('kDungMap_Tiles', pack_u32_arrays(r2))
 
 
 g_dungeon_yaml_cache = {}
@@ -516,12 +504,10 @@ def print_dungeon_sprites():
         data.extend(kDropTypesToCode[s[-1]])
         
     data.append(0xff)
-  f = open(PATH+'generated_dungeon_sprites.h', 'w')
-  print_int_array('kDungeonSprites', data, 'uint8', True, 16, file = f)
-  print_int_array('kDungeonSpriteOffs', offsets, 'uint16', True, 16, file=f)
-  f.close()
+  add_asset_uint8('kDungeonSprites', data)
+  add_asset_uint16('kDungeonSpriteOffs', offsets)
 
-def print_dungeon_secrets_to_file(f):
+def print_dungeon_secrets():
   result = [None] * 640
   for i in range(320):
     y = load_dungeon_yaml(i)
@@ -541,7 +527,7 @@ def print_dungeon_secrets_to_file(f):
       l = (len(result) - 2)
       result[i*2+0] = l & 0xff
       result[i*2+1] = l >> 8
-  print_int_array('kDungeonSecrets', result, 'uint8', True, 16, file = f)
+  add_asset_uint8('kDungeonSecrets', result)
 
 def append_scan_bytes(big, little):
   for n in range(len(little), -1, -1):
@@ -651,7 +637,7 @@ def print_dungeon_rooms():
     if starting_points[i] == None:
       raise Exception('Starting point %d not defined' % i)
 
-  def print_entrance_info(f, entrances, prefix):
+  def print_entrance_info(entrances, prefix):
     def get_rc(a):
       rep, room, quads, xy = a.get('repair_scroll_bounds'), a['room'], a['quadrants'], a['player_xy']
       if rep == None: rep = (0, 0, 0, 0, 0, 0, 0, 0)
@@ -676,42 +662,41 @@ def print_dungeon_rooms():
       if a[0] == 'none_0xffff': return 65535
       return ['wooden', 'bombable'].index(a[0]) << 15 | a[1] << 1 | a[2] << 7
             
-    print_int_array(prefix+'rooms', [a['room'] for a in entrances], 'uint16', True, 16, file = f)
-    print_int_array(prefix+'relativeCoords', flatten([get_rc(a) for a in entrances]), 'uint8', True, 16, file = f)
+    add_asset_uint16(prefix+'rooms', [a['room'] for a in entrances])
+    add_asset_uint8(prefix+'relativeCoords', flatten([get_rc(a) for a in entrances]))
     def get_base_x(a): return ((a['room'] & 0x00f) << 9)
     def get_base_y(a): return ((a['room'] & 0x1f0) << 5)
-    print_int_array(prefix+'scrollX', [a['scroll_xy'][0] + get_base_x(a) for a in entrances], 'uint16', True, 16, file = f)
-    print_int_array(prefix+'scrollY', [a['scroll_xy'][1] + get_base_y(a) for a in entrances], 'uint16', True, 16, file = f)
-    print_int_array(prefix+'playerX', [a['player_xy'][0] + get_base_x(a) for a in entrances], 'uint16', True, 16, file = f)
-    print_int_array(prefix+'playerY', [a['player_xy'][1] + get_base_y(a) for a in entrances], 'uint16', True, 16, file = f)
-    print_int_array(prefix+'cameraX', [a['camera_xy'][0] for a in entrances], 'uint16', True, 16, file = f)
-    print_int_array(prefix+'cameraY', [a['camera_xy'][1] for a in entrances], 'uint16', True, 16, file = f)
-    print_int_array(prefix+'blockset', [a['blockset'] for a in entrances], 'uint8', True, 16, file = f)
-    print_int_array(prefix+'floor', [a['floor'] for a in entrances], 'int8', True, 16, file = f)
-    print_int_array(prefix+'palace', [get_palace(a['palace']) for a in entrances], 'int8', True, 16, file = f)
-    print_int_array(prefix+'doorwayOrientation', [a['doorway_orientation'] for a in entrances], 'uint8', True, 16, file = f)
-    print_int_array(prefix+'startingBg', [a['plane'] + a['ladder_level'] * 16 for a in entrances], 'uint8', True, 16, file = f)
-    print_int_array(prefix+'quadrant1', [get_quadrant1(a['quadrants']) for a in entrances], 'uint8', True, 16, file = f)
-    print_int_array(prefix+'quadrant2', [get_quadrant2(a['quadrants']) for a in entrances], 'uint8', True, 16, file = f)
-    print_int_array(prefix+'doorSettings', [get_exit_door(a['house_exit_door']) for a in entrances], 'uint16', True, 16, file = f)
+    add_asset_uint16(prefix+'scrollX', [a['scroll_xy'][0] + get_base_x(a) for a in entrances])
+    add_asset_uint16(prefix+'scrollY', [a['scroll_xy'][1] + get_base_y(a) for a in entrances])
+    add_asset_uint16(prefix+'playerX', [a['player_xy'][0] + get_base_x(a) for a in entrances])
+    add_asset_uint16(prefix+'playerY', [a['player_xy'][1] + get_base_y(a) for a in entrances])
+    add_asset_uint16(prefix+'cameraX', [a['camera_xy'][0] for a in entrances])
+    add_asset_uint16(prefix+'cameraY', [a['camera_xy'][1] for a in entrances])
+    add_asset_uint8(prefix+'blockset', [a['blockset'] for a in entrances])
+    add_asset_int8(prefix+'floor', [a['floor'] for a in entrances])
+    add_asset_int8(prefix+'palace', [get_palace(a['palace']) for a in entrances])
+    add_asset_uint8(prefix+'doorwayOrientation', [a['doorway_orientation'] for a in entrances])
+    add_asset_uint8(prefix+'startingBg', [a['plane'] + a['ladder_level'] * 16 for a in entrances])
+    add_asset_uint8(prefix+'quadrant1', [get_quadrant1(a['quadrants']) for a in entrances])
+    add_asset_uint8(prefix+'quadrant2', [get_quadrant2(a['quadrants']) for a in entrances])
+    add_asset_uint16(prefix+'doorSettings', [get_exit_door(a['house_exit_door']) for a in entrances])
     if prefix == 'kStartingPoint_':
-      print_int_array(prefix+'entrance', [a['associated_entrance_index'] for a in entrances], 'uint8', True, 16, file = f)
+      add_asset_uint8(prefix+'entrance', [a['associated_entrance_index'] for a in entrances])
     m = invert_dict(tables.kMusicNames)
-    print_int_array(prefix+'musicTrack', [m[a['music']] for a in entrances], 'uint8', True, 16, file = f)
+    add_asset_uint8(prefix+'musicTrack', [m[a['music']] for a in entrances])
     
 
-  f = open(PATH+'generated_dungeon_rooms.h', 'w')
-  print_int_array('kDungeonRoom', data, 'uint8', True, 16, file = f)
-  print_int_array('kDungeonRoomOffs', offsets, 'uint16', True, 16, file = f)
-  print_int_array('kDungeonRoomDoorOffs', door_offsets, 'uint16', True, 16, file = f)
-  print_int_array('kDungeonRoomHeaders', room_headers, 'uint8', True, 16, file = f)
-  print_int_array('kDungeonRoomHeadersOffs', header_offsets, 'uint16', True, 16, file = f)
-  print_int_array('kDungeonRoomChests', chests, 'uint8', True, 16, file = f)
-  print_int_array('kDungeonRoomTeleMsg', sign_texts, 'uint16', True, 16, file = f)
-  print_int_array('kDungeonPitsHurtPlayer', pits_hurt_player, 'uint16', True, 16, file = f)
+  add_asset_uint8('kDungeonRoom', data)
+  add_asset_uint16('kDungeonRoomOffs', offsets)
+  add_asset_uint16('kDungeonRoomDoorOffs', door_offsets)
+  add_asset_uint8('kDungeonRoomHeaders', room_headers)
+  add_asset_uint16('kDungeonRoomHeadersOffs', header_offsets)
+  add_asset_uint8('kDungeonRoomChests', chests)
+  add_asset_uint16('kDungeonRoomTeleMsg', sign_texts)
+  add_asset_uint16('kDungeonPitsHurtPlayer', pits_hurt_player)
   
-  print_entrance_info(f, entrances, 'kEntranceData_')
-  print_entrance_info(f, starting_points, 'kStartingPoint_')
+  print_entrance_info(entrances, 'kEntranceData_')
+  print_entrance_info(starting_points, 'kStartingPoint_')
 
   data = []
   offsets = [0] * 8
@@ -719,8 +704,8 @@ def print_dungeon_rooms():
   for i in range(len(offsets)):
     offsets[i] = len(data)
     print_layer(default_yaml['Default%d' % i], None)
-  print_int_array('kDungeonRoomDefault', data, 'uint8', True, 16, file = f)
-  print_int_array('kDungeonRoomDefaultOffs', offsets, 'uint16', True, 16, file = f)
+  add_asset_uint8('kDungeonRoomDefault', data)
+  add_asset_uint16('kDungeonRoomDefaultOffs', offsets)
 
   data = []
   offsets = [0] * 19
@@ -728,30 +713,25 @@ def print_dungeon_rooms():
   for i in range(len(offsets)):
     offsets[i] = len(data)
     print_layer(overlay_yaml['Overlay%d' % i], None)
-  print_int_array('kDungeonRoomOverlay', data, 'uint8', True, 16, file = f)
-  print_int_array('kDungeonRoomOverlayOffs', offsets, 'uint16', True, 16, file = f)
+  add_asset_uint8('kDungeonRoomOverlay', data)
+  add_asset_uint16('kDungeonRoomOverlayOffs', offsets)
 
-  print_dungeon_secrets_to_file(f)
+  print_dungeon_secrets()
 
-  print_int_array('kDungAttrsForTile_Offs', ROM.get_words(0x8e9000, 21), 'uint16', False, 16, file = f)
-  print_int_array('kDungAttrsForTile', ROM.get_bytes(0x8e902a, 1024), 'uint8', False, 16, file = f)
+  add_asset_uint16('kDungAttrsForTile_Offs', ROM.get_words(0x8e9000, 21))
+  add_asset_uint8('kDungAttrsForTile', ROM.get_bytes(0x8e902a, 1024))
 
-  print_int_array('kMovableBlockDataInit', ROM.get_words(0x84f1de, 198), 'uint16', False, 16, file = f)
-  print_int_array('kTorchDataInit', ROM.get_words(0x84F36A, 144), 'uint16', False, 16, file = f)
-  print_int_array('kTorchDataJunk', ROM.get_words(0x84F48a, 48), 'uint16', False, 16, file = f)
-
-  f.close()
+  add_asset_uint16('kMovableBlockDataInit', ROM.get_words(0x84f1de, 198))
+  add_asset_uint16('kTorchDataInit', ROM.get_words(0x84F36A, 144))
+  add_asset_uint16('kTorchDataJunk', ROM.get_words(0x84F48a, 48))
 
 
  
 def print_enemy_damage_data():
-  f = open(PATH+'generated_enemy_damage_data.h', 'w')
   decomp, comp_len = util.decomp(0x83e800, ROM.get_byte, True, True)
-  print_int_array('kEnemyDamageData', decomp, 'uint8', False, 32, file = f)
-  f.close()
+  add_asset_uint8('kEnemyDamageData', decomp)
 
 def print_tilemaps():
-  f = open(PATH+'generated_bg_tilemaps.h', 'w')
   kSrcs = [0xcdd6d, 0xce7bf, 0xce2a8, 0xce63c, 0xce456, 0xeda9c]
   def decode_one(p):
     p_org = p
@@ -763,11 +743,9 @@ def print_tilemaps():
     return p - p_org + 1
   for i,s in enumerate(kSrcs):
     l = decode_one(s)
-    print_int_array('kBgTilemap_%d' % i, ROM.get_bytes(s, l), 'uint8', False, 32, file = f)
-  f.close()
+    add_asset_uint8('kBgTilemap_%d' % i, ROM.get_bytes(s, l))
 
 def print_link_graphics():
-  f = open(PATH+'generated_link_graphics.h', 'w')
   image = Image.open(PATH+'linksprite.png')
   data = image.tobytes()
   def encode_4bit_sprite(data, offset, pitch):
@@ -784,16 +762,12 @@ def print_link_graphics():
   for y in range(56):
     for x in range(16):
       b += encode_4bit_sprite(data, y * 128 * 8 + x * 8, 128)
-  print_int_array('kLinkGraphics', b, 'uint8', False, 32, file = f)
-  #print(list(encode_4bit_sprite(data, 0, 128)))
-  f.close()
+  add_asset_uint8('kLinkGraphics', b)
 
 def print_sound_banks():
-  f = open(PATH+'generated_sound_banks.h', 'w')
   for song in ['intro', 'indoor', 'ending']:
-    compile_music.print_song(song, f)
-  f.close()
-
+    name, data = compile_music.print_song(song)
+    add_asset_uint8(name, data)
 
 
 def print_all():
@@ -812,4 +786,46 @@ def print_all():
   print_overworld_tables()
 
 print_all()
+
+
+def write_assets_to_file(print_header = False):
+  key_sig = b''
+  all_data = []
+  if print_header:
+    print('''#pragma once
+#include "types.h"
+
+enum {
+  kNumberOfAssets = %d
+};
+extern const uint8 *g_asset_ptrs[kNumberOfAssets];
+extern uint32 g_asset_sizes[kNumberOfAssets];''' % len(assets))
+
+  for i, (k, (tp, data)) in enumerate(assets.items()):
+    if print_header:
+      print('#define %s ((%s*)g_asset_ptrs[%d])' % (k, tp, i))
+      print('#define %s_SIZE (g_asset_sizes[%d])' % (k, i))
+    key_sig += k.encode('utf8') + b'\0'
+    all_data.append(data)
+
+  assets_sig = b'Zelda3_v0     \n\0' + hashlib.sha256(key_sig).digest()
+
+  if print_header:
+    print('#define kAssets_Sig %s' % ", ".join((str(a) for a in assets_sig)))
+
+  hdr = assets_sig + b'\x00' * 32 + struct.pack('II', len(all_data), len(key_sig))
+
+  encoded_sizes = array.array('I', [len(i) for i in all_data])
+
+  file_data = hdr + encoded_sizes + key_sig
+
+  for v in all_data:
+    while len(file_data) & 3:
+      file_data += b'\0'
+    file_data += v
+
+  open('zelda3_assets.dat', 'wb').write(file_data)
+
+write_assets_to_file(False)
+
 

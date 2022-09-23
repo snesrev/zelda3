@@ -424,7 +424,7 @@ def produce_loadable_seq(serializer):
   r.extend([0, 0])
   return r
 
-def print_song(song, f):
+def print_song(song):
   global types_for_name
   types_for_name = {}
 
@@ -438,10 +438,12 @@ def print_song(song, f):
 
   r = produce_loadable_seq(serializer)
 
-  util.print_int_array('kSoundBank_%s' % song, r, 'uint8', False, 32, file = f)
+  result = 'kSoundBank_%s' % song, r
 
   if not compare_with_orig(serializer, song):
     raise Exception('compare failed')
+
+  return result
 
 if __name__ == "__main__":
   if len(sys.argv) == 1:

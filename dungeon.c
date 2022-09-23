@@ -12,9 +12,9 @@
 #include "player.h"
 #include "misc.h"
 #include "player_oam.h"
-#include "tables/generated_dungeon_rooms.h"
 #include "tagalong.h"
 #include "messaging.h"
+#include "assets.h"
 
 // todo: move to config
 static const uint16 kBossRooms[] = {
@@ -2383,7 +2383,7 @@ uint8 GetEntranceMusicTrack(int entrance) {
 }
 
 bool Dungeon_IsPitThatHurtsPlayer() {
-  for (int i = countof(kDungeonPitsHurtPlayer) - 1; i >= 0; i--) {
+  for (int i = kDungeonPitsHurtPlayer_SIZE / 2 - 1; i >= 0; i--) {
     if (kDungeonPitsHurtPlayer[i] == dungeon_room_index)
       return true;
   }
@@ -5727,7 +5727,7 @@ uint8 OpenChestForItem(uint8 tile, int *chest_position) {  // 81eb66
     const uint8 *chest_data;
     int i;
     chest_data = kDungeonRoomChests;
-    for (i = 0; i < countof(kDungeonRoomChests); i += 3, chest_data += 3) {
+    for (i = 0; i < kDungeonRoomChests_SIZE; i += 3, chest_data += 3) {
       chest_room = *(uint16 *)chest_data;
       if ((chest_room & 0x7fff) == dungeon_room_index && --chest_idx < 0) {
         data = chest_data[2];
@@ -8415,10 +8415,10 @@ void Dungeon_LoadEntrance() {  // 82d8b3
   player_oam_x_offset = player_oam_y_offset = 0x80;
   link_direction_mask_a = link_direction_mask_b = 0xf;
   BYTE(link_z_coord) = link_actual_vel_z = 0xff;
-  memcpy(movable_block_datas, kMovableBlockDataInit, sizeof(kMovableBlockDataInit));
+  memcpy(movable_block_datas, kMovableBlockDataInit, kMovableBlockDataInit_SIZE);
   memcpy(&movable_block_datas[99], kTorchDataInit, 116); // junk
-  memcpy(dung_torch_data, kTorchDataInit, sizeof(kTorchDataInit));
-  memcpy(&dung_torch_data[144], kTorchDataJunk, sizeof(kTorchDataJunk));
+  memcpy(dung_torch_data, kTorchDataInit, kTorchDataInit_SIZE);
+  memcpy(&dung_torch_data[144], kTorchDataJunk, kTorchDataJunk_SIZE);
 
   memset(memorized_tile_addr, 0, 0x100);
   memset(pots_revealed_in_room, 0, 0x280);

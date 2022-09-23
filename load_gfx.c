@@ -4,10 +4,8 @@
 #include "overworld.h"
 #include "load_gfx.h"
 #include "player.h"
-#include "tables/generated_images.h"
-#include "tables/generated_font.h"
-#include "tables/generated_palettes.h"
 #include "sprite.h"
+#include "assets.h"
 
 static const uint16 kGlovesColor[2] = {0x52f6, 0x376};
 static const uint8 kGraphics_IncrementalVramUpload_Dst[16] = {0x50, 0x51, 0x52, 0x53, 0x54, 0x55, 0x56, 0x57, 0x58, 0x59, 0x5a, 0x5b, 0x5c, 0x5d, 0x5e, 0x5f};
@@ -329,7 +327,7 @@ const uint16 *GetFontPtr() {
   return kFontData;
 }
 static const uint8 *GetCompSpritePtr(int i) {
-  return kSprGfx[i];
+  return kSprGfx + *(uint32 *)(kSprGfx + i * 4);
 }
 
 void ApplyPaletteFilter_bounce() {
@@ -1014,11 +1012,12 @@ void LoadCommonSprites() {  // 80e6b7
 }
 
 int Decomp_spr(uint8 *dst, int gfx) {  // 80e772
-  return Decompress(dst, kSprGfx[gfx]);
+  return Decompress(dst, GetCompSpritePtr(gfx));
 }
 
 int Decomp_bg(uint8 *dst, int gfx) {  // 80e78f
-  return Decompress(dst, kBgGfx[gfx]);
+  const uint8 *p = kBgGfx + *(uint32 *)(kBgGfx + gfx * 4);
+  return Decompress(dst, p);
 }
 
 int Decompress(uint8 *dst, const uint8 *src) {  // 80e79e

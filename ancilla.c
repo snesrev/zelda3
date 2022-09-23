@@ -9,8 +9,8 @@
 #include "player.h"
 #include "misc.h"
 #include "dungeon.h"
-#include "tables/generated_ancilla.h"
 #include "sprite_main.h"
+#include "assets.h"
 
 static const uint8 kAncilla_Pflags[68] = {
   0,    8,  0xc, 0x10, 0x10,    4, 0x10, 0x18,    8,    8,    8,    0, 0x14, 0, 0x10, 0x28,

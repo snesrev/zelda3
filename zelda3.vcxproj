@@ -226,6 +226,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ancilla.h" />
+    <ClInclude Include="assets.h" />
     <ClInclude Include="attract.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="dungeon.h" />

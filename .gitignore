@@ -24,3 +24,4 @@ __pycache__
 /snes/*.o
 /msu/alttp_msu-*.pcm
 /tmp/
+/tables/zelda3_assets.dat
