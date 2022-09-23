@@ -1309,7 +1309,7 @@ void Ancilla05_Boomerang(int k) {  // 8890fc
       Boomerang_Terminate(k);
       return;
     }
-    int j = boomerang_arr1[k] >> 1;
+    int j = ancilla_arr23[k] >> 1;
     Ancilla_SetXY(k, link_x_coord + kBoomerang_X0[j], link_y_coord + 8 + kBoomerang_Y0[j]);
     ancilla_aux_timer[k]++;
   }
@@ -1598,6 +1598,7 @@ label1:
     }
 
     if (ancilla_item_to_link[k] == 11) {
+      // transmute to door debris?
       ancilla_type[k] = ancilla_step[k] ? 8 : 0;
       return;
     }
@@ -1605,9 +1606,10 @@ label1:
   }
 
   if (ancilla_item_to_link[k] == 7 && ancilla_arr3[k] == 2) {
-    uint16 x = Ancilla_GetX(k), y = Ancilla_GetY(k);
+    // check whether the bomb causes any door debris, the bomb
+    // will transmute to debris later on.
     door_debris_x[k] = 0;
-    Bomb_CheckForDestructibles(x, y, k);
+    Bomb_CheckForDestructibles(Ancilla_GetX(k), Ancilla_GetY(k), k);
     if (door_debris_x[k])
       ancilla_step[k] = 1;
   }
@@ -5999,10 +6001,13 @@ void AncillaAdd_Bomb(uint8 a, uint8 y) {  // 89811f
   ancilla_R[k] = 0;
   ancilla_step[k] = 0;
   ancilla_item_to_link[k] = 0;
-  ancilla_arr25[k] = 0;
   ancilla_L[k] = 0;
   ancilla_arr3[k] = kBomb_Tab0[0];
+
+  // These are not used directly by bombs, but used by door debris
+  ancilla_arr25[k] = 0;
   ancilla_arr26[k] = 7;
+
   ancilla_z[k] = 0;
   ancilla_timer[k] = 8;
   ancilla_dir[k] = link_direction_facing >> 1;
@@ -6073,7 +6078,7 @@ uint8 AncillaAdd_Boomerang(uint8 a, uint8 y) {  // 89820f
   if (j < 0)
     j = 0;
   ancilla_arr1[k] = kBoomerang_Tab5[j];
-  boomerang_arr1[k] = j << 1;
+  ancilla_arr23[k] = j << 1;
   if (button_b_frames >= 9) {
     ancilla_aux_timer[k]++;
   } else {
@@ -7185,31 +7190,37 @@ uint8 Ancilla_CalculateSfxPan(int k) {  // 8dbb5e
   return CalculateSfxPan(Ancilla_GetX(k));
 }
 
-int Ancilla_AllocInit(uint8 type, uint8 y) {  // 8ff577
+int Ancilla_AllocInit(uint8 type, uint8 limit) {  // 8ff577
   // snes bug: R14 is used in tile detection already
   // unless this is here it the memcmp will fail when entering/leaving a water through steps quickly
   if (g_ram[kRam_BugsFixed] >= kBugFix_PolyRenderer)
-    BYTE(R14) = y + 1;
+    BYTE(R14) = limit + 1;
 
   int n = 0;
-  for (int k = 0; k < 5; k++) {
-    if (ancilla_type[k] == type)
+  for (int i = 0; i < 5; i++) {
+    if (ancilla_type[i] == type)
       n++;
   }
-  if (y + 1 == n)
+  if (limit + 1 == n)
     return -1;
-  int k = (type == 7 || type == 8) ? 1 : 4;
-  for (; k >= 0; k--) {
-    if (ancilla_type[k] == 0)
-      return k;
+
+  // Try to reuse an empty ancilla slot
+  for (int j = (type == 7 || type == 8) ? limit : 4; j >= 0; j--) {
+    if (ancilla_type[j] == 0)
+      return j;
   }
+  int k = ancilla_alloc_rotate;
   do {
-    if (sign8(--ancilla_alloc_rotate))
-      ancilla_alloc_rotate = y;
-    uint8 type = ancilla_type[ancilla_alloc_rotate];
-    if (type == 0x3c || type == 0x13 || type == 0xa)
-      return ancilla_alloc_rotate;
-  } while (ancilla_alloc_rotate != 0);
+    if (--k < 0)
+      k = limit;
+    uint8 old_type = ancilla_type[k];
+    // reuse slots for sparkles or arrows in wall
+    if (old_type == 0x3c || old_type == 0x13 || old_type == 0xa) {
+      ancilla_alloc_rotate = k;
+      return k;
+    }
+  } while (k != 0);
+  ancilla_alloc_rotate = 0;
   return -1;
 }
 

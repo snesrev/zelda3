@@ -362,19 +362,23 @@
 #define ancilla_arr1 ((uint8*)(g_ram+0x3A4))
 #define ancilla_S ((uint8*)(g_ram+0x3A9))
 #define ancilla_aux_timer ((uint8*)(g_ram+0x3B1))
-#define door_debris_x ((uint16*)(g_ram+0x3B6))
-#define door_debris_y ((uint16*)(g_ram+0x3BA))
-#define door_debris_direction ((uint8*)(g_ram+0x3BE))
-#define ancilla_arr26 ((uint8*)(g_ram+0x3C0))
-#define ancilla_arr25 ((uint8*)(g_ram+0x3C2))
+
+// relocated those so they have 5 entries each
+#define door_debris_x ((uint16*)(g_ram+0x728))
+#define door_debris_y ((uint16*)(g_ram+0x732))
+#define door_debris_direction ((uint8*)(g_ram+0x73c))
+#define ancilla_arr26 ((uint8*)(g_ram+0x741))
+#define ancilla_arr25 ((uint8*)(g_ram+0x746))
+#define ancilla_arr22 ((uint8*)(g_ram+0x74b))
+
 #define ancilla_alloc_rotate (*(uint8*)(g_ram+0x3C4))
 #define ancilla_H ((uint8*)(g_ram+0x3C5))
 #define ancilla_floor2 ((uint8*)(g_ram+0x3CA))
-#define boomerang_arr1 ((uint8*)(g_ram+0x3CF))
-#define ancilla_arr23 ((uint8*)(g_ram+0x3D2))
+
+// extended the size of this array by merging it with the adjacent one
+#define ancilla_arr23 ((uint8*)(g_ram+0x3CF))
 #define ancilla_T ((uint8*)(g_ram+0x3D5))
 #define ancilla_arr24 ((uint8*)(g_ram+0x3DB))
-#define ancilla_arr22 ((uint8*)(g_ram+0x3E1))
 #define ancilla_tile_attr ((uint8*)(g_ram+0x3E4))
 #define link_something_with_hookshot (*(uint8*)(g_ram+0x3E9))
 #define ancilla_R ((uint8*)(g_ram+0x3EA))

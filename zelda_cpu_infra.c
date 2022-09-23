@@ -953,6 +953,29 @@ void PatchRom(uint8_t *rom) {
   // CleanUpAndPrepDesertPrayerHDMA clearing too much
   PatchRomWord(rom, 0x2C7E5 + 1, 0x1df, 0x1cf);
 
+  // Merge ancilla_arr23 with boomerang_arr1 because they're only 3 bytes long,
+  // and boomerang might get allocated in slot 4.
+  PatchRomByte(rom, 0x9816C, 0xd2, 0xCF);
+  PatchRomByte(rom, 0xffdeb, 0xd2, 0xCF);
+  PatchRomByte(rom, 0xffdee, 0xd2, 0xCF);
+  PatchRomByte(rom, 0xffdf7, 0xd2, 0xCF);
+  PatchRomByte(rom, 0xffdfa, 0xd2, 0xCF);
+
+  // Relocate the door debris variables so they become 5 entries each (they were 2 before).
+  static const int kDoorDebrisX_Uses[] = {0x1CFC6, 0x1d29d, 0x89794, 0x897a3, 0x8a0a1, 0x8edca, 0x99aa6};
+  for (int i = 0; i < countof(kDoorDebrisX_Uses); i++) PatchRomWord(rom, kDoorDebrisX_Uses[i] + 1, 0x3b6, 0x728);
+  static const int kDoorDebrisX1_Uses[] = { 0x89797, 0x897A6 };
+  for (int i = 0; i < countof(kDoorDebrisX1_Uses); i++) PatchRomWord(rom, kDoorDebrisX1_Uses[i] + 1, 0x3b7, 0x729);
+  static const int kDoorDebrisY_Uses[] = { 0x1CFD7, 0x1D2AE, 0x8A099, 0x8EDC5, 0x99AA1 };
+  for (int i = 0; i < countof(kDoorDebrisY_Uses); i++) PatchRomWord(rom, kDoorDebrisY_Uses[i] + 1, 0x3ba, 0x732);
+  static const int kDoorDebrisDir_Uses[] = { 0x1CFB2, 0x1D2BA, 0x8A0B7 };
+  for (int i = 0; i < countof(kDoorDebrisDir_Uses); i++) PatchRomWord(rom, kDoorDebrisDir_Uses[i] + 1, 0x3be, 0x73c);
+  static const int ancilla_arr26_Uses[] = { 0x89fb9, 0x89fc0, 0x98157, 0x99c49 };
+  for (int i = 0; i < countof(ancilla_arr26_Uses); i++) PatchRomWord(rom, ancilla_arr26_Uses[i] + 1, 0x3c0, 0x741);
+  static const int ancilla_arr25_Uses[] = { 0x89fc3, 0x89fc6, 0x8a0ae, 0x8ab7c, 0x8aba7, 0x8abb6, 0x8ae92, 0x8bae2, 0x8baff, 0x8f429, 0x98148, 0x98e0a, 0x98ebc, 0x9920a, 0x9931e, 0x9987f, 0x99c44 };
+  for (int i = 0; i < countof(ancilla_arr25_Uses); i++) PatchRomWord(rom, ancilla_arr25_Uses[i] + 1, 0x3c2, 0x746);
+  static const int ancilla_arr22_Uses[] = { 0x9816e, 0xffde0, 0xffde7 };
+  for (int i = 0; i < countof(ancilla_arr22_Uses); i++) PatchRomWord(rom, ancilla_arr22_Uses[i] + 1, 0x3e1, 0x74b);
 }
 
 
