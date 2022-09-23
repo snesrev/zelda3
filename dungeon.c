@@ -5837,7 +5837,7 @@ uint8 OpenMiniGameChest(int *chest_position) {  // 81edab
   if (WORD(dung_bg2_attr_table[pos]) != 0x6363) {
     pos--;
     if (WORD(dung_bg2_attr_table[pos]) != 0x6363)
-      pos -= 2;
+      pos += 2;
   }
 
   *chest_position = pos * 2;
