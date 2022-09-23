@@ -517,7 +517,16 @@ void Hud_Init() {  // 8dddab
   Hud_DrawEquipmentBox();
   Hud_DrawSelectedYButtonItem();
 
-  if (Hud_HaveAnyItems()) {    
+  if (Hud_HaveAnyItems()) {   
+    // This causes bottle flicker because it's not early enough
+    int first_bottle = 0;
+    while (first_bottle < 4 && link_bottle_info[first_bottle] == 0)
+      first_bottle++;
+    if (first_bottle == 4)
+      link_item_bottle_index = 0;
+    else if (link_item_bottle_index == 0)
+      link_item_bottle_index = first_bottle + 1;
+
     if (hud_cur_item == kHudItem_BottleOld && !kNewStyleInventory) {
       timer_for_flashing_circle = 16;
       Hud_DrawBottleMenu();
@@ -885,14 +894,6 @@ void Hud_RestoreNormalMenu() {  // 8de346
 }
 
 void Hud_SearchForEquippedItem() {  // 8de399
-  int first_bottle = 0;
-  while (first_bottle < 4 && link_bottle_info[first_bottle] == 0)
-    first_bottle++;
-  if (first_bottle == 4)
-    link_item_bottle_index = 0;
-  else if (link_item_bottle_index == 0)
-    link_item_bottle_index = first_bottle + 1;
-
   if (!Hud_HaveAnyItems()) {
     hud_cur_item = 0;
     hud_var1 = 0;

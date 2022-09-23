@@ -112,6 +112,7 @@ static void VerifySnapshotsEq(Snapshot *b, Snapshot *a, Snapshot *prev) {
   memcpy(a->ram + 0x1DBA0, b->ram + 0x1DBA0, 240 * 2);  // hdma_table
   memcpy(b->ram + 0x1B00, b->ram + 0x1DBA0, 224 * 2);  // hdma_table (partial)
 
+  memcpy(a->ram + 0x1cc0, b->ram + 0x1cc0, 2);  // some leftover stuff in hdma table
 
   if (memcmp(b->ram, a->ram, 0x20000)) {
     fprintf(stderr, "@%d: Memory compare failed (mine != theirs, prev):\n", frame_counter);
@@ -801,6 +802,17 @@ void PatchRomBP(uint8_t *rom, uint32_t addr) {
   rom[(addr >> 16) << 15 | (addr & 0x7fff)] = 0;
 }
 
+void PatchRomByte(uint8_t *rom, uint32_t addr, uint8 old_value, uint8 value) {
+  assert(rom[(addr >> 16) << 15 | (addr & 0x7fff)] == old_value);
+  rom[(addr >> 16) << 15 | (addr & 0x7fff)] = value;
+}
+
+void PatchRomWord(uint8_t *rom, uint32_t addr, uint16 old_value, uint16 value) {
+  assert(WORD(rom[(addr >> 16) << 15 | (addr & 0x7fff)]) == old_value);
+  WORD(rom[(addr >> 16) << 15 | (addr & 0x7fff)]) = value;
+}
+
+
 void PatchRom(uint8_t *rom) {
   //  fix a bug with unitialized memory
   {
@@ -937,6 +949,9 @@ void PatchRom(uint8_t *rom) {
 
   // Prevent LoadSongBank from executing in the rom because it hangs
   rom[0x888] = 0x60;
+
+  // CleanUpAndPrepDesertPrayerHDMA clearing too much
+  PatchRomWord(rom, 0x2C7E5 + 1, 0x1df, 0x1cf);
 
 }
 
