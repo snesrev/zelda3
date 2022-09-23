@@ -1,5 +1,7 @@
 # Zelda3
-A reimplementation of Zelda 3.
+A reimplementation of Zelda 3. 
+
+Our discord server is: https://discord.gg/AJJbJAzNNJ
 
 ## About
 
