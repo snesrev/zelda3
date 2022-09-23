@@ -123,6 +123,7 @@ enum {
   kFeatures0_DisableLowHealthBeep = 64,
   kFeatures0_SkipIntroOnKeypress = 128,
   kFeatures0_ShowMaxItemsInYellow = 256,
+  kFeatures0_MoreActiveBombs = 512,
 };
 
 #define enhanced_features0 (*(uint32*)(g_ram+0x64c))

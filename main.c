@@ -195,6 +195,7 @@ int main(int argc, char** argv) {
     f |= g_config.disable_low_health_beep * kFeatures0_DisableLowHealthBeep;
     f |= g_config.skip_intro_on_keypress * kFeatures0_SkipIntroOnKeypress;
     f |= g_config.show_max_items_in_yellow * kFeatures0_ShowMaxItemsInYellow;
+    f |= g_config.more_active_bombs * kFeatures0_MoreActiveBombs;
     g_wanted_zelda_features = f;
   }
 

@@ -55,6 +55,7 @@ typedef struct Config {
   bool disable_low_health_beep;
   bool skip_intro_on_keypress;
   bool show_max_items_in_yellow;
+  bool more_active_bombs;
 } Config;
 
 extern Config g_config;

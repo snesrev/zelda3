@@ -2392,7 +2392,7 @@ void LinkItem_Bombs() {  // 87a138
   if (is_standing_in_doorway || savegame_tagalong == 13 || !CheckYButtonPress())
     return;
   button_mask_b_y &= ~0x40;
-  AncillaAdd_Bomb(7, 1);
+  AncillaAdd_Bomb(7, enhanced_features0 & kFeatures0_MoreActiveBombs ? 3 : 1);
   link_item_in_hand = 0;
 }
 

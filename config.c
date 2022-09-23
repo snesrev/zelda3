@@ -297,6 +297,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "ShowMaxItemsInYellow")) {
       g_config.show_max_items_in_yellow = (bool)strtol(value, (char **)NULL, 10);
       return true;
+    } else if (StringEqualsNoCase(key, "MoreActiveBombs")) {
+      g_config.more_active_bombs = (bool)strtol(value, (char **)NULL, 10);
+      return true;
     }
 
     
