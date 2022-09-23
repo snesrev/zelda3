@@ -24394,8 +24394,8 @@ void Sprite_B2_PlayerBee(int k) {  // 9ede63
     if ((k ^ frame_counter) & 7)
       return;
     ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLocation(k, pt2.x, pt2.y, 32);
-    sprite_y_vel[k] = pt.y;
     sprite_x_vel[k] = pt.x;
+    sprite_y_vel[k] = pt.y;
     sprite_oam_flags[k] = sprite_oam_flags[k] & ~0x40 | (sign8(pt.x) ? 0 : 0x40);
     break;
   }
@@ -24432,11 +24432,11 @@ bool PlayerBee_FindTarget(int k, Point16U *pt) {  // 9edfab
   do {
     if (j == k || sprite_state[j] < 9 || sprite_pause[j])
       continue;
-    if (!(sprite_flags2[k] & 0x80)) {
+    if (!(sprite_flags2[j] & 0x80)) {
       if (sprite_floor[k] != sprite_floor[j] || sprite_flags4[j] & 0x40 || sprite_ignore_projectile[j])
         continue;
     } else {
-      if (!sprite_head_dir[j] || !(sprite_bump_damage[j] & 0x40))
+      if (!sprite_head_dir[k] || !(sprite_bump_damage[j] & 0x40))
         continue;
     }
     PlayerBee_HoneInOnTarget(j, k);
