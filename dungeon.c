@@ -5842,24 +5842,23 @@ uint8 OpenMiniGameChest(int *chest_position) {  // 81edab
 
   *chest_position = pos * 2;
 
-  WORD(dung_bg2_attr_table[pos]) = 0x202;
-  WORD(dung_bg2_attr_table[pos + 64]) = 0x202;
-
-  pos += XY(0, 2);
+  WORD(dung_bg2_attr_table[pos + XY(0, 0)]) = 0x202;
+  WORD(dung_bg2_attr_table[pos + XY(0, 1)]) = 0x202;
 
   const uint16 *src = SrcPtr(0x14A4);
-  dung_bg2[pos + XY(0, 0)] = src[0];
-  dung_bg2[pos + XY(0, 1)] = src[1];
-  dung_bg2[pos + XY(1, 0)] = src[2];
-  dung_bg2[pos + XY(1, 1)] = src[3];
 
-  uint16 yy = 0x14A4; // wtf
+  int pos_wrong = pos + XY(0, 2);  // zelda bug?
+  dung_bg2[pos_wrong + XY(0, 0)] = src[0];
+  dung_bg2[pos_wrong + XY(0, 1)] = src[1];
+  dung_bg2[pos_wrong + XY(1, 0)] = src[2];
+  dung_bg2[pos_wrong + XY(1, 1)] = src[3];
 
+  // The orig asm code seems to access invalid vram here because it indexes by 0x14a4
   uint16 *dst = &vram_upload_data[vram_upload_offset >> 1];
-  dst[0] = RoomTag_BuildChestStripes((pos + 0) * 2, yy);
-  dst[3] = RoomTag_BuildChestStripes((pos + 64) * 2, yy);
-  dst[6] = RoomTag_BuildChestStripes((pos + 1) * 2, yy);
-  dst[9] = RoomTag_BuildChestStripes((pos + 65) * 2, yy);
+  dst[0] = Dungeon_MapVramAddr(pos + 0);
+  dst[3] = Dungeon_MapVramAddr(pos + 64);
+  dst[6] = Dungeon_MapVramAddr(pos + 1);
+  dst[9] = Dungeon_MapVramAddr(pos + 65);
 
   dst[2] = src[0];
   dst[5] = src[1];
