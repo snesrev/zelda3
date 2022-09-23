@@ -1,0 +1,22 @@
+name: Bug report
+description: Report bugs here.
+labels: [bug]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: "Describe your bug here. And how to reproduce it."
+    validations:
+      required: true
+
+ 
+  - type: dropdown
+    id: btarget
+    attributes:
+      label: "What is your build target?"
+      options:
+        - "Windows"
+        - "Linux"
+        - "Mac"
+    validations:
+      required: true

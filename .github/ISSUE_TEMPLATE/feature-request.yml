@@ -1,0 +1,9 @@
+name: Feature Request
+description: Ask for a feature or just give ideas!
+labels: [enhancement]
+body:
+  - type: textarea
+    attributes:
+      label: What feature do you want to get added? And how it will work?
+    validations:
+      required: true
