@@ -224,9 +224,9 @@ typedef struct PpuWindows {
   uint8 bits;
 } PpuWindows;
 
-static void PpuWindows_Clear(PpuWindows *win, Ppu *ppu) {
-  win->edges[0] = -ppu->extraLeftCur;
-  win->edges[1] = 256 + ppu->extraRightCur;
+static void PpuWindows_Clear(PpuWindows *win, Ppu *ppu, uint layer) {
+  win->edges[0] = -(layer != 2 ? ppu->extraLeftCur : 0);
+  win->edges[1] = 256 + (layer != 2 ? ppu->extraRightCur : 0);
   win->nr = 1;
   win->bits = 0;
 }
@@ -237,8 +237,8 @@ static void PpuWindows_Calc(PpuWindows *win, Ppu *ppu, uint layer) {
   // There are at most 5 windows.
   // Algorithm from Snes9x
   uint nr = 1;
-  int window_right = 256 + ppu->extraRightCur;
-  win->edges[0] = - ppu->extraLeftCur;
+  int window_right = 256 + (layer != 2 ? ppu->extraRightCur : 0);
+  win->edges[0] = - (layer != 2 ? ppu->extraLeftCur : 0);
   win->edges[1] = window_right;
   uint8 window_bits = 0;
   uint i, j;
@@ -307,7 +307,7 @@ static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
   if (!layerp->screenEnabled[sub])
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu);
+  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
   BgLayer *bglayer = &ppu->bgLayer[layer];
   y += bglayer->vScroll;
   int sc_offs = bglayer->tilemapAdr + (((y >> 3) & 0x1f) << 5);
@@ -406,7 +406,7 @@ static void PpuDrawBackground_2bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
   if (!layerp->screenEnabled[sub])
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu);
+  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
   BgLayer *bglayer = &ppu->bgLayer[layer];
   y += bglayer->vScroll;
   int sc_offs = bglayer->tilemapAdr + (((y >> 3) & 0x1f) << 5);
@@ -504,7 +504,7 @@ static void PpuDrawBackground_4bpp_mosaic(Ppu *ppu, uint y, bool sub, uint layer
   if (!layerp->screenEnabled[sub])
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu);
+  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
   BgLayer *bglayer = &ppu->bgLayer[layer];
   y = ppu->mosaicModulo[y] + bglayer->vScroll;
   int sc_offs = bglayer->tilemapAdr + (((y >> 3) & 0x1f) << 5);
@@ -564,7 +564,7 @@ static void PpuDrawBackground_2bpp_mosaic(Ppu *ppu, int y, bool sub, uint layer,
   if (!layerp->screenEnabled[sub])
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu);
+  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
   BgLayer *bglayer = &ppu->bgLayer[layer];
   y = ppu->mosaicModulo[y] + bglayer->vScroll;
   int sc_offs = bglayer->tilemapAdr + (((y >> 3) & 0x1f) << 5);
@@ -624,7 +624,7 @@ static void PpuDrawSprites(Ppu *ppu, uint y, uint sub, bool clear_backdrop) {
   if (!layerp->screenEnabled[sub])
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, 4) : PpuWindows_Clear(&win, ppu);
+  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, 4) : PpuWindows_Clear(&win, ppu, 4);
   for (size_t windex = 0; windex < win.nr; windex++) {
     if (win.bits & (1 << windex))
       continue;  // layer is disabled for this window part
@@ -651,7 +651,7 @@ static void PpuDrawBackground_mode7(Ppu *ppu, uint y, bool sub, uint8 z) {
   if (!layerp->screenEnabled[sub])
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu);
+  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
 
   // expand 13-bit values to signed values
   int hScroll = ((int16_t)(ppu->m7matrix[6] << 3)) >> 3;
