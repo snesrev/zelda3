@@ -5,12 +5,19 @@ VisualStudioVersion = 16.0.30717.126
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "zelda3", "zelda3.vcxproj", "{CB07E01D-A194-481A-BEA1-DC13756AD150}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{F140B55D-AB87-442A-BA26-8CBB59C574BE}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		ReleaseDeploy|x64 = ReleaseDeploy|x64
+		ReleaseDeploy|x86 = ReleaseDeploy|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Debug|x64.ActiveCfg = Debug|x64
@@ -21,6 +28,10 @@ Global
 		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Release|x64.Build.0 = Release|x64
 		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Release|x86.ActiveCfg = Release|Win32
 		{CB07E01D-A194-481A-BEA1-DC13756AD150}.Release|x86.Build.0 = Release|Win32
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.ReleaseDeploy|x64.ActiveCfg = ReleaseDeploy|x64
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.ReleaseDeploy|x64.Build.0 = ReleaseDeploy|x64
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.ReleaseDeploy|x86.ActiveCfg = ReleaseDeploy|Win32
+		{CB07E01D-A194-481A-BEA1-DC13756AD150}.ReleaseDeploy|x86.Build.0 = ReleaseDeploy|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

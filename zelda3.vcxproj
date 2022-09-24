@@ -9,12 +9,20 @@
       <Configuration>Release</Configuration>
       <Platform>Win32</Platform>
     </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseDeploy|Win32">
+      <Configuration>ReleaseDeploy</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
     <ProjectConfiguration Include="Debug|x64">
       <Configuration>Debug</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
     <ProjectConfiguration Include="Release|x64">
       <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="ReleaseDeploy|x64">
+      <Configuration>ReleaseDeploy</Configuration>
       <Platform>x64</Platform>
     </ProjectConfiguration>
   </ItemGroup>
@@ -36,12 +44,22 @@
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>$(DefaultPlatformToolset)</PlatformToolset>
@@ -57,10 +75,16 @@
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|Win32'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets" Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">
     <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
@@ -74,11 +98,21 @@
     <OutDir>$(SolutionDir)bin\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)obj\$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|Win32'">
+    <LinkIncremental>false</LinkIncremental>
+    <OutDir>$(SolutionDir)bin\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)obj\$(Platform)-$(Configuration)\</IntDir>
+  </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <OutDir>$(SolutionDir)bin\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)obj\$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <OutDir>$(SolutionDir)bin\$(Platform)-$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)obj\$(Platform)-$(Configuration)\</IntDir>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">
+    <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)bin\$(Platform)-$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)obj\$(Platform)-$(Configuration)\</IntDir>
   </PropertyGroup>
@@ -121,6 +155,27 @@
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|Win32'">
+    <ClCompile>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>ProgramDatabase</DebugInformationFormat>
+      <AdditionalIncludeDirectories>D:\Lib\SDL2-2.0.20\include</AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <DisableSpecificWarnings>4244;4018;4996</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
+    </ClCompile>
+    <Link>
+      <TargetMachine>MachineX86</TargetMachine>
+      <GenerateDebugInformation>true</GenerateDebugInformation>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
       <AdditionalIncludeDirectories>
@@ -150,6 +205,21 @@
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">
+    <ClCompile>
+      <AdditionalIncludeDirectories>
+      </AdditionalIncludeDirectories>
+      <LanguageStandard_C>stdc11</LanguageStandard_C>
+      <WarningLevel>Level3</WarningLevel>
+      <DisableSpecificWarnings>4244;4018;4996</DisableSpecificWarnings>
+      <TreatWarningAsError>true</TreatWarningAsError>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
+    </Link>
+  </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="ancilla.c" />
     <ClCompile Include="attract.c" />
@@ -160,6 +230,7 @@
     <ClCompile Include="load_gfx.c" />
     <ClCompile Include="main.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
     <ClCompile Include="messaging.c" />
@@ -214,6 +285,7 @@
     <ClCompile Include="sprite.c" />
     <ClCompile Include="sprite_main.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MaxSpeed</Optimization>
+      <Optimization Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">MaxSpeed</Optimization>
     </ClCompile>
     <ClCompile Include="tagalong.c" />
     <ClCompile Include="tile_detect.c" />
@@ -275,6 +347,61 @@
   </ItemGroup>
   <ItemGroup>
     <Image Include="platform\win32\triforce.ico" />
+    <Image Include="platform\linux\triforce.png" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="LICENSE.txt">
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|Win32'">Always</CopyToOutputDirectory>
+    </Content>
+    <Text Include="LICENSE.txt" />
+    <Content Include="README.md">
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">Always</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|Win32'">Always</CopyToOutputDirectory>
+    </Content>
+    <Text Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="zelda3.ini">
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|Win32'">PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Text Include="zelda3.ini" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="saves\ref\*.sav">
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|Win32'">PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Include="saves\ref\Chapter 1 - Zelda's Rescue.sav" />
+    <None Include="saves\ref\Chapter 2 - After Eastern Palace.sav" />
+    <None Include="saves\ref\Chapter 3 - After Desert Palace.sav" />
+    <None Include="saves\ref\Chapter 4 - After Tower of Hera.sav" />
+    <None Include="saves\ref\Chapter 5 - After Hyrule Castle Tower.sav" />
+    <None Include="saves\ref\Chapter 6 - After Dark Palace.sav" />
+    <None Include="saves\ref\Chapter 7 - After Swamp Palace.sav" />
+    <None Include="saves\ref\Chapter 8 - After Skull Woods.sav" />
+    <None Include="saves\ref\Chapter 9 - After Gargoyle's Domain.sav" />
+    <None Include="saves\ref\Chapter 10 - After Ice Palace.sav" />
+    <None Include="saves\ref\Chapter 11 - After Misery Mire.sav" />
+    <None Include="saves\ref\Chapter 12 - After Turtle Rock.sav" />
+    <None Include="saves\ref\Chapter 13 - After Ganon's Tower.sav" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
