@@ -20,6 +20,9 @@
     <Filter Include="Deploy\saverefs">
       <UniqueIdentifier>{43126d3a-e51a-4d0c-99a4-c0ca9a5e1a50}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Deploy\tables">
+      <UniqueIdentifier>{af7accb3-a27b-402b-ab20-86bbb57bd9a3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="snes\apu.c">
@@ -284,6 +287,11 @@
     <Text Include="zelda3.ini">
       <Filter>Deploy</Filter>
     </Text>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="tables\zelda3_assets.dat">
+      <Filter>Deploy\tables</Filter>
+    </None>
   </ItemGroup>
   <ItemGroup>
     <None Include="saves\ref\Chapter 1 - Zelda's Rescue.sav">

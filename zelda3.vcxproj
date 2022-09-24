@@ -381,6 +381,17 @@
     <Text Include="zelda3.ini" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="tables\zelda3_assets.dat">
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Never</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">PreserveNewest</CopyToOutputDirectory>
+      <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|Win32'">PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <None Include="tables\zelda3_assets.dat" />
+  </ItemGroup>
+  <ItemGroup>
     <Content Include="saves\ref\*.sav">
       <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Never</CopyToOutputDirectory>
       <CopyToOutputDirectory Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Never</CopyToOutputDirectory>
