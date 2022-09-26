@@ -11,7 +11,7 @@ It's around 70-80kLOC of C code, and reimplements all parts of the original game
 
 You need a copy of the ROM to extract game resources (levels, images). Then once that's done, the ROM is no longer needed.
 
-It uses the PPU and DSP implementation from [LakeSnes](https://github.com/elzo-d/LakeSnes).
+It the PPU and DSP implementation from [LakeSnes](https://github.com/elzo-d/LakeSnes).
 Additionally, it can be configured to also run the original machine code side by side. Then the RAM state is compared after each frame, to verify that the C implementation is correct.
 
 I got much assistance from spannierism's Zelda 3 JP disassembly and the other ones that documented loads of function names and variables.
@@ -58,9 +58,9 @@ First extract and compile resources.
 
 Run `python3 extract_resources.py` to extract resources from the ROM into a more human readable format.
 
-Run `python3 compile_resources.py` to produce .h files that get included by the C code.
+Run `python3 compile_resources.py` to create a file called `zelda3_assets.dat` that gets loaded by the executable.
 
-This creates a file called `zelda3_assets.dat`. In case you're planning to move the .exe to a different folder, please include `zelda3_assets.dat`.
+In case you're planning to move the .exe to a different folder, please include `zelda3_assets.dat`.
 
 Then build the .sln file with Visual Studio.
 
