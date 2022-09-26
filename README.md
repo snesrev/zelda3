@@ -11,7 +11,7 @@ It's around 70-80kLOC of C code, and reimplements all parts of the original game
 
 You need a copy of the ROM to extract game resources (levels, images). Then once that's done, the ROM is no longer needed.
 
-It the PPU and DSP implementation from [LakeSnes](https://github.com/elzo-d/LakeSnes).
+It uses the PPU and DSP implementation from [LakeSnes](https://github.com/elzo-d/LakeSnes), but with lots of speed optimizations.
 Additionally, it can be configured to also run the original machine code side by side. Then the RAM state is compared after each frame, to verify that the C implementation is correct.
 
 I got much assistance from spannierism's Zelda 3 JP disassembly and the other ones that documented loads of function names and variables.
