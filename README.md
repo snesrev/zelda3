@@ -52,13 +52,15 @@ Pick up items and destroy pots with Sword.
 Look at the wiki at https://github.com/snesrev/zelda3/wiki for more help.
 
 ### Windows
-First extract and compile resources.
+First extract and compile resources. 
 
 `cd tables`
 
 Run `python3 extract_resources.py` to extract resources from the ROM into a more human readable format.
 
 Run `python3 compile_resources.py` to produce .h files that get included by the C code.
+
+This creates a file called `zelda3_assets.dat`. In case you're planning to move the .exe to a different folder, please include `zelda3_assets.dat`.
 
 Then build the .sln file with Visual Studio.
 
@@ -78,6 +80,8 @@ make clean all  # clear gen+obj and rebuild
 CC=clang make   # specify compiler
 ```
 </details>
+
+In case you're planning to move the executable to a different location, please include the file `tables/zelda3_assets.dat`.
 
 ## Usage and controls
 
