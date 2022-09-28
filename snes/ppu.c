@@ -1305,9 +1305,13 @@ static bool ppu_evaluateSprites(Ppu* ppu, int line) {
   //   then iterate those in-range sprites in reverse for tile-fetching
   // TODO: rectangular sprites, wierdness with sprites at -256
   int index = ppu->objPriority ? (ppu->oamAdr & 0xfe) : 0, index_end = index;
-  int spritesFound = 0, tilesFound = 0;
+  int spritesLeft = 32 + 1, tilesLeft = 34 + 1;
   uint8 spriteSizes[2] = { kSpriteSizes[ppu->objSize][0], kSpriteSizes[ppu->objSize][1] };
   int extra_left_right = ppu->extraLeftRight;
+  if (ppu->renderFlags & kPpuRenderFlags_NoSpriteLimits)
+    spritesLeft = tilesLeft = 1024;
+  int tilesLeftOrg = tilesLeft;
+
   do {
     int yy = ppu->oam[index] >> 8;
     if (yy == 0xf0)
@@ -1325,7 +1329,7 @@ static bool ppu_evaluateSprites(Ppu* ppu, int line) {
     if (x <= -(spriteSize + extra_left_right))
       continue;
     // break if we found 32 sprites already
-    if (++spritesFound > 32) {
+    if (--spritesLeft == 0) {
       ppu->rangeOver = true;
       break;
     }
@@ -1341,7 +1345,7 @@ static bool ppu_evaluateSprites(Ppu* ppu, int line) {
     for (int col = 0; col < spriteSize; col += 8) {
       if (col + x > -8 - extra_left_right && col + x < 256 + extra_left_right) {
         // break if we found 34 8*1 slivers already
-        if (++tilesFound > 34) {
+        if (--tilesLeft == 0) {
           ppu->timeOver = true;
           return true;
         }
@@ -1366,7 +1370,7 @@ static bool ppu_evaluateSprites(Ppu* ppu, int line) {
       }
     }
   } while ((index = (index + 2) & 0xff) != index_end);
-  return (tilesFound != 0);
+  return (tilesLeft != tilesLeftOrg);
 }
 
 static uint16_t ppu_getVramRemap(Ppu* ppu) {

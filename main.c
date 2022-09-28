@@ -203,7 +203,8 @@ int main(int argc, char** argv) {
 
   g_ppu_render_flags = g_config.new_renderer * kPpuRenderFlags_NewRenderer |
                        g_config.enhanced_mode7 * kPpuRenderFlags_4x4Mode7 |
-                       g_config.extend_y * kPpuRenderFlags_Height240;
+                       g_config.extend_y * kPpuRenderFlags_Height240 |
+                       g_config.no_sprite_limits * kPpuRenderFlags_NoSpriteLimits;
   msu_enabled = g_config.enable_msu;
 
   if (g_config.fullscreen == 1)

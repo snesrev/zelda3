@@ -46,6 +46,7 @@ typedef struct Config {
   bool autosave;
   uint8 extended_aspect_ratio;
   bool extend_y, extended_aspect_ratio_nospr;
+  bool no_sprite_limits;
   bool display_perf_title;
   bool enable_msu;
   bool item_switch_lr;

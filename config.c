@@ -224,6 +224,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "WindowScale")) {
       g_config.window_scale = (uint8)strtol(value, (char**)NULL, 10);
       return true;
+    } else if (StringEqualsNoCase(key, "NoSpriteLimits")) {
+      g_config.no_sprite_limits = (bool)strtol(value, (char **)NULL, 10);
+      return true;
     }
   } else if (section == 2) {
     if (StringEqualsNoCase(key, "EnableAudio")) {
