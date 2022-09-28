@@ -174,10 +174,12 @@ void ConfigurePpuSideSpace() {
     extra_right = ow_scroll_vars0.xend - BG2HOFS_copy2;
     extra_bottom = ow_scroll_vars0.yend - BG2VOFS_copy2;
   } else if (mod == 7) {
-    // indoors
-    int qm = quadrant_fullsize_x >> 1;
-    extra_left = IntMax(BG2HOFS_copy2 - room_bounds_x.v[qm], 0);
-    extra_right = IntMax(room_bounds_x.v[qm + 2] - BG2HOFS_copy2, 0);
+    // indoors, except when the light cone is in use
+    if (!(hdr_dungeon_dark_with_lantern && TS_copy != 0)) {
+      int qm = quadrant_fullsize_x >> 1;
+      extra_left = IntMax(BG2HOFS_copy2 - room_bounds_x.v[qm], 0);
+      extra_right = IntMax(room_bounds_x.v[qm + 2] - BG2HOFS_copy2, 0);
+    }
 
     int qy = quadrant_fullsize_y >> 1;
     extra_bottom = IntMax(room_bounds_y.v[qy + 2] - BG2VOFS_copy2, 0);
