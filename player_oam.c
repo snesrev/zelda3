@@ -1103,13 +1103,22 @@ continue_after_set:
       submodule_index == 0 && countdown_for_blink && --countdown_for_blink >= 4 && (countdown_for_blink & 1) == 0 ||
       link_visibility_status == 12 ||
       link_cape_mode != 0)) {
-    uint8 *p = &bytewise_extended_oam[sort_sprites_offset_into_oam_buffer >> 2];
-    WORD(p[0]) = 0x101;
-    WORD(p[2]) = 0x101;
-    WORD(p[4]) = 0x101;
-    WORD(p[6]) = 0x101;
-    WORD(p[8]) = 0x101;
-    WORD(p[10]) = 0x101;
+    // This appears to hide link by setting the extended bits of the oam to hide them from the screen.
+    // It doesn't really play well with the widescreen modes, so change how it's done.
+    if (enhanced_features0 & kFeatures0_WidescreenVisualFixes) {
+      OamEnt *oam = &oam_buf[sort_sprites_offset_into_oam_buffer >> 2];
+      oam[0].y = oam[1].y = oam[2].y = oam[3].y = 0xf0;
+      oam[4].y = oam[5].y = oam[6].y = oam[7].y = 0xf0;
+      oam[8].y = oam[9].y = oam[10].y = oam[11].y = 0xf0;
+    } else {
+      uint8 *p = &bytewise_extended_oam[sort_sprites_offset_into_oam_buffer >> 2];
+      WORD(p[0]) = 0x101;
+      WORD(p[2]) = 0x101;
+      WORD(p[4]) = 0x101;
+      WORD(p[6]) = 0x101;
+      WORD(p[8]) = 0x101;
+      WORD(p[10]) = 0x101;
+    }
     if (link_visibility_status != 12 && !skip_erase) {
       int oam_pos = ((scratch_0_var ? kShadow_oam_indexes_1 : kShadow_oam_indexes_0)[r4loc] + sort_sprites_offset_into_oam_buffer)>>2;
       WORD(bytewise_extended_oam[oam_pos]) = 0;

@@ -45,7 +45,7 @@ typedef struct Config {
   uint16 audio_samples;
   bool autosave;
   uint8 extended_aspect_ratio;
-  bool extend_y, extended_aspect_ratio_nospr;
+  bool extend_y, extended_aspect_ratio_nospr, extended_aspect_ratio_novis;
   bool no_sprite_limits;
   bool display_perf_title;
   bool enable_msu;

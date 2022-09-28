@@ -124,6 +124,9 @@ enum {
   kFeatures0_SkipIntroOnKeypress = 128,
   kFeatures0_ShowMaxItemsInYellow = 256,
   kFeatures0_MoreActiveBombs = 512,
+
+  // This is set for visual fixes that don't affect game behavior but will affect ram compare.
+  kFeatures0_WidescreenVisualFixes = 1024,
 };
 
 #define enhanced_features0 (*(uint32*)(g_ram+0x64c))

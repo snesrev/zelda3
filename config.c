@@ -266,6 +266,8 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
           g_config.extended_aspect_ratio = 0;
         else if (strcmp(s, "unchanged_sprites") == 0)
           g_config.extended_aspect_ratio_nospr = true;
+        else if (strcmp(s, "no_visual_fixes") == 0)
+          g_config.extended_aspect_ratio_novis = true;
         else
           return false;
       }
