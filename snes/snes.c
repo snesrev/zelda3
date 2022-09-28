@@ -15,7 +15,7 @@
 #include "ppu.h"
 #include "cart.h"
 #include "input.h"
-#include "../tracing.h"
+#include "tracing.h"
 #include "snes_regs.h"
 
 static const double apuCyclesPerMaster = (32040 * 32) / (1364 * 262 * 60.0);
@@ -26,7 +26,6 @@ static uint8_t snes_readReg(Snes* snes, uint16_t adr);
 static void snes_writeReg(Snes* snes, uint16_t adr, uint8_t val);
 static uint8_t snes_rread(Snes* snes, uint32_t adr); // wrapped by read, to set open bus
 static int snes_getAccessTime(Snes* snes, uint32_t adr);
-void zelda_apu_runcycles();
 
 Snes* snes_init(uint8_t *ram) {
   Snes* snes = (Snes * )malloc(sizeof(Snes));
@@ -141,7 +140,6 @@ static void snes_catchupApu(Snes* snes) {
   int catchupCycles = (int) snes->apuCatchupCycles;
   for(int i = 0; i < catchupCycles; i++) {
     apu_cycle(snes->apu);
-    zelda_apu_runcycles();
   }
   snes->apuCatchupCycles -= (double) catchupCycles;
 }
@@ -170,7 +168,7 @@ uint8_t snes_readBBus(Snes* snes, uint8_t adr) {
     return ppu_read(snes->ppu, adr);
   }
   if(adr < 0x80) {
-    apu_cycle(snes->apu);//spc_runOpcode(snes->apu->spc);
+    //apu_cycle(snes->apu);//spc_runOpcode(snes->apu->spc);
     return snes->apu->outPorts[adr & 0x3];
   }
   if(adr == 0x80) {

@@ -1,4 +1,5 @@
-
+#ifndef ZELDA3_VARIABLES_H_
+#define ZELDA3_VARIABLES_H_
 #define main_module_index (*(uint8*)(g_ram+0x10))
 #define submodule_index (*(uint8*)(g_ram+0x11))
 #define nmi_boolean (*(uint8*)(g_ram+0x12))
@@ -1398,7 +1399,6 @@
 
 
 #define turn_on_off_water_ctr (*(uint8*)(g_ram+0x424))
-#define mirror_vars (*(MirrorHdmaVars*)(g_ram+0x6A0))
 #define sprite_N_word ((uint16*)(g_ram+0xBC0))
 #define sprite_where_in_overworld ((uint8*)(g_ram+0x1DF80))
 #define alt_sprite_B ((uint8*)(g_ram+0x1FA5C))
@@ -1427,3 +1427,97 @@
 // Relocated the hdma table so it can fit 240 rows
 #define hdma_table_dynamic_orig_pos ((uint16*)(g_ram+0x1B00))
 #define hdma_table_dynamic ((uint16*)(g_ram+0x1DBA0))
+
+
+
+
+typedef struct MovableBlockData {
+  uint16 room;
+  uint16 tilemap;
+} MovableBlockData;
+
+typedef struct OamEntSigned {
+  int8 x, y;
+  uint8 charnum, flags;
+} OamEntSigned;
+
+
+
+#define movable_block_datas ((MovableBlockData*)(g_ram+0xf940))
+#define oam_buf ((OamEnt*)(g_ram+0x800))
+
+
+typedef struct RoomBounds {
+  union {
+    struct { uint16 a0, b0, a1, b1; };
+    uint16 v[4];
+  };
+} RoomBounds;
+#define room_bounds_y (*(RoomBounds*)(g_ram+0x600))
+#define room_bounds_x (*(RoomBounds*)(g_ram+0x608))
+
+
+typedef struct OwScrollVars {
+  uint16 ystart, yend, xstart, xend;
+} OwScrollVars;
+
+
+#define ow_scroll_vars0 (*(OwScrollVars*)(g_ram+0x600))
+#define ow_scroll_vars1 (*(OwScrollVars*)(g_ram+0x608))
+
+#define ow_scroll_vars0_exit (*(OwScrollVars*)(g_ram+0xC154))
+
+extern const uint8 kLayoutQuadrantFlags[];
+extern const uint8 kVariousPacks[16];
+extern const uint8 kMaxBombsForLevel[];
+extern const uint8 kMaxArrowsForLevel[];
+extern const uint8 kReceiveItem_Tab1[76];
+extern const uint8 kHealthAfterDeath[21];
+extern const uint8 kReceiveItemGfx[76];
+extern const uint16 kOverworld_OffsetBaseY[64];
+extern const uint16 kOverworld_OffsetBaseX[64];
+
+// forwards
+
+
+typedef struct MirrorHdmaVars {
+  uint16 var0;
+  uint16 var1[2];
+  uint16 var3[2];
+  uint16 var5;
+  uint16 var6;
+  uint16 var7;
+  uint16 var8;
+  uint16 var9;
+  uint16 var10;
+  uint16 var11;
+  uint16 pad;
+  uint8 ctr2, ctr;
+} MirrorHdmaVars;
+#define mirror_vars (*(MirrorHdmaVars*)(g_ram+0x6A0))
+
+
+typedef struct UploadVram_Row {
+  uint16 col[32];
+} UploadVram_Row;
+
+typedef struct UploadVram_32x32 {
+  UploadVram_Row row[32];
+} UploadVram_32x32;
+
+typedef struct UploadVram_3 {
+  uint8 pad[256];
+  uint16 data[4];
+} UploadVram_3;
+
+#define uvram (*(UploadVram_3*)(&g_ram[0x1000]))
+
+extern uint8 g_ram[131072];
+extern const uint16 kUpperBitmasks[];
+extern const uint8 kLitTorchesColorPlus[];
+extern const uint8 kDungeonCrystalPendantBit[];
+extern const int8 kGetBestActionToPerformOnTile_x[];
+extern const int8 kGetBestActionToPerformOnTile_y[];
+
+
+#endif  // ZELDA3_VARIABLES_H_

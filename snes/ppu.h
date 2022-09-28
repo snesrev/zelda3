@@ -1,16 +1,15 @@
 
-#ifndef PPU_H
-#define PPU_H
+#ifndef ZELDA3_SNES_PPU_H_
+#define ZELDA3_SNES_PPU_H_
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-
+#include "saveload.h"
 typedef struct Ppu Ppu;
 
-#include "snes.h"
 #include "../types.h"
 
 typedef struct BgLayer {
@@ -66,8 +65,6 @@ struct Ppu {
   uint8_t *renderBuffer;
   uint8_t extraLeftCur, extraRightCur, extraLeftRight, extraBottomCur;
   float mode7PerspectiveLow, mode7PerspectiveHigh;
-
-  Snes* snes;
   // store 31 extra entries to remove the need for clamp
   uint8_t brightnessMult[32 + 31]; 
   uint8_t brightnessMultHalf[32 * 2];
@@ -162,7 +159,7 @@ struct Ppu {
   uint32_t colorMapRgb[256];
 };
 
-Ppu* ppu_init(Snes* snes);
+Ppu* ppu_init();
 void ppu_free(Ppu* ppu);
 void ppu_reset(Ppu* ppu);
 void ppu_handleVblank(Ppu* ppu);
@@ -175,4 +172,4 @@ bool PpuBeginDrawing(Ppu *ppu, uint8_t *buffer, size_t pitch, uint32_t render_fl
 void PpuSetMode7PerspectiveCorrection(Ppu *ppu, int low, int high);
 void PpuSetExtraSideSpace(Ppu *ppu, int left, int right, int bottom);
 
-#endif
+#endif  // ZELDA3_SNES_PPU_H_

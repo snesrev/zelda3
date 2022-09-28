@@ -6,7 +6,6 @@
 #include <stddef.h>
 #include <assert.h>
 #include "ppu.h"
-#include "snes.h"
 #include "../types.h"
 
 static const uint8 kSpriteSizes[8][2] = {
@@ -24,9 +23,9 @@ static bool ppu_evaluateSprites(Ppu* ppu, int line);
 static uint16_t ppu_getVramRemap(Ppu* ppu);
 static void PpuDrawWholeLine(Ppu *ppu, uint y);
 
-Ppu* ppu_init(Snes* snes) {
+Ppu* ppu_init() {
   Ppu* ppu = (Ppu * )malloc(sizeof(Ppu));
-  ppu->snes = snes;
+  ppu->extraLeftRight = kPpuExtraLeftRight;
   return ppu;
 }
 
@@ -40,7 +39,6 @@ void ppu_reset(Ppu* ppu) {
   ppu->lastMosaicModulo = 0xff;
   ppu->extraLeftCur = 0;
   ppu->extraRightCur = 0;
-  ppu->extraLeftRight = kPpuExtraLeftRight;
   ppu->extraBottomCur = 0;
   ppu->vramPointer = 0;
   ppu->vramIncrementOnHigh = false;
@@ -1403,13 +1401,10 @@ uint8_t ppu_read(Ppu* ppu, uint8_t adr) {
     }
     case 0x37: {
       // TODO: only when ppulatch is set
-      ppu->hCount = ppu->snes->hPos / 4;
-      ppu->vCount = ppu->snes->vPos;
+      ppu->hCount = 0;
+      ppu->vCount = 0;
       ppu->countersLatched = true;
-      if (ppu->snes->disableHpos)
-        ppu->vCount = 192;
-
-      return ppu->snes->openBus;
+      return 0xff;
     }
     case 0x38: {
       uint8_t ret = 0;
@@ -1498,7 +1493,7 @@ uint8_t ppu_read(Ppu* ppu, uint8_t adr) {
       return val;
     }
     default: {
-      return ppu->snes->openBus;
+      return 0xff;
     }
   }
 }

@@ -55,9 +55,11 @@ static inline uint16 swap16(uint16 v) { return (v << 8) | (v >> 8); }
 typedef struct Point16U {
   uint16 x, y;
 } Point16U;
+
 typedef struct PointU8 {
   uint8 x, y;
 } PointU8;
+
 typedef struct Pair16U {
   uint16 a, b;
 } Pair16U;
@@ -74,24 +76,6 @@ typedef struct ProjectSpeedRet {
 typedef struct OamEnt {
   uint8 x, y, charnum, flags;
 } OamEnt;
-
-typedef struct UploadVram_Row {
-  uint16 col[32];
-} UploadVram_Row;
-
-typedef struct UploadVram_32x32 {
-  UploadVram_Row row[32];
-} UploadVram_32x32;
-
-typedef struct UploadVram_3 {
-  uint8 pad[256];
-  uint16 data[4];
-} UploadVram_3;
-
-#define uvram (*(UploadVram_3*)(&g_ram[0x1000]))
-
-typedef void PlayerHandlerFunc();
-typedef void HandlerFuncK(int k);
 
 void NORETURN Die(const char *error);
 

@@ -272,6 +272,7 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
+    <ClCompile Include="snes\tracing.c" />
     <ClCompile Include="spc_player.c" />
     <ClCompile Include="sprite.c" />
     <ClCompile Include="sprite_main.c">
@@ -280,10 +281,6 @@
     </ClCompile>
     <ClCompile Include="tagalong.c" />
     <ClCompile Include="tile_detect.c" />
-    <ClCompile Include="tracing.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
-      <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
-    </ClCompile>
     <ClCompile Include="zelda_cpu_infra.c" />
     <ClCompile Include="zelda_rtl.c" />
   </ItemGroup>
@@ -294,6 +291,7 @@
     <ClInclude Include="config.h" />
     <ClInclude Include="dungeon.h" />
     <ClInclude Include="ending.h" />
+    <ClInclude Include="features.h" />
     <ClInclude Include="hud.h" />
     <ClInclude Include="load_gfx.h" />
     <ClInclude Include="messaging.h" />
@@ -319,12 +317,12 @@
     <ClInclude Include="snes\snes.h" />
     <ClInclude Include="snes\snes_regs.h" />
     <ClInclude Include="snes\spc.h" />
+    <ClInclude Include="snes\tracing.h" />
     <ClInclude Include="spc_player.h" />
     <ClInclude Include="sprite.h" />
     <ClInclude Include="sprite_main.h" />
     <ClInclude Include="tagalong.h" />
     <ClInclude Include="tile_detect.h" />
-    <ClInclude Include="tracing.h" />
     <ClInclude Include="types.h" />
     <ClInclude Include="variables.h" />
     <ClInclude Include="zelda_cpu_infra.h" />

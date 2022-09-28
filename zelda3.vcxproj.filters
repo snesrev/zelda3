@@ -55,9 +55,6 @@
     <ClCompile Include="snes\spc.c">
       <Filter>Snes</Filter>
     </ClCompile>
-    <ClCompile Include="tracing.c">
-      <Filter>Snes</Filter>
-    </ClCompile>
     <ClCompile Include="zelda_rtl.c">
       <Filter>Zelda</Filter>
     </ClCompile>
@@ -133,6 +130,9 @@
     <ClCompile Include="main.c">
       <Filter>Zelda</Filter>
     </ClCompile>
+    <ClCompile Include="snes\tracing.c">
+      <Filter>Snes</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="snes\apu.h">
@@ -163,9 +163,6 @@
       <Filter>Snes</Filter>
     </ClInclude>
     <ClInclude Include="snes\spc.h">
-      <Filter>Snes</Filter>
-    </ClInclude>
-    <ClInclude Include="tracing.h">
       <Filter>Snes</Filter>
     </ClInclude>
     <ClInclude Include="zelda_rtl.h">
@@ -257,6 +254,12 @@
     </ClInclude>
     <ClInclude Include="assets.h">
       <Filter>Zelda</Filter>
+    </ClInclude>
+    <ClInclude Include="features.h">
+      <Filter>Zelda</Filter>
+    </ClInclude>
+    <ClInclude Include="snes\tracing.h">
+      <Filter>Snes</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

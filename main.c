@@ -11,31 +11,21 @@
 #include <sys/types.h>
 #include <unistd.h>
 #endif
-#include <math.h>
-#include "snes/snes.h"
-#include "tracing.h"
+
+#include "snes/ppu.h"
 
 #include "types.h"
 #include "variables.h"
 
 #include "zelda_rtl.h"
+#include "zelda_cpu_infra.h"
+
 #include "config.h"
 #include "assets.h"
 
-extern Dsp *GetDspForRendering();
-extern Snes *g_snes;
-extern uint8 g_emulated_ram[0x20000];
-
-void PatchRom(uint8 *rom);
-void SetSnes(Snes *snes);
-void RunAudioPlayer();
-void CopyStateAfterSnapshotRestore(bool is_reset);
-void SaveLoadSlot(int cmd, int which);
-void PatchCommand(char cmd);
-bool RunOneFrame(Snes *snes, int input_state);
-
-static bool LoadRom(const char *name, Snes *snes);
-static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int channels, int16 *audioBuffer);
+// Forwards
+static bool LoadRom(const char *name);
+static void PlayAudio(SDL_AudioDeviceID device, int channels, int16 *audioBuffer);
 static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen);
 static void HandleInput(int keyCode, int modCode, bool pressed);
 static void HandleGamepadInput(int button, bool pressed);
@@ -285,18 +275,8 @@ int main(int argc, char** argv) {
     SDL_PauseAudioDevice(device, 0);
   }
 
-  Snes *snes = snes_init(g_emulated_ram), *snes_run = NULL;
-  if (argc >= 2 && !g_run_without_emu) {
-    // init snes, load rom
-    bool loaded = LoadRom(argv[1], snes);
-    if (!loaded) {
-      puts("No rom loaded");
-      return 1;
-    }
-    snes_run = snes;
-  } else {
-    snes_reset(snes, true);
-  }
+  if (argc >= 2 && !g_run_without_emu)
+    LoadRom(argv[1]);
 
 #if defined(_WIN32)
   _mkdir("saves");
@@ -304,8 +284,7 @@ int main(int argc, char** argv) {
   mkdir("saves", 0755);
 #endif
 
-  SetSnes(snes);
-  ZeldaReadSram(snes);
+  ZeldaReadSram();
 
   for (int i = 0; i < SDL_NumJoysticks(); i++)
     OpenOneGamepad(i);
@@ -371,11 +350,7 @@ int main(int argc, char** argv) {
       g_gamepad_buttons = 0;
     inputs |= g_gamepad_buttons;
 
-    // Avoid up/down and left/right from being pressed at the same time
-    if ((inputs & 0x30) == 0x30) inputs ^= 0x30;
-    if ((inputs & 0xc0) == 0xc0) inputs ^= 0xc0;
-
-    bool is_replay = RunOneFrame(snes_run, inputs);
+    bool is_replay = ZeldaRunFrame(inputs);
 
     if ((g_turbo ^ (is_replay & g_replay_turbo)) && (frameCtr++ & (g_turbo ? 0xf : 0x7f)) != 0)
       continue;
@@ -383,7 +358,7 @@ int main(int argc, char** argv) {
 
     uint64 t1 = SDL_GetPerformanceCounter();
     if (audioBuffer)
-      PlayAudio(snes_run, device, have.channels, audioBuffer);
+      PlayAudio(device, have.channels, audioBuffer);
     uint64 t2 = SDL_GetPerformanceCounter();
 
     RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
@@ -421,8 +396,6 @@ int main(int argc, char** argv) {
   }
   if (g_config.autosave)
     SaveLoadSlot(kSaveLoad_Save, 0);
-  // clean snes
-  snes_free(snes);
   // clean sdl
   if (g_config.enable_audio) {
     SDL_PauseAudioDevice(device, 1);
@@ -438,19 +411,8 @@ int main(int argc, char** argv) {
 }
 
 
-static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int channels, int16 *audioBuffer) {
-  // generate enough samples
-  if (snes) {
-    while (snes->apu->dsp->sampleOffset < 534)
-      apu_cycle(snes->apu);
-    snes->apu->dsp->sampleOffset = 0;
-  }
-
-  dsp_getSamples(GetDspForRendering(), audioBuffer, g_samples_per_block, channels);
-
-  // Mixin the msu data?
-  if (channels == 2)
-    MixinMsuAudioData(audioBuffer, g_samples_per_block);
+static void PlayAudio(SDL_AudioDeviceID device, int channels, int16 *audioBuffer) {
+  ZeldaRenderAudio(audioBuffer, g_samples_per_block, channels);
 
   for (int i = 0; i < 10; i++) {
     if (SDL_GetQueuedAudioSize(device) <= g_samples_per_block * channels * sizeof(int16) * 6) {
@@ -584,9 +546,7 @@ static void HandleCommand(uint32 j, bool pressed) {
       SDL_ShowCursor(g_cursor);
       break;
     case kKeys_Reset:
-      snes_reset(g_snes, true);
-      ZeldaReadSram(g_snes);
-      CopyStateAfterSnapshotRestore(true);
+      ZeldaReset(true);
       break;
     case kKeys_Pause: g_paused = !g_paused; break;
     case kKeys_PauseDimmed: 
@@ -651,7 +611,8 @@ static float ApproximateAtan2(float y, float x) {
   // Determine the quadrant offset
   float q = (float)((~ux_s & uy_s) >> 29 | ux_s >> 30);
   // Calculate the arctangent in the first quadrant
-  float bxy_a = fabs(b * x * y);
+  float bxy_a = b * x * y;
+  if (bxy_a < 0.0f) bxy_a = -bxy_a;  // avoid fabs
   float num = bxy_a + y * y;
   float atan_1q = num / (x * x + bxy_a + num + 0.000001f);
   // Translate it to the proper quadrant
@@ -692,14 +653,11 @@ static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
   }
 }
 
-static bool LoadRom(const char *name, Snes *snes) {
+static bool LoadRom(const char *filename) {
   size_t length = 0;
-  uint8 *file = ReadFile(name, &length);
+  uint8 *file = ReadFile(filename, &length);
   if(!file) Die("Failed to read file");
-
-  PatchRom(file);
-
-  bool result = snes_loadRom(snes, file, (int)length);
+  bool result = EmuInitialize(file, length);
   free(file);
   return result;
 }

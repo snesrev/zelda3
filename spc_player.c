@@ -1,13 +1,11 @@
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
-#include <SDL.h>
 #include <assert.h>
 #include "types.h"
 
 #include "snes/spc.h"
 #include "snes/dsp_regs.h"
-#include "tracing.h"
 
 #include "spc_player.h"
 
@@ -1274,6 +1272,11 @@ void SpcPlayer_Upload(SpcPlayer *p, const uint8_t *data) {
 }
 
 // =======================================
+#define WITH_SPC_PLAYER_DEBUGGING 0
+
+#if WITH_SPC_PLAYER_DEBUGGING
+
+#include <SDL.h>
 
 static DspRegWriteHistory my_write_hist;
 static SpcPlayer my_spc, my_spc_snapshot;
@@ -1443,3 +1446,4 @@ void RunAudioPlayer() {
     }
   }
 }
+#endif  // WITH_SPC_PLAYER_DEBUGGING

@@ -1,25 +1,21 @@
 // This file handles running zelda through the emulated cpu.
-
+// It defines the runtime environment for the emulated side-by-side state.
+// It should be possible to build and run the game without this file
 #include "zelda_cpu_infra.h"
 #include "zelda_rtl.h"
 #include "variables.h"
-#include "misc.h"
-#include "nmi.h"
-#include "poly.h"
-#include "attract.h"
 #include "spc_player.h"
-#include "snes/snes_regs.h"
 #include "snes/snes.h"
+#include "snes/snes_regs.h"
 #include "snes/cpu.h"
 #include "snes/cart.h"
-#include "tracing.h"
+#include "snes/tracing.h"
 
 Snes *g_snes;
 Cpu *g_cpu;
 uint8 g_emulated_ram[0x20000];
-uint32 g_wanted_zelda_features;
 
-void SaveLoadSlot(int cmd, int which);
+static void PatchRom(uint8 *rom);
 
 uint8 *GetPtr(uint32 addr) {
   Cart *cart = g_snes->cart;
@@ -173,11 +169,6 @@ static uint8_t *RomByte(Cart *cart, uint32_t addr) {
   return &cart->rom[(((addr >> 16) << 15) | (addr & 0x7fff)) & (cart->romSize - 1)];
 }
 
-void SetSnes(Snes *snes) {
-  g_snes = snes;
-  g_cpu = snes->cpu;
-}
-
 bool g_calling_asm_from_c;
 
 void HookedFunctionRts(int is_long) {
@@ -270,7 +261,7 @@ void RunOrigAsmCodeOneLoop(Snes *snes) {
   }
 }
 
-void RunEmulatedSnesFrame(Snes *snes, int run_what) {
+static void RunEmulatedSnesFrame(Snes *snes, int run_what) {
   // First call runs until init
   if (snes->cpu->pc == 0x8000 && snes->cpu->k == 0) {
     RunOrigAsmCodeOneLoop(snes);
@@ -317,441 +308,21 @@ void RunEmulatedSnesFrame(Snes *snes, int run_what) {
   RunOrigAsmCodeOneLoop(snes);
 }
 
-Dsp *GetDspForRendering() {
-  SpcPlayer_GenerateSamples(g_zenv.player);
-  return g_zenv.player->dsp;
-}
 
-typedef struct ByteArray {
-  uint8 *data;
-  size_t size, capacity;
-} ByteArray;
-
-void ByteArray_Resize(ByteArray *arr, size_t new_size) {
-  arr->size = new_size;
-  if (new_size > arr->capacity) {
-    size_t minsize = arr->capacity + (arr->capacity >> 1) + 8;
-    arr->capacity = new_size < minsize ? minsize : new_size;
-    void *data = realloc(arr->data, arr->capacity);
-    if (!data) Die("memory allocation failed");
-    arr->data = data;
-  }
-}
-
-void ByteArray_Destroy(ByteArray *arr) {
-  free(arr->data);
-  arr->data = NULL;
-}
-
-void ByteArray_AppendData(ByteArray *arr, const uint8 *data, size_t data_size) {
-  ByteArray_Resize(arr, arr->size + data_size);
-  memcpy(arr->data + arr->size - data_size, data, data_size);
-}
-
-void ByteArray_AppendByte(ByteArray *arr, uint8 v) {
-  ByteArray_Resize(arr, arr->size + 1);
-  arr->data[arr->size - 1] = v;
-}
-
-void ByteArray_AppendVl(ByteArray *arr, uint32 v) {
-  for (; v >= 255; v -= 255)
-    ByteArray_AppendByte(arr, 255);
-  ByteArray_AppendByte(arr, v);
-}
-
-
-void saveFunc(void *ctx_in, void *data, size_t data_size) {
-  ByteArray_AppendData((ByteArray *)ctx_in, data, data_size);
-}
-
-typedef struct LoadFuncState {
-  uint8 *p, *pend;
-} LoadFuncState;
-
-void loadFunc(void *ctx, void *data, size_t data_size) {
-  LoadFuncState *st = (LoadFuncState *)ctx;
-  assert(st->pend - st->p >= data_size);
-  memcpy(data, st->p, data_size);
-  st->p += data_size;
-}
-
-void CopyStateAfterSnapshotRestore(bool is_reset) {
-  memcpy(g_snes->ram + 0x1DBA0, g_snes->ram + 0x1b00, 224 * 2); // hdma table was moved
-
-  memcpy(g_zenv.ram, g_snes->ram, 0x20000);
-  memcpy(g_zenv.sram, g_snes->cart->ram, g_snes->cart->ramSize);
-  memcpy(g_zenv.ppu->vram, &g_snes->ppu->vram, offsetof(Ppu, ppu2openBus) + 1 - offsetof(Ppu, vram));
-  memcpy(g_zenv.player->ram, g_snes->apu->ram, sizeof(g_snes->apu->ram));
-
-  if (!is_reset) {
-    memcpy(g_zenv.player->dsp->ram, g_snes->apu->dsp->ram, sizeof(Dsp) - offsetof(Dsp, ram));
-    SpcPlayer_CopyVariablesFromRam(g_zenv.player);
-  }
-
-  memcpy(g_zenv.dma->channel, g_snes->dma->channel, sizeof(Dma) - offsetof(Dma, channel));
-  
-  
-
-  g_zenv.player->timer_cycles = 0;
-
-  ZeldaOpenMsuFile();
-}
-
-void SaveSnesState(ByteArray *ctx) {
-  MakeSnapshot(&g_snapshot_before);
-
-  memcpy(g_zenv.ram + 0x1b00, g_zenv.ram + 0x1DBA0, 224 * 2); // hdma table was moved
-
-  // Copy from my state into the emulator
+// Copy state into the emulator, we can skip dsp/apu because 
+// we're not emulating that.
+static void EmuSynchronizeWholeState() {
   memcpy(&g_snes->ppu->vram, g_zenv.ppu->vram, offsetof(Ppu, ppu2openBus) + 1 - offsetof(Ppu, vram));
   memcpy(g_snes->ram, g_zenv.ram, 0x20000);
   memcpy(g_snes->cart->ram, g_zenv.sram, 0x2000);
-  SpcPlayer_CopyVariablesToRam(g_zenv.player);
-  memcpy(g_snes->apu->ram, g_zenv.player->ram, 0x10000);
-  memcpy(g_snes->apu->dsp->ram, g_zenv.player->dsp->ram, sizeof(Dsp) - offsetof(Dsp, ram));
   memcpy(g_snes->dma->channel, g_zenv.dma->channel, sizeof(Dma) - offsetof(Dma, channel));
 
-  snes_saveload(g_snes, &saveFunc, ctx);
-
-  RestoreSnapshot(&g_snapshot_before);
+  // todo: this is hacky
+  if (animated_tile_data_src == 0)
+    cpu_reset(g_snes->cpu);
 }
 
-typedef struct StateRecorder {
-  uint16 last_inputs;
-  uint32 frames_since_last;
-  uint32 total_frames;
-
-  // For replay
-  uint32 replay_pos, replay_pos_last_complete;
-  uint32 replay_frame_counter;
-  uint32 replay_next_cmd_at;
-  uint8 replay_cmd;
-  bool replay_mode;
-
-  ByteArray log;
-  ByteArray base_snapshot;
-} StateRecorder;
-
-static StateRecorder state_recorder;
-
-void StateRecorder_Init(StateRecorder *sr) {
-  memset(sr, 0, sizeof(*sr));
-}
-
-void StateRecorder_RecordCmd(StateRecorder *sr, uint8 cmd) {
-  int frames = sr->frames_since_last;
-  sr->frames_since_last = 0;
-  int x = (cmd < 0xc0) ? 0xf : 0x1;
-  ByteArray_AppendByte(&sr->log, cmd | (frames < x ? frames : x));
-  if (frames >= x)
-    ByteArray_AppendVl(&sr->log, frames - x);
-}
-
-void StateRecorder_Record(StateRecorder *sr, uint16 inputs) {
-  uint16 diff = inputs ^ sr->last_inputs;
-  if (diff != 0) {
-    sr->last_inputs = inputs;
-//    printf("0x%.4x %d: ", diff, sr->frames_since_last);
-//    size_t lb = sr->log.size;
-    for (int i = 0; i < 12; i++) {
-      if ((diff >> i) & 1)
-        StateRecorder_RecordCmd(sr, i << 4);
-    }
-//    while (lb < sr->log.size)
-//      printf("%.2x ", sr->log.data[lb++]);
-//    printf("\n");
-  }
-  sr->frames_since_last++;
-  sr->total_frames++;
-}
-
-void StateRecorder_RecordPatchByte(StateRecorder *sr, uint32 addr, const uint8 *value, int num) {
-  assert(addr < 0x20000);
-  
-//  printf("%d: PatchByte(0x%x, 0x%x. %d): ", sr->frames_since_last, addr, *value, num);
-//  size_t lb = sr->log.size;
-  int lq = (num - 1) <= 3 ? (num - 1) : 3;
-  StateRecorder_RecordCmd(sr, 0xc0 | (addr & 0x10000 ? 2 : 0) | lq << 2);
-  if (lq == 3)
-    ByteArray_AppendVl(&sr->log, num - 1 - 3);
-  ByteArray_AppendByte(&sr->log, addr >> 8);
-  ByteArray_AppendByte(&sr->log, addr);
-  for(int i = 0; i < num; i++)
-    ByteArray_AppendByte(&sr->log, value[i]);
-//  while (lb < sr->log.size)
-//    printf("%.2x ", sr->log.data[lb++]);
-//  printf("\n");
-}
-
-void StateRecorder_Load(StateRecorder *sr, FILE *f, bool replay_mode) {
-  // todo: fix robustness on invalid data.
-  uint32 hdr[8] = { 0 };
-  fread(hdr, 1, sizeof(hdr), f);
-
-  assert(hdr[0] == 1);
-
-  sr->total_frames = hdr[1];
-  ByteArray_Resize(&sr->log, hdr[2]);
-  fread(sr->log.data, 1, sr->log.size, f);
-  sr->last_inputs = hdr[3];
-  sr->frames_since_last = hdr[4];
-
-  ByteArray_Resize(&sr->base_snapshot, (hdr[5] & 1) ? hdr[6] : 0);
-  fread(sr->base_snapshot.data, 1, sr->base_snapshot.size, f);
-
-  sr->replay_next_cmd_at = 0;
-
-  bool is_reset = false;
-  sr->replay_mode = replay_mode;
-  if (replay_mode) {
-    sr->frames_since_last = 0;
-    sr->last_inputs = 0;
-    sr->replay_pos = sr->replay_pos_last_complete = 0;
-    sr->replay_frame_counter = 0;
-    // Load snapshot from |base_snapshot_|, or reset if empty.
-
-    if (sr->base_snapshot.size) {
-      LoadFuncState state = { sr->base_snapshot.data, sr->base_snapshot.data + sr->base_snapshot.size };
-      snes_saveload(g_snes, &loadFunc, &state);
-      assert(state.p == state.pend);
-    } else {
-      snes_reset(g_snes, true);
-      SpcPlayer_Initialize(g_zenv.player);
-      is_reset = true;
-    }
-  } else {
-    // Resume replay from the saved position?
-    sr->replay_pos = sr->replay_pos_last_complete = hdr[5] >> 1;
-    sr->replay_frame_counter = hdr[7];
-    sr->replay_mode = (sr->replay_frame_counter != 0);
-
-    ByteArray arr = { 0 };
-    ByteArray_Resize(&arr, hdr[6]);
-    fread(arr.data, 1, arr.size, f);
-    LoadFuncState state = { arr.data, arr.data + arr.size };
-    snes_saveload(g_snes, &loadFunc, &state);
-    ByteArray_Destroy(&arr);
-    assert(state.p == state.pend);
-  }
-  CopyStateAfterSnapshotRestore(is_reset);
-}
-
-void StateRecorder_Save(StateRecorder *sr, FILE *f) {
-  uint32 hdr[8] = { 0 };
-  ByteArray arr = {0};
-  SaveSnesState(&arr);
-  assert(sr->base_snapshot.size == 0 || sr->base_snapshot.size == arr.size);
-
-  hdr[0] = 1;
-  hdr[1] = sr->total_frames;
-  hdr[2] = (uint32)sr->log.size;
-  hdr[3] = sr->last_inputs;
-  hdr[4] = sr->frames_since_last;
-  hdr[5] = sr->base_snapshot.size ? 1 : 0;
-  hdr[6] = (uint32)arr.size;
-  // If saving while in replay mode, also need to persist
-  // sr->replay_pos_last_complete and sr->replay_frame_counter
-  // so the replaying can be resumed.
-  if (sr->replay_mode) {
-    hdr[5] |= sr->replay_pos_last_complete << 1;
-    hdr[7] = sr->replay_frame_counter;
-  }
-  fwrite(hdr, 1, sizeof(hdr), f);
-  fwrite(sr->log.data, 1, hdr[2], f);
-  fwrite(sr->base_snapshot.data, 1, sr->base_snapshot.size, f);
-  fwrite(arr.data, 1, arr.size, f);
-
-  ByteArray_Destroy(&arr);
-}
-
-void StateRecorder_ClearKeyLog(StateRecorder *sr) {
-  printf("Clearing key log!\n");
-  sr->base_snapshot.size = 0;
-  SaveSnesState(&sr->base_snapshot);
-  ByteArray old_log = sr->log;
-  int old_frames_since_last = sr->frames_since_last;
-  memset(&sr->log, 0, sizeof(sr->log));
-  // If there are currently any active inputs, record them initially at timestamp 0.
-  sr->frames_since_last = 0;
-  if (sr->last_inputs) {
-    for (int i = 0; i < 12; i++) {
-      if ((sr->last_inputs >> i) & 1)
-        StateRecorder_RecordCmd(sr, i << 4);
-    }
-  }
-  if (sr->replay_mode) {
-    // When clearing the key log while in replay mode, we want to keep
-    // replaying but discarding all key history up until this point.
-    if (sr->replay_next_cmd_at != 0xffffffff) {
-      sr->replay_next_cmd_at -= old_frames_since_last;
-      sr->frames_since_last = sr->replay_next_cmd_at;
-      sr->replay_pos_last_complete = (uint32)sr->log.size;
-      StateRecorder_RecordCmd(sr, sr->replay_cmd);
-      int old_replay_pos = sr->replay_pos;
-      sr->replay_pos = (uint32)sr->log.size;
-      ByteArray_AppendData(&sr->log, old_log.data + old_replay_pos, old_log.size - old_replay_pos);
-    }
-    sr->total_frames -= sr->replay_frame_counter;
-    sr->replay_frame_counter = 0;
-  } else {
-    sr->total_frames = 0;
-  }
-  ByteArray_Destroy(&old_log);
-  sr->frames_since_last = 0;
-}
-
-uint16 StateRecorder_ReadNextReplayState(StateRecorder *sr) {
-  assert(sr->replay_mode);
-  while (sr->frames_since_last >= sr->replay_next_cmd_at) {
-    int replay_pos = sr->replay_pos;
-    if (replay_pos != sr->replay_pos_last_complete) {
-      // Apply next command
-      sr->frames_since_last = 0;
-      if (sr->replay_cmd < 0xc0) {
-        sr->last_inputs ^= 1 << (sr->replay_cmd >> 4);
-      } else if (sr->replay_cmd < 0xd0) {
-        int nb = 1 + ((sr->replay_cmd >> 2) & 3);
-        uint8 t;
-        if (nb == 4) do {
-          nb += t = sr->log.data[replay_pos++];
-        } while (t == 255);
-        uint32 addr = ((sr->replay_cmd >> 1) & 1) << 16;
-        addr |= sr->log.data[replay_pos++] << 8;
-        addr |= sr->log.data[replay_pos++];
-        do {
-          g_emulated_ram[addr & 0x1ffff] = g_ram[addr & 0x1ffff] = sr->log.data[replay_pos++];
-        } while (addr++, --nb);
-      } else {
-        assert(0);
-      }
-    }
-    sr->replay_pos_last_complete = replay_pos;
-    if (replay_pos >= sr->log.size) {
-      sr->replay_pos = replay_pos;
-      sr->replay_next_cmd_at = 0xffffffff;
-      break;
-    }
-    // Read the next one
-    uint8 cmd = sr->log.data[replay_pos++], t;
-    int mask = (cmd < 0xc0) ? 0xf : 0x1;
-    int frames = cmd & mask;
-    if (frames == mask) do {
-      frames += t = sr->log.data[replay_pos++];
-    } while (t == 255);
-    sr->replay_next_cmd_at = frames;
-    sr->replay_cmd = cmd;
-    sr->replay_pos = replay_pos;
-  }
-  sr->frames_since_last++;
-  // Turn off replay mode after we reached the final frame position
-  if (++sr->replay_frame_counter >= sr->total_frames) {
-    sr->replay_mode = false;
-  }
-  return sr->last_inputs;
-}
-
-void StateRecorder_StopReplay(StateRecorder *sr) {
-  if (!sr->replay_mode)
-    return;
-  sr->replay_mode = false;
-  sr->total_frames = sr->replay_frame_counter;
-  sr->log.size = sr->replay_pos_last_complete;
-}
-
-static int frame_ctr;
-
-int IncrementCrystalCountdown(uint8 *a, int v) {
-  int t = *a + v;
-  *a = t;
-  return t >> 8;
-}
-
-#ifdef _DEBUG
-// This can be used to read inputs from a text file for easier debugging
-int InputStateReadFromFile() {
-  static FILE *f;
-  static uint32 next_ts, next_keys, cur_keys;
-  char buf[64];
-  char keys[64];
-
-  while (state_recorder.total_frames == next_ts) {
-    cur_keys = next_keys;
-    if (!f)
-      f = fopen("boss_bug.txt", "r");
-    if (fgets(buf, sizeof(buf), f)) {
-      if (sscanf(buf, "%d: %s", &next_ts, keys) == 1) keys[0] = 0;
-      int i = 0;
-      for (const char *s = keys; *s; s++) {
-        static const char kKeys[] = "AXsSUDLRBY";
-        const char *t = strchr(kKeys, *s);
-        assert(t);
-        i |= 1 << (t - kKeys);
-      }
-      next_keys = i;
-    } else {
-      next_ts = 0xffffffff;
-    }
-  }
-
-  return cur_keys;
-}
-#endif
-
-bool RunOneFrame(Snes *snes, int input_state) {
-  bool is_replay = state_recorder.replay_mode;
-  frame_ctr++;
-
-  // Either copy state or apply state
-  if (is_replay) {
-    input_state = StateRecorder_ReadNextReplayState(&state_recorder);
-  } else {
-    //    input_state = InputStateReadFromFile();
-    StateRecorder_Record(&state_recorder, input_state);
-
-    // This is whether APUI00 is true or false, this is used by the ancilla code.
-    uint8 apui00 = ZeldaIsMusicPlaying();
-    if (apui00 != g_ram[kRam_APUI00]) {
-      g_emulated_ram[kRam_APUI00] = g_ram[kRam_APUI00] = apui00;
-      StateRecorder_RecordPatchByte(&state_recorder, 0x648, &apui00, 1);
-    }
-
-    if (animated_tile_data_src != 0) {
-      // Whenever we're no longer replaying, we'll remember what bugs were fixed,
-      // but only if game is initialized.
-      if (g_ram[kRam_BugsFixed] < kBugFix_Latest) {
-        g_emulated_ram[kRam_BugsFixed] = g_ram[kRam_BugsFixed] = kBugFix_Latest;
-        StateRecorder_RecordPatchByte(&state_recorder, kRam_BugsFixed, &g_ram[kRam_BugsFixed], 1);
-      }
-
-      if (enhanced_features0 != g_wanted_zelda_features) {
-        *(uint32*)&g_emulated_ram[kRam_Features0] = enhanced_features0 = g_wanted_zelda_features;
-        StateRecorder_RecordPatchByte(&state_recorder, kRam_Features0, (uint8*)&enhanced_features0, 4);
-      }
-    }
-  }
-
-  int run_what;
-  if (g_ram[kRam_BugsFixed] < kBugFix_PolyRenderer) {
-    // A previous version of this code alternated the game loop with
-    // the poly renderer.
-    run_what = (is_nmi_thread_active && thread_other_stack != 0x1f31) ? 2 : 1;
-  } else {
-    // The snes seems to let poly rendering run for a little
-    // while each fram until it eventually completes a frame.
-    // Simulate this by rendering the poly every n:th frame.
-    run_what = (is_nmi_thread_active && IncrementCrystalCountdown(&g_ram[kRam_CrystalRotateCounter], virq_trigger)) ? 3 : 1;
-    g_emulated_ram[kRam_CrystalRotateCounter] = g_ram[kRam_CrystalRotateCounter];
-  }
-  
-  if (snes == NULL || enhanced_features0 != 0) {
-    // can't compare against real impl when running with extra features.
-    ZeldaRunFrame(input_state, run_what);
-    return is_replay;
-  }
-
-  if (g_fail)
-    return false;
-
+static void EmuRunFrameWithCompare(uint16 input_state, int run_what) {
   MakeSnapshot(&g_snapshot_before);
   MakeMySnapshot(&g_snapshot_mine);
   MakeSnapshot(&g_snapshot_theirs);
@@ -760,27 +331,27 @@ bool RunOneFrame(Snes *snes, int input_state) {
   VerifySnapshotsEq(&g_snapshot_mine, &g_snapshot_theirs, &g_snapshot_before);
   if (g_fail) {
     printf("early fail\n");
-    //assert(0);
+    assert(0);
     //return turbo;
   }
 
   // Run orig version then snapshot
 again_theirs:
-  snes->input1->currentState = input_state;
-  RunEmulatedSnesFrame(snes, run_what);
+  g_snes->input1->currentState = input_state;
+  RunEmulatedSnesFrame(g_snes, run_what);
   MakeSnapshot(&g_snapshot_theirs);
 
   // Run my version and snapshot
 again_mine:
-  ZeldaRunFrame(input_state, run_what);
-  
+  ZeldaRunFrameInternal(input_state, run_what);
+
   MakeMySnapshot(&g_snapshot_mine);
 
   // Compare both snapshots
   VerifySnapshotsEq(&g_snapshot_mine, &g_snapshot_theirs, &g_snapshot_before);
-  
+
   if (g_fail) {
-//    g_fail = false;
+    //    g_fail = false;
     if (1) {
       RestoreMySnapshot(&g_snapshot_before);
       //SaveLoadSlot(kSaveLoad_Save, 0);
@@ -791,29 +362,28 @@ again_mine:
     }
     if (1) {
       MakeSnapshot(&g_snapshot_theirs);
-      RestoreMySnapshot(&g_snapshot_theirs);      
+      RestoreMySnapshot(&g_snapshot_theirs);
     }
   }
-
-  return is_replay;
 }
 
-void PatchRomBP(uint8_t *rom, uint32_t addr) {
+
+static void PatchRomBP(uint8_t *rom, uint32_t addr) {
   rom[(addr >> 16) << 15 | (addr & 0x7fff)] = 0;
 }
 
-void PatchRomByte(uint8_t *rom, uint32_t addr, uint8 old_value, uint8 value) {
+static void PatchRomByte(uint8_t *rom, uint32_t addr, uint8 old_value, uint8 value) {
   assert(rom[(addr >> 16) << 15 | (addr & 0x7fff)] == old_value);
   rom[(addr >> 16) << 15 | (addr & 0x7fff)] = value;
 }
 
-void PatchRomWord(uint8_t *rom, uint32_t addr, uint16 old_value, uint16 value) {
+static void PatchRomWord(uint8_t *rom, uint32_t addr, uint16 old_value, uint16 value) {
   assert(WORD(rom[(addr >> 16) << 15 | (addr & 0x7fff)]) == old_value);
   WORD(rom[(addr >> 16) << 15 | (addr & 0x7fff)]) = value;
 }
 
 
-void PatchRom(uint8_t *rom) {
+static void PatchRom(uint8_t *rom) {
   //  fix a bug with unitialized memory
   {
     uint8_t *p = rom + 0x36434;
@@ -979,111 +549,12 @@ void PatchRom(uint8_t *rom) {
 }
 
 
-static const char *const kReferenceSaves[] = {
-  "Chapter 1 - Zelda's Rescue.sav",
-  "Chapter 2 - After Eastern Palace.sav",
-  "Chapter 3 - After Desert Palace.sav",
-  "Chapter 4 - After Tower of Hera.sav",
-  "Chapter 5 - After Hyrule Castle Tower.sav",
-  "Chapter 6 - After Dark Palace.sav",
-  "Chapter 7 - After Swamp Palace.sav",
-  "Chapter 8 - After Skull Woods.sav",
-  "Chapter 9 - After Gargoyle's Domain.sav",
-  "Chapter 10 - After Ice Palace.sav",
-  "Chapter 11 - After Misery Mire.sav",
-  "Chapter 12 - After Turtle Rock.sav",
-  "Chapter 13 - After Ganon's Tower.sav",
-};
 
-void SaveLoadSlot(int cmd, int which) {
-  char name[128];
-  if (which & 256) {
-    if (cmd == kSaveLoad_Save)
-      return;
-    sprintf(name, "saves/ref/%s", kReferenceSaves[which - 256]);
-  } else {
-    sprintf(name, "saves/save%d.sav", which);
-  }
-  FILE *f = fopen(name, cmd != kSaveLoad_Save ? "rb" : "wb");
-  if (f) {
-    printf("*** %s slot %d\n", 
-      cmd==kSaveLoad_Save ? "Saving" : cmd==kSaveLoad_Load ? "Loading" : "Replaying", which);
+bool EmuInitialize(uint8 *data, size_t size) {
+  PatchRom(data);
+  g_snes = snes_init(g_emulated_ram);
+  g_cpu = g_snes->cpu;
 
-    if (cmd != kSaveLoad_Save)
-      StateRecorder_Load(&state_recorder, f, cmd == kSaveLoad_Replay);
-    else
-      StateRecorder_Save(&state_recorder, f);
-
-    fclose(f);
-  }
-}
-
-void ZeldaReadSram(Snes *snes) {
-  FILE *f = fopen("saves/sram.dat", "rb");
-  if (f) {
-    fread(g_zenv.sram, 1, 8192, f);
-    memcpy(snes->cart->ram, g_zenv.sram, 8192);
-    fclose(f);
-  }
-}
-
-void ZeldaWriteSram() {
-  rename("saves/sram.dat", "saves/sram.bak");
-  FILE *f = fopen("saves/sram.dat", "wb");
-  if (f) {
-    fwrite(g_zenv.sram, 1, 8192, f);
-    fclose(f);
-  } else {
-    fprintf(stderr, "Unable to write saves/sram.dat\n");
-  }
-}
-
-typedef struct StateRecoderMultiPatch {
-  uint32 count;
-  uint32 addr;
-  uint8 vals[256];
-} StateRecoderMultiPatch;
-
-
-void StateRecoderMultiPatch_Init(StateRecoderMultiPatch *mp) {
-  mp->count = mp->addr = 0;
-}
-
-void StateRecoderMultiPatch_Commit(StateRecoderMultiPatch *mp) {
-  if (mp->count)
-    StateRecorder_RecordPatchByte(&state_recorder, mp->addr, mp->vals, mp->count);
-}
-
-void StateRecoderMultiPatch_Patch(StateRecoderMultiPatch *mp, uint32 addr, uint8 value) {
-  if (mp->count >= 256 || addr != mp->addr + mp->count) {
-    StateRecoderMultiPatch_Commit(mp);
-    mp->addr = addr;
-    mp->count = 0;
-  }
-  mp->vals[mp->count++] = value;
-  g_emulated_ram[addr] = g_ram[addr] = value;
-}
-
-void PatchCommand(char c) {
-  StateRecoderMultiPatch mp;
-
-  StateRecoderMultiPatch_Init(&mp);
-  if (c == 'w') {
-    StateRecoderMultiPatch_Patch(&mp, 0xf372, 80);  // health filler
-    StateRecoderMultiPatch_Patch(&mp, 0xf373, 80);  // magic filler
-    //    b.Patch(0x1FE01, 25);
-  } else if (c == 'W') {
-    StateRecoderMultiPatch_Patch(&mp, 0xf375, 10);  // link_bomb_filler
-    StateRecoderMultiPatch_Patch(&mp, 0xf376, 10);  // link_arrow_filler
-    uint16 rupees = link_rupees_goal + 100;
-    StateRecoderMultiPatch_Patch(&mp, 0xf360, rupees);  // link_rupees_goal
-    StateRecoderMultiPatch_Patch(&mp, 0xf361, rupees >> 8);  // link_rupees_goal
-  } else if (c == 'k') {
-    StateRecorder_ClearKeyLog(&state_recorder);
-  } else if (c == 'o') {
-    StateRecoderMultiPatch_Patch(&mp, 0xf36f, 1);
-  } else if (c == 'l') {
-    StateRecorder_StopReplay(&state_recorder);
-  }
-  StateRecoderMultiPatch_Commit(&mp);
+  ZeldaSetupEmuCallbacks(g_emulated_ram, &EmuRunFrameWithCompare, &EmuSynchronizeWholeState);
+  return snes_loadRom(g_snes, data, (int)size);
 }

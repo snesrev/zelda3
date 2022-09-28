@@ -85,12 +85,6 @@ void snes_doAutoJoypad(Snes *snes);
 bool snes_loadRom(Snes* snes, uint8_t* data, int length);
 void snes_saveload(Snes *snes, SaveLoadFunc *func, void *ctx);
 
-enum {
-  kSaveLoad_Save = 0,
-  kSaveLoad_Load = 1,
-  kSaveLoad_Replay = 2,
-};
-
 
 #endif
 
