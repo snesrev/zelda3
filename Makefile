@@ -21,6 +21,7 @@ tables/zelda3_assets.dat: tables/dialogue.txt
 tables/dialogue.txt:
 	cd tables; $(PYTHON) extract_resources.py ../$(ROM)
 
+
 clean: clean_obj clean_gen
 clean_obj:
 	$(RM) $(OBJS) $(TARGET_EXEC)
