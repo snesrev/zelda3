@@ -64,6 +64,26 @@ In case you're planning to move the .exe to a different folder, please include `
 
 Then build the .sln file with Visual Studio.
 
+### Building with TCC instead of Visual Studio on Windows
+
+You can also build and run it through TCC in case you don't have Visual Studio. Note that TCC builds without optimizations so the game will run considerably slower.
+
+
+<details>
+<summary>
+Read about how to use TCC here...
+</summary>
+Extract the assets as detailed above.
+
+Unzip [TCC for win64](http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.27-win64-bin.zip) into `third_party/tcc`.
+
+Unzip [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.24.0/SDL2-devel-2.24.0-VC.zip) into `third_party/SDL2-2.24.0`.
+
+Start `run_with_tcc.bat`. It will perform some basic error checks and then start the game.
+
+</details>
+
+
 ### Linux/macOS
 
 ```sh

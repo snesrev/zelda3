@@ -1,7 +1,9 @@
+#ifndef ZELDA3_TYPES_H_
+#define ZELDA3_TYPES_H_
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <stdbool.h>
-#pragma once
 
 // Build time config options
 enum {
@@ -92,3 +94,5 @@ typedef void PlayerHandlerFunc();
 typedef void HandlerFuncK(int k);
 
 void NORETURN Die(const char *error);
+
+#endif  // ZELDA3_TYPES_H_
