@@ -10,15 +10,16 @@ LDFLAGS:=${LDFLAGS} $(shell sdl2-config --libs)
 
 .PHONY: all clean clean_obj clean_gen
 
-all: $(TARGET_EXEC)
-$(TARGET_EXEC): tables/zelda3_assets.dat $(OBJS)
+all: $(TARGET_EXEC) tables/zelda3_assets.dat
+$(TARGET_EXEC): $(OBJS)
 	$(CC) $(OBJS) -o $@ $(LDFLAGS)
+%.o : %.c
+	$(CC) -c $(CFLAGS) $< -o $@
+
 tables/zelda3_assets.dat: tables/dialogue.txt
 	cd tables; $(PYTHON) compile_resources.py ../$(ROM)
 tables/dialogue.txt:
 	cd tables; $(PYTHON) extract_resources.py ../$(ROM)
-%.o : %.c tables/zelda3_assets.dat
-	$(CC) -c $(CFLAGS) $< -o $@
 
 clean: clean_obj clean_gen
 clean_obj:
