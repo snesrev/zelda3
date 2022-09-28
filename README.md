@@ -110,6 +110,7 @@ Additionally, the following commands are available:
 
 | Key | Action                |
 | --- | --------------------- |
+| Tab | Turbo mode |
 | W   | Fill health/magic     |
 | Shift+W   | Fill rupees/bombs/arrows     |
 | Ctrl+E | Reset            |
@@ -117,7 +118,7 @@ Additionally, the following commands are available:
 | Shift+P   | Pause (without dim)                |
 | Ctrl+Up   | Increase window size                |
 | Ctrl+Down   | Decrease window size                |
-| T   | Toggle replay turbo   |
+| T   | Toggle replay turbo mode  |
 | O   | Set dungeon key to 1  |
 | K   | Clear all input history from the joypad log  |
 | L   | Stop replaying a shapshot  |

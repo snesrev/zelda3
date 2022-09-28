@@ -697,16 +697,16 @@ int InputStateReadFromFile() {
 }
 #endif
 
-bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
+bool RunOneFrame(Snes *snes, int input_state) {
+  bool is_replay = state_recorder.replay_mode;
   frame_ctr++;
 
   // Either copy state or apply state
-  if (state_recorder.replay_mode) {
+  if (is_replay) {
     input_state = StateRecorder_ReadNextReplayState(&state_recorder);
   } else {
     //    input_state = InputStateReadFromFile();
     StateRecorder_Record(&state_recorder, input_state);
-    turbo = false;
 
     // This is whether APUI00 is true or false, this is used by the ancilla code.
     uint8 apui00 = ZeldaIsMusicPlaying();
@@ -746,7 +746,7 @@ bool RunOneFrame(Snes *snes, int input_state, bool turbo) {
   if (snes == NULL || enhanced_features0 != 0) {
     // can't compare against real impl when running with extra features.
     ZeldaRunFrame(input_state, run_what);
-    return turbo;
+    return is_replay;
   }
 
   if (g_fail)
@@ -795,7 +795,7 @@ again_mine:
     }
   }
 
-  return turbo;
+  return is_replay;
 }
 
 void PatchRomBP(uint8_t *rom, uint32_t addr) {

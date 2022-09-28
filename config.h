@@ -25,6 +25,7 @@ enum {
   kKeys_Pause,
   kKeys_PauseDimmed,
   kKeys_Turbo,
+  kKeys_ReplayTurbo,
   kKeys_WindowBigger,
   kKeys_WindowSmaller,
   kKeys_DisplayPerf,

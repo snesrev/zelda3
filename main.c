@@ -32,7 +32,7 @@ void RunAudioPlayer();
 void CopyStateAfterSnapshotRestore(bool is_reset);
 void SaveLoadSlot(int cmd, int which);
 void PatchCommand(char cmd);
-bool RunOneFrame(Snes *snes, int input_state, bool turbo);
+bool RunOneFrame(Snes *snes, int input_state);
 
 static bool LoadRom(const char *name, Snes *snes);
 static void PlayAudio(Snes *snes, SDL_AudioDeviceID device, int channels, int16 *audioBuffer);
@@ -57,7 +57,7 @@ static const char kWindowTitle[] = "The Legend of Zelda: A Link to the Past";
 static uint32 g_win_flags = SDL_WINDOW_RESIZABLE;
 static SDL_Window *g_window;
 static SDL_Renderer *g_renderer;
-static uint8 g_paused, g_turbo = true, g_cursor = true;
+static uint8 g_paused, g_turbo, g_replay_turbo = true, g_cursor = true;
 static uint8 g_current_window_scale;
 static int g_samples_per_block;
 static uint8 g_gamepad_buttons;
@@ -373,9 +373,9 @@ int main(int argc, char** argv) {
     if ((inputs & 0x30) == 0x30) inputs ^= 0x30;
     if ((inputs & 0xc0) == 0xc0) inputs ^= 0xc0;
 
-    bool is_turbo = RunOneFrame(snes_run, inputs, (frameCtr++ & 0x7f) != 0 && g_turbo);
+    bool is_replay = RunOneFrame(snes_run, inputs);
 
-    if (is_turbo)
+    if ((g_turbo ^ (is_replay & g_replay_turbo)) && (frameCtr++ & (g_turbo ? 0xf : 0x7f)) != 0)
       continue;
 
 
@@ -550,6 +550,12 @@ static void HandleCommand(uint32 j, bool pressed) {
     SetButtonState(kKbdRemap[j], pressed);
     return;
   }
+
+  if (j == kKeys_Turbo) {
+    g_turbo = pressed;
+    return;
+  }
+
   if (!pressed)
     return;
   if (j <= kKeys_Load_Last) {
@@ -590,7 +596,7 @@ static void HandleCommand(uint32 j, bool pressed) {
         SDL_RenderPresent(g_renderer);
       }
       break;
-    case kKeys_Turbo: g_turbo = !g_turbo; break;
+    case kKeys_ReplayTurbo: g_replay_turbo = !g_replay_turbo; break;
     case kKeys_WindowBigger: ChangeWindowScale(1); break;
     case kKeys_WindowSmaller: ChangeWindowScale(-1); break;
     case kKeys_DisplayPerf: g_display_perf ^= 1; break;
