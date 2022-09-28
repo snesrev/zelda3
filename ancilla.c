@@ -430,7 +430,9 @@ void AddBirdCommon(int k) {
   ancilla_arr3[k] = 3;
   ancilla_K[k] = 0;
   ancilla_G[k] = 0;
-  Ancilla_SetXY(k, BG2HOFS_copy2 - 16, link_y_coord - 8);
+
+  int xt = (enhanced_features0 & kFeatures0_ExtendScreen64) ? 0x40 : 0;
+  Ancilla_SetXY(k, BG2HOFS_copy2 - 16 - xt, link_y_coord - 8);
 }
 
 ProjectSpeedRet Bomb_ProjectSpeedTowardsPlayer(int k, uint16 x, uint16 y, uint8 vel) {  // 84eb63
@@ -4795,7 +4797,8 @@ void Ancilla27_Duck(int k) {  // 88dde8
     goto endif_1;
 
   if (ancilla_timer[k]) {
-    Ancilla_SetXY(k, BG2HOFS_copy2 - 16, link_y_coord - 8);
+    int xt = (enhanced_features0 & kFeatures0_ExtendScreen64) ? 0x40 : 0;
+    Ancilla_SetXY(k, BG2HOFS_copy2 - 16 - xt, link_y_coord - 8);
     return;
   }
 
@@ -6661,8 +6664,15 @@ void AddBirdTravelSomething(uint8 a, uint8 y) {  // 89951d
     link_delay_timer_spin_attack = 0;
     link_cant_change_direction &= ~1;
     ancilla_L[k] = 1;
-    ancilla_z_vel[k] = 40;
-    ancilla_z[k] = -51;
+
+    if (enhanced_features0 & kFeatures0_ExtendScreen64) {
+      // todo: tune these better so the angle of attack is better
+      ancilla_z_vel[k] = 58;
+      ancilla_z[k] = -105;
+    } else {
+      ancilla_z_vel[k] = 40;
+      ancilla_z[k] = -51;
+    }
     ancilla_step[k] = 2;
     AddBirdCommon(k);
   }
