@@ -176,21 +176,7 @@ int main(int argc, char** argv) {
 
 
   // Delay actually setting those features in ram until any snapshots finish playing.
-  {
-    uint32 f = 0;
-    f |= (g_zenv.ppu->extraLeftRight && !g_config.extended_aspect_ratio_nospr) ? kFeatures0_ExtendScreen64 : 0;
-    f |= (g_zenv.ppu->extraLeftRight && !g_config.extended_aspect_ratio_novis) ? kFeatures0_WidescreenVisualFixes : 0;
-    f |= g_config.item_switch_lr * kFeatures0_SwitchLR;
-    f |= g_config.turn_while_dashing * kFeatures0_TurnWhileDashing;
-    f |= g_config.mirror_to_darkworld * kFeatures0_MirrorToDarkworld;
-    f |= g_config.collect_items_with_sword * kFeatures0_CollectItemsWithSword;
-    f |= g_config.break_pots_with_sword * kFeatures0_BreakPotsWithSword;
-    f |= g_config.disable_low_health_beep * kFeatures0_DisableLowHealthBeep;
-    f |= g_config.skip_intro_on_keypress * kFeatures0_SkipIntroOnKeypress;
-    f |= g_config.show_max_items_in_yellow * kFeatures0_ShowMaxItemsInYellow;
-    f |= g_config.more_active_bombs * kFeatures0_MoreActiveBombs;
-    g_wanted_zelda_features = f;
-  }
+  g_wanted_zelda_features = g_config.features0;
 
   g_ppu_render_flags = g_config.new_renderer * kPpuRenderFlags_NewRenderer |
                        g_config.enhanced_mode7 * kPpuRenderFlags_4x4Mode7 |

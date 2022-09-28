@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <SDL.h>
+#include "features.h"
 
 
 enum {
@@ -199,6 +200,25 @@ static int GetIniSection(const char *s) {
   return -1;
 }
 
+static bool ParseBool(const char *value, bool *result) {
+  if (StringEqualsNoCase(value, "0") || StringEqualsNoCase(value, "false")) {
+    *result = false;
+    return true;
+  } else if (StringEqualsNoCase(value, "1") || StringEqualsNoCase(value, "true")) {
+    *result = true;
+    return true;
+  }
+  return false;
+}
+
+static bool ParseBoolBit(const char *value, uint32 *data, uint32 mask) {
+  bool tmp;
+  if (!ParseBool(value, &tmp))
+    return false;
+  *data = *data & ~mask | (tmp ? mask : 0);
+  return true;
+}
+
 static bool HandleIniConfig(int section, const char *key, char *value) {
   if (section == 0) {
     for (int i = 0; i < countof(kKeyNameId); i++) {
@@ -210,14 +230,11 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     }
   } else if (section == 1) {
     if (StringEqualsNoCase(key, "EnhancedMode7")) {
-      g_config.enhanced_mode7 = (bool)strtol(value, (char**)NULL, 10);
-      return true;
+      return ParseBool(value, &g_config.enhanced_mode7);
     } else if (StringEqualsNoCase(key, "NewRenderer")) {
-      g_config.new_renderer = (bool)strtol(value, (char**)NULL, 10);
-      return true;
+      return ParseBool(value, &g_config.new_renderer);
     } else if (StringEqualsNoCase(key, "IgnoreAspectRatio")) {
-      g_config.ignore_aspect_ratio = (bool)strtol(value, (char**)NULL, 10);
-      return true;
+      return ParseBool(value, &g_config.ignore_aspect_ratio);
     } else if (StringEqualsNoCase(key, "Fullscreen")) {
       g_config.fullscreen = (uint8)strtol(value, (char**)NULL, 10);
       return true;
@@ -225,13 +242,11 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       g_config.window_scale = (uint8)strtol(value, (char**)NULL, 10);
       return true;
     } else if (StringEqualsNoCase(key, "NoSpriteLimits")) {
-      g_config.no_sprite_limits = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBool(value, &g_config.no_sprite_limits);
     }
   } else if (section == 2) {
     if (StringEqualsNoCase(key, "EnableAudio")) {
-      g_config.enable_audio = (bool)strtol(value, (char**)NULL, 10);
-      return true;
+      return ParseBool(value, &g_config.enable_audio);
     } else if (StringEqualsNoCase(key, "AudioFreq")) {
       g_config.audio_freq = (uint16)strtol(value, (char**)NULL, 10);
       return true;
@@ -242,8 +257,7 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       g_config.audio_samples = (uint16)strtol(value, (char**)NULL, 10);
       return true;
     } else if (StringEqualsNoCase(key, "EnableMSU")) {
-      g_config.enable_msu = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBool(value, &g_config.enable_msu);
     }
   } else if (section == 3) {
     if (StringEqualsNoCase(key, "Autosave")) {
@@ -252,6 +266,7 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "ExtendedAspectRatio")) {
       const char* s;
       int h = 224;
+      bool nospr = false, novis = false;
       // todo: make it not depend on the order
       while ((s = NextDelim(&value, ',')) != NULL) {
         if (strcmp(s, "extend_y") == 0)
@@ -265,49 +280,40 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
         else if (strcmp(s, "4:3") == 0)
           g_config.extended_aspect_ratio = 0;
         else if (strcmp(s, "unchanged_sprites") == 0)
-          g_config.extended_aspect_ratio_nospr = true;
+          nospr = true;
         else if (strcmp(s, "no_visual_fixes") == 0)
-          g_config.extended_aspect_ratio_novis = true;
+          novis = true;
         else
           return false;
       }
-      
+      if (g_config.extended_aspect_ratio && !nospr)
+        g_config.features0 |= kFeatures0_ExtendScreen64;
+      if (g_config.extended_aspect_ratio && !novis)
+        g_config.features0 |= kFeatures0_WidescreenVisualFixes;
       return true;
     } else if (StringEqualsNoCase(key, "DisplayPerfInTitle")) {
-      g_config.display_perf_title = (bool)strtol(value, (char**)NULL, 10);
-      return true;
+      return ParseBool(value, &g_config.display_perf_title);
     }
   } else if (section == 4) {
     if (StringEqualsNoCase(key, "ItemSwitchLR")) {
-      g_config.item_switch_lr = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_SwitchLR);
     } else if (StringEqualsNoCase(key, "TurnWhileDashing")) {
-      g_config.turn_while_dashing = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_TurnWhileDashing);
     } else if (StringEqualsNoCase(key, "MirrorToDarkworld")) {
-      g_config.mirror_to_darkworld = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_MirrorToDarkworld);
     } else if (StringEqualsNoCase(key, "CollectItemsWithSword")) {
-      g_config.collect_items_with_sword = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_CollectItemsWithSword);
     } else if (StringEqualsNoCase(key, "BreakPotsWithSword")) {
-      g_config.break_pots_with_sword = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_BreakPotsWithSword);
     } else if (StringEqualsNoCase(key, "DisableLowHealthBeep")) {
-      g_config.disable_low_health_beep = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_DisableLowHealthBeep);
     } else if (StringEqualsNoCase(key, "SkipIntroOnKeypress")) {
-      g_config.skip_intro_on_keypress = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_SkipIntroOnKeypress);
     } else if (StringEqualsNoCase(key, "ShowMaxItemsInYellow")) {
-      g_config.show_max_items_in_yellow = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_ShowMaxItemsInYellow);
     } else if (StringEqualsNoCase(key, "MoreActiveBombs")) {
-      g_config.more_active_bombs = (bool)strtol(value, (char **)NULL, 10);
-      return true;
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_MoreActiveBombs);
     }
-
-    
   }
   return false;
 }

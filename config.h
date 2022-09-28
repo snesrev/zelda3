@@ -45,19 +45,11 @@ typedef struct Config {
   uint16 audio_samples;
   bool autosave;
   uint8 extended_aspect_ratio;
-  bool extend_y, extended_aspect_ratio_nospr, extended_aspect_ratio_novis;
+  bool extend_y;
   bool no_sprite_limits;
   bool display_perf_title;
   bool enable_msu;
-  bool item_switch_lr;
-  bool turn_while_dashing;
-  bool mirror_to_darkworld;
-  bool collect_items_with_sword;
-  bool break_pots_with_sword;
-  bool disable_low_health_beep;
-  bool skip_intro_on_keypress;
-  bool show_max_items_in_yellow;
-  bool more_active_bombs;
+  uint32 features0;
 } Config;
 
 extern Config g_config;
