@@ -1427,6 +1427,9 @@ void Sprite_HandleAbsorptionByPlayer(int k) {  // 86d13c
     break;
   case 14:
     link_shield_type = sprite_subtype[k];
+    // Shield needs to have the right palette after pikit
+    if (enhanced_features0 & kFeatures0_MiscBugFixes)
+      Palette_Load_Shield();
     break;
   }
 }
