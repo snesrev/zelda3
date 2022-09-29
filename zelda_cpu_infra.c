@@ -546,6 +546,9 @@ static void PatchRom(uint8_t *rom) {
   for (int i = 0; i < countof(ancilla_arr25_Uses); i++) PatchRomWord(rom, ancilla_arr25_Uses[i] + 1, 0x3c2, 0x746);
   static const int ancilla_arr22_Uses[] = { 0x9816e, 0xffde0, 0xffde7 };
   for (int i = 0; i < countof(ancilla_arr22_Uses); i++) PatchRomWord(rom, ancilla_arr22_Uses[i] + 1, 0x3e1, 0x74b);
+
+  PatchRomWord(rom, 0xddfac + 1, 0xfa85, 0xfa70); // call Hud_Rebuild instead of Hud_UpdateOnly
+
 }
 
 

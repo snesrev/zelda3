@@ -1296,15 +1296,6 @@ void Hud_RebuildIndoor() {  // 8dfa60
 
 static void Hud_UpdateItemBox() {  // 8dfafd
   // Update r
-  if (link_item_bow) {
-    if (link_item_bow >= 3) {
-      hud_tile_indices_buffer[HUDXY(15, 0)] = 0x2486;
-      hud_tile_indices_buffer[HUDXY(16, 0)] = 0x2487;
-      link_item_bow = link_num_arrows ? 4 : 3;
-    } else {
-      link_item_bow = link_num_arrows ? 2 : 1;
-    }
-  }
   if (hud_cur_item)
     Hud_DrawItem(&hud_tile_indices_buffer[HUDXY(5, 1)], Hud_GetIconForItem(hud_cur_item));
 }
@@ -1369,6 +1360,16 @@ static void Hud_Update_Inventory() {  // 8dfc09
   uint16 *dst = &hud_tile_indices_buffer[HUDXY(8, 0)];
   memcpy(dst + HUDXY(0, 0), kHudInventoryBg +  0 + inv_offs, 12 * sizeof(uint16));
   memcpy(dst + HUDXY(0, 1), kHudInventoryBg + 13 + inv_offs, 12 * sizeof(uint16));
+
+  if (link_item_bow) {
+    if (link_item_bow >= 3) {
+      hud_tile_indices_buffer[HUDXY(15, 0)] = 0x2486;
+      hud_tile_indices_buffer[HUDXY(16, 0)] = 0x2487;
+      link_item_bow = link_num_arrows ? 4 : 3;
+    } else {
+      link_item_bow = link_num_arrows ? 2 : 1;
+    }
+  }
 
   // Offset everything if we have many coins?
   int base_tile = base_tiles[link_rupees_actual == MaxRupees()];
