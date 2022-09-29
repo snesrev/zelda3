@@ -523,6 +523,7 @@ static void HandleCommand(uint32 j, bool pressed) {
     case kKeys_CheatLife: PatchCommand('w'); break;
     case kKeys_CheatEquipment: PatchCommand('W'); break;
     case kKeys_CheatKeys: PatchCommand('o'); break;
+    case kKeys_CheatWalkThroughWalls: PatchCommand('E'); break;
     case kKeys_ClearKeyLog: PatchCommand('k'); break;
     case kKeys_StopReplay: PatchCommand('l'); break;
     case kKeys_Fullscreen:

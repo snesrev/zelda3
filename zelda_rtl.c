@@ -886,6 +886,8 @@ void PatchCommand(char c) {
     StateRecoderMultiPatch_Patch(&mp, 0xf36f, 1);
   } else if (c == 'l') {
     StateRecorder_StopReplay(&state_recorder);
+  } else if (c == 'E') {
+    StateRecoderMultiPatch_Patch(&mp, 0x37f, g_ram[0x37f] ^ 1);
   }
   StateRecoderMultiPatch_Commit(&mp);
 }

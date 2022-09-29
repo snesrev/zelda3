@@ -18,6 +18,7 @@ enum {
   kKeys_CheatLife,
   kKeys_CheatKeys,
   kKeys_CheatEquipment,
+  kKeys_CheatWalkThroughWalls,
   kKeys_ClearKeyLog,
   kKeys_StopReplay,
   kKeys_Fullscreen,
