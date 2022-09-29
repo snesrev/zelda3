@@ -1902,6 +1902,8 @@ void Palette_RevertTranslucencySwap() {  // 8ed6bb
 
 void LoadActualGearPalettes() {  // 8ed6c0
   LoadGearPalettes(link_sword_type, link_shield_type, link_armor);
+  if (enhanced_features0 & kFeatures0_MiscBugFixes)
+    Palette_UpdateGlovesColor();
 }
 
 void Palette_ElectroThemedGear() {  // 8ed6d1
