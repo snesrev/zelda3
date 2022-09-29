@@ -2070,17 +2070,21 @@ attempt_action:
 
 void Link_APress_PerformBasic(uint8 action_x2) {  // 879c5f
   switch (action_x2 >> 1) {
-  case 0: Link_PerformDesertPrayer(); return;
-  case 1: Link_PerformThrow(); return;
-  case 2: Link_PerformDash(); return;
-  case 3: Link_PerformGrab(); return;
-  case 4: Link_PerformRead(); return;
-  case 5: Link_PerformOpenChest(); return;
-  case 6: Link_PerformStatueDrag(); return;
-  case 7: Link_PerformRupeePull(); return;
+  case 0: Link_PerformDesertPrayer(); break;
+  case 1: Link_PerformThrow(); break;
+  case 2: Link_PerformDash(); break;
+  case 3: Link_PerformGrab(); break;
+  case 4: Link_PerformRead(); break;
+  case 5: Link_PerformOpenChest(); break;
+  case 6: Link_PerformStatueDrag(); break;
+  case 7: Link_PerformRupeePull(); break;
   default:
     assert(0);
   }
+
+  // Zelda vanilla bug: Disallow dragging while in cape mode, it uses no magic.
+  if (link_cape_mode && enhanced_features0 & kFeatures0_MiscBugFixes)
+    link_grabbing_wall = 0;
 }
 
 void HandleSwordSfxAndBeam() {  // 879c66
