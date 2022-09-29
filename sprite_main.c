@@ -6601,6 +6601,11 @@ void Sprite_Mushroom(int k) {  // 85ee78
   SpriteDraw_SingleLarge(k);
   if (Sprite_CheckIfLinkIsBusy())
     return;
+
+  // If we're in the middle of a mirror warp, don't get the mushroom yet
+  if (enhanced_features0 & kFeatures0_MiscBugFixes && submodule_index != 0)
+    return;
+
   if (Sprite_CheckDamageToLink_same_layer(k)) {
     sprite_state[k] = 0;
     item_receipt_method = 0;
