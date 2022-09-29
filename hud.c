@@ -19,7 +19,9 @@ static void Hud_EquipPrevItem(uint8 *item);
 static void Hud_EquipNextItem(uint8 *item);
 static int Hud_GetItemPosition(int item);
 static void Hud_ReorderItem(int direction);
-
+static void Hud_Update_Magic();
+static void Hud_Update_Inventory();
+static void Hud_Update_Hearts();
 
 const uint8 kMaxBombsForLevel[] = { 10, 15, 20, 25, 30, 35, 40, 50 };
 const uint8 kMaxArrowsForLevel[] = { 30, 35, 40, 45, 50, 55, 60, 70 };
@@ -189,14 +191,7 @@ static const ItemBoxGfx kHudItemArmor[5] = {
   {0x2c68, 0x6c68, 0x2c78, 0x6c78},
   {0x2468, 0x6468, 0x2478, 0x6478},
 };
-static const uint16 kHudTilemap[165] = {
-  0x207f, 0x207f, 0x2850, 0xa856, 0x2852, 0x285b, 0x285b, 0x285c, 0x207f, 0x3ca8, 0x207f, 0x207f, 0x2c88, 0x2c89, 0x207f, 0x20a7, 0x20a9, 0x207f, 0x2871, 0x207f, 0x207f, 0x207f, 0x288b, 0x288f, 0x24ab, 0x24ac, 0x688f, 0x688b, 0x207f, 0x207f, 0x207f, 0x207f,
-  0x207f, 0x207f, 0x2854, 0x2871, 0x2858, 0x207f, 0x207f, 0x285d, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f,
-  0x207f, 0x207f, 0x2854, 0x304e, 0x2858, 0x207f, 0x207f, 0x285d, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f,
-  0x207f, 0x207f, 0x2854, 0x305e, 0x2859, 0xa85b, 0xa85b, 0xa85c, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f,
-  0x207f, 0x207f, 0x2854, 0x305e, 0x6854, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f,
-  0x207f, 0x207f, 0xa850, 0x2856, 0xe850,
-};
+
 
 static const ItemBoxGfx * const kHudItemBoxGfxPtrs[] = {
   kHudItemBow,
@@ -378,7 +373,10 @@ remove:
   j = sign8(q - 1) ? 10 : q - 1;
   hud_tile_indices_buffer[0xf2 / 2] = kDungFloorIndicator_Gfx0[j];
   hud_tile_indices_buffer[0x132 / 2] = kDungFloorIndicator_Gfx1[j];
+}
 
+static int MaxRupees() {
+  return enhanced_features0 & kFeatures0_CarryMoreRupees ? 9999 : 999;
 }
 
 void Hud_RefillLogic() {  // 8ddb92
@@ -402,8 +400,9 @@ void Hud_RefillLogic() {  // 8ddb92
       if ((int16)--a < 0)
         link_rupees_goal = a = 0;
     } else {
-      if (++a >= 1000)
-        link_rupees_goal = a = 999;
+      int m = MaxRupees();
+      if (++a > m)
+        link_rupees_goal = a = m;
     }
     link_rupees_actual = a;
     if (sound_effect_1 == 0) {
@@ -459,7 +458,8 @@ void Hud_RefillLogic() {  // 8ddb92
       animate_heart_refill_countdown = 7;
 
 doing_animation:
-      Hud_Update_IgnoreHealth();
+      Hud_Update_Magic();
+      Hud_Update_Inventory();
       Hud_AnimateHeartRefill();
       flag_update_hud_in_nmi++;
       return;
@@ -467,7 +467,9 @@ doing_animation:
     link_health_current = link_health_capacity;
     link_hearts_filler = 0;
   }
-  Hud_Update_IgnoreItemBox();
+  Hud_Update_Hearts();
+  Hud_Update_Magic();
+  Hud_Update_Inventory();
   flag_update_hud_in_nmi++;
 }
 
@@ -663,7 +665,7 @@ void Hud_NormalMenu() {  // 8ddf15
 
 void Hud_UpdateHud() {  // 8ddfa9
   overworld_map_state++;
-  Hud_UpdateOnly();
+  Hud_Rebuild();
   Hud_UpdateEquippedItem();
 }
 
@@ -687,7 +689,6 @@ uint8 Hud_LookupInventoryItem(uint8 item) {
 }
 
 void Hud_UpdateEquippedItem() {  // 8ddfaf
-
   if (hud_cur_item >= kHudItem_Bottle1)
     link_item_bottle_index = hud_cur_item - kHudItem_Bottle1 + 1;
 
@@ -1232,10 +1233,11 @@ void Hud_DrawEquipmentBox() {  // 8ded29
   }
 }
 
-void Hud_IntToDecimal(unsigned int number, uint8 *out) {  // 8df0f7
-  out[0] = number / 100 + 0x90;
-  out[1] = (number %= 100) / 10 + 0x90;
-  out[2] = (number % 10) + 0x90;
+static void Hud_IntToDecimal(unsigned int number, uint8 *out) {  // 8df0f7
+  out[0] = number / 1000 + 0x90;
+  out[1] = (number %= 1000) / 100 + 0x90;
+  out[2] = (number %= 100) / 10 + 0x90;
+  out[3] = (number % 10) + 0x90;
 }
 
 bool Hud_RefillHealth() {  // 8df128
@@ -1252,7 +1254,7 @@ void Hud_AnimateHeartRefill() {  // 8df14f
   if (--animate_heart_refill_countdown)
     return;
   uint16 n = ((uint16)((link_health_current & ~7) - 1) >> 3) << 1;
-  uint16 *p = hud_tile_indices_buffer + 0x34;
+  uint16 *p = hud_tile_indices_buffer + HUDXY(20, 1);
   if (n >= 20) {
     n -= 20;
     p += 0x20;
@@ -1292,97 +1294,23 @@ void Hud_RebuildIndoor() {  // 8dfa60
   Hud_Rebuild();
 }
 
-void Hud_Rebuild() {  // 8dfa70
-  memcpy(hud_tile_indices_buffer, kHudTilemap, 165 * sizeof(uint16));
-  Hud_UpdateInternal();
-  flag_update_hud_in_nmi++;
-}
-
-void Hud_UpdateOnly() {  // 8dfa85
-  Hud_UpdateInternal();
-  flag_update_hud_in_nmi++;
-}
-
-void Hud_UpdateItemBox() {  // 8dfafd
+static void Hud_UpdateItemBox() {  // 8dfafd
+  // Update r
   if (link_item_bow) {
     if (link_item_bow >= 3) {
-      hud_tile_indices_buffer[15] = 0x2486;
-      hud_tile_indices_buffer[16] = 0x2487;
+      hud_tile_indices_buffer[HUDXY(15, 0)] = 0x2486;
+      hud_tile_indices_buffer[HUDXY(16, 0)] = 0x2487;
       link_item_bow = link_num_arrows ? 4 : 3;
     } else {
       link_item_bow = link_num_arrows ? 2 : 1;
     }
   }
-
   if (hud_cur_item)
-    Hud_DrawItem(&hud_tile_indices_buffer[37], Hud_GetIconForItem(hud_cur_item));
+    Hud_DrawItem(&hud_tile_indices_buffer[HUDXY(5, 1)], Hud_GetIconForItem(hud_cur_item));
 }
 
-void Hud_UpdateInternal() {  // 8dfb91
-  Hud_UpdateItemBox();
-  Hud_Update_IgnoreItemBox();
-}
-
-void Hud_Update_IgnoreItemBox() {  // 8dfb94
-  static const uint16 kHudItemBoxTab1[] = { 0x24A2, 0x24A2, 0x24A2 };
-  static const uint16 kHudItemBoxTab2[] = { 0x24A2, 0x24A1, 0x24A0 };
-
-  Hud_UpdateHearts(&hud_tile_indices_buffer[0x34], kHudItemBoxTab1, link_health_capacity);
-  Hud_UpdateHearts(&hud_tile_indices_buffer[0x34], kHudItemBoxTab2, (link_health_current + 3) & ~3);
-
-  Hud_Update_IgnoreHealth();
-}
-
-void Hud_Update_IgnoreHealth() {  // 8dfc09
-  if (link_magic_consumption >= 1) {
-    hud_tile_indices_buffer[2] = 0x28F7;
-    hud_tile_indices_buffer[3] = 0x2851;
-    hud_tile_indices_buffer[4] = 0x28FA;
-  }
-
-  const uint16 *src = kUpdateMagicPowerTilemap[(link_magic_power + 7) >> 3];
-  hud_tile_indices_buffer[0x23] = src[0];
-  hud_tile_indices_buffer[0x43] = src[1];
-  hud_tile_indices_buffer[0x63] = src[2];
-  hud_tile_indices_buffer[0x83] = src[3];
-
-  uint8 d[3];
-
-  Hud_IntToDecimal(link_rupees_actual, d);
-
-
-  const uint16 base_tiles[2] = {
-    0x2400,
-    (enhanced_features0 & kFeatures0_ShowMaxItemsInYellow) ? 0x3400 : 0x2400,
-  };
-
-  int base_tile = base_tiles[link_rupees_actual == 999];
-  hud_tile_indices_buffer[0x28] = base_tile | d[0];
-  hud_tile_indices_buffer[0x29] = base_tile | d[1];
-  hud_tile_indices_buffer[0x2A] = base_tile | d[2];
-
-  Hud_IntToDecimal(link_item_bombs, d);
-  base_tile = base_tiles[link_item_bombs == kMaxBombsForLevel[link_bomb_upgrades]];
-
-  hud_tile_indices_buffer[0x2C] = base_tile | d[1];
-  hud_tile_indices_buffer[0x2D] = base_tile | d[2];
-
-  Hud_IntToDecimal(link_num_arrows, d);
-  base_tile = base_tiles[link_num_arrows == kMaxArrowsForLevel[link_arrow_upgrades]];
-  hud_tile_indices_buffer[0x2F] = base_tile | d[1];
-  hud_tile_indices_buffer[0x30] = base_tile | d[2];
-
-  d[2] = 0x7f;
-  if (link_num_keys != 0xff)
-    Hud_IntToDecimal(link_num_keys, d);
-  hud_tile_indices_buffer[0x32] = 0x2400 | d[2];
-  if (hud_tile_indices_buffer[0x32] == 0x247f)
-    hud_tile_indices_buffer[0x12] = hud_tile_indices_buffer[0x32];
-}
-
-void Hud_UpdateHearts(uint16 *dst, const uint16 *src, int n) {  // 8dfdab
+static void Hud_UpdateHearts_Inner(uint16 *dst, const uint16 *src, int n) {  // 8dfdab
   int x = 0;
-
   while (n > 0) {
     if (x >= 10) {
       dst += 0x20;
@@ -1393,6 +1321,113 @@ void Hud_UpdateHearts(uint16 *dst, const uint16 *src, int n) {  // 8dfdab
     n -= 8;
   }
 }
+
+static void DrawHudComponents(uint16 *dst, const uint16 *src, int w, int h) {
+  do {
+    memcpy(dst, src, w * sizeof(uint16));
+  } while (src += w, dst += 32, --h);
+}
+
+static void Hud_Update_Hearts() {  // 8dfb94
+  static const uint16 kHudItemBoxTab1[] = { 0x24A2, 0x24A2, 0x24A2 };
+  static const uint16 kHudItemBoxTab2[] = { 0x24A2, 0x24A1, 0x24A0 };
+  // The life meter
+  Hud_UpdateHearts_Inner(&hud_tile_indices_buffer[HUDXY(20, 1)], kHudItemBoxTab1, link_health_capacity);
+  Hud_UpdateHearts_Inner(&hud_tile_indices_buffer[HUDXY(20, 1)], kHudItemBoxTab2, (link_health_current + 3) & ~3);
+}
+
+static void Hud_Update_Magic() {  // 8dfc09
+  uint16 *dst = &hud_tile_indices_buffer[HUDXY(2, 0)];
+  if (link_magic_consumption >= 1) {
+    dst[HUDXY(0, 0)] = 0x28F7;
+    dst[HUDXY(1, 0)] = 0x2851;
+    dst[HUDXY(2, 0)] = 0x28FA;
+  }
+  const uint16 *src = kUpdateMagicPowerTilemap[(link_magic_power + 7) >> 3];
+  dst[HUDXY(1, 1)] = src[0];
+  dst[HUDXY(1, 2)] = src[1];
+  dst[HUDXY(1, 3)] = src[2];
+  dst[HUDXY(1, 4)] = src[3];
+}
+
+static void Hud_Update_Inventory() {  // 8dfc09
+  uint8 d[4];
+  Hud_IntToDecimal(link_rupees_actual, d);
+
+  const uint16 base_tiles[2] = {
+    0x2400,
+    (enhanced_features0 & kFeatures0_ShowMaxItemsInYellow) ? 0x3400 : 0x2400,
+  };
+
+  int inv_offs = (d[0] == 0x90) ? 1 : 0;
+
+  static const uint16 kHudInventoryBg[26] = {
+    0x207f, 0x207f, 0x3ca8, 0x207f, 0x207f, 0x2c88, 0x2c89, 0x207f, 0x20a7, 0x20a9, 0x207f, 0x2871, 0x207f,
+    0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f,
+  };
+
+  uint16 *dst = &hud_tile_indices_buffer[HUDXY(8, 0)];
+  memcpy(dst + HUDXY(0, 0), kHudInventoryBg +  0 + inv_offs, 12 * sizeof(uint16));
+  memcpy(dst + HUDXY(0, 1), kHudInventoryBg + 13 + inv_offs, 12 * sizeof(uint16));
+
+  // Offset everything if we have many coins?
+  int base_tile = base_tiles[link_rupees_actual == MaxRupees()];
+  if (inv_offs == 0) {
+    dst++;
+    dst[HUDXY(-1, 1)] = base_tile | d[0];
+  }
+  dst[HUDXY(0, 1)] = base_tile | d[1];
+  dst[HUDXY(1, 1)] = base_tile | d[2];
+  dst[HUDXY(2, 1)] = base_tile | d[3];
+
+  Hud_IntToDecimal(link_item_bombs, d);
+  base_tile = base_tiles[link_item_bombs == kMaxBombsForLevel[link_bomb_upgrades]];
+  dst[HUDXY(4, 1)] = base_tile | d[2];
+  dst[HUDXY(5, 1)] = base_tile | d[3];
+
+  Hud_IntToDecimal(link_num_arrows, d);
+  base_tile = base_tiles[link_num_arrows == kMaxArrowsForLevel[link_arrow_upgrades]];
+  dst[HUDXY(7, 1)] = base_tile | d[2];
+  dst[HUDXY(8, 1)] = base_tile | d[3];
+
+  // Show keys
+  d[3] = 0x7f;
+  if (link_num_keys != 0xff)
+    Hud_IntToDecimal(link_num_keys, d);
+  dst[HUDXY(10, 1)] = 0x2400 | d[3];
+  if (dst[HUDXY(10, 1)] == 0x247f)
+    dst[HUDXY(10, 0)] = 0x247f;
+}
+
+void Hud_Rebuild() {  // 8dfa70
+  // The magic meter and item box
+  static const uint16 kHudTilemapLeftPart[8 * 6] = {
+    0x207f, 0x207f, 0x2850, 0xa856, 0x2852, 0x285b, 0x285b, 0x285c,
+    0x207f, 0x207f, 0x2854, 0x2871, 0x2858, 0x207f, 0x207f, 0x285d,
+    0x207f, 0x207f, 0x2854, 0x304e, 0x2858, 0x207f, 0x207f, 0x285d,
+    0x207f, 0x207f, 0x2854, 0x305e, 0x2859, 0xa85b, 0xa85b, 0xa85c,
+    0x207f, 0x207f, 0x2854, 0x305e, 0x6854, 0x207f, 0x207f, 0x207f,
+    0x207f, 0x207f, 0xa850, 0x2856, 0xe850, 
+  };
+  DrawHudComponents(hud_tile_indices_buffer, kHudTilemapLeftPart, 8, 6);
+
+  static const uint16 kHudTilemapRightPart[12 * 5] = {
+    0x207f, 0x207f, 0x288b, 0x288f, 0x24ab, 0x24ac, 0x688f, 0x688b, 0x207f, 0x207f, 0x207f, 0x207f,
+    0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f,
+    0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f,
+    0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f,
+    0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f, 0x207f,
+  };
+  DrawHudComponents(&hud_tile_indices_buffer[HUDXY(20, 0)], kHudTilemapRightPart, 12, 5);
+
+
+  Hud_Update_Hearts();
+  Hud_Update_Magic();
+  Hud_Update_Inventory();
+  Hud_UpdateItemBox();
+  flag_update_hud_in_nmi++;
+}
+
 
 const uint16 *Hud_GetItemBoxPtr(int item) {
   return kHudItemBoxGfxPtrs[item]->v;
@@ -1419,6 +1454,7 @@ void Hud_HandleItemSwitchInputs() {
       sound_effect_2 = 32;
       Hud_UpdateEquippedItem();
       Hud_UpdateItemBox();
+      flag_update_hud_in_nmi++;
     }
   }
 }

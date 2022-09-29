@@ -313,6 +313,8 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       return ParseBoolBit(value, &g_config.features0, kFeatures0_ShowMaxItemsInYellow);
     } else if (StringEqualsNoCase(key, "MoreActiveBombs")) {
       return ParseBoolBit(value, &g_config.features0, kFeatures0_MoreActiveBombs);
+    } else if (StringEqualsNoCase(key, "CarryMoreRupees")) {
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_CarryMoreRupees);
     }
   }
   return false;

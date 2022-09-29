@@ -34,6 +34,8 @@ enum {
 
   // This is set for visual fixes that don't affect game behavior but will affect ram compare.
   kFeatures0_WidescreenVisualFixes = 1024,
+
+  kFeatures0_CarryMoreRupees = 2048,
 };
 
 #define enhanced_features0 (*(uint32*)(g_ram+0x64c))
