@@ -4579,7 +4579,8 @@ void RoomTag_GetHeartForPrize(int k) {  // 81c709
   int t = savegame_is_darkworld ? link_has_crystals : link_which_pendants;
   if (!(t & kDungeonCrystalPendantBit[BYTE(cur_palace_index_x2) >> 1])) {
     byte_7E04C2 = 128;
-    Ancilla_SpawnFallingPrize(kBossFinishedFallingItem[BYTE(cur_palace_index_x2) >> 1]);
+    if (Ancilla_SpawnFallingPrize(kBossFinishedFallingItem[BYTE(cur_palace_index_x2) >> 1]) < 0)
+      return; // Zelda bugfix. Price won't spawn if we're out of ancillas
   }
   dung_hdr_tag[k] = 0;
 }
@@ -6454,8 +6455,8 @@ void Module_PreDungeon() {  // 82821e
   Dungeon_ResetTorchBackgroundAndPlayer();
   Link_CheckBunnyStatus();
   ResetThenCacheRoomEntryProperties();
-  if (savegame_tagalong == 13) {
-    savegame_tagalong = 0;
+  if (follower_indicator == 13) {
+    follower_indicator = 0;
     super_bomb_indicator_unk2 = 0;
     Hud_RemoveSuperBombIndicator();
   }
@@ -6500,6 +6501,12 @@ void LoadOWMusicIfNeeded() {  // 82854c
 void Module07_Dungeon() {  // 8287a2
   Dungeon_HandleLayerEffect();
   kDungeonSubmodules[submodule_index]();
+
+  // When having the somaria on door button and exiting in skull woods, 
+  // don't overwrite submodule_index
+  if (enhanced_features0 & kFeatures0_MiscBugFixes && main_module_index != 7)
+    goto skip;
+
   dung_misc_objs_index = 0;
   Dungeon_PushBlock_Handler();
   if (submodule_index) goto skip;
@@ -7299,8 +7306,8 @@ void Module07_0E_02_ApplyFilterIf() {  // 8290a1
 }
 
 void Dungeon_SyncBackgroundsFromSpiralStairs() {  // 8290c7
-  if (savegame_tagalong == 6 && BYTE(dungeon_room_index) == 100)
-    savegame_tagalong = 0;
+  if (follower_indicator == 6 && BYTE(dungeon_room_index) == 100)
+    follower_indicator = 0;
   uint8 bak = link_is_on_lower_level;
   link_y_coord += which_staircase_index & 4 ? 48 : -48;
   link_is_on_lower_level = kTeleportPitLevel2[cur_staircase_plane];
@@ -8317,7 +8324,7 @@ void Dungeon_LoadEntrance() {  // 82d8b3
   }
   bg1_y_offset = bg1_x_offset = 0;
   WORD(death_var5) = 0;
-  if (WORD(savegame_tagalong) == 4 || WORD(death_var4)) {
+  if (WORD(follower_indicator) == 4 || WORD(death_var4)) {
     int i = which_starting_point;
     WORD(which_entrance) = kStartingPoint_entrance[i];
     dungeon_room_index = dungeon_room_index2 = kStartingPoint_rooms[i];
@@ -8607,7 +8614,7 @@ void HandleLinkOnSpiralStairs() {  // 87f2c1
     return;
 
   RepositionLinkAfterSpiralStairs();
-  if (savegame_tagalong)
+  if (follower_indicator)
     Follower_Initialize();
 
   tiledetect_which_y_pos[1] = link_x_coord + ((which_staircase_index & 4) ? -8 : 12);
@@ -8777,12 +8784,12 @@ void CrystalCutscene_SpawnMaiden() {  // 9ecd48
   item_receipt_method = 0;
   if (BYTE(cur_palace_index_x2) == 24) {
     sprite_oam_flags[j] = 9;
-    savegame_tagalong = 1;
+    follower_indicator = 1;
   } else {
-    savegame_tagalong = 6;
+    follower_indicator = 6;
   }
   LoadFollowerGraphics();
-  savegame_tagalong = 0;
+  follower_indicator = 0;
   dung_floor_x_offs = BG2HOFS_copy2 - link_x_coord + 0x79;
   dung_floor_y_offs = 0x30 - (uint8)BG1VOFS_copy2;
   dung_hdr_collision_2_mirror = 1;

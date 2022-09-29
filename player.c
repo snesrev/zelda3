@@ -1165,8 +1165,8 @@ void LinkState_Dashing() {  // 878f86
     Ancilla_Sfx2_Near(35);
   if (sign8(--link_countdown_for_dash)) {
     link_countdown_for_dash = 0;
-    if (savegame_tagalong == kTagalongArr1[savegame_tagalong])
-      savegame_tagalong = kTagalongArr2[savegame_tagalong];
+    if (follower_indicator == kTagalongArr1[follower_indicator])
+      follower_indicator = kTagalongArr2[follower_indicator];
   } else {
     index_of_dashing_sfx = 0;
     if (!(joypad1L_last & 0x80)) {
@@ -1478,7 +1478,7 @@ endif_1:
     return;
   uint8 x = ++link_this_controls_sprite_oam;
   byte_7E005C = 9;
-  if (savegame_tagalong != 13 && x == 1)
+  if (follower_indicator != 13 && x == 1)
     tagalong_var5 = x;
 
   if (x == 6) {
@@ -1558,13 +1558,13 @@ void HandleDungeonLandingFromPit() {  // 879520
   subsubmodule_index = 0;
   submodule_index = 0;
   link_disable_sprite_damage = 0;
-  if (savegame_tagalong != 0 && savegame_tagalong != 3) {
+  if (follower_indicator != 0 && follower_indicator != 3) {
     tagalong_var5 = 0;
-    if (savegame_tagalong == 13) {
-      savegame_tagalong = 0;
+    if (follower_indicator == 13) {
+      follower_indicator = 0;
       super_bomb_indicator_unk2 = 0;
       super_bomb_indicator_unk1 = 0;
-      super_bomb_going_off = 0;
+      follower_dropped = 0;
     } else {
       Follower_Initialize();
     }
@@ -2389,7 +2389,7 @@ void Link_ResetBoomerangYStuff() {  // 87a11f
 }
 
 void LinkItem_Bombs() {  // 87a138
-  if (is_standing_in_doorway || savegame_tagalong == 13 || !CheckYButtonPress())
+  if (is_standing_in_doorway || follower_indicator == 13 || !CheckYButtonPress())
     return;
   button_mask_b_y &= ~0x40;
   AncillaAdd_Bomb(7, enhanced_features0 & kFeatures0_MoreActiveBombs ? 3 : 1);
@@ -2606,7 +2606,7 @@ void LinkItem_Ether() {  // 87a494
   button_mask_b_y &= ~0x40;
 
   if (is_standing_in_doorway || flag_block_link_menu || dung_savegame_state_bits & 0x8000 || !((uint8)(link_sword_type + 1) & ~1) ||
-      super_bomb_going_off && savegame_tagalong == 13) {
+      follower_dropped && follower_indicator == 13) {
     Ancilla_Sfx2_Near(60);
     return;
   }
@@ -2654,7 +2654,7 @@ void LinkItem_Bombos() {  // 87a569
   button_mask_b_y &= ~0x40;
 
   if (is_standing_in_doorway || flag_block_link_menu || dung_savegame_state_bits & 0x8000 || !((uint8)(link_sword_type + 1) & ~1) ||
-      super_bomb_going_off && savegame_tagalong == 13) {
+      follower_dropped && follower_indicator == 13) {
     Ancilla_Sfx2_Near(60);
     return;
   }
@@ -2702,7 +2702,7 @@ void LinkItem_Quake() {  // 87a64b
   button_mask_b_y &= ~0x40;
 
   if (is_standing_in_doorway || flag_block_link_menu || dung_savegame_state_bits & 0x8000 || !((uint8)(link_sword_type + 1) & ~1) ||
-      super_bomb_going_off && savegame_tagalong == 13) {
+      follower_dropped && follower_indicator == 13) {
     Ancilla_Sfx2_Near(60);
     return;
   }
@@ -2862,7 +2862,7 @@ void LinkItem_Mirror() {  // 87a91a
     if (!CheckYButtonPress())
       return;
 
-    if (savegame_tagalong == 10) {
+    if (follower_indicator == 10) {
       dialogue_message_index = 289;
       Main_ShowTextMessage();
       return;
@@ -2976,19 +2976,19 @@ void Link_PerformDesertPrayer() {  // 87aa6c
 void HandleFollowersAfterMirroring() {  // 87aaa2
   TileDetect_MainHandler(0);
   link_animation_steps = 0;
-  if (savegame_tagalong == 12 || savegame_tagalong == 13) {
-    if (savegame_tagalong == 13) {
+  if (follower_indicator == 12 || follower_indicator == 13) {
+    if (follower_indicator == 13) {
       super_bomb_indicator_unk2 = 0xfe;
       super_bomb_indicator_unk1 = 0;
     }
-    if (super_bomb_going_off) {
-      super_bomb_going_off = 0;
-      savegame_tagalong = 0;
+    if (follower_dropped) {
+      follower_dropped = 0;
+      follower_indicator = 0;
     }
-  } else if (savegame_tagalong == 9 || savegame_tagalong == 10) {
-    savegame_tagalong = 0;
-  } else if (savegame_tagalong == 7 || savegame_tagalong == 8) {
-    savegame_tagalong ^= (7 ^ 8);
+  } else if (follower_indicator == 9 || follower_indicator == 10) {
+    follower_indicator = 0;
+  } else if (follower_indicator == 7 || follower_indicator == 8) {
+    follower_indicator ^= (7 ^ 8);
     LoadFollowerGraphics();
     AncillaAdd_DwarfPoof(0x40, 4);
   }
@@ -3534,7 +3534,7 @@ void Link_PerformDash() {  // 87b281
   bitmask_of_dragstate = 0;
   link_moving_against_diag_tile = 0;
 
-  if (savegame_tagalong == kTagalongArr1[savegame_tagalong]) {
+  if (follower_indicator == kTagalongArr1[follower_indicator]) {
     printf("Warning: Write to CART!\n");
     link_speed_setting = 0;
     timer_tagalong_reacquire = 64;

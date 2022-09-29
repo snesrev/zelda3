@@ -268,7 +268,7 @@ int LookupInOwEntranceTab2(uint16 pos) {
 }
 
 bool CanEnterWithTagalong(int e) {
-  uint8 t = savegame_tagalong;
+  uint8 t = follower_indicator;
   return t == 0 || t == 5 || t == 14 || t == 1 || (t == 7 || t == 8) && e >= 59;
 }
 
@@ -478,8 +478,8 @@ setsong:
   if (!(overworld_screen_index & 0x40))
     Sprite_InitializeMirrorPortal();
   sound_effect_ambient = sram_progress_indicator < 2 ? 1 : 5;
-  if (savegame_tagalong == 6)
-    savegame_tagalong = 0;
+  if (follower_indicator == 6)
+    follower_indicator = 0;
 
   is_standing_in_doorway = 0;
   button_mask_b_y = 0;
@@ -3270,7 +3270,7 @@ after:
   if (lx < 0)
     return;
 
-  if (!super_bomb_going_off && (link_pose_for_item == 1 || !CanEnterWithTagalong(kOverworld_Entrance_Id[lx] - 1))) {
+  if (!follower_dropped && (link_pose_for_item == 1 || !CanEnterWithTagalong(kOverworld_Entrance_Id[lx] - 1))) {
     if (!big_key_door_message_triggered) {
       big_key_door_message_triggered = 1;
       dialogue_message_index = 5;
@@ -3474,7 +3474,7 @@ void Overworld_BombTile(int x, int y) {  // 9bc155
   int pos = ((y - overworld_offset_base_y & overworld_offset_mask_y) << 3) +
     ((x >> 3) - overworld_offset_base_x & overworld_offset_mask_x);
 
-  if (savegame_tagalong == 13)
+  if (follower_indicator == 13)
     goto label_a;
 
   a = dung_bg2[pos >> 1];
@@ -3582,7 +3582,7 @@ fail:
 
   BYTE(dung_secrets_unk1) = 0xff;
   if (data != 0x84 && !(save_ow_event_info[overworld_screen_index] & 2)) {
-    if (overworld_screen_index == 0x5b && savegame_tagalong != 13)
+    if (overworld_screen_index == 0x5b && follower_indicator != 13)
       goto fail;
     sound_effect_2 = 0x1b;
   }

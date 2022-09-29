@@ -216,7 +216,7 @@ void AncillaAdd_Bomb(uint8 a, uint8 y);
 uint8 AncillaAdd_Boomerang(uint8 a, uint8 y);
 void AncillaAdd_TossedPondItem(uint8 a, uint8 xin, uint8 yin);
 void AddHappinessPondRupees(uint8 arg);
-void AncillaAdd_FallingPrize(uint8 a, uint8 item_idx, uint8 yv);
+int AncillaAdd_FallingPrize(uint8 a, uint8 item_idx, uint8 yv);
 void AncillaAdd_ChargedSpinAttackSparkle();
 void AncillaAdd_ExplodingWeatherVane(uint8 a, uint8 y);
 void AncillaAdd_CutsceneDuck(uint8 a, uint8 y);

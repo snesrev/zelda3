@@ -1391,7 +1391,7 @@ void Sprite_MovableMantleTrampoline(int k) {
   Sprite_NullifyHookshotDrag();
   Sprite_RepelDash();
 
-  if (savegame_tagalong != 1 || !link_item_torch || link_is_running || sprite_G[k] == 0x90 || sign8(link_actual_vel_x - 24))
+  if (follower_indicator != 1 || !link_item_torch || link_is_running || sprite_G[k] == 0x90 || sign8(link_actual_vel_x - 24))
     return;
 
   which_starting_point = 4;
@@ -1558,12 +1558,16 @@ void Kiki_LyingInwait(int k) {
   Sprite_PrepOamCoord(k, &info);
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (link_is_bunny_mirror | link_disable_sprite_damage | countdown_for_blink || savegame_tagalong == 10)
+  if (link_is_bunny_mirror | link_disable_sprite_damage | countdown_for_blink || follower_indicator == 10)
     return;
   if (save_ow_event_info[BYTE(overworld_screen_index)] & 0x20)
     return;
   if (Sprite_CheckDamageToLink_same_layer(k)) {
-    savegame_tagalong = 10;
+    // Kiki Big Bomb Fix
+    if (enhanced_features0 & kFeatures0_MiscBugFixes)
+      follower_dropped = 0;  // defuse bomb
+
+    follower_indicator = 10;
     tagalong_var5 = 0;
     LoadFollowerGraphics();
     Follower_Initialize();
@@ -5923,7 +5927,7 @@ void Uncle_AtHouse(int k) {  // 85de3e
     }
     break;
   case 4:  // Uncle_ApplyTelepathyFollower
-    savegame_tagalong = 5;
+    follower_indicator = 5;
     word_7E02CD = 0xdf3;
     sram_progress_flags |= 0x10;
     sprite_state[k] = 0;
@@ -5938,7 +5942,7 @@ void Uncle_InPassage(int k) {  // 85df19
     if (Sprite_CheckDamageToLink_same_layer(k))
       Link_CancelDash();
     if (Sprite_ShowMessageOnContact(k, 0xe) & 0x100) {
-      savegame_tagalong = 0;
+      follower_indicator = 0;
       sprite_ai_state[k]++;
     }
     break;
@@ -6463,7 +6467,7 @@ void Priest_SpawnRescuedPrincess() {  // 85ec4c
   Sprite_SetX(k, link_x_coord);
   Sprite_SetY(k, link_y_coord);
   sprite_subtype2[k] = 1;
-  savegame_tagalong = 0;
+  follower_indicator = 0;
   sprite_ignore_projectile[k]++;
   sprite_flags4[k] = 3;
 }
@@ -6522,7 +6526,7 @@ void Zelda_InCell(int k) {  // 85ecbf
     flag_is_link_immobilized = 0;
     which_starting_point = 2;
     SavePalaceDeaths();
-    savegame_tagalong = 1;
+    follower_indicator = 1;
     Dungeon_FlagRoomData_Quadrants();
     Sprite_BecomeFollower(k);
     sprite_state[k] = 0;
@@ -7611,13 +7615,13 @@ void SpritePrep_DoNothingC(int k) {  // 86899b
 void SpritePrep_BlindMaiden(int k) {  // 86899c
   if (!(save_dung_info[0xac] & 0x800)) {
     sprite_ignore_projectile[k]++;
-    if (savegame_tagalong != 6) {
-      savegame_tagalong = 6;
-      super_bomb_going_off = 0;
+    if (follower_indicator != 6) {
+      follower_indicator = 6;
+      follower_dropped = 0;
       tagalong_var5 = 0;
       LoadFollowerGraphics();
       Follower_Initialize();
-      savegame_tagalong = 0;
+      follower_indicator = 0;
       return;
     }
   }
@@ -7666,7 +7670,7 @@ void SpritePrep_BullyAndVictim(int k) {  // 868a51
 }
 
 void SpritePrep_PurpleChest(int k) {  // 868a59
-  if (savegame_tagalong != 12 && !(sram_progress_indicator_3 & 16) && sram_progress_indicator_3 & 32)
+  if (follower_indicator != 12 && !(sram_progress_indicator_3 & 16) && sram_progress_indicator_3 & 32)
     sprite_ignore_projectile[k]++;
   else
     sprite_state[k] = 0;
@@ -7675,7 +7679,7 @@ void SpritePrep_PurpleChest(int k) {  // 868a59
 void SpritePrep_Smithy(int k) {  // 868a79
   sprite_ignore_projectile[k]++;
   if (savegame_is_darkworld & 64) {
-    if (sram_progress_indicator_3 & 32 || savegame_tagalong != 0)
+    if (sram_progress_indicator_3 & 32 || follower_indicator != 0)
       sprite_state[k] = 0;
     else
       sprite_subtype2[k] = 2;
@@ -7960,11 +7964,11 @@ void SpritePrep_Kiki(int k) {  // 868d46
 
 void SpritePrep_Locksmith(int k) {  // 868d59
   sprite_ignore_projectile[k]++;
-  if (savegame_tagalong == 9) {
+  if (follower_indicator == 9) {
     sprite_state[k] = 0;
     return;
   }
-  if (savegame_tagalong == 12) {
+  if (follower_indicator == 12) {
     sprite_ai_state[k] = 2;
   }
   if (sram_progress_indicator_3 & 0x10)
@@ -10275,7 +10279,7 @@ void Smithy_Frog(int k) {  // 86b274
     if (Sprite_ShowSolicitedMessage(k, 0xe1) & 0x100)
       sprite_ai_state[k] = 1;
   } else {
-    savegame_tagalong = 7;
+    follower_indicator = 7;
     LoadFollowerGraphics();
     Sprite_BecomeFollower(k);  // zelda bug: doesn't save X
     sprite_state[k] = 0;
@@ -10340,7 +10344,7 @@ void Smithy_Main(int k) {  // 86b34e
   switch(sprite_ai_state[k]) {
   case 0:  // ConversationStart
     sprite_C[k] = 0;
-    if (savegame_tagalong != 8) {
+    if (follower_indicator != 8) {
       if (Smithy_ListenForHammer(k)) {
         Sprite_ShowMessageUnconditional(0xe4);
         sprite_delay_aux1[k] = 96;
@@ -10435,7 +10439,7 @@ void Smithy_Main(int k) {  // 86b34e
       sprite_ignore_projectile[j] = 3;
     }
     sprite_ai_state[k] = 11;
-    savegame_tagalong = 0;
+    follower_indicator = 0;
     sprite_graphics[k] = 4;
     break;
   }
@@ -10856,13 +10860,13 @@ void Sprite_39_Locksmith(int k) {  // 86bcac
     sprite_y_vel[k] = 1;
     if (!Sprite_CheckTileCollision(k)) {
       sprite_ai_state[k]++;
-      if (savegame_tagalong != 0)
+      if (follower_indicator != 0)
         sprite_ai_state[k] = 5;
     }
     sprite_x_lo[k] = bak;
     break;
   case 1:  // transition to tagalong
-    savegame_tagalong = 9;
+    follower_indicator = 9;
     tagalong_var5 = 0;
     LoadFollowerGraphics();
     Follower_Initialize();
@@ -10872,7 +10876,7 @@ void Sprite_39_Locksmith(int k) {  // 86bcac
   case 2:  // offer chest
     if (Sprite_CheckIfLinkIsBusy())
       return;
-    if (super_bomb_going_off) {
+    if (follower_dropped) {
       j = Sprite_ShowSolicitedMessage(k, 0x109);
     } else {
       j = Sprite_ShowMessageOnContact(k, 0x109);
@@ -10882,7 +10886,7 @@ void Sprite_39_Locksmith(int k) {  // 86bcac
     break;
   case 3:  // react to secret keeping
     if (!choice_in_multiselect_box) {
-      if (super_bomb_going_off) {
+      if (follower_dropped) {
         Sprite_ShowMessageUnconditional(0x10c);
         sprite_ai_state[k] = 2;
       } else {
@@ -10890,7 +10894,7 @@ void Sprite_39_Locksmith(int k) {  // 86bcac
         Link_ReceiveItem(0x16, 0);
         sram_progress_indicator_3 |= 0x10;
         sprite_ai_state[k] = 4;
-        savegame_tagalong = 0;
+        follower_indicator = 0;
       }
     } else {
       Sprite_ShowMessageUnconditional(0x10a);
@@ -11117,7 +11121,7 @@ void SpritePrep_UncleAndPriest_bounce(int k) {  // 86bfe5
       j = 0;
     } else {
       sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
-      if (savegame_tagalong == 1) {
+      if (follower_indicator == 1) {
         sram_progress_flags |= 0x4;
         save_ow_event_info[0x1b] |= 0x20;
         sprite_delay_main[k] = 170;
@@ -11153,12 +11157,12 @@ void SpritePrep_OldMan_bounce(int k) {  // 86bff9
     sprite_subtype2[k] = 2;
     return;
   }
-  if (savegame_tagalong == 0) {
+  if (follower_indicator == 0) {
     if (link_item_mirror == 2)
       sprite_state[k] = 0;
-    savegame_tagalong = 4;
+    follower_indicator = 4;
     LoadFollowerGraphics();
-    savegame_tagalong = 0;
+    follower_indicator = 0;
   } else {
     sprite_state[k] = 0;
     LoadFollowerGraphics();
@@ -11370,10 +11374,10 @@ void SpritePrep_Zelda_bounce(int k) {  // 86c06c
   }
   sprite_ignore_projectile[k]++;
   sprite_D[k] = sprite_head_dir[k] = Sprite_DirectionToFaceLink(k, NULL) ^ 3;
-  uint8 bak0 = savegame_tagalong;
-  savegame_tagalong = 1;
+  uint8 bak0 = follower_indicator;
+  follower_indicator = 1;
   LoadFollowerGraphics();
-  savegame_tagalong = bak0;
+  follower_indicator = bak0;
 
   if (BYTE(dungeon_room_index) == 0x12) {
     sprite_subtype2[k] = 2;
@@ -11386,7 +11390,7 @@ void SpritePrep_Zelda_bounce(int k) {  // 86c06c
     }
   } else {
     sprite_subtype2[k] = 0;
-    if (savegame_tagalong == 1 || (sram_progress_flags & 4))
+    if (follower_indicator == 1 || (sram_progress_flags & 4))
       sprite_state[k] = 0;
   }
 }
@@ -15593,7 +15597,7 @@ void Swamola_Draw(int k) {  // 9d9f64
 }
 
 void SpritePrep_Blind_PrepareBattle(int k) {  // 9da081
-  if (savegame_tagalong != 6 && dung_savegame_state_bits & 0x2000) {
+  if (follower_indicator != 6 && dung_savegame_state_bits & 0x2000) {
     sprite_delay_aux2[k] = 96;
     sprite_C[k] = 1;
     sprite_D[k] = 2;
@@ -19425,7 +19429,7 @@ void Sprite_D5_DigGameGuy(int k) {  // 9dfc38
   switch(sprite_ai_state[k]) {
   case 0:  // intro
     if ((uint8)(sprite_y_lo[k] + 7) < BYTE(link_y_coord) && Sprite_DirectionToFaceLink(k, NULL) == 2) {
-      if (savegame_tagalong == 0) {
+      if (follower_indicator == 0) {
         if (Sprite_ShowSolicitedMessage(k, 0x187) & 0x100)
           sprite_ai_state[k]++;
       } else {
@@ -24498,11 +24502,11 @@ void Sprite_B4_PurpleChest(int k) {  // 9ee0dd
   if (Sprite_ReturnIfInactive(k))
     return;
   if (!sprite_ai_state[k]) {
-    if (Sprite_ShowMessageOnContact(k, 0x116) & 0x100 && savegame_tagalong == 0)
+    if (Sprite_ShowMessageOnContact(k, 0x116) & 0x100 && follower_indicator == 0)
       sprite_ai_state[k] = 1;
   } else {
     sprite_state[k] = 0;
-    savegame_tagalong = 12;
+    follower_indicator = 12;
     LoadFollowerGraphics();
     Sprite_BecomeFollower(k);
   }
@@ -24576,7 +24580,7 @@ void Sprite_BombShop_SuperBomb(int k) {  // 9ee1df
       Sprite_ShowMessageUnconditional(0x17c);
       ShopItem_PlayBeep(k);
     } else {
-      savegame_tagalong = 13;
+      follower_indicator = 13;
       LoadFollowerGraphics();
       Sprite_BecomeFollower(k);
       sprite_state[k] = 0;
@@ -24691,7 +24695,7 @@ void Kiki_OfferInitialService(int k) {  // 9ee3af
     } else {
       Sprite_ShowMessageUnconditional(0x120);
       tagalong_event_flags &= ~3;
-      savegame_tagalong = 0;
+      follower_indicator = 0;
       sprite_ai_state[k]++;
       flag_is_link_immobilized++;
     }
@@ -24905,7 +24909,7 @@ void Sprite_B7_BlindMaiden(int k) {  // 9ee8b6
       sprite_ai_state[k] = 1;
   } else {
     sprite_state[k] = 0;
-    savegame_tagalong = 6;
+    follower_indicator = 6;
     LoadFollowerGraphics();
     Sprite_BecomeFollower(k);
   }
@@ -24921,7 +24925,7 @@ void OldMan_RevertToSprite(int k) {  // 9ee938
   sprite_ignore_projectile[j] = 1;
   sprite_subtype2[j] = 1;
   OldMan_EnableCutscene();
-  savegame_tagalong = 0;
+  follower_indicator = 0;
   link_speed_setting = 0;
 }
 
@@ -24949,7 +24953,7 @@ void Sprite_AD_OldMan(int k) {  // 9ee992
       }
       break;
     case 1: // switch to tagalong
-      savegame_tagalong = 4;
+      follower_indicator = 4;
       Sprite_BecomeFollower(k);
       which_starting_point = 5;
       sprite_state[k] = 0;

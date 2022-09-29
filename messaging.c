@@ -901,8 +901,8 @@ void Death_Func15() {  // 89f50f
     player_is_indoors = 0;
 
   ResetSomeThingsAfterDeath((uint8)dungeon_room_index);
-  if (savegame_tagalong == 6 || savegame_tagalong == 9 || savegame_tagalong == 10 || savegame_tagalong == 13)
-    savegame_tagalong = 0;
+  if (follower_indicator == 6 || follower_indicator == 9 || follower_indicator == 10 || follower_indicator == 13)
+    follower_indicator = 0;
 
   death_var4 = link_health_current = kHealthAfterDeath[link_health_capacity >> 3];
   uint8 i = BYTE(cur_palace_index_x2);
@@ -916,7 +916,7 @@ void Death_Func15() {  // 89f50f
     if (!player_is_indoors)
       goto outdoors;
 
-    if (savegame_tagalong != 1 && BYTE(cur_palace_index_x2) != 255) {
+    if (follower_indicator != 1 && BYTE(cur_palace_index_x2) != 255) {
       death_var4 = 0;
     } else {
       buffer_for_playing_songs = 0;

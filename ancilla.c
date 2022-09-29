@@ -3502,7 +3502,7 @@ void Ancilla22_ItemReceipt(int k) {  // 88c38a
     if (ancilla_timer[k] != 17)
       goto endif_1;
     word_7E02CD = 0xDF3;
-    savegame_tagalong = 0xe;
+    follower_indicator = 0xe;
     goto endif_6;
   }
 
@@ -4829,7 +4829,7 @@ void Ancilla27_Duck(int k) {  // 88dde8
         link_disable_sprite_damage = 0;
         byte_7E03FD = 0;
         countdown_for_blink = 144;
-        if (!((savegame_tagalong == 12 || savegame_tagalong == 13) && super_bomb_going_off)) {
+        if (!((follower_indicator == 12 || follower_indicator == 13) && follower_dropped)) {
           Follower_Initialize();
         }
       }
@@ -4854,8 +4854,8 @@ void Ancilla27_Duck(int k) {  // 88dde8
       if (a == 0x2a || a == 0x1f || a == 0x30 || a == 0x31 || a == 0x41)
         ancilla_type[i] = 0;
     }
-    if (savegame_tagalong == 9) {
-      savegame_tagalong = 0;
+    if (follower_indicator == 9) {
+      follower_indicator = 0;
       tagalong_var5 = 0;
     }
   }
@@ -5563,7 +5563,7 @@ void Ancilla3A_BigBombExplosion(int k) {  // 88f18d
   }
   if (ancilla_item_to_link[k] == 3 && ancilla_arr3[k] == 1) {
     Bomb_CheckForDestructibles(Ancilla_GetX(k), Ancilla_GetY(k), 0); // r14?
-    savegame_tagalong = 0;
+    follower_indicator = 0;
   }
 }
 
@@ -6197,7 +6197,7 @@ void AddHappinessPondRupees(uint8 arg) {  // 898ae0
   } while (--k, --j != j_end);
 }
 
-void AncillaAdd_FallingPrize(uint8 a, uint8 item_idx, uint8 yv) {  // 898bc1
+int AncillaAdd_FallingPrize(uint8 a, uint8 item_idx, uint8 yv) {  // 898bc1
   static const int8 kFallingItem_Type[7] = {0x10, 0x37, 0x39, 0x38, 0x26, 0xf, 0x20};
   static const int8 kFallingItem_G[7] = {0x40, 0, 0, 0, 0, -1, 0};
   static const int16 kFallingItem_X[7] = {0x78, 0x78, 0x78, 0x78, 0x78, 0x80, 0x78};
@@ -6206,7 +6206,7 @@ void AncillaAdd_FallingPrize(uint8 a, uint8 item_idx, uint8 yv) {  // 898bc1
   link_receiveitem_index = item_idx;
   int k = Ancilla_AddAncilla(a, yv);
   if (k < 0)
-    return;
+    return k;
   uint8 item_type = kFallingItem_Type[item_idx];
   ancilla_item_to_link[k] = item_type;
   if (item_type == 0x10 || item_type == 0xf)
@@ -6237,6 +6237,7 @@ void AncillaAdd_FallingPrize(uint8 a, uint8 item_idx, uint8 yv) {  // 898bc1
     y = kFallingItem_Y[item_idx] + BG2VOFS_copy2;
   }
   Ancilla_SetXY(k, x, y);
+  return k;
 }
 
 void AncillaAdd_ChargedSpinAttackSparkle() {  // 898cb1
@@ -6478,7 +6479,7 @@ void AncillaAdd_DwarfPoof(uint8 ain, uint8 yin) {  // 89915f
   int k = Ancilla_AddAncilla(ain, yin);
   if (k < 0)
     return;
-  if (savegame_tagalong == 8)
+  if (follower_indicator == 8)
     sound_effect_1 = Link_CalculateSfxPan() | 0x14;
   else
     sound_effect_1 = Link_CalculateSfxPan() | 0x15;

@@ -541,17 +541,17 @@ void LoadItemGFX_Auxiliary() {  // 80d3c6
 
 void LoadFollowerGraphics() {  // 80d423
   uint8 yv = 0x64;
-  if (savegame_tagalong != 1) {
+  if (follower_indicator != 1) {
     yv = 0x66;
-    if (savegame_tagalong >= 9) {
+    if (follower_indicator >= 9) {
       yv = 0x59;
-      if (savegame_tagalong >= 12)
+      if (follower_indicator >= 12)
         yv = 0x58;
     }
   }
   Decomp_spr(&g_ram[0x14600], yv);
   Decomp_spr(&g_ram[0x14000], 0x65);
-  Do3To4Low16Bit(&g_ram[0x9000] + 0x2940, &g_ram[0x14000 + kTagalongWhich[savegame_tagalong]], 0x20);
+  Do3To4Low16Bit(&g_ram[0x9000] + 0x2940, &g_ram[0x14000 + kTagalongWhich[follower_indicator]], 0x20);
 }
 
 void WriteTo4BPPBuffer_at_7F4000(uint8 a) {  // 80d4db

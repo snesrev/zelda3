@@ -322,7 +322,7 @@ static void EmuSynchronizeWholeState() {
     cpu_reset(g_snes->cpu);
 }
 
-static void EmuRunFrameWithCompare(uint16 input_state, int run_what) {
+void EmuRunFrameWithCompare(uint16 input_state, int run_what) {
   MakeSnapshot(&g_snapshot_before);
   MakeMySnapshot(&g_snapshot_mine);
   MakeSnapshot(&g_snapshot_theirs);

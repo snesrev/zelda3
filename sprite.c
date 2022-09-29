@@ -877,8 +877,8 @@ void SpriteStunned_MainEx(int k, bool second_entry) {
   }
 }
 
-void Ancilla_SpawnFallingPrize(uint8 item) {  // 85a51d
-  AncillaAdd_FallingPrize(0x29, item, 4);
+int Ancilla_SpawnFallingPrize(uint8 item) {  // 85a51d
+  return AncillaAdd_FallingPrize(0x29, item, 4);
 }
 
 bool Sprite_CheckDamageToAndFromLink(int k) {  // 85ab93
@@ -3798,7 +3798,7 @@ void Sprite_ResetAll_noDisable() {  // 89c452
   byte_7E0FC6 = 0;
   sprite_limit_instance = 0;
   sort_sprites_setting = 0;
-  if (savegame_tagalong != 13)
+  if (follower_indicator != 13)
     super_bomb_indicator_unk2 = 0xfe;
   memset(sprite_where_in_room, 0, 0x1000);
   memset(overworld_sprite_was_loaded, 0, 0x200);

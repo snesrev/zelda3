@@ -112,7 +112,7 @@ void SpriteDeath_MainEx(int k, bool second_entry);
 void SpriteModule_Burn(int k);
 void Sprite_HitTimer31(int k);
 void SpriteStunned_MainEx(int k, bool second_entry);
-void Ancilla_SpawnFallingPrize(uint8 item);
+int Ancilla_SpawnFallingPrize(uint8 item);
 bool Sprite_CheckDamageToAndFromLink(int k);
 uint8 Sprite_CheckTileCollision(int k);
 bool Sprite_TrackBodyToHead(int k);

@@ -225,18 +225,18 @@ void Sprite_BecomeFollower(int k) {  // 899f39
   tagalong_var4 = 0;
   link_speed_setting = 0;
   tagalong_var5 = 0;
-  super_bomb_going_off = 0;
+  follower_dropped = 0;
   Follower_MoveTowardsLink();
 }
 
 void Follower_Main() {  // 899fc4
-  if (!savegame_tagalong)
+  if (!follower_indicator)
     return;
-  if (savegame_tagalong == 0xe) {
+  if (follower_indicator == 0xe) {
     Follower_HandleTrigger();
     return;
   }
-  int j = FindInByteArray(kTagalong_Tab0, savegame_tagalong, 3);
+  int j = FindInByteArray(kTagalong_Tab0, follower_indicator, 3);
   if (j >= 0 && submodule_index == 0 && !(j == 2 && overworld_screen_index & 0x40) && sign16(--word_7E02CD)) {
     if (!Follower_ValidateMessageFreedom()) {
       word_7E02CD = 0;
@@ -253,16 +253,16 @@ void Follower_Main() {  // 899fc4
 void Follower_NoTimedMessage() {  // 89a02b
   int k;
 
-  if (super_bomb_going_off) {
+  if (follower_dropped) {
     Follower_NotFollowing();
     return;
   }
 
-  if (savegame_tagalong == 12) {
+  if (follower_indicator == 12) {
     if (link_auxiliary_state != 0)
       goto label_a;
 
-  } else if (savegame_tagalong == 13) {
+  } else if (follower_indicator == 13) {
     if (link_auxiliary_state == 2 || player_near_pit_state == 2)
       goto label_c;
   } else {
@@ -275,7 +275,7 @@ void Follower_NoTimedMessage() {  // 89a02b
 
 label_c:
 
-  if (savegame_tagalong == 13 && !player_is_indoors) {
+  if (follower_indicator == 13 && !player_is_indoors) {
     if (link_player_handler_state == kPlayerState_Ether ||
         link_player_handler_state == kPlayerState_Bombos ||
         link_player_handler_state == kPlayerState_Quake)
@@ -284,7 +284,7 @@ label_c:
     super_bomb_indicator_unk1 = 0xbb;
   }
 
-  super_bomb_going_off = 128;
+  follower_dropped = 128;
   timer_tagalong_reacquire = 64;
 
   k = tagalong_var2;
@@ -327,7 +327,7 @@ void Follower_CheckGameMode() {  // 89a0e1
     tagalong_layerbits[k] = layerbits;
   }
 
-  switch (savegame_tagalong) {
+  switch (follower_indicator) {
   case 2: case 4:
     Follower_OldMan();
     return;
@@ -352,18 +352,18 @@ void Follower_BasicMover() {  // 89a197
 
   Follower_HandleTrigger();
 
-  if (savegame_tagalong == 10 && link_auxiliary_state && countdown_for_blink) {
+  if (follower_indicator == 10 && link_auxiliary_state && countdown_for_blink) {
     int k = tagalong_var2 + 1 == 20 ? 0 : tagalong_var2 + 1;
     Kiki_SpawnHandler_B(k);
-    savegame_tagalong = 0;
+    follower_indicator = 0;
     return;
   }
 
-  if (savegame_tagalong == 6 && dungeon_room_index == 0xac && (save_dung_info[101] & 0x100) && Follower_CheckBlindTrigger()) {
+  if (follower_indicator == 6 && dungeon_room_index == 0xac && (save_dung_info[101] & 0x100) && Follower_CheckBlindTrigger()) {
     int k = tagalong_var2;
     uint16 x = tagalong_x_lo[k] | tagalong_x_hi[k] << 8;
     uint16 y = tagalong_y_lo[k] | tagalong_y_hi[k] << 8;
-    savegame_tagalong = 0;
+    follower_indicator = 0;
     Blind_SpawnFromMaiden(x, y);
     BYTE(dung_flag_trapdoors_down)++;
     BYTE(dung_cur_door_pos) = 0;
@@ -418,16 +418,16 @@ void Follower_NotFollowing() {  // 89a2b2
   if (!link_is_running && !Follower_CheckProximityToLink()) {
     Follower_Initialize();
     saved_tagalong_indoors = player_is_indoors;
-    if (savegame_tagalong == 13) {
+    if (follower_indicator == 13) {
       super_bomb_indicator_unk2 = 254;
       super_bomb_indicator_unk1 = 0;
     }
-    super_bomb_going_off = 0;
+    follower_dropped = 0;
     Tagalong_Draw();
   } else {
-    if (savegame_tagalong == 13 && !player_is_indoors && !super_bomb_indicator_unk2) {
+    if (follower_indicator == 13 && !player_is_indoors && !super_bomb_indicator_unk2) {
       AncillaAdd_SuperBombExplosion(0x3a, 0);
-      super_bomb_going_off = 0;
+      follower_dropped = 0;
     }
     Follower_DoLayers();
   }
@@ -446,9 +446,9 @@ void Follower_OldMan() {  // 89a318
 
   Follower_HandleTrigger();
 
-  if (savegame_tagalong == 0) {
+  if (follower_indicator == 0) {
     return;
-  } else if (savegame_tagalong == 4) {
+  } else if (follower_indicator == 4) {
     if ((int8)tagalong_z[tagalong_var2] > 0 && tagalong_var1 != tagalong_var2) {
       tagalong_var2 = (tagalong_var2 + 1 >= 20) ? 0 : tagalong_var2 + 1;
       Tagalong_Draw();
@@ -464,7 +464,7 @@ void Follower_OldMan() {  // 89a318
 
     if (link_auxiliary_state & 2) {
 transform:
-      savegame_tagalong = kTagalong_Tab4[savegame_tagalong];
+      follower_indicator = kTagalong_Tab4[follower_indicator];
       timer_tagalong_reacquire = 64;
       int k = tagalong_var2;
       saved_tagalong_y = tagalong_y_lo[k] | tagalong_y_hi[k] << 8;
@@ -499,7 +499,7 @@ void Follower_OldManUnused() {  // 89a41f
     link_speed_setting = 0;
     if (link_player_handler_state != kPlayerState_Hookshot && !Follower_CheckProximityToLink()) {
       Follower_Initialize();
-      savegame_tagalong = kTagalong_Tab5[savegame_tagalong];
+      follower_indicator = kTagalong_Tab5[follower_indicator];
       return;
     }
   }
@@ -508,7 +508,7 @@ void Follower_OldManUnused() {  // 89a41f
 
 void Follower_DoLayers() {  // 89a450
   oam_priority_value = kTagalongFlags[saved_tagalong_floor] << 8;
-  uint8 a = (savegame_tagalong == 12 || savegame_tagalong == 13) ? 2 : 1;
+  uint8 a = (follower_indicator == 12 || follower_indicator == 13) ? 2 : 1;
   Follower_AnimateMovement_preserved(a, saved_tagalong_x, saved_tagalong_y);
 }
 
@@ -544,7 +544,7 @@ void Follower_HandleTrigger() {  // 89a59e
   }
   int st = (tagalong_var2 + 1 >= 20) ? 0 : tagalong_var2 + 1;
   do {
-    if (tmi->tagalong == savegame_tagalong && Follower_CheckForTrigger(tmi)) {
+    if (tmi->tagalong == follower_indicator && Follower_CheckForTrigger(tmi)) {
       if (tmi->bit & tagalong_event_flags)
         return;
       tagalong_event_flags |= tmi->bit;
@@ -559,7 +559,7 @@ void Follower_HandleTrigger() {  // 89a59e
       if (tmi->msg == 0x9d) {
         OldMan_RevertToSprite(st);
       } else if (tmi->msg == 0x28) {
-        savegame_tagalong = 0;
+        follower_indicator = 0;
       }
       Main_ShowTextMessage();
       return;
@@ -588,7 +588,7 @@ void Follower_AnimateMovement_preserved(uint8 ain, uint16 xin, uint16 yin) {  //
   uint8 yt = 0, av = 0;
   uint8 sc = 0;
 
-  if ((ain >> 2 & 8) && (savegame_tagalong == 6 || savegame_tagalong == 1)) {
+  if ((ain >> 2 & 8) && (follower_indicator == 6 || follower_indicator == 1)) {
     yt = 8;
     if (swimcoll_var7[0] | swimcoll_var7[1])
       av = (frame_counter >> 1) & 4;
@@ -596,9 +596,9 @@ void Follower_AnimateMovement_preserved(uint8 ain, uint16 xin, uint16 yin) {  //
       av = (frame_counter >> 2) & 4;
   } else if (submodule_index == 8 || submodule_index == 14 || submodule_index == 16) {
     av = link_is_running ? (frame_counter & 4) : ((frame_counter >> 1) & 4);
-  } else if (savegame_tagalong == 11) {
+  } else if (follower_indicator == 11) {
     av = (frame_counter >> 1) & 4;
-  } else if ((savegame_tagalong == 12 || savegame_tagalong == 13) && super_bomb_going_off || flag_is_link_immobilized ||
+  } else if ((follower_indicator == 12 || follower_indicator == 13) && follower_dropped || flag_is_link_immobilized ||
              submodule_index == 10 || main_module_index == 9 && submodule_index == 0x23 ||
              main_module_index == 14 && (submodule_index == 1 || submodule_index == 2) ||
              (link_y_vel | link_x_vel) == 0) {
@@ -620,7 +620,7 @@ void Follower_AnimateMovement_preserved(uint8 ain, uint16 xin, uint16 yin) {  //
   uint16 scrollx = xin - BG2HOFS_copy2;
 
   const uint8 *sk = kTagalongDraw_SprInfo0;
-  if (savegame_tagalong == 1 || savegame_tagalong == 6 || !(ain & 0x20)) {
+  if (follower_indicator == 1 || follower_indicator == 6 || !(ain & 0x20)) {
     if (!(ain & 0xc0))
       goto skip_first_sprites;
     if ((ain & 0x80) || (sk += 12, sc == 0))
@@ -651,17 +651,17 @@ incr:
   }
   uint8 pal;
 skip_first_sprites:
-  pal = kTagalongDraw_Pals[savegame_tagalong];
+  pal = kTagalongDraw_Pals[follower_indicator];
   if (pal == 7 && overworld_palette_swap_flag)
     pal = 0;
 
-  if (savegame_tagalong == 13 && super_bomb_indicator_unk2 == 1)
+  if (follower_indicator == 13 && super_bomb_indicator_unk2 == 1)
     pal = (frame_counter & 7);
 
-  const TagalongSprXY *sprd = kTagalongDraw_SprXY + frame + (kTagalongDraw_Offs[savegame_tagalong] >> 3);
+  const TagalongSprXY *sprd = kTagalongDraw_SprXY + frame + (kTagalongDraw_Offs[follower_indicator] >> 3);
   const TagalongDmaFlags *sprf = kTagalongDmaAndFlags + frame;
 
-  if (savegame_tagalong != 12 && savegame_tagalong != 13) {
+  if (follower_indicator != 12 && follower_indicator != 13) {
     uint16 y = scrolly + sprd->y1, x = scrollx + sprd->x1, ext = 0;
     oam->x = x;
     oam->y = (uint16)(x + 0x80) < 0x180 && (ext = x >> 8 & 1, (uint16)(y + 0x10) < 0x100) ? y : 0xf0;
@@ -693,8 +693,8 @@ bool Follower_CheckForTrigger(const TagalongMessageInfo *info) {  // 89ac26
 }
 
 void Follower_Disable() {  // 89acf3
-  if (savegame_tagalong == 9 || savegame_tagalong == 10)
-    savegame_tagalong = 0;
+  if (follower_indicator == 9 || follower_indicator == 10)
+    follower_indicator = 0;
 }
 
 void Blind_SpawnFromMaiden(uint16 x, uint16 y) {  // 9da03c
@@ -715,7 +715,7 @@ void Blind_SpawnFromMaiden(uint16 x, uint16 y) {  // 9da03c
 void Kiki_RevertToSprite(int k) {  // 9ee66b
   int j = Kiki_SpawnHandlerMonke(k);
   sprite_subtype2[j] = 1;
-  savegame_tagalong = 0;
+  follower_indicator = 0;
 }
 
 int Kiki_SpawnHandlerMonke(int k) {  // 9ee67a
@@ -746,6 +746,6 @@ void Kiki_SpawnHandler_B(int k) {  // 9ee6d0
   sprite_z[j] = 1;
   sprite_z_vel[j] = 16;
   sprite_subtype2[j] = 3;
-  savegame_tagalong = 0;
+  follower_indicator = 0;
 }
 
