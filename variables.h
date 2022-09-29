@@ -127,6 +127,7 @@
 #define dung_load_ptr_bank (*(uint8*)(g_ram+0xB9))
 #define dung_load_ptr_offs (*(uint16*)(g_ram+0xBA))
 #define tmp1 (*(uint16*)(g_ram+0xBD))
+#define some_menu_ctr (*(uint8*)(g_ram+0xc8))
 #define dung_line_ptrs_row3 (*(uint16*)(g_ram+0xDA))
 #define dung_line_ptrs_row4 (*(uint16*)(g_ram+0xDD))
 #define BG1HOFS_copy2 (*(uint16*)(g_ram+0xE0))

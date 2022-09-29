@@ -5877,7 +5877,7 @@ uint8 OpenMiniGameChest(int *chest_position) {  // 81edab
 
   uint8 rv;
 
-  uint16 r16 = g_ram[0xc8];
+  uint16 r16 = some_menu_ctr;
 
   t = GetRandomNumber();
   if (BYTE(dungeon_room_index) == 0) {
@@ -5901,7 +5901,7 @@ uint8 OpenMiniGameChest(int *chest_position) {  // 81edab
     }
     rv = kDungeon_MinigameChestPrizes1[t];
   }
-  g_ram[0xc8] = t;
+  some_menu_ctr = t;
   nmi_load_bg_from_vram = 1;
   sound_effect_2 = 14;
   return rv;

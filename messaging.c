@@ -738,7 +738,7 @@ void Death_Func1() {  // 89f2a4
   bg1_x_offset = 0;
   bg1_y_offset = 0;
   mapbak_CGWSEL = WORD(CGWSEL_copy);
-  g_ram[0xc8] = 32;
+  some_menu_ctr = 32;
   hud_floor_changed_timer = 0;
   Hud_FloorIndicator();
   flag_update_hud_in_nmi++;
@@ -747,7 +747,7 @@ void Death_Func1() {  // 89f2a4
 }
 
 void GameOver_DelayBeforeIris() {  // 89f33b
-  if (--g_ram[0xc8])
+  if (--some_menu_ctr)
     return;
   Death_InitializeGameOverLetters();
   IrisSpotlight_close();
@@ -787,15 +787,15 @@ void GameOver_IrisWipe() {  // 89f350
   TM_copy = 20;
   TS_copy = 0;
   CGADSUB_copy = 32;
-  g_ram[0xc8] = 64;
+  some_menu_ctr = 64;
   BYTE(palette_filter_countdown) = 0;
   BYTE(darkening_or_lightening_screen) = 0;
   Death_PrepFaint();
 }
 
 void GameOver_SplatAndFade() {  // 89f3de
-  if (g_ram[0xc8]) {
-    g_ram[0xc8]--;
+  if (some_menu_ctr) {
+    some_menu_ctr--;
     return;
   }
   PaletteFilter_RestoreBGSubstractiveStrict();
@@ -809,7 +809,7 @@ void GameOver_SplatAndFade() {  // 89f3de
   for (int i = 0; i != 4; i++) {
     if (link_bottle_info[i] == 6) {
       link_bottle_info[i] = 2;
-      g_ram[0xc8] = 12;
+      some_menu_ctr = 12;
       load_chr_halfslot_even_odd = 15;
       Graphics_LoadChrHalfSlot();
       load_chr_halfslot_even_odd = 0;
@@ -825,7 +825,7 @@ void GameOver_SplatAndFade() {  // 89f3de
 }
 
 void Death_Func6() {  // 89f458
-  g_ram[0xc8] = 12;
+  some_menu_ctr = 12;
   load_chr_halfslot_even_odd = 15;
   Graphics_LoadChrHalfSlot();
   load_chr_halfslot_even_odd = 0;
@@ -854,7 +854,7 @@ void GameOver_Finalize_GAMEOVR() {  // 89f488
   RenderText();
   submodule_index = bak2 + 1;
   main_module_index = bak1;
-  g_ram[0xc8] = 2;
+  some_menu_ctr = 2;
   music_control = 11;
 }
 
@@ -866,8 +866,8 @@ void GameOver_SaveAndOrContinue() {  // 89f4c1
   if (filtered_joypad_H & 0x20)
     goto do_inc;
 
-  if (!--g_ram[0xc8]) {
-    g_ram[0xc8] = 1;
+  if (!--some_menu_ctr) {
+    some_menu_ctr = 1;
     if (joypad1H_last & 12) {
       if (joypad1H_last & 4) {
 do_inc:
@@ -877,7 +877,7 @@ do_inc:
         if (sign8(--subsubmodule_index))
           subsubmodule_index = 2;
       }
-      g_ram[0xc8] = 12;
+      some_menu_ctr = 12;
       sound_effect_2 = 32;
     }
   }
@@ -1052,7 +1052,7 @@ void Module0E_0A_FluteMenu() {  // 8ab730
     WorldMap_Brighten();
     break;
   case 4:
-    g_ram[0xc8] = 0x10;
+    some_menu_ctr = 0x10;
     overworld_map_state++;
     break;
   case 5:
@@ -1078,13 +1078,13 @@ void Module0E_0A_FluteMenu() {  // 8ab730
 void FluteMenu_HandleSelection() {  // 8ab78b
   PointU8 pt;
 
-  if (g_ram[0xc8] == 0) {
+  if (some_menu_ctr == 0) {
     if ((joypad1L_last | joypad1H_last) & 0xc0) {
       overworld_map_state++;
       return;
     }
   } else {
-    g_ram[0xc8]--;
+    some_menu_ctr--;
   }
   if (filtered_joypad_H & 10) {
     birdtravel_var1[0]--;

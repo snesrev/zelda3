@@ -68,8 +68,8 @@ static const uint8 kSpExit_AuxGfx[16] = { 0x2f, 0x2f, 0x2f, 0x2f, 0x2f, 0x2f, 0x
 static const uint8 kSpExit_PalBg[16] = { 0xa, 0xa, 0xa, 0xa, 2, 2, 2, 0xa, 2, 2, 0xa, 2, 2, 2, 2, 0xa };
 static const uint8 kSpExit_PalSpr[16] = { 1, 8, 8, 8, 0, 0, 0, 0, 0, 0, 8, 0, 0, 0, 0, 2 };
 #endif
-#define turtlerock_ctr (g_ram[0xc8])
-#define ganonentrance_ctr (g_ram[0xc8])
+#define turtlerock_ctr (some_menu_ctr)
+#define ganonentrance_ctr (some_menu_ctr)
 static PlayerHandlerFunc *const kOverworld_EntranceSequence[5] = {
   &Overworld_AnimateEntrance_PoD,
   &Overworld_AnimateEntrance_Skull,
