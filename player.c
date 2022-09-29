@@ -3397,7 +3397,12 @@ bool LinkCheckMagicCost(uint8 x) {  // 87b0ab
 
 void Refund_Magic(uint8 x) {  // 87b0e9
   uint8 cost = kLinkItem_MagicCosts[x * 3 + link_magic_consumption];
-  link_magic_power += cost;
+
+  int new_magic = link_magic_power + cost;
+  // Ensure magic can't overflow (for example the cane of somaria bug)
+  if (enhanced_features0 & kFeatures0_MiscBugFixes && new_magic >= 128)
+    new_magic = 128;
+  link_magic_power = new_magic;
 }
 
 void Link_ItemReset_FromOverworldThings() {  // 87b107
