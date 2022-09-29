@@ -15436,9 +15436,15 @@ void Trident_Draw(int k) {  // 9d9c1c
 }
 
 void SpritePrep_Swamola_InitializeSegments(int k) {  // 9d9c80
-  static const uint8 kBuggySwamolaLookup[6] = { 0x1c, 0xa9, 0x03, 0x9d, 0x90, 0x0d };  // wrong bank
-  //int j = k * 32;
-  int j = kBuggySwamolaLookup[k];
+  int j;
+
+  // The snes code uses the wrong bank.. Causes glitches with lanmolas in misery mire
+  if (enhanced_features0 & kFeatures0_MiscBugFixes) {
+    j = k * 32;
+  } else {
+    static const uint8 kBuggySwamolaLookup[6] = { 0x1c, 0xa9, 0x03, 0x9d, 0x90, 0x0d };  // wrong bank
+    j = kBuggySwamolaLookup[k];
+  }
   for (int i = 0; i < 32; i++, j++) {
     swamola_x_lo[j] = sprite_x_lo[k];
     swamola_x_hi[j] = sprite_x_hi[k];
