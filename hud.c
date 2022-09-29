@@ -1401,6 +1401,14 @@ static void Hud_Update_Inventory() {  // 8dfc09
 }
 
 void Hud_Rebuild() {  // 8dfa70
+  // Ensure all of the 165 hud words are initialized.
+  // This was broken by my previous reorg... quick fix for now.
+  if (hud_tile_indices_buffer[HUDXY(8, 2)] == 0) {
+    for (int i = 0; i < 165; i++)
+      hud_tile_indices_buffer[i] = 0x207f;
+  }
+
+
   // The magic meter and item box
   static const uint16 kHudTilemapLeftPart[8 * 6] = {
     0x207f, 0x207f, 0x2850, 0xa856, 0x2852, 0x285b, 0x285b, 0x285c,
