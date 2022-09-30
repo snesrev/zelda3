@@ -6168,6 +6168,10 @@ void Link_Initialize() {  // 87f13c
   link_direction &= ~0xf;
   player_on_somaria_platform = 0;
   link_spin_attack_step_counter = 0;
+
+  // This fixes the jump ledge exploration glitch
+  if (enhanced_features0 & kFeatures0_MiscBugFixes)
+    about_to_jump_off_ledge = 0;
 }
 
 void Link_ResetProperties_A() {  // 87f1a3
