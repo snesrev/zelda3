@@ -38,6 +38,8 @@ enum {
   kFeatures0_CarryMoreRupees = 2048,
 
   kFeatures0_MiscBugFixes = 4096,
+
+  kFeatures0_CancelBirdTravel = 8192,
 };
 
 #define enhanced_features0 (*(uint32*)(g_ram+0x64c))

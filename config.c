@@ -320,6 +320,8 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       return ParseBoolBit(value, &g_config.features0, kFeatures0_CarryMoreRupees);
     } else if (StringEqualsNoCase(key, "MiscBugFixes")) {
       return ParseBoolBit(value, &g_config.features0, kFeatures0_MiscBugFixes);
+    } else if (StringEqualsNoCase(key, "CancelBirdTravel")) {
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_CancelBirdTravel);
     }
   }
   return false;

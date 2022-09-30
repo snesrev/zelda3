@@ -1080,6 +1080,10 @@ void FluteMenu_HandleSelection() {  // 8ab78b
 
   if (some_menu_ctr == 0) {
     if ((joypad1L_last | joypad1H_last) & 0xc0) {
+
+      if (enhanced_features0 & kFeatures0_CancelBirdTravel)
+        some_menu_ctr = joypad1L_last;
+
       overworld_map_state++;
       return;
     }
@@ -1121,7 +1125,11 @@ void FluteMenu_LoadSelectedScreen() {  // 8ab8c5
   save_ow_event_info[0x7b] &= ~0x20;
   save_dung_info[267] &= ~0x80;
   save_dung_info[40] &= ~0x100;
-  FluteMenu_LoadTransport();
+
+  // This is kFeatures0_CancelBirdTravel
+  if (!(some_menu_ctr & 0x40))
+    FluteMenu_LoadTransport();
+
   FluteMenu_LoadSelectedScreenPalettes();
   uint8 t = overworld_screen_index & 0xbf;
   DecompressAnimatedOverworldTiles((t == 3 || t == 5 || t == 7) ? 0x58 : 0x5a);
