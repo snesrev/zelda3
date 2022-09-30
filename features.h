@@ -40,6 +40,8 @@ enum {
   kFeatures0_MiscBugFixes = 4096,
 
   kFeatures0_CancelBirdTravel = 8192,
+
+  kFeatures0_GameChangingBugFixes = 16384,
 };
 
 #define enhanced_features0 (*(uint32*)(g_ram+0x64c))

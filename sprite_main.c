@@ -2959,14 +2959,28 @@ void Sprite_Zora_Main(int k) {  // 859725
   case 0:  // choose surfacing location
     sprite_ignore_projectile[k] = sprite_delay_main[k];
     if (!sprite_delay_main[k]) {
-      Sprite_SetX(k, (sprite_A[k] | sprite_B[k] << 8) + kSprite_Zora_Surface_XY[GetRandomNumber() & 7]);
-      Sprite_SetY(k, (sprite_C[k] | sprite_head_dir[k] << 8) + kSprite_Zora_Surface_XY[GetRandomNumber() & 7]);
+      int org_x = (sprite_A[k] | sprite_B[k] << 8);
+      int org_y = (sprite_C[k] | sprite_head_dir[k] << 8);
+      Sprite_SetX(k, org_x + kSprite_Zora_Surface_XY[GetRandomNumber() & 7]);
+      Sprite_SetY(k, org_y + kSprite_Zora_Surface_XY[GetRandomNumber() & 7]);
       Sprite_Get16BitCoords(k);
       Sprite_CheckTileCollision(k);
-      if (sprite_tiletype == 8) {
+      if (sprite_tiletype == 8) spawn_anyway: {
         sprite_delay_main[k] = 127;
         sprite_ai_state[k]++;
         sprite_flags3[k] |= 0x40;
+      } else {
+        // In Misery Mire some Zoras are placed in shallow water so they can't spawn
+        // This fixes so they will be able to spawn in shallow water after a delay.
+        if (enhanced_features0 & kFeatures0_GameChangingBugFixes) {
+          if (sprite_tiletype == 9 && sprite_delay_aux2[k] == 1)
+            goto spawn_anyway;
+          Sprite_SetX(k, org_x);
+          Sprite_SetY(k, org_y);
+          sprite_ignore_projectile[k] = 1;
+          if (sprite_delay_aux2[k] == 0)
+            sprite_delay_aux2[k] = 32;
+        }
       }
     }
     break;
