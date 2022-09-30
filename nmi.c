@@ -69,7 +69,9 @@ void Interrupt_NMI(uint16 joypad_input) {  // 8080c9
   if (music_control == 0) {
     if (zelda_apu_read(APUI00) == last_music_control)
       zelda_apu_write(APUI00, 0);
-  } else if (music_control != last_music_control) {
+  // Zelda causes unwanted music change when going in a portal. last_music_control doesn't hold the 
+  // song but the last applied effect
+  } else if (music_control != (enhanced_features0 & kFeatures0_MiscBugFixes ? music_unk1 : last_music_control)) {
     last_music_control = music_control;
     ZeldaPlayMsuAudioTrack();
     if (music_control < 0xf2)
