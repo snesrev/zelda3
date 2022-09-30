@@ -204,7 +204,7 @@ void Ancilla_CheckDamageToSprite_preset(int k, int a);
 void Sprite_Func15(int k, int a);
 void Sprite_CalculateSwordDamage(int k);
 void Sprite_ApplyCalculatedDamage(int k, int a);
-void AgahnimBalls_DamageAgahnim(int k, uint8 dmg, uint8 r0_hit_timer);
+void Sprite_GiveDamage(int k, uint8 dmg, uint8 r0_hit_timer);
 void Sprite_Func18(int k, uint8 new_type);
 void Sprite_MiniMoldorm_Recoil(int k);
 void Sprite_Func3(int k);

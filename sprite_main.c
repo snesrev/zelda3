@@ -22785,6 +22785,11 @@ bool SpikeBlock_CheckStatueCollision(int k) {  // 9ebe19
 }
 
 void Sprite_88_Mothula(int k) {  // 9ebe7e
+  if (enhanced_features0 & kFeatures0_MiscBugFixes) {
+    // L4 sword and L3 spin slash can now damage Mothula
+    enemy_damage_data[0x884] = 1;
+    enemy_damage_data[0x885] = 1;
+  }
   Mothula_Main(k);
   if (Sprite_ReturnIfInactive(k))
     return;
@@ -24185,7 +24190,7 @@ void Sprite_7B_AgahnimBalls(int k) {  // 9eda42
     hb.r9_yhi = sprite_y_hi[k];
     Sprite_SetupHitBox(0, &hb);
     if (CheckIfHitBoxesOverlap(&hb)) {
-      AgahnimBalls_DamageAgahnim(0, 16, 0xa0);
+      Sprite_GiveDamage(0, 16, 0xa0);
       sprite_state[k] = 0;
       sprite_x_recoil[0] = sprite_x_vel[k];
       sprite_y_recoil[0] = sprite_y_vel[k];

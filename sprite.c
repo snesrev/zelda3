@@ -2040,7 +2040,14 @@ bool Sprite_CheckTileProperty(int k, int j) {  // 86e73c
 
   if (sprite_tiletype == 0x44) {
     if (sprite_F[k] && !sign8(sprite_give_damage[k])) {
-      Ancilla_CheckDamageToSprite_preset(k, 4);
+
+      // Some mothula bug fix because we changed damage class 4.
+      if (sprite_type[k] == 0x88 && (enhanced_features0 & kFeatures0_MiscBugFixes)) {
+        if (sprite_hit_timer[k] == 0)
+          Ancilla_CheckDamageToSprite_preset(k, 6);
+      } else {
+        Ancilla_CheckDamageToSprite_preset(k, 4);
+      }
       if (sprite_hit_timer[k]) {
         sprite_hit_timer[k] = 153;
         sprite_F[k] = 0;
@@ -2315,10 +2322,10 @@ void Sprite_ApplyCalculatedDamage(int k, int a) {  // 86ed89
   if ((sprite_flags3[k] & 0x40) || sprite_type[k] >= 0xD8)
     return;
   uint8 dmg = kEnemyDamages[damage_type_determiner * 8 | enemy_damage_data[sprite_type[k] * 16 | damage_type_determiner]];
-  AgahnimBalls_DamageAgahnim(k, dmg, a);
+  Sprite_GiveDamage(k, dmg, a);
 }
 
-void AgahnimBalls_DamageAgahnim(int k, uint8 dmg, uint8 r0_hit_timer) {  // 86edc5
+void Sprite_GiveDamage(int k, uint8 dmg, uint8 r0_hit_timer) {  // 86edc5
   if (dmg == 249) {
     Sprite_Func18(k, 0xe3);
     return;
