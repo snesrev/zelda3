@@ -1120,8 +1120,9 @@ void PaletteFilter_SP5F() {  // 80ec0d
 }
 
 void KholdstareShell_PaletteFiltering() {  // 80ec79
+  int t = (enhanced_features0 & kFeatures0_MiscBugFixes) ? 0x50 : 0x40;
   if (subsubmodule_index == 0) {
-    memcpy(main_palette_buffer + 0x40, aux_palette_buffer + 0x40, 16);
+    memcpy(main_palette_buffer + t, aux_palette_buffer + t, 8 * sizeof(uint16));
     palette_filter_countdown = 0;
     darkening_or_lightening_screen = 0;
     flag_update_cgram_in_nmi++;
@@ -1129,7 +1130,7 @@ void KholdstareShell_PaletteFiltering() {  // 80ec79
     return;
   }
   for (int i = 0; i != 2; i++) {
-    PaletteFilter_Range(0x40, 0x48);
+    PaletteFilter_Range(t, t + 8);
     PaletteFilter_IncrCountdown();
     if (palette_filter_countdown == 0) {
       TS_copy = 0;
