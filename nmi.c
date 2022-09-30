@@ -78,7 +78,7 @@ void Interrupt_NMI(uint16 joypad_input) {  // 8080c9
   }
 
   if (sound_effect_ambient == 0) {
-    if (zelda_apu_read(APUI01) == sound_effect_ambient)
+    if (zelda_apu_read(APUI01) == sound_effect_ambient_last)
       zelda_apu_write(APUI01, 0);
   } else {
     sound_effect_ambient_last = sound_effect_ambient;

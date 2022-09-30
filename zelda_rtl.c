@@ -57,10 +57,41 @@ static const uint8 kMapModeHdma0[7] = {0xf0, AT_WORD(0xdd27), 0xf0, AT_WORD(0xde
 static const uint8 kMapModeHdma1[7] = {0xf0, AT_WORD(0xdee7), 0xf0, AT_WORD(0xdfc7), 0};
 static const uint8 kAttractIndirectHdmaTab[7] = {0xf0, AT_WORD(0x1b00), 0xf0, AT_WORD(0x1be0), 0};
 static const uint8 kHdmaTableForPrayingScene[7] = {0xf8, AT_WORD(0x1b00), 0xf8, AT_WORD(0x1bf0), 0};
+
+
+// Maintain a queue cause the snes and audio callback are not in sync.
+struct ApuWriteEnt {
+  uint8 ports[4];
+};
+static struct ApuWriteEnt g_apu_write_ents[16], g_apu_write;
+static uint8 g_apu_write_ent_pos, g_apu_write_count, g_apu_total_write;
 void zelda_apu_write(uint32_t adr, uint8_t val) {
-  assert(adr >= APUI00 && adr <= APUI03);
-  g_zenv.player->input_ports[adr & 0x3] = val;
+  g_apu_write.ports[adr & 0x3] = val;
 }
+
+void ZeldaPushApuState() {
+  g_apu_write_ents[g_apu_write_ent_pos++ & 0xf] = g_apu_write;
+  if (g_apu_write_count < 16)
+    g_apu_write_count++;
+  g_apu_total_write++;
+}
+
+void ZeldaPopApuState() {
+  if (g_apu_write_count != 0)
+    memcpy(g_zenv.player->input_ports, &g_apu_write_ents[(g_apu_write_ent_pos - g_apu_write_count--) & 0xf], 4);
+}
+
+void ZeldaDiscardUnusedAudioFrames() {
+  if (g_apu_write_count != 0 && memcmp(g_zenv.player->input_ports, &g_apu_write_ents[(g_apu_write_ent_pos - g_apu_write_count) & 0xf], 4) == 0) {
+    if (g_apu_total_write >= 16) {
+      g_apu_total_write = 14;
+      g_apu_write_count--;
+    }
+  } else {
+    g_apu_total_write = 0;
+  }
+}
+
 
 uint8_t zelda_read_apui00() {
   // This needs to be here because the ancilla code reads
@@ -792,6 +823,9 @@ bool ZeldaRunFrame(int inputs) {
   } else {
     g_emu_runframe(inputs, run_what);
   }
+
+  ZeldaPushApuState();
+
   return is_replay;
 }
 
@@ -1015,6 +1049,7 @@ void MixinMsuAudioData(int16 *audio_buffer, int audio_samples) {
 
 
 void ZeldaRenderAudio(int16 *audio_buffer, int samples, int channels) {
+  ZeldaPopApuState();
   SpcPlayer_GenerateSamples(g_zenv.player);
   dsp_getSamples(g_zenv.player->dsp, audio_buffer, samples, channels);
   if (channels == 2)

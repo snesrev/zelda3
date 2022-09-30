@@ -69,6 +69,7 @@ void ZeldaWriteSram();
 void ZeldaReadSram();
 
 void ZeldaRenderAudio(int16 *audio_buffer, int samples, int channels);
+void ZeldaDiscardUnusedAudioFrames();
 
 typedef void ZeldaRunFrameFunc(uint16 input, int run_what);
 typedef void ZeldaSyncAllFunc();

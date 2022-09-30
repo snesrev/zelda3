@@ -49,7 +49,6 @@ static SDL_Window *g_window;
 static SDL_Renderer *g_renderer;
 static uint8 g_paused, g_turbo, g_replay_turbo = true, g_cursor = true;
 static uint8 g_current_window_scale;
-static int g_samples_per_block;
 static uint8 g_gamepad_buttons;
 static int g_input1_state;
 static bool g_display_perf;
@@ -161,6 +160,33 @@ static void SwitchDirectory() {
   }
 }
 
+static SDL_mutex *g_audio_mutex;
+static uint8 *g_audiobuffer, *g_audiobuffer_cur, *g_audiobuffer_end;
+static int g_frames_per_block;
+static uint8 g_audio_channels;
+
+static void SDLCALL AudioCallback(void *userdata, Uint8 *stream, int len) {
+  SDL_LockMutex(g_audio_mutex);
+  while (len != 0) {
+    if (g_audiobuffer_end - g_audiobuffer_cur == 0) {
+      ZeldaRenderAudio((int16*)g_audiobuffer, g_frames_per_block, g_audio_channels);
+      g_audiobuffer_cur = g_audiobuffer;
+      g_audiobuffer_end = g_audiobuffer + g_frames_per_block * g_audio_channels * sizeof(int16);
+    }
+    int n = IntMin(len, g_audiobuffer_end - g_audiobuffer_cur);
+    memcpy(stream, g_audiobuffer_cur, n);
+    g_audiobuffer_cur += n;
+    stream += n;
+    len -= n;
+  }
+
+  ZeldaDiscardUnusedAudioFrames();
+  SDL_UnlockMutex(g_audio_mutex);
+
+
+}
+
+
 
 #undef main
 int main(int argc, char** argv) {
@@ -244,20 +270,24 @@ int main(int argc, char** argv) {
 
   SDL_AudioDeviceID device;
   SDL_AudioSpec want = { 0 }, have;
-  int16_t* audioBuffer = NULL;
+  SDL_mutex *audio_mutex = SDL_CreateMutex();
+  if (!audio_mutex) Die("No mutex");
+  SDL_LockMutex(audio_mutex);
 
   if (g_config.enable_audio) {
     want.freq = g_config.audio_freq;
     want.format = AUDIO_S16;
     want.channels = g_config.audio_channels;
     want.samples = g_config.audio_samples;
+    want.callback = &AudioCallback;
     device = SDL_OpenAudioDevice(NULL, 0, &want, &have, 0);
     if (device == 0) {
       printf("Failed to open audio device: %s\n", SDL_GetError());
       return 1;
     }
-    g_samples_per_block = (534 * have.freq) / 32000;
-    audioBuffer = (int16_t*)malloc(g_samples_per_block * have.channels * sizeof(int16));
+    g_audio_channels = have.channels;
+    g_frames_per_block = (534 * have.freq) / 32000;
+    g_audiobuffer = malloc(g_frames_per_block * have.channels * sizeof(int16));
     SDL_PauseAudioDevice(device, 0);
   }
 
@@ -341,25 +371,11 @@ int main(int argc, char** argv) {
     if ((g_turbo ^ (is_replay & g_replay_turbo)) && (frameCtr++ & (g_turbo ? 0xf : 0x7f)) != 0)
       continue;
 
-
-    uint64 t1 = SDL_GetPerformanceCounter();
-    if (audioBuffer)
-      PlayAudio(device, have.channels, audioBuffer);
-    uint64 t2 = SDL_GetPerformanceCounter();
+    // Unlock mutex for the final rendering stage.
+    SDL_UnlockMutex(audio_mutex);
 
     RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
-    uint64 t3 = SDL_GetPerformanceCounter();
     SDL_RenderPresent(renderer); // vsyncs to 60 FPS?
-    uint64 t4 = SDL_GetPerformanceCounter();
-
-    double f = 1e3 / (double)SDL_GetPerformanceFrequency();
-    if (0) printf("Perf %6.2f %6.2f %6.2f %6.2f\n", 
-      (t1 - t0) * f,
-      (t2 - t1) * f,
-      (t3 - t2) * f,
-      (t4 - t3) * f
-      );
-
 
     // if vsync isn't working, delay manually
     curTick = SDL_GetTicks();
@@ -379,35 +395,24 @@ int main(int argc, char** argv) {
       lastTick = curTick;
     }
 #endif
+    SDL_LockMutex(audio_mutex);
   }
   if (g_config.autosave)
     SaveLoadSlot(kSaveLoad_Save, 0);
   // clean sdl
   if (g_config.enable_audio) {
+    SDL_UnlockMutex(audio_mutex);
     SDL_PauseAudioDevice(device, 1);
     SDL_CloseAudioDevice(device);
   }
-  free(audioBuffer);
+  SDL_DestroyMutex(audio_mutex);
+  free(g_audiobuffer);
   SDL_DestroyTexture(texture);
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
   SDL_Quit();
   //SaveConfigFile();
   return 0;
-}
-
-
-static void PlayAudio(SDL_AudioDeviceID device, int channels, int16 *audioBuffer) {
-  ZeldaRenderAudio(audioBuffer, g_samples_per_block, channels);
-
-  for (int i = 0; i < 10; i++) {
-    if (SDL_GetQueuedAudioSize(device) <= g_samples_per_block * channels * sizeof(int16) * 6) {
-      // don't queue audio if buffer is still filled
-      SDL_QueueAudio(device, audioBuffer, g_samples_per_block * channels * sizeof(int16));
-      return;
-    }
-    SDL_Delay(1);
-  }
 }
 
 static void RenderDigit(uint8 *dst, size_t pitch, int digit, uint32 color, bool big) {
