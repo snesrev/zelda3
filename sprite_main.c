@@ -524,7 +524,7 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_PullSwitch_bounce,
   &Sprite_PullSwitch_bounce,
   &Sprite_08_Octorok,
-  &Sprite_09_Moldorm_bounce,
+  &Sprite_09_GiantMoldorm,
   &Sprite_08_Octorok,
   &Sprite_0B_Cucco,
   &Sprite_0C_OctorokStone,
@@ -8498,7 +8498,7 @@ void SpriteActive_Main(int k) {  // 869271
   kSpriteActiveRoutines[type](k);
 }
 
-void Sprite_09_Moldorm_bounce(int k) {  // 869469
+void Sprite_09_GiantMoldorm(int k) {  // 869469
   static const int8 kGiantMoldorm_Xvel[32] = {
     24, 22, 17,  9, 0,  -9, -17, -22, -24, -22, -17,  -9, 0,  9, 17, 22,
     36, 33, 25, 13, 0, -13, -25, -33, -36, -33, -25, -13, 0, 13, 25, 33,
@@ -8543,7 +8543,8 @@ void Sprite_09_Moldorm_bounce(int k) {  // 869469
     link_actual_vel_x = pt.x;
     link_incapacitated_timer = 24;
     sprite_delay_aux1[k] = 48;
-    sound_effect_2 = Sprite_CalculateSfxPan(k);
+    // For some reason they forgot to or in the sfx.
+    sound_effect_2 = Sprite_CalculateSfxPan(k) | (enhanced_features0 & kFeatures0_MiscBugFixes ? 0x32 : 0);
   }
 
   int j = sprite_D[k] + low_health * 16;

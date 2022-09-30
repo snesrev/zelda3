@@ -375,7 +375,7 @@ void SpritePrep_BigKey_load_graphics(int k);
 void SpritePrep_SmallKey(int k);
 void SpritePrep_KeySetItemDrop(int k);
 void SpriteActive_Main(int k);
-void Sprite_09_Moldorm_bounce(int k);
+void Sprite_09_GiantMoldorm(int k);
 void Sprite_01_Vulture_bounce(int k);
 void Sprite_27_Deadrock(int k);
 void Sprite_20_Sluggula(int k);

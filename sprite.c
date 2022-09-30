@@ -2700,7 +2700,7 @@ uint8 Sprite_CheckDamageFromLink(int k) {  // 86f2b4
       link_incapacitated_timer = 16;
       SpriteSfx_QueueSfx2WithPan(k, 0x21);
       sprite_delay_aux1[k] = 48;
-      sound_effect_2 = Sprite_CalculateSfxPan(k);
+      sound_effect_2 = Sprite_CalculateSfxPan(k) | (enhanced_features0 & kFeatures0_MiscBugFixes ? 0x32 : 0);
       Link_PlaceWeaponTink();
       return kCheckDamageFromPlayer_Carry;
     }
