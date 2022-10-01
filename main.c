@@ -169,7 +169,7 @@ static int g_frames_per_block;
 static uint8 g_audio_channels;
 
 static void SDLCALL AudioCallback(void *userdata, Uint8 *stream, int len) {
-  SDL_LockMutex(g_audio_mutex);
+  if (SDL_LockMutex(g_audio_mutex)) Die("Mutex lock failed!");
   while (len != 0) {
     if (g_audiobuffer_end - g_audiobuffer_cur == 0) {
       ZeldaRenderAudio((int16*)g_audiobuffer, g_frames_per_block, g_audio_channels);
@@ -185,8 +185,6 @@ static void SDLCALL AudioCallback(void *userdata, Uint8 *stream, int len) {
 
   ZeldaDiscardUnusedAudioFrames();
   SDL_UnlockMutex(g_audio_mutex);
-
-
 }
 
 
@@ -275,9 +273,9 @@ int main(int argc, char** argv) {
 
   SDL_AudioDeviceID device;
   SDL_AudioSpec want = { 0 }, have;
-  SDL_mutex *audio_mutex = SDL_CreateMutex();
-  if (!audio_mutex) Die("No mutex");
-  SDL_LockMutex(audio_mutex);
+  g_audio_mutex = SDL_CreateMutex();
+  if (!g_audio_mutex) Die("No mutex");
+  if (SDL_LockMutex(g_audio_mutex)) Die("Mutex lock failed!");
 
   if (g_config.enable_audio) {
     want.freq = g_config.audio_freq;
@@ -363,8 +361,6 @@ int main(int argc, char** argv) {
       continue;
     }
 
-    uint64 t0 = SDL_GetPerformanceCounter();
-
     // Clear gamepad inputs when joypad directional inputs to avoid wonkiness
     int inputs = g_input1_state;
     if (g_input1_state & 0xf0)
@@ -373,11 +369,13 @@ int main(int argc, char** argv) {
 
     bool is_replay = ZeldaRunFrame(inputs);
 
-    if ((g_turbo ^ (is_replay & g_replay_turbo)) && (frameCtr++ & (g_turbo ? 0xf : 0x7f)) != 0)
-      continue;
-
     // Unlock mutex for the final rendering stage.
-    SDL_UnlockMutex(audio_mutex);
+    SDL_UnlockMutex(g_audio_mutex);
+
+    if ((g_turbo ^ (is_replay & g_replay_turbo)) && (frameCtr++ & (g_turbo ? 0xf : 0x7f)) != 0) {
+      SDL_LockMutex(g_audio_mutex);
+      continue;
+    }
 
     RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
     SDL_RenderPresent(renderer); // vsyncs to 60 FPS?
@@ -400,17 +398,17 @@ int main(int argc, char** argv) {
       lastTick = curTick;
     }
 #endif
-    SDL_LockMutex(audio_mutex);
+    SDL_LockMutex(g_audio_mutex);
   }
   if (g_config.autosave)
     SaveLoadSlot(kSaveLoad_Save, 0);
   // clean sdl
   if (g_config.enable_audio) {
-    SDL_UnlockMutex(audio_mutex);
+    SDL_UnlockMutex(g_audio_mutex);
     SDL_PauseAudioDevice(device, 1);
     SDL_CloseAudioDevice(device);
   }
-  SDL_DestroyMutex(audio_mutex);
+  SDL_DestroyMutex(g_audio_mutex);
   free(g_audiobuffer);
   SDL_DestroyTexture(texture);
   SDL_DestroyRenderer(renderer);
