@@ -811,11 +811,18 @@ static void cpu_doOpcode(Cpu* cpu, uint8_t opcode) {
     
       case 0x1d8f29:
       case 0x1dc812:
+      case 0x1DDBD3:
+      case 0x1DF856:
       case 0x6ED0B:
       case 0x9b478:
       case 0x9b46c:
         cpu->c = 0;
         goto adc_69;
+      
+      case 0x1E88DA:
+        cpu->c = 0;
+        goto adc_65;
+
 
       case 0x9B468:
       case 0x9B46A:
@@ -1481,7 +1488,7 @@ static void cpu_doOpcode(Cpu* cpu, uint8_t opcode) {
       cpu_stz(cpu, low, high);
       break;
     }
-    case 0x65: { // adc dp
+    case 0x65: adc_65: { // adc dp
       uint32_t low = 0;
       uint32_t high = cpu_adrDp(cpu, &low);
       cpu_adc(cpu, low, high);

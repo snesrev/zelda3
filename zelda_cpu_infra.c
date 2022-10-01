@@ -485,6 +485,9 @@ static void PatchRom(uint8_t *rom) {
   PatchRomBP(rom, 0x6d0c6);
 
   PatchRomBP(rom, 0x1d8f29); // adc instead of add
+  PatchRomBP(rom, 0x1DDBD3); // adc instead of add
+  PatchRomBP(rom, 0x1DF856); // adc instead of add
+  PatchRomBP(rom, 0x1E88DA); // adc instead of add
 
   PatchRomBP(rom, 0x06ED0B);
 

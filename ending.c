@@ -1192,14 +1192,8 @@ void AnimateSceneSprite_CreditsTriangle(int k) {  // 8ccd3e
 void Intro_DisplayLogo() {  // 8ced82
   static const uint8 kIntroLogo_X[4] = { 0x60, 0x70, 0x80, 0x88 };
   static const uint8 kIntroLogo_Tile[4] = { 0x69, 0x6b, 0x6d, 0x6e };
-  OamEnt *oam = oam_buf;
-  for (int i = 0; i < 4; i++) {
-    oam[i].x = kIntroLogo_X[i];
-    oam[i].y = 0x68;
-    oam[i].charnum = kIntroLogo_Tile[i];
-    oam[i].flags = 0x32;
-    bytewise_extended_oam[i] = 2;
-  }
+  for (int i = 0; i < 4; i++)
+    SetOamPlain(&oam_buf[i], kIntroLogo_X[i], 0x68, kIntroLogo_Tile[i], 0x32, 2);
 }
 
 void Intro_SetupSwordAndIntroFlash() {  // 8cfe45
@@ -1227,12 +1221,8 @@ void Intro_PeriodicSwordAndIntroFlash() {  // 8cfe56
     static const uint8 kIntroSword_Char[10] = { 0, 2, 0x20, 0x22, 4, 6, 8, 0xa, 0xc, 0xe };
     static const uint8 kIntroSword_X[10] = { 0x40, 0x40, 0x30, 0x50, 0x40, 0x40, 0x40, 0x40, 0x40, 0x40 };
     static const uint16 kIntroSword_Y[10] = { 0x10, 0x20, 0x28, 0x28, 0x30, 0x40, 0x50, 0x60, 0x70, 0x80 };
-    bytewise_extended_oam[0x52 + j] = 2;
-    oam[j].charnum = kIntroSword_Char[j];
-    oam[j].flags = 0x21;
-    oam[j].x = kIntroSword_X[j];
     uint16 y = intro_sword_ypos + kIntroSword_Y[j];
-    oam[j].y = ((y & 0xff00) ? 0xf8 : y) - 8;
+    SetOamPlain(&oam[j], kIntroSword_X[j], ((y & 0xff00) ? 0xf8 : y) - 8, kIntroSword_Char[j], 0x21, 2);
   }
 
   if (intro_sword_ypos != 30) {
@@ -1265,11 +1255,7 @@ void Intro_PeriodicSwordAndIntroFlash() {  // 8cfe56
       intro_sword_18 = kSwordSparkle_Tab[intro_sword_19];
     }
     static const uint8 kSwordSparkle_Char[7] = { 0x28, 0x37, 0x27, 0x36, 0x27, 0x37, 0x28 };
-    bytewise_extended_oam[0x50] = 0;
-    oam_buf[0x50].x = 0x44;
-    oam_buf[0x50].y = 0x43;
-    oam_buf[0x50].flags = 0x25;
-    oam_buf[0x50].charnum = kSwordSparkle_Char[intro_sword_19];
+    SetOamPlain(&oam_buf[0x50], 0x44, 0x43, kSwordSparkle_Char[intro_sword_19], 0x25, 0);
     break;
   }
   case 2: {
@@ -1277,16 +1263,9 @@ void Intro_PeriodicSwordAndIntroFlash() {  // 8cfe56
     int k = intro_sword_19;
     if (k >= 7)
       return;
-    bytewise_extended_oam[0x50] = 0;
-    bytewise_extended_oam[0x51] = 0;
-    oam_buf[0x51].x = oam_buf[0x50].x = 0x42;
-
     uint8 y = (intro_sword_21 < 0x50 ? intro_sword_21 : 0x4f) + intro_sword_ypos + 0x31;
-    oam_buf[0x50].y = y;
-    oam_buf[0x51].y = y + 8;
-    oam_buf[0x50].charnum = kIntroSwordSparkle_Char[k];
-    oam_buf[0x51].charnum = kIntroSwordSparkle_Char[k + 1];
-    oam_buf[0x51].flags = oam_buf[0x50].flags = 0x23;
+    SetOamPlain(&oam_buf[0x50], 0x42, y + 0, kIntroSwordSparkle_Char[k + 0], 0x23, 0);
+    SetOamPlain(&oam_buf[0x51], 0x42, y + 8, kIntroSwordSparkle_Char[k + 1], 0x23, 0);
     if (intro_sword_18 == 0) {
       intro_sword_21 += 4;
       if (intro_sword_21 == 0x4 || intro_sword_21 == 0x48 || intro_sword_21 == 0x4c || intro_sword_21 == 0x58)
@@ -2657,14 +2636,10 @@ void Credits_FadeInTheEnd() {  // 8ec3d5
 }
 
 void Credits_HangForever() {  // 8ec41a
-  static const OamEntSigned kEndSequence37_Oams[4] = {
-    {-96, -72, 0x00, 0x3b},
-    {-80, -72, 0x02, 0x3b},
-    {-64, -72, 0x04, 0x3b},
-    {-48, -72, 0x06, 0x3b},
-  };
-  memcpy(oam_buf, kEndSequence37_Oams, 4 * 4);
-  bytewise_extended_oam[0] = bytewise_extended_oam[1] = bytewise_extended_oam[2] = bytewise_extended_oam[3] = 2;
+  SetOamPlain(&oam_buf[0], -96, -72, 0x00, 0x3b, 2);
+  SetOamPlain(&oam_buf[1], -80, -72, 0x02, 0x3b, 2);
+  SetOamPlain(&oam_buf[2], -64, -72, 0x04, 0x3b, 2);
+  SetOamPlain(&oam_buf[3], -48, -72, 0x06, 0x3b, 2);
 }
 
 void CrystalCutscene_InitializePolyhedral() {  // 9ecdd9

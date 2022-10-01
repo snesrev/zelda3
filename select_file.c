@@ -5,6 +5,7 @@
 #include "snes/snes_regs.h"
 #include "overworld.h"
 #include "messaging.h"
+#include "sprite.h"
 
 #define selectfile_R16 g_ram[0xc8]
 #define selectfile_R17 g_ram[0xc9]
@@ -45,36 +46,18 @@ void SelectFile_Func5_DrawOams(int k) {
   uint8 x = 0x34;
   uint8 y = kSelectFile_Draw_Y[k];
 
-  oam[0].x = oam[1].x = x + 0xc;
-  oam[0].y = y - 5;
-  oam[1].y = y + 3;
-  oam[0].flags = oam[1].flags = kSelectFile_Draw_Flags[k];
   uint8 sword = sram[kSrmOffs_Sword] - 1;
+  uint8 swordchar = kSelectFile_Draw_SwordChar[sign8(sword) ? 0 : sword];
+  SetOamPlain(oam + 0, x + 0xc, y - 5, swordchar, kSelectFile_Draw_Flags[k], 0);
+  SetOamPlain(oam + 1, x + 0xc, y + 3, swordchar + 16, kSelectFile_Draw_Flags[k], 0);
   if (sign8(sword))
-    oam[1].y = oam[0].y = 0xf0, sword = 0;
-  oam[0].charnum = kSelectFile_Draw_SwordChar[sword];
-  oam[1].charnum = oam[0].charnum + 16;
-  bytewise_extended_oam[oam - oam_buf] = bytewise_extended_oam[oam - oam_buf + 1] = 0;
-
-  oam += 2;
-  oam[0].x = x - 5;
-  oam[0].y = y + 10;
+    oam[1].y = oam[0].y = 0xf0;
   uint8 shield = sram[kSrmOffs_Shield] - 1;
+  SetOamPlain(oam + 2, x - 5, y + 10, kSelectFile_Draw_ShieldChar[sign8(shield) ? 0 : shield], kSelectFile_Draw_Flags2[k], 2);
   if (sign8(shield))
-    oam[0].y = 0xf0, shield = 0;
-  oam[0].charnum = kSelectFile_Draw_ShieldChar[shield];
-  oam[0].flags = kSelectFile_Draw_Flags2[k];
-  bytewise_extended_oam[oam - oam_buf] = 2;
-  oam++;
-
-  oam[0].x = oam[1].x = x;
-  oam[0].y = y;
-  oam[1].y = y + 8;
-  oam[0].charnum = 0;
-  oam[1].charnum = 2;
-  oam[0].flags = kSelectFile_Draw_Flags3[k];
-  oam[1].flags = oam[0].flags | 0x40;
-  bytewise_extended_oam[oam - oam_buf] = bytewise_extended_oam[oam - oam_buf + 1] = 2;
+    oam[2].y = 0xf0;
+  SetOamPlain(oam + 3, x, y + 0, 0, kSelectFile_Draw_Flags3[k], 2);
+  SetOamPlain(oam + 4, x, y + 8, 2, kSelectFile_Draw_Flags3[k] | 0x40, 2);
 }
 
 void SelectFile_Func6_DrawOams2(int k) {
@@ -102,11 +85,7 @@ void SelectFile_Func6_DrawOams2(int k) {
   int i = (digits[2] != 0) ? 2 : (digits[1] != 0) ? 1 : 0;
   OamEnt *oam = oam_buf + kSelectFile_DrawDigit_OamIdx[k] / 4;
   do {
-    oam->charnum = kSelectFile_DrawDigit_Char[digits[i]];
-    oam->x = x + kSelectFile_DrawDigit_X[i];
-    oam->y = y + 0x10;
-    oam->flags = 0x3c;
-    bytewise_extended_oam[oam - oam_buf] = 0;
+    SetOamPlain(oam, x + kSelectFile_DrawDigit_X[i], y + 0x10, kSelectFile_DrawDigit_Char[digits[i]], 0x3c, 0);
   } while (oam++, --i >= 0);
 }
 
@@ -743,11 +722,7 @@ void KILLFile_ChooseTarget() {  // 8cd4ba
 }
 
 void FileSelect_DrawFairy(uint8 x, uint8 y) {  // 8cd7a5
-  oam_buf[0].x = x;
-  oam_buf[0].y = y;
-  oam_buf[0].charnum = frame_counter & 8 ? 0xaa : 0xa8;
-  oam_buf[0].flags = 0x7e;
-  bytewise_extended_oam[0] = 2;
+  SetOamPlain(&oam_buf[0], x, y, frame_counter & 8 ? 0xaa : 0xa8, 0x7e, 2);
 }
 
 void Module04_NameFile() {  // 8cd88a
@@ -834,19 +809,10 @@ void NameFile_DoTheNaming() {  // 8cda4d
 
   OamEnt *oam = oam_buf;
   for (int i = 0; i != 26; i++) {
-    oam->x = 0x18 + i * 8;
-    oam->y = selectfile_var7;
-    oam->charnum = 0x2e;
-    oam->flags = 0x3c;
-    bytewise_extended_oam[oam - oam_buf] = 0;
+    SetOamPlain(oam, 0x18 + i * 8, selectfile_var7, 0x2e, 0x3c, 0);
     oam++;
   }
-
-  oam->x = kNamePlayer_X[selectfile_var4];
-  oam->y = 0x58;
-  oam->charnum = 0x29;
-  oam->flags = 0xc;
-  bytewise_extended_oam[oam - oam_buf] = 0;
+  SetOamPlain(oam, kNamePlayer_X[selectfile_var4], 0x58, 0x29, 0xc, 0);
 
   if (selectfile_var9 | selectfile_var11)
     return;

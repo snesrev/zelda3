@@ -344,6 +344,35 @@ int Ancilla_AllocHigh() {
   return -1;
 }
 
+static void Ancilla_SetOam(OamEnt *oam, uint16 x, uint16 y, uint8 charnum, uint8 flags, uint8 big) {
+  uint8 yval = 0xf0;
+  int xt = enhanced_features0 ? 0x40 : 0;
+  if ((uint16)(x + xt) < 256 + xt * 2 && y < 256) {
+    big |= (x >> 8) & 1;
+    oam->x = x;
+    if (y < 0xf0)
+      yval = y;
+  }
+  oam->y = yval;
+  oam->charnum = charnum;
+  oam->flags = flags;
+  bytewise_extended_oam[oam - oam_buf] = big;
+}
+
+static void Ancilla_SetOam_Safe(OamEnt *oam, uint16 x, uint16 y, uint8 charnum, uint8 flags, uint8 big) {
+  uint8 yval = 0xf0;
+  oam->x = x;
+  if ((uint16)(x + 0x80) < 0x180) {
+    big |= (x >> 8) & 1;
+    if ((uint16)(y + 0x10) < 0x100)
+      yval = y;
+  }
+  oam->y = yval;
+  oam->charnum = charnum;
+  oam->flags = flags;
+  bytewise_extended_oam[oam - oam_buf] = big;
+}
+
 void Ancilla_Empty(int k) {
 }
 
@@ -382,11 +411,8 @@ void SpinSpark_Draw(int k, int offs) {
   assert(t < 32);
   for(int i = 0; i < 4; i++, t++) {
     if (kInitialSpinSpark_Char[t] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam,
-        info.x + kInitialSpinSpark_X[t], info.y + kInitialSpinSpark_Y[t]);
-      oam->charnum = kInitialSpinSpark_Char[t];
-      oam->flags = kInitialSpinSpark_Flags[t] & ~0x30 | HIBYTE(oam_priority_value);
-      bytewise_extended_oam[oam - oam_buf] = ext;
+      Ancilla_SetOam(oam, info.x + kInitialSpinSpark_X[t], info.y + kInitialSpinSpark_Y[t],
+                     kInitialSpinSpark_Char[t], kInitialSpinSpark_Flags[t] & ~0x30 | HIBYTE(oam_priority_value), 0);
       oam++;
     }
   }
@@ -681,13 +707,8 @@ void Ancilla13_IceRodSparkle(int k) {  // 888435
 
   OamEnt *oam = GetOamCurPtr();
   j = ancilla_timer[k] & 0x1c;
-  for (int i = 3; i >= 0; i--, oam++) {
-    oam->x = info.x + kIceShotSparkle_X[i + j];
-    oam->y = info.y + kIceShotSparkle_Y[i + j];
-    oam->charnum = kIceShotSparkle_Char[i + j];
-    oam->flags = info.flags | 4;
-    bytewise_extended_oam[oam - oam_buf] = 0;
-  }
+  for (int i = 3; i >= 0; i--, oam++)
+    SetOamPlain(oam, info.x + kIceShotSparkle_X[i + j], info.y + kIceShotSparkle_Y[i + j], kIceShotSparkle_Char[i + j], info.flags | 4, 0);
 }
 
 void AncillaAdd_IceRodSparkle(int k) {  // 8884c8
@@ -792,21 +813,10 @@ void SomarianBlast_Draw(int k) {  // 888650
   };
   OamEnt *oam = GetOamCurPtr();
   int j = ancilla_dir[k] * 6 + ancilla_step[k];
-
-  oam[0].x = info.x + kSomarianBlast_Draw_X0[j];
-  oam[1].x = info.x + kSomarianBlast_Draw_X1[j];
-  if (!sign8(kSomarianBlast_Draw_Y0[j]))
-    oam[0].y = info.y + kSomarianBlast_Draw_Y0[j];
-  if (!sign8(kSomarianBlast_Draw_Y1[j]))
-    oam[1].y = info.y + kSomarianBlast_Draw_Y1[j];
-  oam[0].charnum = 0x82 + kSomarianBlast_Draw_Char0[j];
-  oam[1].charnum = 0x82 + kSomarianBlast_Draw_Char1[j];
-  oam[0].flags = info.flags | kSomarianBlast_Draw_Flags0[j];
-  oam[1].flags = info.flags | kSomarianBlast_Draw_Flags1[j];
-  bytewise_extended_oam[oam - oam_buf] = 0;
-  bytewise_extended_oam[oam - oam_buf + 1] = 0;
-
-
+  SetOamPlain(oam + 0, info.x + kSomarianBlast_Draw_X0[j], sign8(kSomarianBlast_Draw_Y0[j]) ? 0xf0 : info.y + kSomarianBlast_Draw_Y0[j],
+              0x82 + kSomarianBlast_Draw_Char0[j], info.flags | kSomarianBlast_Draw_Flags0[j], 0);
+  SetOamPlain(oam + 1, info.x + kSomarianBlast_Draw_X1[j], sign8(kSomarianBlast_Draw_Y1[j]) ? 0xf0 : info.y + kSomarianBlast_Draw_Y1[j],
+              0x82 + kSomarianBlast_Draw_Char1[j], info.flags | kSomarianBlast_Draw_Flags1[j], 0);
 }
 
 void Ancilla02_FireRodShot(int k) {  // 8886d2
@@ -855,22 +865,10 @@ void Ancilla02_FireRodShot(int k) {  // 8886d2
     int j = ancilla_timer[k] >> 3;
     if (j != 0) {
       static const uint8 kFireShot_Draw_Char[3] = {0xa2, 0xa0, 0x8e};
-      oam->x = info.x;
-      oam->y = info.y;
-      oam->charnum = kFireShot_Draw_Char[j - 1];
-      oam->flags = info.flags | 2;
-      bytewise_extended_oam[oam - oam_buf] = 2;
+      SetOamPlain(oam, info.x, info.y, kFireShot_Draw_Char[j - 1], info.flags | 2, 2);
     } else {
-      bytewise_extended_oam[oam - oam_buf] = 0;
-      bytewise_extended_oam[oam - oam_buf + 1] = 0;
-      oam[0].x = info.x;
-      oam[1].x = info.x + 8;
-      oam[0].y = info.y - 3;
-      oam[1].y = info.y - 3;
-      oam[0].charnum = 0xa4;
-      oam[1].charnum = 0xa5;
-      oam[0].flags = info.flags | 2;
-      oam[1].flags = info.flags | 2;
+      SetOamPlain(oam + 0, info.x + 0, info.y - 3, 0xa4, info.flags | 2, 0);
+      SetOamPlain(oam + 1, info.x + 8, info.y - 3, 0xa5, info.flags | 2, 0);
     }
   }
 }
@@ -887,14 +885,8 @@ void FireShot_Draw(int k) {  // 88877c
 
   OamEnt *oam = GetOamCurPtr();
   int j = ancilla_item_to_link[k] & 0xc;
-  for (int i = 2; i >= 0; i--) {
-    oam->x = info.x + kFireShot_Draw_X2[j + i];
-    oam->y = info.y + kFireShot_Draw_Y2[j + i];
-    oam->charnum = kFireShot_Draw_Char2[i];
-    oam->flags = info.flags | 2;
-    bytewise_extended_oam[oam - oam_buf] = 0;
-    oam++;
-  }
+  for (int i = 2; i >= 0; i--, oam++)
+    SetOamPlain(oam, info.x + kFireShot_Draw_X2[j + i], info.y + kFireShot_Draw_Y2[j + i], kFireShot_Draw_Char2[i], info.flags | 2, 0);
 }
 
 uint8 Ancilla_CheckTileCollision_staggered(int k) {  // 88897b
@@ -1061,15 +1053,12 @@ void Ancilla04_BeamHit(int k) {  // 888d19
   uint8 r6 = ancilla_y - BG2VOFS_copy2;
   for (int i = 3; i >= 0; i--, oam++) {
     int m = j * 4 + i;
-    oam->x = info.x + kBeamHit_X[m];
-    oam->y = info.y + kBeamHit_Y[m];
-    oam->charnum = kBeamHit_Char[m] + 0x82;
-    oam->flags = kBeamHit_Flags[m] | 2 | info.flags;
-    uint16 x_adj = (uint16)(ancilla_x + (int8)(oam->x - r7) - BG2HOFS_copy2);
-    bytewise_extended_oam[oam - oam_buf] = (x_adj >= 0x100) ? 1 : 0;
-    uint16 y_adj = (uint16)(ancilla_y + (int8)(oam->y - r6) - BG2VOFS_copy2 + 0x10);
-    if (y_adj >= 0x100)
-      oam->y = 0xf0;
+    uint8 x = info.x + kBeamHit_X[m];
+    uint8 y = info.y + kBeamHit_Y[m];
+    uint16 x_adj = (uint16)(ancilla_x + (int8)(x - r7) - BG2HOFS_copy2);
+    uint16 y_adj = (uint16)(ancilla_y + (int8)(y - r6) - BG2VOFS_copy2 + 0x10);
+    SetOamPlain(oam, x, (y_adj >= 0x100) ? 0xf0 : y,
+                kBeamHit_Char[m] + 0x82, kBeamHit_Flags[m] | 2 | info.flags, (x_adj >= 0x100) ? 1 : 0);
   }
 }
 
@@ -1236,42 +1225,18 @@ void Ancilla_WeaponTink() {  // 888f89
   }
 
   OamEnt *oam = GetOamCurPtr();
-
   static const uint8 kRepulseSpark_Flags[4] = {0x22, 0x12, 0x22, 0x22};
   uint8 flags = kRepulseSpark_Flags[repulsespark_floor_status];
   if (repulsespark_timer >= 3) {
-    oam->x = x;
-    oam->y = y;
-    oam->charnum = (repulsespark_timer < 9) ? 0x92 : 0x80;
-    oam->flags = flags;
-    bytewise_extended_oam[oam - oam_buf] = 0;
+    SetOamPlain(oam, x, y, (repulsespark_timer < 9) ? 0x92 : 0x80, flags, 0);
     return;
   }
-
-  oam[0].x = x - 4;
-  oam[2].x = x - 4;
-  oam[1].x = x + 4;
-  oam[3].x = x + 4;
-
-  oam[0].y = y - 4;
-  oam[1].y = y - 4;
-  oam[2].y = y + 4;
-  oam[3].y = y + 4;
-
-  oam[0].flags = flags;
-  oam[1].flags = flags | 0x40;
-  oam[2].flags = flags | 0x80;
-  oam[3].flags = flags | 0xc0;
-
-  static const uint8 kRepulseSpark_Char[3] = {0x93, 0x82, 0x81};
+  static const uint8 kRepulseSpark_Char[3] = { 0x93, 0x82, 0x81 };
   uint8 c = kRepulseSpark_Char[repulsespark_timer];
-  oam[0].charnum = c;
-  oam[1].charnum = c;
-  oam[2].charnum = c;
-  oam[3].charnum = c;
-
-  uint8 *ext = &bytewise_extended_oam[oam - oam_buf];
-  ext[0] = ext[1] = ext[2] = ext[3] = 0;
+  SetOamPlain(oam + 0, x - 4, y - 4, c, flags | 0x00, 0);
+  SetOamPlain(oam + 1, x + 4, y - 4, c, flags | 0x40, 0);
+  SetOamPlain(oam + 2, x - 4, y + 4, c, flags | 0x80, 0);
+  SetOamPlain(oam + 3, x + 4, y + 4, c, flags | 0xc0, 0);
 }
 
 void Ancilla_MoveX(int k) {  // 889080
@@ -1430,12 +1395,7 @@ void Boomerang_Draw(int k) {  // 889338
     oam_ext_cur_ptr = (i >> 2) + 0xa20;
     oam_cur_ptr = i + 0x800;
   }
-  OamEnt *oam = GetOamCurPtr();
-  uint8 ext = Ancilla_SetOam_XY_safe(oam, x, y);
-  oam->charnum = 0x26;
-  oam->flags = kBoomerang_Flags[ancilla_G[k] * 4 + j] & ~0x30 | HIBYTE(oam_priority_value);
-  bytewise_extended_oam[oam - oam_buf] = 2 | ext;
-
+  Ancilla_SetOam_Safe(GetOamCurPtr(), x, y, 0x26, kBoomerang_Flags[ancilla_G[k] * 4 + j] & ~0x30 | HIBYTE(oam_priority_value), 2);
 }
 
 void Ancilla06_WallHit(int k) {  // 8893e8
@@ -1490,10 +1450,8 @@ void WallHit_Draw(int k) {  // 8894df
   OamEnt *oam = GetOamCurPtr();
   for (int n = 3; n >= 0; n--, t++) {
     if (kWallHit_Char[t] != 0) {
-      uint8 ext = Ancilla_SetOam_XY(oam, info.x + kWallHit_X[t], info.y + kWallHit_Y[t]);
-      oam->charnum = kWallHit_Char[t];
-      oam->flags = kWallHit_Flags[t] & ~0x30 | HIBYTE(oam_priority_value);
-      bytewise_extended_oam[oam - oam_buf] = ext;
+      Ancilla_SetOam(oam, info.x + kWallHit_X[t], info.y + kWallHit_Y[t], kWallHit_Char[t],
+                     kWallHit_Flags[t] & ~0x30 | HIBYTE(oam_priority_value), 0);
       oam++;
     }
     oam = Ancilla_AllocateOamFromCustomRegion(oam);
@@ -1935,13 +1893,9 @@ void DoorDebris_Draw(int k) {  // 88a091
   for (int i = 0; i != 2; i++) {
     int t = j * 2 + i;
     //kDoorDebris_XY
-    uint8 ext = Ancilla_SetOam_XY(oam, x + kDoorDebris_XY[t * 2 + 1], y + kDoorDebris_XY[t * 2 + 0]);
-
     uint16 d = kDoorDebris_CharFlags[t];
-    oam->charnum = d;
-    oam->flags = (d >> 8) & 0xc0 | HIBYTE(oam_priority_value);
-
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, x + kDoorDebris_XY[t * 2 + 1], y + kDoorDebris_XY[t * 2 + 0],
+                   d, (d >> 8) & 0xc0 | HIBYTE(oam_priority_value), 0);
     oam = Ancilla_AllocateOamFromCustomRegion(oam + 1);
   }
 }
@@ -2053,10 +2007,8 @@ void Arrow_Draw(int k) {  // 88a36e
   uint8 flags = (link_item_bow & 4) ? 2 : 4;
   for (int i = 0; i != 2; i++, j++) {
     if (kArrow_Draw_Char[j] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam, x + kArrow_Draw_X[j], y + kArrow_Draw_Y[j]);
-      oam->charnum = kArrow_Draw_Char[j];
-      oam->flags = kArrow_Draw_Flags[j] & ~0x3E | flags | HIBYTE(oam_priority_value);
-      bytewise_extended_oam[oam - oam_buf] = ext;
+      Ancilla_SetOam(oam, x + kArrow_Draw_X[j], y + kArrow_Draw_Y[j],
+                     kArrow_Draw_Char[j], kArrow_Draw_Flags[j] & ~0x3E | flags | HIBYTE(oam_priority_value), 0);
       oam++;
     }
   }
@@ -2242,11 +2194,10 @@ OamEnt *AncillaDraw_Explosion(OamEnt *oam, int frame, int idx, int idx_end, uint
   do {
     if (kBomb_DrawExplosion_CharFlags[frame * 2] != 0xff) {
       int i = idx + base_frame;
-      uint16 xt = x + kBomb_DrawExplosion_XY[i * 2 + 1];
-      uint8 ext = Ancilla_SetOam_XY_safe(oam, xt, y + kBomb_DrawExplosion_XY[i * 2 + 0]);
-      oam->charnum = kBomb_DrawExplosion_CharFlags[frame * 2];
-      oam->flags = kBomb_DrawExplosion_CharFlags[frame * 2 + 1] & ~0x3E | HIBYTE(oam_priority_value) | r11;
-      bytewise_extended_oam[oam - oam_buf] = ext | kBomb_DrawExplosion_Ext[frame];
+      Ancilla_SetOam_Safe(oam, x + kBomb_DrawExplosion_XY[i * 2 + 1], y + kBomb_DrawExplosion_XY[i * 2 + 0],
+                          kBomb_DrawExplosion_CharFlags[frame * 2],
+                          kBomb_DrawExplosion_CharFlags[frame * 2 + 1] & ~0x3E | HIBYTE(oam_priority_value) | r11,
+                          kBomb_DrawExplosion_Ext[frame]);
       oam++;
     }
   } while (frame++, ++idx != idx_end);
@@ -2282,18 +2233,12 @@ void Ancilla15_JumpSplash(int k) {  // 88a80f
   int j = ancilla_item_to_link[k];
   uint8 flags = 0;
   for (int i = 0; i < 2; i++) {
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y);
-    oam->charnum = kAncilla_JumpSplash_Char[j];
-    oam->flags = 0x24 | flags;
-    bytewise_extended_oam[oam - oam_buf] = ext | 2;
+    Ancilla_SetOam(oam, pt.x, pt.y, kAncilla_JumpSplash_Char[j], 0x24 | flags, 2);
     oam = Ancilla_AllocateOamFromCustomRegion(oam + 1);
     pt.x = x8;
     flags = 0x40;
   }
-  uint8 ext = Ancilla_SetOam_XY(oam, x6, pt.y);
-  oam->charnum = 0xc0;
-  oam->flags = 0x24;
-  bytewise_extended_oam[oam - oam_buf] = ext | ((j == 1) ? 1 : 2);
+  Ancilla_SetOam(oam, x6, pt.y, 0xc0, 0x24, ((j == 1) ? 1 : 2));
 }
 
 void Ancilla16_HitStars(int k) {  // 88a8e5
@@ -2333,10 +2278,9 @@ void Ancilla16_HitStars(int k) {  // 88a8e5
   uint16 x = info.x, y = info.y;
   uint8 flags = 0;
   for (int i = 1; i >= 0; i--) {
-    uint8 ext = Ancilla_SetOam_XY(oam, x, y);
-    oam->charnum = kAncilla_HitStars_Char[ancilla_item_to_link[k]];
-    oam->flags = HIBYTE(oam_priority_value) | 4 | flags;
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, x, y,
+                   kAncilla_HitStars_Char[ancilla_item_to_link[k]],
+                   HIBYTE(oam_priority_value) | 4 | flags, 0);
     flags = 0x40;
     BYTE(x) = r8;
     oam = HitStars_UpdateOamBufferPosition(oam + 1);
@@ -2361,10 +2305,7 @@ void Ancilla17_ShovelDirt(int k) {  // 88a9a9
   pt.x += kShovelDirt_XY[j * 2 + 1];
   pt.y += kShovelDirt_XY[j * 2 + 0];
   for (int i = 0; i < 2; i++) {
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x + i * 8, pt.y);
-    oam->charnum = kShovelDirt_Char[b] + i;
-    oam->flags = 4 | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, pt.x + i * 8, pt.y, kShovelDirt_Char[b] + i, 4 | HIBYTE(oam_priority_value), 0);
     oam = Ancilla_AllocateOamFromCustomRegion(oam + 1);
   }
 }
@@ -2390,11 +2331,7 @@ void Ancilla32_BlastWallFireball(int k) {  // 88aa35
 
   Point16U pt;
   Ancilla_PrepOamCoord(k, &pt);
-  OamEnt *oam = GetOamCurPtr();
-  uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y);
-  oam->charnum = kBlastWallFireball_Char[blastwall_var12[k] & 8 ? 0 : blastwall_var12[k] & 4 ? 1 : 2];
-  oam->flags = 0x22;
-  bytewise_extended_oam[oam - oam_buf] = ext;
+  Ancilla_SetOam(GetOamCurPtr(), pt.x, pt.y, kBlastWallFireball_Char[blastwall_var12[k] & 8 ? 0 : blastwall_var12[k] & 4 ? 1 : 2], 0x22, 0);
 }
 
 void Ancilla18_EtherSpell(int k) {  // 88aaa0
@@ -2559,10 +2496,7 @@ OamEnt *AncillaDraw_EtherBlitzBall(OamEnt *oam, const AncillaRadialProjection *a
   static const uint8 kEther_BlitzBall_Char[2] = {0x68, 0x6a};
   int x = (arp->r6 ? -arp->r4 : arp->r4) + ether_x2 - 8 - BG2HOFS_copy2;
   int y = (arp->r2 ? -arp->r0 : arp->r0) + ether_y3 - 8 - BG2VOFS_copy2;
-  uint8 ext = Ancilla_SetOam_XY(oam, x, y);
-  oam->charnum = kEther_BlitzBall_Char[s];
-  oam->flags = 0x3c;
-  bytewise_extended_oam[oam - oam_buf] = ext | 2;
+  Ancilla_SetOam(oam, x, y, kEther_BlitzBall_Char[s], 0x3c, 2);
   return Ancilla_AllocateOamFromCustomRegion(oam + 1);
 }
 
@@ -2579,19 +2513,15 @@ OamEnt *AncillaDraw_EtherBlitzSegment(OamEnt *oam, const AncillaRadialProjection
   };
   int x = (arp->r6 ? -arp->r4 : arp->r4);
   int y = (arp->r2 ? -arp->r0 : arp->r0);
-  uint8 ext = Ancilla_SetOam_XY(oam, x + ether_x2 - 8 - BG2HOFS_copy2, y + ether_y3 - 8 - BG2VOFS_copy2);
   int t = s * 8 + k;
-  oam->charnum = kEther_SpllittingBlitzSegment_Char[t * 2];
-  oam->flags = kEther_SpllittingBlitzSegment_Flags[t * 2];
-  bytewise_extended_oam[oam - oam_buf] = ext | 2;
-  oam++;
-  ext = Ancilla_SetOam_XY(oam,
+  Ancilla_SetOam(oam, x + ether_x2 - 8 - BG2HOFS_copy2, y + ether_y3 - 8 - BG2VOFS_copy2,
+                 kEther_SpllittingBlitzSegment_Char[t * 2], kEther_SpllittingBlitzSegment_Flags[t * 2], 2);
+  Ancilla_SetOam(oam + 1,
       x + ether_x2 + kEther_SpllittingBlitzSegment_X[t] - BG2HOFS_copy2,
-      y + ether_y3 + kEther_SpllittingBlitzSegment_Y[t] - BG2VOFS_copy2);
-  oam->charnum = kEther_SpllittingBlitzSegment_Char[t * 2 + 1];
-  oam->flags = kEther_SpllittingBlitzSegment_Flags[t * 2 + 1];
-  bytewise_extended_oam[oam - oam_buf] = ext | 2;
-  return Ancilla_AllocateOamFromCustomRegion(oam + 1);
+      y + ether_y3 + kEther_SpllittingBlitzSegment_Y[t] - BG2VOFS_copy2,
+      kEther_SpllittingBlitzSegment_Char[t * 2 + 1],
+      kEther_SpllittingBlitzSegment_Flags[t * 2 + 1], 2);
+  return Ancilla_AllocateOamFromCustomRegion(oam + 2);
 }
 
 void AncillaDraw_EtherBlitz(int k) {  // 88ae87
@@ -2602,10 +2532,9 @@ void AncillaDraw_EtherBlitz(int k) {  // 88ae87
   int i = ancilla_arr25[k];
   int m = 0;
   do {
-    uint8 ext = Ancilla_SetOam_XY(oam, info.x, info.y);
-    oam->charnum = kEther_BlitzSegment_Char[t * 2 + m];
-    oam->flags = kEther_BlitzOrb_Flags[0] | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext | 2;
+    Ancilla_SetOam(oam, info.x, info.y,
+                   kEther_BlitzSegment_Char[t * 2 + m],
+                   kEther_BlitzOrb_Flags[0] | HIBYTE(oam_priority_value), 2);
     info.y -= 16;
     oam++;
     m ^= 1;
@@ -2620,10 +2549,7 @@ void AncillaDraw_EtherOrb(int k, OamEnt *oam) {  // 88aedd
   int t = ancilla_item_to_link[k] * 4;
 
   for (int i = 0; i < 4; i++) {
-    uint8 ext = Ancilla_SetOam_XY(oam, x, y);
-    oam->charnum = kEther_BlitzOrb_Char[t + i];
-    oam->flags = kEther_BlitzOrb_Flags[t + i];
-    bytewise_extended_oam[oam - oam_buf] = ext | 2;
+    Ancilla_SetOam(oam, x, y, kEther_BlitzOrb_Char[t + i], kEther_BlitzOrb_Flags[t + i], 2);
     oam++;
     oam = Ancilla_AllocateOamFromCustomRegion(oam);
     x += 16;
@@ -2808,10 +2734,9 @@ void AncillaDraw_BombosFireColumn(int kk) {  // 88b373
         uint16 y = bombos_y_lo[kk] | bombos_y_hi[kk] << 8;
         y += kBombosSpell_FireColumn_Y[k] - BG2VOFS_copy2;
         x += kBombosSpell_FireColumn_X[k] - BG2HOFS_copy2;
-        uint8 ext = Ancilla_SetOam_XY(oam, x, y);
-        oam->charnum = kBombosSpell_FireColumn_Char[k];
-        oam->flags = kBombosSpell_FireColumn_Flags[k];
-        bytewise_extended_oam[oam - oam_buf] = ext | 2;
+        Ancilla_SetOam(oam, x, y,
+                       kBombosSpell_FireColumn_Char[k],
+                       kBombosSpell_FireColumn_Flags[k], 2);
         oam++;
       }
       oam = Ancilla_AllocateOamFromCustomRegion(oam);
@@ -2898,12 +2823,11 @@ void AncillaDraw_BombosBlast(int k) {  // 88b5e1
   int t = bombos_arr3[k] * 4 + 3;
   for (int j = 0; j < 4; j++, t--) {
     if (kBombosSpell_DrawBlast_Char[t] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam,
+      Ancilla_SetOam(oam,
         x + kBombosSpell_DrawBlast_X[t] - BG2HOFS_copy2,
-        y + kBombosSpell_DrawBlast_Y[t] - BG2VOFS_copy2);
-      oam->charnum = kBombosSpell_DrawBlast_Char[t];
-      oam->flags = kBombosSpell_DrawBlast_Flags[t];
-      bytewise_extended_oam[oam - oam_buf] = ext | 2;
+        y + kBombosSpell_DrawBlast_Y[t] - BG2VOFS_copy2,
+        kBombosSpell_DrawBlast_Char[t],
+        kBombosSpell_DrawBlast_Flags[t], 2);
       oam++;
     }
     oam = Ancilla_AllocateOamFromCustomRegion(oam);
@@ -2989,18 +2913,14 @@ void AncillaDraw_QuakeInitialBolts(int k) {  // 88b793
     uint16 x = p->x + quake_var2 - BG2HOFS_copy2;
     uint16 y = p->y + quake_var1 - BG2VOFS_copy2;
 
-    uint8 yval = 0xf0;
+    uint8 xval = oam->x, yval = 0xf0;
     if (x < 256 && y < 256) {
-      oam->x = x;
+      xval = x;
       if (y < 0xf0)
         yval = y;
     }
-    oam->y = yval;
-    oam->charnum = kQuakeDrawGroundBolts_Char[p->f & 0x0f];
-    oam->flags = p->f & 0xc0 | 0x3c;
-    bytewise_extended_oam[oam - oam_buf] = 2;
-    oam++;
-    oam_cur_ptr += 4, oam_ext_cur_ptr += 1;
+    SetOamPlain(oam, xval, yval, kQuakeDrawGroundBolts_Char[p->f & 0x0f], p->f & 0xc0 | 0x3c, 2);
+    oam++, oam_cur_ptr += 4, oam_ext_cur_ptr += 1;
   } while (++p != pend);
 }
 
@@ -3014,19 +2934,12 @@ void QuakeSpell_SpreadBolts(int k) {  // 88b84f
       return;
     }
   }
-
   int t = ancilla_item_to_link[k];
-
   int idx = kQuakeItemPos2[t], num = kQuakeItemPos2[t + 1] - idx;
   const QuakeItem *p = &kQuakeItems2[idx], *pend = p + num;
   OamEnt *oam = GetOamCurPtr();
-
   do {
-    oam->x = p->x;
-    oam->y = p->y;
-    oam->charnum = kQuakeDrawGroundBolts_Char[p->f & 0x0f];
-    oam->flags = p->f & 0xc0 | 0x3c;
-    bytewise_extended_oam[oam - oam_buf] = p->f >> 4 & 3;
+    SetOamPlain(oam, p->x, p->y, kQuakeDrawGroundBolts_Char[p->f & 0x0f], p->f & 0xc0 | 0x3c, p->f >> 4 & 3);
     oam_cur_ptr += 4, oam_ext_cur_ptr += 1;
     oam = Ancilla_AllocateOamFromCustomRegion(oam + 1);
   } while (++p != pend);
@@ -3080,10 +2993,8 @@ void Ancilla_MagicPowder_Draw(int k) {  // 88baeb
   OamEnt *oam = GetOamCurPtr();
   int b = ancilla_arr25[k];
   for (int i = 0; i < 4; i++, oam++) {
-    uint8 ext = Ancilla_SetOam_XY(oam, info.x + kMagicPowder_DrawX[b * 4 + i], info.y + kMagicPowder_DrawY[b * 4 + i]);
-    oam->charnum = kMagicPowder_Draw_Char[b];
-    oam->flags = kMagicPowder_Draw_Flags[b * 4 + i] & ~0x30 | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, info.x + kMagicPowder_DrawX[b * 4 + i], info.y + kMagicPowder_DrawY[b * 4 + i],
+                   kMagicPowder_Draw_Char[b], kMagicPowder_Draw_Flags[b * 4 + i] & ~0x30 | HIBYTE(oam_priority_value), 0);
   }
 }
 
@@ -3171,14 +3082,10 @@ void Ancilla1E_DashDust(int k) {  // 88bc92
 
   for (int n = 2; n >= 0; n--, t++) {
     if (kDashDust_Draw_Char[t] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam, info.x + r12 + kDashDust_Draw_X[t], info.y + kDashDust_Draw_Y[t]);
-      oam->charnum = kDashDust_Draw_Char[t];
-      oam->flags = 4 | HIBYTE(oam_priority_value);
-      bytewise_extended_oam[oam - oam_buf] = ext;
+      Ancilla_SetOam(oam, info.x + r12 + kDashDust_Draw_X[t], info.y + kDashDust_Draw_Y[t], kDashDust_Draw_Char[t], 4 | HIBYTE(oam_priority_value), 0);
       oam++;
     }
   }
-
 }
 
 void Ancilla1F_Hookshot(int k) {  // 88bd74
@@ -3289,10 +3196,7 @@ do_draw:
   int x = info.x, y = info.y;
   for (int i = 2; i >= 0; i--, j++) {
     if (kHookShot_Draw_Char[j] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam, x, y);
-      oam->charnum = kHookShot_Draw_Char[j];
-      oam->flags = kHookShot_Draw_Flags[j] | 2 | HIBYTE(oam_priority_value);
-      bytewise_extended_oam[oam - oam_buf] = ext;
+      Ancilla_SetOam(oam, x, y, kHookShot_Draw_Char[j], kHookShot_Draw_Flags[j] | 2 | HIBYTE(oam_priority_value), 0);
       oam++;
     }
     if (i == 1)
@@ -3323,10 +3227,7 @@ do_draw:
     if (kHookShot_Move_X[j])
       x += kHookShot_Move_X[j] + r10;
     if (!Hookshot_CheckProximityToLink(x, y)) {
-      uint8 ext = Ancilla_SetOam_XY(oam, x, y);
-      oam->charnum = 0x19;
-      oam->flags = (frame_counter & 2) << 6 | 2 | HIBYTE(oam_priority_value);
-      bytewise_extended_oam[oam - oam_buf] = ext;
+      Ancilla_SetOam(oam, x, y, 0x19, (frame_counter & 2) << 6 | 2 | HIBYTE(oam_priority_value), 0);
       oam++;
     }
   } while (--n >= 0);
@@ -3348,10 +3249,7 @@ void Ancilla20_Blanket(int k) {  // 88c013
   int j = link_pose_during_opening ? 4 : 0;
   uint16 x = pt.x, y = pt.y;
   for (int i = 3; i >= 0; i--, j++, oam++) {
-    uint8 ext = Ancilla_SetOam_XY(oam, x, y);
-    oam->charnum = kBedSpread_Char[j];
-    oam->flags = kBedSpread_Flags[j] | 0xd | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext | 2;
+    Ancilla_SetOam(oam, x, y, kBedSpread_Char[j], kBedSpread_Flags[j] | 0xd | HIBYTE(oam_priority_value), 2);
     x += 16;
     if (i == 2)
       x -= 32, y += 8;
@@ -3375,11 +3273,7 @@ void Ancilla21_Snore(int k) {  // 88c094
   link_dma_var5 = kBedSpread_Dma[ancilla_item_to_link[k]];
   Point16U pt;
   Ancilla_PrepOamCoord(k, &pt);
-  OamEnt *oam = GetOamCurPtr();
-  uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y);
-  oam->charnum = 9;
-  oam->flags = 0x24;
-  bytewise_extended_oam[oam - oam_buf] = ext;
+  Ancilla_SetOam(GetOamCurPtr(), pt.x, pt.y, 9, 0x24, 0);
 }
 
 void Ancilla3B_SwordUpSparkle(int k) {  // 88c167
@@ -3401,20 +3295,17 @@ void Ancilla3B_SwordUpSparkle(int k) {  // 88c167
       return;
     }
   }
-
   Point16U pt;
   Ancilla_PrepOamCoord(k, &pt);
   OamEnt *oam = GetOamCurPtr();
-
   int j = ancilla_item_to_link[k] * 4;
   for (int i = 0; i < 4; i++, j++) {
     if (kAncilla_VictorySparkle_Char[j] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam,
-                        link_x_coord + kAncilla_VictorySparkle_X[j] - BG2HOFS_copy2,
-                        link_y_coord + kAncilla_VictorySparkle_Y[j] - BG2VOFS_copy2);
-      oam->charnum = kAncilla_VictorySparkle_Char[j];
-      oam->flags = kAncilla_VictorySparkle_Flags[j] | 4 | HIBYTE(oam_priority_value);
-      bytewise_extended_oam[oam - oam_buf] = ext;
+      Ancilla_SetOam(oam,
+                     link_x_coord + kAncilla_VictorySparkle_X[j] - BG2HOFS_copy2,
+                     link_y_coord + kAncilla_VictorySparkle_Y[j] - BG2VOFS_copy2,
+                     kAncilla_VictorySparkle_Char[j],
+                     kAncilla_VictorySparkle_Flags[j] | 4 | HIBYTE(oam_priority_value), 0);
       oam++;
     }
   }
@@ -3434,12 +3325,9 @@ void Ancilla3C_SpinAttackChargeSparkle(int k) {  // 88c1ea
   ancilla_oam_idx[k] = Ancilla_AllocateOamFromRegion_A_or_D_or_F(k, 4);
   Point16U info;
   Ancilla_PrepOamCoord(k, &info);
-  OamEnt *oam = GetOamCurPtr();
-  uint8 ext = Ancilla_SetOam_XY(oam, info.x, info.y);
   int j = ancilla_item_to_link[k];
-  oam->charnum = kSwordChargeSpark_Char[j];
-  oam->flags = kSwordChargeSpark_Flags[j] | HIBYTE(oam_priority_value);
-  bytewise_extended_oam[oam - oam_buf] = ext;
+  Ancilla_SetOam(GetOamCurPtr(), info.x, info.y,
+                 kSwordChargeSpark_Char[j], kSwordChargeSpark_Flags[j] | HIBYTE(oam_priority_value), 0);
 }
 
 void Ancilla35_MasterSwordReceipt(int k) {  // 88c25f
@@ -3464,10 +3352,8 @@ void Ancilla35_MasterSwordReceipt(int k) {  // 88c25f
     return;
 
   for (int i = 0; i < 4; i++, j++, oam++) {
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x + kSwordCeremony_X[j], pt.y + kSwordCeremony_Y[j]);
-    oam->charnum = kSwordCeremony_Char[j];
-    oam->flags = kSwordCeremony_Flags[j] & ~0x30 | 4 | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, pt.x + kSwordCeremony_X[j], pt.y + kSwordCeremony_Y[j],
+                   kSwordCeremony_Char[j], kSwordCeremony_Flags[j] & ~0x30 | 4 | HIBYTE(oam_priority_value), 0);
   }
 }
 
@@ -3648,20 +3534,14 @@ skipit:;
 OamEnt *Ancilla_ReceiveItem_Draw(int k, int x, int y) {  // 88c690
   OamEnt *oam = GetOamCurPtr();
   int j = ancilla_item_to_link[k];
-  uint8 ext = Ancilla_SetOam_XY(oam, x, y);
   oam->charnum = 0x24;
   uint8 a = kWishPond2_OamFlags[j];
   if (sign8(a))
     a = ancilla_arr4[k];
-  oam->flags = a * 2 | 0x30;
-  ext |= kReceiveItem_Tab1[j];
-  bytewise_extended_oam[oam - oam_buf] = ext;
+  Ancilla_SetOam(oam, x, y, 0x24, a * 2 | 0x30, kReceiveItem_Tab1[j]);
   oam++;
-  if (ext == 0) {
-    ext = Ancilla_SetOam_XY(oam, x, y + 8);
-    oam->charnum = 0x34;
-    oam->flags = a * 2 | 0x30;
-    bytewise_extended_oam[oam - oam_buf] = ext;
+  if (kReceiveItem_Tab1[j] == 0) {
+    Ancilla_SetOam(oam, x, y + 8, 0x34, a * 2 | 0x30, 0);
     oam++;
   }
   return oam;
@@ -3830,10 +3710,9 @@ void ObjectSplash_Draw(int k) {  // 88ca22
   int j = ancilla_item_to_link[k] * 2;
   for (int i = 0; i != 2; i++, j++) {
     if (kObjectSplash_Draw_Char[j] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam, pt.x + kObjectSplash_Draw_X[j], pt.y + kObjectSplash_Draw_Y[j]);
-      oam->charnum = kObjectSplash_Draw_Char[j];
-      oam->flags = kObjectSplash_Draw_Flags[j] | 0x24;
-      bytewise_extended_oam[oam - oam_buf] = ext | kObjectSplash_Draw_Ext[j];
+      Ancilla_SetOam(oam, pt.x + kObjectSplash_Draw_X[j], pt.y + kObjectSplash_Draw_Y[j],
+                     kObjectSplash_Draw_Char[j], kObjectSplash_Draw_Flags[j] | 0x24, 
+                     kObjectSplash_Draw_Ext[j]);
       oam++;
     }
   }
@@ -4073,11 +3952,7 @@ label_a:
 }
 
 void AncillaDraw_GTCutsceneCrystal(OamEnt *oam, int x, int y) {  // 88ceaa
-  uint8 ext = Ancilla_SetOam_XY_safe(oam, x, y);
-  oam->charnum = 0x24;
-  oam->flags = 0x3c;
-  int j = oam - oam_buf;
-  bytewise_extended_oam[oam - oam_buf] = ext | 2;
+  Ancilla_SetOam_Safe(oam, x, y, 0x24, 0x3c, 2);
 }
 
 void GTCutscene_ActivateSparkle() {  // 88cec7
@@ -4116,11 +3991,8 @@ OamEnt *GTCutscene_SparkleALot(OamEnt *oam) {  // 88cf35
 
     int x = breaktowerseal_sparkle_x_hi[k] << 8 | breaktowerseal_sparkle_x_lo[k];
     int y = breaktowerseal_sparkle_y_hi[k] << 8 | breaktowerseal_sparkle_y_lo[k];
-    uint8 ext = Ancilla_SetOam_XY(oam, x, y);
     int j = breaktowerseal_sparkle_var1[k];
-    oam->charnum = kSwordChargeSpark_Char[j];
-    oam->flags = kSwordChargeSpark_Flags[j] | 0x30;
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, x, y, kSwordChargeSpark_Char[j], kSwordChargeSpark_Flags[j] | 0x30, 0);
     oam++;
   }
   return oam;
@@ -4152,10 +4024,7 @@ void Ancilla36_Flute(int k) {  // 88cfaa
   Point16U pt;
   Ancilla_PrepAdjustedOamCoord(k, &pt);
   OamEnt *oam = GetOamCurPtr();
-  uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y - (int8)ancilla_z[k]);
-  oam->charnum = 0x24;
-  oam->flags = HIBYTE(oam_priority_value) | 4;
-  bytewise_extended_oam[oam - oam_buf] = ext | 2;
+  Ancilla_SetOam(oam, pt.x, pt.y - (int8)ancilla_z[k], 0x24, HIBYTE(oam_priority_value) | 4, 2);
   if (oam->y == 0xf0)
     ancilla_type[k] = 0;
 }
@@ -4229,12 +4098,8 @@ void AncillaDraw_WeathervaneExplosionWoodDebris(int k) {  // 88d188
   int i = ancilla_item_to_link[k];
   if (sign8(i))
     return;
-  OamEnt *oam = GetOamCurPtr() + (weathervane_var14 >> 2);
-  uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y);
-  oam->charnum = kWeathervane_Explode_Char[i];
-  oam->flags = 0x3c;
+  Ancilla_SetOam(GetOamCurPtr() + (weathervane_var14 >> 2), pt.x, pt.y, kWeathervane_Explode_Char[i], 0x3c, 0);
   weathervane_var14 += 4;
-  bytewise_extended_oam[oam - oam_buf] = ext;
 }
 
 void Ancilla38_CutsceneDuck(int k) {  // 88d1d8
@@ -4283,11 +4148,9 @@ after_stuff:
   Point16U info;
   Ancilla_PrepOamCoord(k, &info);
   OamEnt *oam = GetOamCurPtr();
-
-  uint8 ext = Ancilla_SetOam_XY(oam, info.x + kTravelBird_Draw_X[0], info.y + (int8)ancilla_z[k] + kTravelBird_Draw_Y[0]);
-  oam->charnum = kTravelBird_Draw_Char[0];
-  oam->flags = kTravelBird_Draw_Flags[0] | 0x30 | kTravelBirdIntro_Tab0[ancilla_dir[k] & 1];
-  bytewise_extended_oam[oam - oam_buf] = ext | 2;
+  Ancilla_SetOam(oam, info.x + kTravelBird_Draw_X[0], info.y + (int8)ancilla_z[k] + kTravelBird_Draw_Y[0],
+                 kTravelBird_Draw_Char[0],
+                 kTravelBird_Draw_Flags[0] | 0x30 | kTravelBirdIntro_Tab0[ancilla_dir[k] & 1], 2);
   oam++;
   AncillaDraw_Shadow(oam, 1, info.x, info.y + 48, 0x30);
   if (!sign16(info.x) && info.x >= 248) {
@@ -4336,10 +4199,8 @@ void MorphPoof_Draw(int k) {  // 88d3fd
   uint8 ext = kMorphPoof_Ext[j];
   uint8 chr = kMorphPoof_Char[j];
   for (int i = 0; i < 4; i++, oam++) {
-    uint8 ext2 = Ancilla_SetOam_XY(oam, info.x + kMorphPoof_X[j * 4 + i], info.y + kMorphPoof_Y[j * 4 + i]);
-    oam->charnum = chr;
-    oam->flags = kMorphPoof_Flags[j * 4 + i] | 4 | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext | ext2;
+    Ancilla_SetOam(oam, info.x + kMorphPoof_X[j * 4 + i], info.y + kMorphPoof_Y[j * 4 + i], chr,
+                   kMorphPoof_Flags[j * 4 + i] | 4 | HIBYTE(oam_priority_value), ext);
     if (ext == 2)
       break;
   }
@@ -4377,10 +4238,8 @@ void Ancilla3F_BushPoof(int k) {  // 88d519
 
   int j = ancilla_item_to_link[k] * 4;
   for (int i = 0; i < 4; i++, j++, oam++) {
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x + kBushPoof_Draw_X[j], pt.y + kBushPoof_Draw_Y[j]);
-    oam->charnum = kBushPoof_Draw_Char[j];
-    oam->flags = kBushPoof_Draw_Flags[j] | 4 | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, pt.x + kBushPoof_Draw_X[j], pt.y + kBushPoof_Draw_Y[j],
+                   kBushPoof_Draw_Char[j], kBushPoof_Draw_Flags[j] | 4 | HIBYTE(oam_priority_value), 0);
   }
 }
 
@@ -4424,10 +4283,8 @@ void Ancilla26_SwordSwingSparkle(int k) {  // 88d65a
     uint8 chr = kSwordSwingSparkle_Char[k];
     if (chr == 0xff)
       continue;
-    oam->charnum = chr;
-    oam->flags = kSwordSwingSparkle_Flags[k] | 0x4 | (oam_priority_value >> 8);
-    uint8 ext = Ancilla_SetOam_XY(oam, info.x + kSwordSwingSparkle_X[k], info.y + kSwordSwingSparkle_Y[k]);
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, info.x + kSwordSwingSparkle_X[k], info.y + kSwordSwingSparkle_Y[k],
+                   chr, kSwordSwingSparkle_Flags[k] | 0x4 | (oam_priority_value >> 8), 0);
   }
 }
 
@@ -4510,10 +4367,7 @@ void Ancilla2B_SpinAttackSparkleB(int k) {  // 88d8fd
     if (submodule_index == 0)
       swordbeam_arr[i] = (swordbeam_arr[i] + 4) & 0x3f;
     Point16U pt = Sparkle_PrepOamFromRadial(Ancilla_GetRadialProjection(swordbeam_arr[i], swordbeam_var2));
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y);
-    oam->charnum = kSpinSpark_Char[i];
-    oam->flags = flags | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, pt.x, pt.y, kSpinSpark_Char[i], flags | HIBYTE(oam_priority_value), 0);
   } while (oam++, --i >= 0);
 
   if (submodule_index == 0) {
@@ -4532,10 +4386,7 @@ void Ancilla2B_SpinAttackSparkleB(int k) {  // 88d8fd
   if (t != 3) {
     static const uint8 kSpinSpark_Char2[3] = {0xb7, 0x80, 0x83};
     Point16U pt = Sparkle_PrepOamFromRadial(Ancilla_GetRadialProjection(swordbeam_var1, swordbeam_var2));
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y);
-    oam->charnum = kSpinSpark_Char2[t];
-    oam->flags = 4 | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, pt.x, pt.y, kSpinSpark_Char2[t], 4 | HIBYTE(oam_priority_value), 0);
   }
 endif_2:
   if (ancilla_item_to_link[k] == 7)
@@ -4596,10 +4447,9 @@ void Ancilla30_ByrnaWindupSpark(int k) {  // 88db24
   OamEnt *oam = GetOamCurPtr();
   for (int i = 0; i < 4; i++, j++) {
     if (kInitialCaneSpark_Draw_Char[j] != 255) {
-      uint8 ext = Ancilla_SetOam_XY(oam, pt.x + kInitialCaneSpark_Draw_X[j], pt.y + kInitialCaneSpark_Draw_Y[j]);
-      oam->charnum = kInitialCaneSpark_Draw_Char[j];
-      oam->flags = kInitialCaneSpark_Draw_Flags[j] & ~0x30 | HIBYTE(oam_priority_value);
-      bytewise_extended_oam[oam - oam_buf] = ext;
+      Ancilla_SetOam(oam, pt.x + kInitialCaneSpark_Draw_X[j], pt.y + kInitialCaneSpark_Draw_Y[j],
+                     kInitialCaneSpark_Draw_Char[j],
+                     kInitialCaneSpark_Draw_Flags[j] & ~0x30 | HIBYTE(oam_priority_value), 0);
       oam++;
     }
   }
@@ -4679,11 +4529,7 @@ kill_me:
     if (!submodule_index)
       swordbeam_arr[i] = (swordbeam_arr[i] + 3) & 0x3f;
     Point16U pt = Sparkle_PrepOamFromRadial(Ancilla_GetRadialProjection(swordbeam_arr[i], swordbeam_var2));
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y);
-    oam->charnum = kCaneSpark_Char[i];
-    oam->flags = flags | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext;
-
+    Ancilla_SetOam(oam, pt.x, pt.y, kCaneSpark_Char[i], flags | HIBYTE(oam_priority_value), 0);
     Ancilla_SetXY(k, pt.x + BG2HOFS_copy2, pt.y + BG2VOFS_copy2);
     ancilla_dir[k] = 0;
     Ancilla_CheckSpriteCollision(k);
@@ -4729,10 +4575,7 @@ void Ancilla_SwordBeam(int k) {  // 88ddc5
     if (submodule_index == 0)
       swordbeam_arr[i] = (swordbeam_arr[i] + s) & 0x3f;
     Point16U pt = Sparkle_PrepOamFromRadial(Ancilla_GetRadialProjection(swordbeam_arr[i], swordbeam_var2));
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y);
-    oam->charnum = kSwordBeam_Char[i];
-    oam->flags = flags | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, pt.x, pt.y, kSwordBeam_Char[i], flags | HIBYTE(oam_priority_value), 0);
   }
 
   if (submodule_index == 0) {
@@ -4751,10 +4594,7 @@ void Ancilla_SwordBeam(int k) {  // 88ddc5
   if (t != 3) {
     static const uint8 kSwordBeam_Char2[3] = {0xb7, 0x80, 0x83};
     Point16U pt = Sparkle_PrepOamFromRadial(Ancilla_GetRadialProjection(swordbeam_var1, swordbeam_var2));
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y);
-    oam->charnum = kSwordBeam_Char2[t];
-    oam->flags = 4 | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, pt.x, pt.y, kSwordBeam_Char2[t], 4 | HIBYTE(oam_priority_value), 0);
   }
 endif_2:
   oam -= 4;
@@ -4784,10 +4624,7 @@ void Ancilla0D_SpinAttackFullChargeSpark(int k) {  // 88ddca
 
   oam_priority_value = kSwordFullChargeSpark_Flags[ancilla_floor[k]] << 8;
   OamEnt *oam = GetOamCurPtr();
-  uint8 ext = Ancilla_SetOam_XY(oam, x, y);
-  oam->charnum = 0xd7;
-  oam->flags = HIBYTE(oam_priority_value) | 2;
-  bytewise_extended_oam[oam - oam_buf] = ext;
+  Ancilla_SetOam(oam, x, y, 0xd7, HIBYTE(oam_priority_value) | 2, 0);
 }
 
 void Ancilla27_Duck(int k) {  // 88dde8
@@ -4896,10 +4733,8 @@ endif_5:
   int z = ancilla_z[k] ? ancilla_z[k] | ~0xff : 0;
   int i = 0, n = ancilla_step[k] + 1;
   do {
-    uint8 ext = Ancilla_SetOam_XY(oam, info.x + (int8)kTravelBird_Draw_X[i], info.y + z + (int8)kTravelBird_Draw_Y[i]);
-    oam->charnum = kTravelBird_Draw_Char[i];
-    oam->flags = kTravelBird_Draw_Flags[i] | 0x30;
-    bytewise_extended_oam[oam - oam_buf] = ext | 2;
+    Ancilla_SetOam(oam, info.x + (int8)kTravelBird_Draw_X[i], info.y + z + (int8)kTravelBird_Draw_Y[i],
+                   kTravelBird_Draw_Char[i], kTravelBird_Draw_Flags[i] | 0x30, 2);
     oam++;
   } while (++i != n);
 
@@ -5198,10 +5033,8 @@ void AncillaDraw_SomariaBlock(int k) {  // 88e61b
   int j = ancilla_arr1[k] * 4;
   int r8 = 0;
   do {
-    uint8 t = Ancilla_SetOam_XY_safe(oam, pt.x + kSomarianBlock_Draw_X[j], pt.y + kSomarianBlock_Draw_Y[j]);
-    oam->charnum = 0xe9;
-    oam->flags = kSomarianBlock_Draw_Flags[j] & ~0x30 | 2 | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = t;
+    Ancilla_SetOam_Safe(oam, pt.x + kSomarianBlock_Draw_X[j], pt.y + kSomarianBlock_Draw_Y[j], 0xe9,
+                        kSomarianBlock_Draw_Flags[j] & ~0x30 | 2 | HIBYTE(oam_priority_value), 0);
     oam++;
   } while (j++, ++r8 & 3);
 
@@ -5276,10 +5109,9 @@ void Ancilla2D_SomariaBlockFizz(int k) {  // 88e9e8
   int j = ancilla_item_to_link[k] * 2;
   for (int i = 0; i < 2; i++, j++, oam++) {
     if (kSomariaBlockFizzle_Char[j] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam, x + kSomariaBlockFizzle_X[j], y + kSomariaBlockFizzle_Y[j]);
-      oam->charnum = kSomariaBlockFizzle_Char[j];
-      oam->flags = kSomariaBlockFizzle_Flags[j] & ~0x30 | HIBYTE(oam_priority_value);
-      bytewise_extended_oam[oam - oam_buf] = ext;
+      Ancilla_SetOam(oam, x + kSomariaBlockFizzle_X[j], y + kSomariaBlockFizzle_Y[j],
+                     kSomariaBlockFizzle_Char[j],
+                     kSomariaBlockFizzle_Flags[j] & ~0x30 | HIBYTE(oam_priority_value), 0);
     }
   }
 }
@@ -5338,10 +5170,8 @@ void Ancilla2E_SomariaBlockFission(int k) {  // 88eb3e
   int8 z = ancilla_z[k] + (ancilla_K[k] == 3 && BYTE(link_z_coord) != 0xff ? BYTE(link_z_coord) : 0);
   int j = ancilla_item_to_link[k] * 8;
   for (int i = 0; i != 8; i++, j++, oam++) {
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x + kSomarianBlockDivide_X[j], pt.y + kSomarianBlockDivide_Y[j] - z);
-    oam->charnum = kSomarianBlockDivide_Char[j];
-    oam->flags = kSomarianBlockDivide_Flags[j] & ~0x30 | HIBYTE(oam_priority_value);
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam(oam, pt.x + kSomarianBlockDivide_X[j], pt.y + kSomarianBlockDivide_Y[j] - z,
+                   kSomarianBlockDivide_Char[j], kSomarianBlockDivide_Flags[j] & ~0x30 | HIBYTE(oam_priority_value), 0);
   }
 }
 
@@ -5360,10 +5190,7 @@ void Ancilla2F_LampFlame(int k) {  // 88ec13
   int j = (ancilla_timer[k] & 0xf8) >> 1;
   do {
     if (kLampFlame_Draw_Char[j] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam, pt.x + kLampFlame_Draw_X[j], pt.y + kLampFlame_Draw_Y[j]);
-      oam->charnum = kLampFlame_Draw_Char[j];
-      oam->flags = HIBYTE(oam_priority_value) | 2;
-      bytewise_extended_oam[oam - oam_buf] = ext;
+      Ancilla_SetOam(oam, pt.x + kLampFlame_Draw_X[j], pt.y + kLampFlame_Draw_Y[j], kLampFlame_Draw_Char[j], HIBYTE(oam_priority_value) | 2, 0);
       oam++;
     }
   } while (++j & 3);
@@ -5410,10 +5237,8 @@ void Ancilla41_WaterfallSplash(int k) {  // 88ecaf
   int j = ancilla_item_to_link[k] * 2;
   for (int i = 0; i != 2; i++, j++, oam++) {
     if (kWaterfallSplash_Char[j] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam, pt.x + kWaterfallSplash_X[j], pt.y + kWaterfallSplash_Y[j]);
-      oam->charnum = kWaterfallSplash_Char[j];
-      oam->flags = kWaterfallSplash_Flags[j] | 0x30;
-      bytewise_extended_oam[oam - oam_buf] = ext | kWaterfallSplash_Ext[j];
+      Ancilla_SetOam(oam, pt.x + kWaterfallSplash_X[j], pt.y + kWaterfallSplash_Y[j], kWaterfallSplash_Char[j],
+                     kWaterfallSplash_Flags[j] | 0x30, kWaterfallSplash_Ext[j]);
     }
   }
 }
@@ -5427,10 +5252,7 @@ void Ancilla24_Gravestone(int k) {  // 88ee01
   OamEnt *oam = GetOamCurPtr();
   uint16 x = pt.x, y = pt.y;
   for (int i = 0; i < 4; i++, oam++) {
-    uint8 ext = Ancilla_SetOam_XY(oam, x, y);
-    oam->charnum = kAncilla_Gravestone_Char[i];
-    oam->flags = kAncilla_Gravestone_Flags[i] | 0x3d;
-    bytewise_extended_oam[oam - oam_buf] = ext | 2;
+    Ancilla_SetOam(oam, x, y, kAncilla_Gravestone_Char[i], kAncilla_Gravestone_Flags[i] | 0x3d, 2);
     x += 16;
     if (i == 1)
       x -= 32, y += 8;
@@ -5493,17 +5315,10 @@ endif_2:
       int j = skullwoodsfire_var0[k];
       uint16 x = skullwoodsfire_x_arr[k] - BG2HOFS_copy2;
       uint16 y = skullwoodsfire_y_arr[k] - BG2VOFS_copy2 + kSkullWoodsFire_Draw_Y[j];
-      uint8 ext2 = Ancilla_SetOam_XY(oam, x, y);
-      oam->charnum = kSkullWoodsFire_Draw_Char[j];
-      oam->flags = 0x32;
-      uint8 ext = kSkullWoodsFire_Draw_Ext[j];
-      bytewise_extended_oam[oam - oam_buf] = ext | ext2;
+      Ancilla_SetOam(oam, x, y, kSkullWoodsFire_Draw_Char[j], 0x32, kSkullWoodsFire_Draw_Ext[j]);
       oam++;
       if (kSkullWoodsFire_Draw_Ext[j] != 2) {
-        uint8 ext2 = Ancilla_SetOam_XY(oam, x + 8, y);
-        oam->charnum = kSkullWoodsFire_Draw_Char[j] + 1;
-        oam->flags = 0x32;
-        bytewise_extended_oam[oam - oam_buf] = ext | ext2;
+        Ancilla_SetOam(oam, x + 8, y, kSkullWoodsFire_Draw_Char[j] + 1, 0x32, kSkullWoodsFire_Draw_Ext[j]);
         oam++;
       }
     }
@@ -5522,12 +5337,11 @@ endif_2:
   int j = ancilla_item_to_link[k] * 6;
   for (int i = 0; i < 6; i++, j++) {
     if (kSkullWoodsFire_Draw2_Char[j] != 0xff) {
-      uint8 ext = Ancilla_SetOam_XY(oam,
+      Ancilla_SetOam(oam,
           168 - BG2HOFS_copy2 + kSkullWoodsFire_Draw2_X[j],
-          200 - BG2VOFS_copy2 + kSkullWoodsFire_Draw2_Y[j]);
-      oam->charnum = kSkullWoodsFire_Draw2_Char[j];
-      oam->flags = kSkullWoodsFire_Draw2_Flags[j] | 0x32;
-      bytewise_extended_oam[oam - oam_buf] = ext | kSkullWoodsFire_Draw2_Ext[j];
+          200 - BG2VOFS_copy2 + kSkullWoodsFire_Draw2_Y[j],
+          kSkullWoodsFire_Draw2_Char[j],
+          kSkullWoodsFire_Draw2_Flags[j] | 0x32, kSkullWoodsFire_Draw2_Ext[j]);
       oam++;
     }
   }
@@ -5624,14 +5438,11 @@ void RevivalFairy_Main() {  // 88f283
     Ancilla_PrepOamCoord(k, &pt);
     OamEnt *oam = GetOamCurPtr();
     int t = (ancilla_step[k] == 1 && ancilla_L[k]) ? ancilla_item_to_link[k] + 1 : 0;
-    uint8 ext = Ancilla_SetOam_XY(oam, pt.x, pt.y - (int8)ancilla_z[k]);
     if (t != 0)
       t += 1;
     else
       t = (frame_counter >> 2) & 1;
-    oam->charnum = kAncilla_RevivalFaerie_Tab1[t];
-    oam->flags = 0x74;
-    bytewise_extended_oam[oam - oam_buf] = ext | 2;
+    Ancilla_SetOam(oam, pt.x, pt.y - (int8)ancilla_z[k], kAncilla_RevivalFaerie_Tab1[t], 0x74, 2);
     if (oam->y == 0xf0) {
       ancilla_step[k] = 3;
       submodule_index++;
@@ -5714,17 +5525,9 @@ void GameOverText_Draw() {  // 88f5c4
   OamEnt *oam = GetOamCurPtr();
   int k = flag_for_boomerang_in_place;
   do {
-    uint8 ext = Ancilla_SetOam_XY(oam, Ancilla_GetX(k), 0x57);
-    oam->charnum = kGameOverText_Chars[k * 2 + 0];
-    oam->flags = 0x3c;
-    bytewise_extended_oam[oam - oam_buf] = ext;
-    oam++;
-    ext = Ancilla_SetOam_XY(oam, Ancilla_GetX(k), 0x5f);
-    oam->charnum = kGameOverText_Chars[k * 2 + 1];
-    oam->flags = 0x3c;
-    bytewise_extended_oam[oam - oam_buf] = ext;
-    oam++;
-  } while (--k >= 0);
+    Ancilla_SetOam(oam + 0, Ancilla_GetX(k), 0x57, kGameOverText_Chars[k * 2 + 0], 0x3c, 0);
+    Ancilla_SetOam(oam + 1, Ancilla_GetX(k), 0x5f, kGameOverText_Chars[k * 2 + 1], 0x3c, 0);
+  } while (oam += 2, --k >= 0);
 }
 
 int AncillaAdd_AddAncilla_Bank08(uint8 type, uint8 y) {  // 88f631
@@ -5752,34 +5555,6 @@ void Ancilla_PrepAdjustedOamCoord(int k, Point16U *info) {  // 88f6a4
   oam_priority_value = kTagalongLayerBits[ancilla_floor[k]] << 8;
   info->x = Ancilla_GetX(k) - BG2HOFS_copy;
   info->y = Ancilla_GetY(k) - BG2VOFS_copy;
-}
-
-  
-uint8 Ancilla_SetOam_XY(OamEnt *oam, uint16 x, uint16 y) {  // 88f6e1
-  uint8 rv = 0;
-  uint8 yval = 0xf0;
-  int xt = enhanced_features0 ? 0x40 : 0;
-  if ((uint16)(x + xt) < 256 + xt * 2 && y < 256) {
-    rv = (x >> 8) & 1;
-    oam->x = x;
-    if (y < 0xf0)
-      yval = y;
-  }
-  oam->y = yval;
-  return rv;
-}
-
-uint8 Ancilla_SetOam_XY_safe(OamEnt *oam, uint16 x, uint16 y) {  // 88f702
-  uint8 rv = 0;
-  oam->x = x;
-  if ((uint16)(x + 0x80) < 0x180) {
-    rv = (x >> 8) & 1;
-    oam->y = y;
-    if ((uint16)(y + 0x10) < 0x100)
-      return rv;
-  }
-  oam->y = 0xf0;
-  return rv;
 }
 
 bool Ancilla_CheckLinkCollision(int k, int j, CheckPlayerCollOut *out) {  // 88f76b
@@ -5820,19 +5595,13 @@ void AncillaDraw_Shadow(OamEnt *oam, int k, int x, int y, uint8 pal) {  // 88f89
 
   if (k == 2)
     x += 4;
-  uint8 ext = Ancilla_SetOam_XY_safe(oam, x, y);
-  oam->charnum = kAncilla_DrawShadow_Char[k * 2];
-  oam->flags = kAncilla_DrawShadow_Flags[k * 2] & ~0x30 | pal;
-  bytewise_extended_oam[oam - oam_buf] = ext;
-  oam++;
-
+  Ancilla_SetOam_Safe(oam, x, y,
+                      kAncilla_DrawShadow_Char[k * 2],
+                      kAncilla_DrawShadow_Flags[k * 2] & ~0x30 | pal, 0);
   uint8 ch = kAncilla_DrawShadow_Char[k * 2 + 1];
   if (ch != 0xff) {
     x += 8;
-    ext = Ancilla_SetOam_XY_safe(oam, x, y);
-    oam->charnum = ch;
-    oam->flags = kAncilla_DrawShadow_Flags[k * 2 + 1] & ~0x30 | pal;
-    bytewise_extended_oam[oam - oam_buf] = ext;
+    Ancilla_SetOam_Safe(oam + 1, x, y, ch, kAncilla_DrawShadow_Flags[k * 2 + 1] & ~0x30 | pal, 0);
   }
 }
 
@@ -7191,11 +6960,8 @@ void DashDust_Motive(int k) {  // 89adf4
     Oam_AllocateFromRegionB(4);
   Point16U info;
   Ancilla_PrepOamCoord(k, &info);
-  OamEnt *oam = GetOamCurPtr();
-  uint8 ext = Ancilla_SetOam_XY(oam, info.x, info.y);
-  oam->charnum = kMotiveDashDust_Draw_Char[ancilla_item_to_link[k]];
-  oam->flags = 4 | HIBYTE(oam_priority_value);
-  bytewise_extended_oam[oam - oam_buf] = ext;
+  Ancilla_SetOam(GetOamCurPtr(), info.x, info.y,
+                 kMotiveDashDust_Draw_Char[ancilla_item_to_link[k]], 4 | HIBYTE(oam_priority_value), 0);
 }
 
 uint8 Ancilla_CalculateSfxPan(int k) {  // 8dbb5e

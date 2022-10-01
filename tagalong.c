@@ -583,6 +583,15 @@ void Tagalong_Draw() {  // 89a907
   Follower_AnimateMovement_preserved(a, x, y);
 }
 
+static inline void SetOam_Follower(OamEnt *oam, uint16 x, uint16 y, uint8 charnum, uint8 flags, uint8 big) {
+  oam->x = x;
+  oam->y = (uint16)(x + 0x80) < 0x180 && (big |= x >> 8 & 1, (uint16)(y + 0x10) < 0x100) ? y : 0xf0;
+  oam->charnum = charnum;
+  oam->flags = flags;
+  bytewise_extended_oam[oam - oam_buf] = big;
+}
+
+
 void Follower_AnimateMovement_preserved(uint8 ain, uint16 xin, uint16 yin) {  // 89a959
 
   uint8 yt = 0, av = 0;
@@ -632,24 +641,10 @@ incr:
       byte_7E02D7 = 0;
   }
   sk += byte_7E02D7 * 4;
-  {
-    uint16 y = scrolly + 16, x = scrollx, ext = 0;
-    oam->x = x;
-    oam->y = (uint16)(x + 0x80) < 0x180 && (ext = x >> 8 & 1, (uint16)(y + 0x10) < 0x100) ? y : 0xf0;
-    oam->charnum = sk[0];
-    oam->flags = sk[1];
-    bytewise_extended_oam[oam - oam_buf] = ext;
-    oam++;
-
-    ext = 0, x += 8;
-    oam->x = x;
-    oam->y = (uint16)(x + 0x80) < 0x180 && (ext = x >> 8 & 1, (uint16)(y + 0x10) < 0x100) ? y : 0xf0;
-    oam->charnum = sk[2];
-    oam->flags = sk[3];
-    bytewise_extended_oam[oam - oam_buf] = ext;
-    oam++;
-  }
-  uint8 pal;
+  SetOam_Follower(oam + 0, scrollx, scrolly + 16, sk[0], sk[1], 0);
+  SetOam_Follower(oam + 1, scrollx + 8, scrolly + 16, sk[2], sk[3], 0);
+  oam += 2;
+ uint8 pal;
 skip_first_sprites:
   pal = kTagalongDraw_Pals[follower_indicator];
   if (pal == 7 && overworld_palette_swap_flag)
@@ -662,22 +657,14 @@ skip_first_sprites:
   const TagalongDmaFlags *sprf = kTagalongDmaAndFlags + frame;
 
   if (follower_indicator != 12 && follower_indicator != 13) {
-    uint16 y = scrolly + sprd->y1, x = scrollx + sprd->x1, ext = 0;
-    oam->x = x;
-    oam->y = (uint16)(x + 0x80) < 0x180 && (ext = x >> 8 & 1, (uint16)(y + 0x10) < 0x100) ? y : 0xf0;
-    oam->charnum = 0x20;
-    oam->flags = (sprf->flags & 0xf0) | pal << 1 | (oam_priority_value >> 8);
-    bytewise_extended_oam[oam - oam_buf] = 2 | ext;
+    SetOam_Follower(oam, scrollx + sprd->x1, scrolly + sprd->y1, 0x20, 
+                  (sprf->flags & 0xf0) | pal << 1 | (oam_priority_value >> 8), 2);
     oam++;
     BYTE(dma_var6) = sprf->dma6;
   }
   {
-    uint16 y = scrolly + sprd->y2 + 8, x = scrollx + sprd->x2, ext = 0;
-    oam->x = x;
-    oam->y = (uint16)(x + 0x80) < 0x180 && (ext = x >> 8 & 1, (uint16)(y + 0x10) < 0x100) ? y : 0xf0;
-    oam->charnum = 0x22;
-    oam->flags = ((sprf->flags & 0xf) << 4) | pal << 1 | (oam_priority_value >> 8);
-    bytewise_extended_oam[oam - oam_buf] = 2 | ext;
+    SetOam_Follower(oam, scrollx + sprd->x2, scrolly + sprd->y2 + 8, 0x22,
+                  ((sprf->flags & 0xf) << 4) | pal << 1 | (oam_priority_value >> 8), 2);
     BYTE(dma_var7) = sprf->dma7;
   }
 }

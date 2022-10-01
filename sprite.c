@@ -598,12 +598,9 @@ void Garnish_SparkleCommon(int k, uint8 shift) {
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
   OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
-  oam->charnum = kGarnishSparkle_Char[t];
   int j = garnish_sprite[k];
-  oam->flags = (sprite_oam_flags[j] | sprite_obj_prio[j]) & 0xf0 | 4;
-  bytewise_extended_oam[oam - oam_buf] = 0;
+  SetOamPlain(oam, pt.x, pt.y, kGarnishSparkle_Char[t],
+               (sprite_oam_flags[j] | sprite_obj_prio[j]) & 0xf0 | 4, 0);
 }
 
 void Garnish_DustCommon(int k, uint8 shift) {
@@ -613,11 +610,7 @@ void Garnish_DustCommon(int k, uint8 shift) {
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
   OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
-  oam->charnum = kRunningManDust_Char[tmp_counter];
-  oam->flags = 0x24;
-  bytewise_extended_oam[oam - oam_buf] = 0;
+  SetOamPlain(oam, pt.x, pt.y, kRunningManDust_Char[tmp_counter], 0x24, 0);
 }
 
 void SpriteModule_Explode(int k) {
@@ -918,15 +911,11 @@ void Sprite_DrawMultiple(int k, const DrawMultipleData *src, int n, PrepOamCoord
     BYTE(word_7E0CFE) = sprite_unk5[k];
   OamEnt *oam = GetOamCurPtr();
   do {
-    uint16 x = src->x + info->x;
-    uint16 y = src->y + info->y;
-    oam->x = x;
-    oam->y = (uint16)(y + 0x10) < 0x100 ? y : 0xf0;
     uint16 d = src->char_flags ^ WORD(info->r4);
     if (word_7E0CFE >= 1)
       d = d & ~0xE00 | 0x400;
-    WORD(oam->charnum) = d;
-    bytewise_extended_oam[oam - oam_buf] = (x >> 8 & 1) | src->ext;
+    SetOamHelper0(oam, src->x + info->x, src->y + info->y, d, d >> 8, src->ext);
+
   } while (src++, oam++, --n);
 }
 
@@ -1533,17 +1522,10 @@ void SpriteDraw_Shadow_custom(int k, PrepOamCoordsRet *info, uint8 a) {  // 86dc
   if ((uint16)(y + 0x10) >= 0x100)
     return;
   OamEnt *oam = GetOamCurPtr() + (sprite_flags2[k] & 0x1f);
-  oam->x = info->x;
   if (sprite_flags3[k] & 0x20) {
-    oam->y = y + 1;
-    oam->charnum = 0x38;
-    oam->flags = (info->flags & 0x30) | 8;
-    bytewise_extended_oam[oam - oam_buf] = (info->x >> 8 & 1);
+    SetOamHelper1(oam, info->x, y + 1, 0x38, (info->flags & 0x30) | 8, 0);
   } else {
-    oam->y = y;
-    oam->charnum = 0x6c;
-    oam->flags = (info->flags & 0x30) | 8;
-    bytewise_extended_oam[oam - oam_buf] = (info->x >> 8 & 1) | 2;
+    SetOamHelper1(oam, info->x, y, 0x6c, (info->flags & 0x30) | 8, 2);
   }
 }
 
@@ -1833,11 +1815,8 @@ void SpriteModule_Poof(int k) {  // 86e393
     OamEnt *oam = GetOamCurPtr();
     int j = ((sprite_delay_main[k] >> 1) & ~3) + 3;
     for (int i = 3; i >= 0; i--, j--, oam++) {
-      oam->x = kSpritePoof_X[j] + BYTE(dungmap_var7);
-      oam->y = kSpritePoof_Y[j] + HIBYTE(dungmap_var7);
-      oam->charnum = kSpritePoof_Char[j];
-      oam->flags = kSpritePoof_Flags[j];
-      bytewise_extended_oam[oam - oam_buf] = kSpritePoof_Ext[j];
+      SetOamPlain(oam, kSpritePoof_X[j] + BYTE(dungmap_var7), kSpritePoof_Y[j] + HIBYTE(dungmap_var7),
+                   kSpritePoof_Char[j], kSpritePoof_Flags[j], kSpritePoof_Ext[j]);
     }
     Sprite_CorrectOamEntries(k, 3, 0xff);
   }
@@ -3132,11 +3111,8 @@ void SpriteDraw_FallingHumanoid(int k) {  // 86fe5b
   int n = (q < 12 && (q & 3) == 0) ? 3 : 0, nn = n;
   do {
     int i = q * 4 + n;
-    oam->x = info.x + kSpriteDrawFall1_X[i];
-    oam->y = info.y + kSpriteDrawFall1_Y[i];
-    oam->charnum = kSpriteDrawFall1_Char[i];
-    oam->flags = info.flags ^ kSpriteDrawFall1_Flags[i];
-    bytewise_extended_oam[oam - oam_buf] = kSpriteDrawFall1_Ext[i];
+    SetOamPlain(oam, info.x + kSpriteDrawFall1_X[i], info.y + kSpriteDrawFall1_Y[i],
+                 kSpriteDrawFall1_Char[i], info.flags ^ kSpriteDrawFall1_Flags[i], kSpriteDrawFall1_Ext[i]);
   } while (oam++, --n >= 0);
   Sprite_CorrectOamEntries(k, nn, 0xff);
 }
@@ -3324,14 +3300,9 @@ void Garnish15_ArrghusSplash(int k) {  // 89b178
     return;
   OamEnt *oam = GetOamCurPtr();
   int g = (garnish_countdown[k] >> 1) & 6;
-  for (int i = 1; i >= 0; i--) {
+  for (int i = 1; i >= 0; i--, oam++) {
     int j = i + g;
-    oam->x = pt.x + kArrghusSplash_X[j];
-    oam->y = pt.y + kArrghusSplash_Y[j];
-    oam->charnum = kArrghusSplash_Char[j];
-    oam->flags = kArrghusSplash_Flags[j];
-    bytewise_extended_oam[oam - oam_buf] = kArrghusSplash_Ext[j];
-    oam++;
+    SetOamPlain(oam, pt.x + kArrghusSplash_X[j], pt.y + kArrghusSplash_Y[j], kArrghusSplash_Char[j], kArrghusSplash_Flags[j], kArrghusSplash_Ext[j]);
   }
 }
 
@@ -3371,16 +3342,8 @@ void Garnish11_WitheringGanonBatFlame(int k) {  // 89b2b2
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
   OamEnt *oam = GetOamCurPtr();
-  oam[0].x = pt.x;
-  oam[0].y = pt.y;
-  oam[1].x = pt.x + 8;
-  oam[1].y = pt.y;
-  oam[0].charnum = 0xa4;
-  oam[1].charnum = 0xa5;
-  oam[0].flags = 0x22;
-  oam[1].flags = 0x22;
-  bytewise_extended_oam[oam - oam_buf] = 0;
-  bytewise_extended_oam[oam - oam_buf + 1] = 0;
+  SetOamPlain(oam + 0, pt.x + 0, pt.y, 0xa4, 0x22, 0);
+  SetOamPlain(oam + 1, pt.x + 8, pt.y, 0xa5, 0x22, 0);
 }
 
 void Garnish10_GanonBatFlame(int k) {  // 89b306
@@ -3396,13 +3359,8 @@ void Garnish10_GanonBatFlame(int k) {  // 89b306
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
   int j = kGanonBatFlame_Idx[garnish_countdown[k] >> 3];
-  oam->charnum = kGanonBatFlame_Char[j];
-  oam->flags = kGanonBatFlame_Flags[j] | 0x22;
-  bytewise_extended_oam[oam - oam_buf] = 2;
+  SetOamPlain(GetOamCurPtr(), pt.x, pt.y, kGanonBatFlame_Char[j], kGanonBatFlame_Flags[j] | 0x22, 2);
   Garnish_CheckPlayerCollision(k, pt.x, pt.y);
 }
 
@@ -3416,13 +3374,8 @@ void Garnish0C_TrinexxIceBreath(int k) {  // 89b34f
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
-  oam->charnum = kTrinexxIce_Char[garnish_countdown[k] >> 4];
-  oam->flags = kTrinexxIce_Flags[(garnish_countdown[k] >> 2) & 3] | 0x35;
-  bytewise_extended_oam[oam - oam_buf] = 2;
+  SetOamPlain(GetOamCurPtr(), pt.x, pt.y, kTrinexxIce_Char[garnish_countdown[k] >> 4],
+               kTrinexxIce_Flags[(garnish_countdown[k] >> 2) & 3] | 0x35, 2);
 }
 
 void Garnish14_KakKidDashDust(int k) {  // 89b3bc
@@ -3439,13 +3392,8 @@ void Garnish0A_CannonSmoke(int k) {  // 89b3ee
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
-  oam->charnum = kGarnish_CannonPoof_Char[garnish_countdown[k] >> 3];
   int j = garnish_sprite[k];
-  oam->flags = kGarnish_CannonPoof_Flags[j] | 4;
-  bytewise_extended_oam[oam - oam_buf] = 2;
+  SetOamPlain(GetOamCurPtr(), pt.x, pt.y, kGarnish_CannonPoof_Char[garnish_countdown[k] >> 3], kGarnish_CannonPoof_Flags[j] | 4, 2);
 }
 
 void Garnish09_LightningTrail(int k) {  // 89b429
@@ -3454,13 +3402,10 @@ void Garnish09_LightningTrail(int k) {  // 89b429
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
   int j = garnish_sprite[k];
-  oam->charnum = kLightningTrail_Char[j] - (BYTE(dungeon_room_index2) == 0x20 ? 0x80 : 0);
-  oam->flags = (frame_counter << 1) & 0xe | kLightningTrail_Flags[j];
-  bytewise_extended_oam[oam - oam_buf] = 2;
+  SetOamPlain(GetOamCurPtr(), pt.x, pt.y,
+               kLightningTrail_Char[j] - (BYTE(dungeon_room_index2) == 0x20 ? 0x80 : 0),
+               (frame_counter << 1) & 0xe | kLightningTrail_Flags[j], 2);
   Garnish_CheckPlayerCollision(k, pt.x, pt.y);
 }
 
@@ -3484,13 +3429,8 @@ void Garnish07_BabasuFlash(int k) {  // 89b49e
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
   int j = garnish_countdown[k] >> 3;
-  oam->charnum = kBabusuFlash_Char[j];
-  oam->flags = kBabusuFlash_Flags[j];
-  bytewise_extended_oam[oam - oam_buf] = 2;
+  SetOamPlain(GetOamCurPtr(), pt.x, pt.y, kBabusuFlash_Char[j], kBabusuFlash_Flags[j], 2);
 }
 
 void Garnish08_KholdstareTrail(int k) {  // 89b4c6
@@ -3500,27 +3440,18 @@ void Garnish08_KholdstareTrail(int k) {  // 89b4c6
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-  OamEnt *oam = GetOamCurPtr();
   int i = garnish_countdown[k] >> 2;
-  oam->x = pt.x + kGarnish_Nebule_XY[i];
-  oam->y = pt.y + kGarnish_Nebule_XY[i];
-  oam->charnum = kGarnish_Nebule_Char[i];
   int j = garnish_sprite[k];
-  oam->flags = (sprite_oam_flags[j] | sprite_obj_prio[j]) & ~1;
-  bytewise_extended_oam[oam - oam_buf] = 0;
+  SetOamPlain(GetOamCurPtr(), pt.x + kGarnish_Nebule_XY[i], pt.y + kGarnish_Nebule_XY[i], kGarnish_Nebule_Char[i],
+               (sprite_oam_flags[j] | sprite_obj_prio[j]) & ~1, 0);
 }
 
 void Garnish06_ZoroTrail(int k) {  // 89b4fb
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
-  oam->charnum = 0x75;
   int j = garnish_sprite[k];
-  oam->flags = sprite_oam_flags[j] | sprite_obj_prio[j];
-  bytewise_extended_oam[oam - oam_buf] = 0;
+  SetOamPlain(GetOamCurPtr(), pt.x, pt.y, 0x75, sprite_oam_flags[j] | sprite_obj_prio[j], 0);
 }
 
 void Garnish12_Sparkle(int k) {  // 89b520
@@ -3536,14 +3467,9 @@ void Garnish0E_TrinexxFireBreath(int k) {  // 89b55d
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
-  oam->charnum =  kTrinexxLavaBubble_Char[garnish_countdown[k] >> 3];
   int j = garnish_sprite[k];
-  oam->flags = (sprite_oam_flags[j] | sprite_obj_prio[j]) & 0xf0 | 0xe;
-  bytewise_extended_oam[oam - oam_buf] = 0;
-
+  SetOamPlain(GetOamCurPtr(), pt.x, pt.y, kTrinexxLavaBubble_Char[garnish_countdown[k] >> 3],
+               (sprite_oam_flags[j] | sprite_obj_prio[j]) & 0xf0 | 0xe, 0);
 }
 
 void Garnish0F_BlindLaserTrail(int k) {  // 89b591
@@ -3551,13 +3477,8 @@ void Garnish0F_BlindLaserTrail(int k) {  // 89b591
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
-  oam->charnum = kBlindLaserTrail_Char[garnish_oam_flags[k] - 7];
   int j = garnish_sprite[k];
-  oam->flags = sprite_oam_flags[j] | sprite_obj_prio[j];
-  bytewise_extended_oam[oam - oam_buf] = 0;
+  SetOamPlain(GetOamCurPtr(), pt.x, pt.y, kBlindLaserTrail_Char[garnish_oam_flags[k] - 7], sprite_oam_flags[j] | sprite_obj_prio[j], 0);
 }
 
 void Garnish04_LaserTrail(int k) {  // 89b5bb
@@ -3565,12 +3486,7 @@ void Garnish04_LaserTrail(int k) {  // 89b5bb
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
-  oam->charnum = kLaserBeamTrail_Char[garnish_oam_flags[k]];
-  oam->flags = 0x25;
-  bytewise_extended_oam[oam - oam_buf] = 0;
+  SetOamPlain(GetOamCurPtr(), pt.x, pt.y, kLaserBeamTrail_Char[garnish_oam_flags[k]], 0x25, 0);
 }
 
 bool Garnish_ReturnIfPrepFails(int k, Point16U *pt) {  // 89b5de
@@ -3596,41 +3512,24 @@ void Garnish03_FallingTile(int k) {  // 89b627
   if ((j = garnish_countdown[k]) == 0x1e && (j = (submodule_index | flag_unk1)) == 0)
     Dungeon_UpdateTileMapWithCommonTile(Garnish_GetX(k), Garnish_GetY(k) - 16, 4);
   j >>= 3;
-
   uint16 x = Garnish_GetX(k) + kCrumbleTile_XY[j] - BG2HOFS_copy2;
   uint16 y = Garnish_GetY(k) + kCrumbleTile_XY[j] - BG2VOFS_copy2;
-
-  if (x < 256 && y < 256) {
-    OamEnt *oam = GetOamCurPtr();
-    oam->x = x;
-    oam->y = y - 16;
-    oam->charnum = kCrumbleTile_Char[j];
-    oam->flags = kCrumbleTile_Flags[j];
-    bytewise_extended_oam[oam - oam_buf] = kCrumbleTile_Ext[j];
-  }
+  if (x < 256 && y < 256)
+    SetOamPlain(GetOamCurPtr(), x, y - 16, kCrumbleTile_Char[j], kCrumbleTile_Flags[j], kCrumbleTile_Ext[j]);
 }
 
 void Garnish01_FireSnakeTail(int k) {  // 89b6c0
   Point16U pt;
   if (Garnish_ReturnIfPrepFails(k, &pt))
     return;
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = pt.x;
-  oam->y = pt.y;
-  oam->charnum = 0x28;
   int j = garnish_sprite[k];
-  oam->flags = sprite_oam_flags[j] | sprite_obj_prio[j];
-  bytewise_extended_oam[oam - oam_buf] = 2;
+  SetOamPlain(GetOamCurPtr(), pt.x, pt.y, 0x28, sprite_oam_flags[j] | sprite_obj_prio[j], 2);
 }
 
 void Garnish02_MothulaBeamTrail(int k) {  // 89b6e1
-  OamEnt *oam = GetOamCurPtr();
-  oam->x = garnish_x_lo[k] - BG2HOFS_copy2;
-  oam->y = garnish_y_lo[k] - BG2VOFS_copy2;
-  oam->charnum = 0xaa;
   int j = garnish_sprite[k];
-  oam->flags = sprite_oam_flags[j] | sprite_obj_prio[j];
-  bytewise_extended_oam[oam - oam_buf] = 2;
+  SetOamPlain(GetOamCurPtr(), garnish_x_lo[k] - BG2HOFS_copy2, garnish_y_lo[k] - BG2VOFS_copy2, 0xaa,
+               sprite_oam_flags[j] | sprite_obj_prio[j], 2);
 }
 
 void Dungeon_ResetSprites() {  // 89c114
@@ -4012,16 +3911,11 @@ void Garnish16_ThrownItemDebris(int k) {  // 89f0cb
   uint8 base = ((garnish_countdown[k] >> 2) ^ 7) << 2;
   if (tmp_counter == 4 || tmp_counter == 2 && !player_is_indoors)
     base += 0x20;
-
-  for (int i = 3; i >= 0; i--) {
+  for (int i = 3; i >= 0; i--, oam++) {
     int j = i + base;
-    uint16 x = pt.x + kScatterDebris_Draw_X[j];
-    oam->x = x;
-    oam->y = pt.y + kScatterDebris_Draw_Y[j];
-    oam->charnum = (tmp_counter == 0) ? 0x4E : (tmp_counter >= 0x80) ? 0xF2 : kScatterDebris_Draw_Char[j];
-    oam->flags = kScatterDebris_Draw_Flags[j] | r5;
-    bytewise_extended_oam[oam - oam_buf] = (x >> 8) & 1;
-    oam++;
+    SetOamHelper1(oam, pt.x + kScatterDebris_Draw_X[j], pt.y + kScatterDebris_Draw_Y[j],
+                  (tmp_counter == 0) ? 0x4E : (tmp_counter >= 0x80) ? 0xF2 : kScatterDebris_Draw_Char[j],
+                  kScatterDebris_Draw_Flags[j] | r5, 0);
   }
 }
 
@@ -4037,15 +3931,10 @@ void ScatterDebris_Draw(int k, Point16U pt) {  // 89f198
   OamEnt *oam = GetOamCurPtr();
   int base = ((garnish_countdown[k] & 0xf) >> 2) * 3;
 
-  for (int i = 2; i >= 0; i--) {
+  for (int i = 2; i >= 0; i--, oam++) {
     int j = i + base;
-    uint16 x = pt.x + kScatterDebris_Draw_X2[j];
-    oam->x = x;
-    oam->y = pt.y + kScatterDebris_Draw_Y2[j];
-    oam->charnum = kScatterDebris_Draw_Char2[j];
-    oam->flags = kScatterDebris_Draw_Flags2[j] | 0x22;
-    bytewise_extended_oam[oam - oam_buf] = (x >> 8) & 1;
-    oam++;
+    SetOamHelper1(oam, pt.x + kScatterDebris_Draw_X2[j], pt.y + kScatterDebris_Draw_Y2[j],
+                  kScatterDebris_Draw_Char2[j], kScatterDebris_Draw_Flags2[j] | 0x22, 0);
   }
 }
 

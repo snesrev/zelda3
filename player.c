@@ -6127,13 +6127,8 @@ void Sprite_Dungeon_DrawSinglePushBlock(int j) {  // 87f0d9
   y -= BG2VOFS_copy2 + 1;
   x -= BG2HOFS_copy2;
   uint8 ch = kPushedblock_Char[kPushedBlock_Tab1[pushedblocks_some_index]];
-  if (ch != 0xff) {
-    oam->x = x;
-    oam->y = y;
-    oam->charnum = ch;
-    oam->flags = 0x20;
-    bytewise_extended_oam[oam - oam_buf] = 2;
-  }
+  if (ch != 0xff)
+    SetOamPlain(oam, x, y, ch, 0x20, 2);
 }
 
 void Link_Initialize() {  // 87f13c

@@ -109,13 +109,8 @@ static const uint8 kAttract_Legendgraphics_3[265+1] = {
 void Attract_DrawSpriteSet2(const AttractOamInfo *p, int n) {
   OamEnt *oam = &oam_buf[attract_oam_idx + 64];
   attract_oam_idx += n;
-  for (; n--; oam++) {
-    oam->x = attract_x_base + p[n].x;
-    oam->y = attract_y_base + p[n].y;
-    oam->charnum = p[n].c;
-    oam->flags = p[n].f;
-    bytewise_extended_oam[oam - oam_buf] = p[n].e;
-  }
+  for (; n--; oam++)
+    SetOamPlain(oam, attract_x_base + p[n].x, attract_y_base + p[n].y, p[n].c, p[n].f, p[n].e);
 }
 
 void Attract_ZeldaPrison_Case0() {
@@ -203,19 +198,10 @@ void Attract_ZeldaPrison_Case1() {
 
 void Attract_ZeldaPrison_DrawA() {
   OamEnt *oam = &oam_buf[64 + attract_oam_idx];
-
   uint8 ext = attract_x_base_hi ? 3 : 2;
-  bytewise_extended_oam[oam - oam_buf] = ext;
-  bytewise_extended_oam[oam - oam_buf + 1] = ext;
-
-  oam[0].x = oam[1].x = attract_x_base;
   int j = (attract_var1 >> 3) & 1;
-  oam[0].y = attract_y_base + j;
-  oam[1].y = attract_y_base + 10;
-  oam[0].charnum = 6;
-  oam[1].charnum = j ? 10 : 8;
-  oam[0].flags = oam[1].flags = 0x3d;
-
+  SetOamPlain(oam + 0, attract_x_base, attract_y_base + j, 6, 0x3d, ext);
+  SetOamPlain(oam + 1, attract_x_base, attract_y_base + 10, j ? 10 : 8, 0x3d, ext);
   attract_oam_idx += 2;
 }
 
@@ -1045,24 +1031,14 @@ void Attract_DrawPreloadedSprite(const uint8 *xp, const uint8 *yp, const uint8 *
   OamEnt *oam = &oam_buf[attract_oam_idx + 64];
   attract_oam_idx += n + 1;
   do {
-    oam->x = attract_x_base + xp[n];
-    oam->y = attract_y_base + yp[n];
-    oam->charnum = cp[n];
-    oam->flags = fp[n];
-    bytewise_extended_oam[oam - oam_buf] = ep[n];
+    SetOamPlain(oam, attract_x_base + xp[n], attract_y_base + yp[n], cp[n], fp[n], ep[n]);
   } while (oam++, --n >= 0);
 }
 
 void Attract_DrawZelda() {  // 8cf9e8
   OamEnt *oam = &oam_buf[64 + attract_oam_idx];
-  bytewise_extended_oam[oam - oam_buf] = 2;
-  oam[0].x = oam[1].x = 0x60;
-  oam[0].y = attract_x_base;
-  oam[1].y = attract_x_base + 10;
-  oam[0].charnum = 0x28;
-  oam[1].charnum = 0x2a;
-  oam[0].flags = 0x29;
-  oam[1].flags = 0x29;
+  SetOamPlain(oam + 0, 0x60, attract_x_base, 0x28, 0x29, 2);
+  SetOamPlain(oam + 1, 0x60, attract_x_base + 10, 0x2a, 0x29, 2);
   attract_oam_idx += 2;
 }
 

@@ -966,12 +966,7 @@ void Death_Func15(bool count_as_death) {  // 89f50f
 }
 
 void GameOver_AnimateChoiceFairy() {  // 89f67a
-  int spr = 0x14;
-  bytewise_extended_oam[spr] = 2;
-  oam_buf[spr].x = 0x34;
-  oam_buf[spr].y = kDeath_SprY0[subsubmodule_index];
-  oam_buf[spr].charnum = kDeath_SprChar0[frame_counter >> 3 & 1];
-  oam_buf[spr].flags = 0x78;
+  SetOamPlain(&oam_buf[0x14], 0x34, kDeath_SprY0[subsubmodule_index], kDeath_SprChar0[frame_counter >> 3 & 1], 0x78, 2);
 }
 
 void GameOver_InitializeRevivalFairy() {  // 89f6a4
@@ -1626,11 +1621,7 @@ void WorldMap_HandleSpriteBlink(int spr, uint8 r11_ext, uint8 r12_flags, uint8 r
     r14_x -= 4;
     r15_y -= 4;
   }
-  bytewise_extended_oam[spr] = r11_ext;
-  oam_buf[spr].x = r14_x;
-  oam_buf[spr].y = r15_y;
-  oam_buf[spr].charnum = r13_char;
-  oam_buf[spr].flags = r12_flags;
+  SetOamPlain(&oam_buf[spr], r14_x, r15_y, r13_char, r12_flags, r11_ext);
 }
 
 bool OverworldMap_CheckForPendant(int k) {  // 8ac5a9
@@ -2045,33 +2036,23 @@ void DungeonMap_DrawLinkPointing(int spr_pos, uint8 r2, uint8 r3) {  // 8aeaf0
     if (a >= 0)
       r3 -= a;
   }
-  bytewise_extended_oam[spr_pos] = 2;
-  oam_buf[spr_pos].x = 0x19;
-  oam_buf[spr_pos].y = kDungMap_Tab33[r3] - 4;
-  oam_buf[spr_pos].charnum = 0;
-  oam_buf[spr_pos].flags = overworld_palette_swap_flag ? 0x30 : 0x3e;
+  SetOamPlain(&oam_buf[spr_pos], 0x19, kDungMap_Tab33[r3] - 4, 0, overworld_palette_swap_flag ? 0x30 : 0x3e, 2);
 }
 
 int DungeonMap_DrawBlinkingIndicator(int spr_pos) {  // 8aeb50
-  bytewise_extended_oam[spr_pos] = 0;
-  oam_buf[spr_pos].x = dungmap_var3 - 3;
-  oam_buf[spr_pos].y = ((dungmap_var5 < 256) ? dungmap_var5 : 0xf0) - 3;
-  oam_buf[spr_pos].charnum = 0x34;
-  oam_buf[spr_pos].flags = kDungMap_Tab38[frame_counter >> 2 & 3];
+  SetOamPlain(&oam_buf[spr_pos], dungmap_var3 - 3, ((dungmap_var5 < 256) ? dungmap_var5 : 0xf0) - 3, 0x34, kDungMap_Tab38[frame_counter >> 2 & 3], 0);
   return spr_pos + 1;
 }
 
 int DungeonMap_DrawLocationMarker(int spr_pos, uint16 r14) {  // 8aeba8
   for (int i = 3; i >= 0; i--, spr_pos++) {
-    bytewise_extended_oam[spr_pos] = 2;
-    oam_buf[spr_pos].x = kDungMap_Tab29[i] + (dungmap_var3 & 0xf0);
     uint8 r15 = dungmap_var6 + kDungMap_Tab24[r14];
-    oam_buf[spr_pos].y = r15 + kDungMap_Tab30[i];
-    oam_buf[spr_pos].charnum = 0;
     int fr = (frame_counter >> 2) & 1;
-    if ((dungmap_var5 + 1 & 0xf0) == ++r15 && dungmap_var5 < 256)
+    if ((dungmap_var5 + 1 & 0xf0) == r15 + 1 && dungmap_var5 < 256)
       fr += 2;
-    oam_buf[spr_pos].flags = kDungMap_Tab32[fr] | kDungMap_Tab31[i];
+    SetOamPlain(&oam_buf[spr_pos], kDungMap_Tab29[i] + (dungmap_var3 & 0xf0),
+                r15 + kDungMap_Tab30[i],
+                0, kDungMap_Tab32[fr] | kDungMap_Tab31[i], 2);
   }
   return spr_pos;
 }
@@ -2094,17 +2075,9 @@ int DungeonMap_DrawFloorNumberObjects(int spr_pos) {  // 8aec0a
   r2--;
   r3 = -r3;
   do {
-    bytewise_extended_oam[spr_pos+0] = 0;
-    bytewise_extended_oam[spr_pos+1] = 0;
-    oam_buf[spr_pos + 0].x = 0x30;
-    oam_buf[spr_pos + 1].x = 0x38;
-    oam_buf[spr_pos + 0].y = r4;
-    oam_buf[spr_pos + 1].y = r4;
+    SetOamPlain(&oam_buf[spr_pos + 0], 0x30, r4, sign8(r2) ? 0x1c : kDungMap_Tab34[r2], 0x3d, 0);
+    SetOamPlain(&oam_buf[spr_pos + 1], 0x38, r4, sign8(r2) ? kDungMap_Tab34[r2 ^ 0xff] : 0x1d, 0x3d, 0);
     r4 += 16;
-    oam_buf[spr_pos + 0].flags = 0x3d;
-    oam_buf[spr_pos + 1].flags = 0x3d;
-    oam_buf[spr_pos + 0].charnum = sign8(r2) ? 0x1c : kDungMap_Tab34[r2];
-    oam_buf[spr_pos + 1].charnum = sign8(r2) ? kDungMap_Tab34[r2 ^ 0xff] : 0x1d;
   } while (spr_pos += 2, r2-- != r3);
   return spr_pos;
 }
@@ -2134,17 +2107,9 @@ void DungeonMap_DrawFloorBlinker() {  // 8aeccf
     uint8 x = 40;
     int spr_pos = 0x40 + kDungMap_Tab35[flag];
     for (int i = 3; i >= 0; i--, spr_pos++) {
-      bytewise_extended_oam[spr_pos+0] = 0;
-      bytewise_extended_oam[spr_pos+4] = 0;
-      oam_buf[spr_pos + 0].x = x;
-      oam_buf[spr_pos + 4].x = x;
-      oam_buf[spr_pos + 0].y = y + flag * 16;
-      oam_buf[spr_pos + 4].y = y + flag * 16 + 8;
-      oam_buf[spr_pos + 0].charnum = kDungMap_Tab36[i];
-      oam_buf[spr_pos + 4].charnum = kDungMap_Tab36[i];
       uint8 t = 0x3d | (i ? 0 : 0x40);
-      oam_buf[spr_pos + 0].flags = t;
-      oam_buf[spr_pos + 4].flags = t | 0x80;
+      SetOamPlain(&oam_buf[spr_pos + 0], x, y + flag * 16 + 0, kDungMap_Tab36[i], t, 0);
+      SetOamPlain(&oam_buf[spr_pos + 4], x, y + flag * 16 + 8, kDungMap_Tab36[i], t | 0x80, 0);
       x += 8;
     }
   } while (flag--);
@@ -2157,12 +2122,8 @@ int DungeonMap_DrawBossIcon(int spr_pos) {  // 8aede4
   spr_pos = DungeonMap_DrawBossIconByFloor(spr_pos);
   if ((frame_counter & 0xf) >= 10)
     return spr_pos;
-  bytewise_extended_oam[spr_pos] = 0;
   uint16 xy = kDungMap_Tab37[dung];
-  oam_buf[spr_pos].x = (xy >> 8) + dungmap_var7 + 0x90;
-  oam_buf[spr_pos].y = (dungmap_var8 < 256) ? xy + dungmap_var8 : 0xf0;
-  oam_buf[spr_pos].charnum = 0x31;
-  oam_buf[spr_pos].flags = 0x33;
+  SetOamPlain(&oam_buf[spr_pos], (xy >> 8) + dungmap_var7 + 0x90, (dungmap_var8 < 256) ? xy + dungmap_var8 : 0xf0, 0x31, 0x33, 0);
   return spr_pos + 1;
 }
 
@@ -2179,12 +2140,7 @@ int DungeonMap_DrawBossIconByFloor(int spr_pos) {  // 8aee95
   }
   if ((frame_counter & 0xf) >= 10)
     return spr_pos;
-  bytewise_extended_oam[spr_pos] = 0;
-  uint16 xy = kDungMap_Tab37[dung];
-  oam_buf[spr_pos].x = 0x4C;
-  oam_buf[spr_pos].y = kDungMap_Tab33[r3];
-  oam_buf[spr_pos].charnum = 0x31;
-  oam_buf[spr_pos].flags = 0x33;
+  SetOamPlain(&oam_buf[spr_pos], 0x4c, kDungMap_Tab33[r3], 0x31, 0x33, 0);
   return spr_pos + 1;
 }
 
@@ -3021,13 +2977,7 @@ void Death_PlayerSwoon() {  // 8ff5e3
     return;
   uint8 y = link_y_coord + 16 - BG2VOFS_copy2;
   uint8 x = link_x_coord + 7 - BG2HOFS_copy2;
-
-  int spr = 0x74;
-  bytewise_extended_oam[spr] = 2;
-  oam_buf[spr].x = x;
-  oam_buf[spr].y = y;
-  oam_buf[spr].charnum = 0xaa;
-  oam_buf[spr].flags = kDeath_SprFlags[link_is_on_lower_level] | 2;
+  SetOamPlain(&oam_buf[0x74], x, y, 0xaa, kDeath_SprFlags[link_is_on_lower_level] | 2, 2);
 }
 
 void Death_PrepFaint() {  // 8ffa6f
