@@ -48,6 +48,7 @@ static FORCEINLINE uint UintMax(uint a, uint b) { return a > b ? a : b; }
 #define BYTE(x) (*(uint8*)&(x))
 #define HIBYTE(x) (((uint8*)&(x))[1])
 #define WORD(x) (*(uint16*)&(x))
+#define DWORD(x) (*(uint32*)&(x))
 #define XY(x, y) ((y)*64+(x))
 
 static inline uint16 swap16(uint16 v) { return (v << 8) | (v >> 8); }

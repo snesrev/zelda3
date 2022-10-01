@@ -51,6 +51,9 @@ typedef struct Config {
   bool display_perf_title;
   bool enable_msu;
   uint32 features0;
+
+  const char *link_graphics;
+  uint8 *memory_buffer;
 } Config;
 
 extern Config g_config;
