@@ -1305,11 +1305,12 @@ void Ancilla05_Boomerang(int k) {  // 8890fc
     Ancilla_Sfx2_Pan(k, 0x9);
 
   if (!ancilla_aux_timer[k]) {
-    if (button_b_frames < 9 && !player_handler_timer) {
-      if (!link_is_bunny_mirror && !link_auxiliary_state)
-        goto exit_and_draw;
-      Boomerang_Terminate(k);
-      return;
+    if (button_b_frames < 9 && player_handler_timer == 0) {
+      if (link_is_bunny_mirror || link_auxiliary_state || link_item_in_hand == 0 && (enhanced_features0 & kFeatures0_MiscBugFixes)) {
+        Boomerang_Terminate(k);
+        return;
+      }
+      goto exit_and_draw;
     }
     int j = ancilla_arr23[k] >> 1;
     Ancilla_SetXY(k, link_x_coord + kBoomerang_X0[j], link_y_coord + 8 + kBoomerang_Y0[j]);
