@@ -532,7 +532,7 @@ void AttractScene_ThroneRoom() {  // 8cef4e
   CGWSEL_copy = 2;
   CGADSUB_copy = 0x20;
   misc_sprites_graphics_index = 10;
-  LoadCommonSprites_2();
+  LoadCommonSprites();
   uint16 bak0 = attract_var12;
   uint16 bak1 = WORD(attract_state);
   Dungeon_LoadAndDrawEntranceRoom(0x74);

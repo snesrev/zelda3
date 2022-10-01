@@ -413,11 +413,10 @@ void EraseTileMaps_normal() {
   EraseTileMaps(0x7f, 0x1ec);
 }
 
-void DecompAndUpload2bpp(uint8 pack) {
+static void DecompAndUpload2bpp(uint16 *vram_ptr, uint8 pack) {
   Decomp_spr(&g_ram[0x14000], pack);
   const uint8 *src = &g_ram[0x14000];
-  for (int i = 0; i < 1024; i++, src += 2)
-    zelda_ppu_write_word(VMDATAL, WORD(src[0]));
+  memcpy(vram_ptr, src, 1024 * sizeof(uint16));
 }
 
 void RecoverPegGFXFromMapping() {
@@ -816,21 +815,18 @@ void LoadNewSpriteGFXSet() {  // 80e031
 }
 
 void InitializeTilesets() {  // 80e19b
-  zelda_ppu_write(VMAIN, 0x80);
-  zelda_ppu_write_word(VMADDL, 0x4400);
   LoadCommonSprites();
+
   const uint8 *p = kSpriteTilesets[sprite_graphics_index];
   if (p[0]) sprite_gfx_subset_0 = p[0];
   if (p[1]) sprite_gfx_subset_1 = p[1];
   if (p[2]) sprite_gfx_subset_2 = p[2];
   if (p[3]) sprite_gfx_subset_3 = p[3];
 
-  LoadSpriteGraphics(sprite_gfx_subset_0, &g_ram[0x7800]);
-  LoadSpriteGraphics(sprite_gfx_subset_1, &g_ram[0x7e00]);
-  LoadSpriteGraphics(sprite_gfx_subset_2, &g_ram[0x8400]);
-  LoadSpriteGraphics(sprite_gfx_subset_3, &g_ram[0x8a00]);
-
-  zelda_ppu_write_word(VMADDL, 0x2000);
+  LoadSpriteGraphics(&g_zenv.vram[0x5000], sprite_gfx_subset_0, &g_ram[0x7800]);
+  LoadSpriteGraphics(&g_zenv.vram[0x5400], sprite_gfx_subset_1, &g_ram[0x7e00]);
+  LoadSpriteGraphics(&g_zenv.vram[0x5800], sprite_gfx_subset_2, &g_ram[0x8400]);
+  LoadSpriteGraphics(&g_zenv.vram[0x5c00], sprite_gfx_subset_3, &g_ram[0x8a00]);
 
   const uint8 *mt = kMainTilesets[main_tile_theme_index];
   const uint8 *at = kAuxTilesets[aux_tile_theme_index];
@@ -840,51 +836,41 @@ void InitializeTilesets() {  // 80e19b
   aux_bg_subset_2 = at[2] ? at[2] : mt[5];
   aux_bg_subset_3 = at[3] ? at[3] : mt[6];
 
-  LoadBackgroundGraphics(mt[0], 7, &g_ram[0x14000]);
-  LoadBackgroundGraphics(mt[1], 6, &g_ram[0x14000]);
-  LoadBackgroundGraphics(mt[2], 5, &g_ram[0x14000]);
-  LoadBackgroundGraphics(aux_bg_subset_0, 4, &g_ram[0x6000]);
-  LoadBackgroundGraphics(aux_bg_subset_1, 3, &g_ram[0x6600]);
-  LoadBackgroundGraphics(aux_bg_subset_2, 2, &g_ram[0x6c00]);
-  LoadBackgroundGraphics(aux_bg_subset_3, 1, &g_ram[0x7200]);
-  LoadBackgroundGraphics(mt[7], 0, &g_ram[0x14000]);
+  LoadBackgroundGraphics(&g_zenv.vram[0x2000], mt[0], 7, &g_ram[0x14000]);
+  LoadBackgroundGraphics(&g_zenv.vram[0x2400], mt[1], 6, &g_ram[0x14000]);
+  LoadBackgroundGraphics(&g_zenv.vram[0x2800], mt[2], 5, &g_ram[0x14000]);
+  LoadBackgroundGraphics(&g_zenv.vram[0x2c00], aux_bg_subset_0, 4, &g_ram[0x6000]);
+  LoadBackgroundGraphics(&g_zenv.vram[0x3000], aux_bg_subset_1, 3, &g_ram[0x6600]);
+  LoadBackgroundGraphics(&g_zenv.vram[0x3400], aux_bg_subset_2, 2, &g_ram[0x6c00]);
+  LoadBackgroundGraphics(&g_zenv.vram[0x3800], aux_bg_subset_3, 1, &g_ram[0x7200]);
+  LoadBackgroundGraphics(&g_zenv.vram[0x3c00], mt[7], 0, &g_ram[0x14000]);
 }
 
 void LoadDefaultGraphics() {  // 80e2d0
-  zelda_ppu_write(VMAIN, 0x80);
-  zelda_ppu_write_word(VMADDL, 0x4000);
   const uint8 *src = GetCompSpritePtr(0);
 
+  uint16 *vram_ptr = &g_zenv.vram[0x4000];
   uint16 *tmp = (uint16 *)&g_ram[0xbf];
   int num = 64;
   do {
     for (int i = 7; i >= 0; i--, src += 2) {
-      zelda_ppu_write_word(VMDATAL, WORD(src[0]));
+      *vram_ptr++ = WORD(src[0]);
       tmp[i] = src[0] | src[1];
     }
     for (int i = 7; i >= 0; i--, src++) {
-      zelda_ppu_write_word(VMDATAL, src[0] | (src[0] | tmp[i]) << 8);
+      *vram_ptr++ = src[0] | (src[0] | tmp[i]) << 8;
     }
   } while (--num);
 
   // Load 2bpp graphics used for hud
-  zelda_ppu_write_word(VMADDL, 0x7000);
-  DecompAndUpload2bpp(0x6a);
-  DecompAndUpload2bpp(0x6b);
-  DecompAndUpload2bpp(0x69);
+  DecompAndUpload2bpp(&g_zenv.vram[0x7000], 0x6a);
+  DecompAndUpload2bpp(&g_zenv.vram[0x7400], 0x6b);
+  DecompAndUpload2bpp(&g_zenv.vram[0x7800], 0x69);
 }
 
 void Attract_LoadBG3GFX() {  // 80e36d
   // load 2bpp gfx for attract images
-  zelda_ppu_write(VMAIN, 0x80);
-  zelda_ppu_write_word(VMADDL, 0x7800);
-  DecompAndUpload2bpp(0x67);
-}
-
-void LoadCommonSprites_2() {  // 80e384
-  zelda_ppu_write(VMAIN, 0x80);
-  zelda_ppu_write_word(VMADDL, 0x4400);
-  LoadCommonSprites();
+  DecompAndUpload2bpp(&g_zenv.vram[0x7800], 0x67);
 }
 
 void Graphics_LoadChrHalfSlot() {  // 80e3fa
@@ -949,64 +935,59 @@ void Graphics_LoadChrHalfSlot() {  // 80e3fa
 }
 
 void TransferFontToVRAM() {  // 80e556
-  zelda_ppu_write(VMAIN, 0x80);
-  zelda_ppu_write_word(VMADDL, 0x7000);
-  const uint16 *src = GetFontPtr();
-  for (int i = 0; i != 0x800; i++, src++)
-    zelda_ppu_write_word(VMDATAL, *src);
+  memcpy(&g_zenv.vram[0x7000], GetFontPtr(), 0x800 * sizeof(uint16));
 }
 
-void LoadSpriteGraphics(int gfx_pack, uint8 *decomp_addr) {  // 80e583
-  Decomp_spr(decomp_addr, gfx_pack);
-
-  if (gfx_pack == 0x52 || gfx_pack == 0x53 || gfx_pack == 0x5a || gfx_pack == 0x5b ||
-      gfx_pack == 0x5c || gfx_pack == 0x5e || gfx_pack == 0x5f)
-    Do3To4High(decomp_addr);
-  else
-    Do3To4Low(decomp_addr);
-}
-
-void Do3To4High(const uint8 *decomp_addr) {  // 80e5af
+void Do3To4High(uint16 *vram_ptr, const uint8 *decomp_addr) {  // 80e5af
   for (int j = 0; j < 64; j++) {
     uint16 *t = (uint16 *)&dung_line_ptrs_row0;
     for (int i = 7; i >= 0; i--, decomp_addr += 2) {
       uint16 d = *(uint16 *)decomp_addr;
       t[i] = (d | (d >> 8)) & 0xff;
-      zelda_ppu_write_word(VMDATAL, d);
+      *vram_ptr++ = d;
     }
     for (int i = 7; i >= 0; i--, decomp_addr += 1) {
       uint8 d = *decomp_addr;
-      zelda_ppu_write_word(VMDATAL, d | (t[i] | d) << 8);
+      *vram_ptr++ = d | (t[i] | d) << 8;
     }
   }
 }
 
-void LoadBackgroundGraphics(int gfx_pack, int slot, uint8 *decomp_addr) {  // 80e609
-  Decomp_bg(decomp_addr, gfx_pack);
-  if ((main_tile_theme_index >= 0x20) ? (slot == 7 || slot == 2 || slot == 3 || slot == 4) : (slot >= 4))
-    Do3To4High(decomp_addr);
-  else
-    Do3To4Low(decomp_addr);
-}
-
-void Do3To4Low(const uint8 *decomp_addr) {  // 80e63c
+void Do3To4Low(uint16 *vram_ptr, const uint8 *decomp_addr) {  // 80e63c
   for (int j = 0; j < 64; j++) {
     for (int i = 0; i < 8; i++, decomp_addr += 2)
-      zelda_ppu_write_word(VMDATAL, *(uint16 *)decomp_addr);
+      *vram_ptr++ = *(uint16 *)decomp_addr;
     for (int i = 0; i < 8; i++, decomp_addr += 1)
-      zelda_ppu_write_word(VMDATAL, *decomp_addr);
+      *vram_ptr++ = *decomp_addr;
   }
 }
 
+void LoadSpriteGraphics(uint16 *vram_ptr, int gfx_pack, uint8 *decomp_addr) {  // 80e583
+  Decomp_spr(decomp_addr, gfx_pack);
+  if (gfx_pack == 0x52 || gfx_pack == 0x53 || gfx_pack == 0x5a || gfx_pack == 0x5b ||
+      gfx_pack == 0x5c || gfx_pack == 0x5e || gfx_pack == 0x5f)
+    Do3To4High(vram_ptr, decomp_addr);
+  else
+    Do3To4Low(vram_ptr, decomp_addr);
+}
+
+void LoadBackgroundGraphics(uint16 *vram_ptr, int gfx_pack, int slot, uint8 *decomp_addr) {  // 80e609
+  Decomp_bg(decomp_addr, gfx_pack);
+  if ((main_tile_theme_index >= 0x20) ? (slot == 7 || slot == 2 || slot == 3 || slot == 4) : (slot >= 4))
+    Do3To4High(vram_ptr, decomp_addr);
+  else
+    Do3To4Low(vram_ptr, decomp_addr);
+}
+
 void LoadCommonSprites() {  // 80e6b7
-  Do3To4High(GetCompSpritePtr(misc_sprites_graphics_index));
+  Do3To4High(&g_zenv.vram[0x4400], GetCompSpritePtr(misc_sprites_graphics_index));
   if (main_module_index != 1) {
-    Do3To4Low(GetCompSpritePtr(6));
-    Do3To4Low(GetCompSpritePtr(7));
+    Do3To4Low(&g_zenv.vram[0x4800], GetCompSpritePtr(6));
+    Do3To4Low(&g_zenv.vram[0x4c00], GetCompSpritePtr(7));
   } else {
     // select file
-    LoadSpriteGraphics(94, &g_ram[0x14000]);
-    LoadSpriteGraphics(95, &g_ram[0x14000]);
+    LoadSpriteGraphics(&g_zenv.vram[0x4800], 94, &g_ram[0x14000]);
+    LoadSpriteGraphics(&g_zenv.vram[0x4c00], 95, &g_ram[0x14000]);
   }
 }
 

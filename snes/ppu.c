@@ -1417,7 +1417,7 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
       ppu->scrollPrev = val;
       break;
     }
-    case 0x15: {
+    case 0x15: {  // VMAIN
       if((val & 3) == 0) {
         ppu->vramIncrement = 1;
       } else if((val & 3) == 1) {

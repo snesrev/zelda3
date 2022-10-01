@@ -184,25 +184,16 @@ void Intro_FixCksum(uint8 *s) {
 }
 
 void LoadFileSelectGraphics() {  // 80e4e9
-  zelda_ppu_write(VMAIN, 0x80);
-  zelda_ppu_write_word(VMADDL, 0x5000);
-
   Decomp_spr(&g_ram[0x14000], 0x5e);
-  Do3To4High(&g_ram[0x14000]);
+  Do3To4High(&g_zenv.vram[0x5000], &g_ram[0x14000]);
 
   Decomp_spr(&g_ram[0x14000], 0x5f);
-  Do3To4High(&g_ram[0x14000]);
+  Do3To4High(&g_zenv.vram[0x5400], &g_ram[0x14000]);
 
-  zelda_ppu_write_word(VMADDL, 0x7000);
-
-  const uint16 *src = GetFontPtr();
-  for (int i = 0; i < 0x800; i++)
-    zelda_ppu_write_word(VMDATAL, *src++);
+  memcpy(&g_zenv.vram[0x7000], GetFontPtr(), 0x800 * sizeof(uint16));
 
   Decomp_spr(&g_ram[0x14000], 0x6b);
-  src = (const uint16 *)&g_ram[0x14000];
-  for (int i = 0; i < 0x300; i++)
-    zelda_ppu_write_word(VMDATAL, *src++);
+  memcpy(&g_zenv.vram[0x7800], &g_ram[0x14000], 0x300 * sizeof(uint16));
 }
 
 void Intro_ValidateSram() {  // 828054

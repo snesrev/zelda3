@@ -46,23 +46,21 @@ void NMI_UploadSubscreenOverlayLatter() {
   NMI_HandleArbitraryTileMap(&g_ram[0x13000], 0x40, 0x80);
 }
 
-void CopyToVram(uint32 dstv, const uint8 *src, int len) {
+static void CopyToVram(uint32 dstv, const uint8 *src, int len) {
   memcpy(&g_zenv.vram[dstv], src, len);
 }
 
-void CopyToVramVertical(uint32 dstv, const uint8 *src, int len) {
+static void CopyToVramVertical(uint32 dstv, const uint8 *src, int len) {
   assert(!(len & 1));
   uint16 *dst = &g_zenv.vram[dstv];
   for (int i = 0, i_end = len >> 1; i < i_end; i++, dst += 32, src += 2)
     *dst = WORD(*src);
 }
 
-void CopyToVramLow(const uint8 *src, uint32 addr, int num) {
-  zelda_ppu_write(VMAIN, 0);
-  zelda_ppu_write_word(VMADDL, addr);
-  for (int i = 0; i < num; i++) {
-    zelda_ppu_write(VMDATAL, *src++);
-  }
+static void CopyToVramLow(const uint8 *src, uint32 addr, int num) {
+  uint16 *dst = &g_zenv.vram[addr];
+  for (int i = 0; i < num; i++)
+    dst[i] = (dst[i] & ~0xff) | src[i];
 }
 
 void WritePpuRegisters() {

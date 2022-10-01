@@ -143,13 +143,13 @@ void Intro_SetupScreen() {  // 828000
   load_chr_halfslot_even_odd = 0;
   LoadOWMusicIfNeeded();
 
-  zelda_ppu_write(VMAIN, 0x80);
-  zelda_ppu_write_word(VMADDL, 0x27f0);
-  int i = 16;
-  do {
-    zelda_ppu_write_word(VMDATAL, 0);
+  // why 17?
+  for(int i = 0; i < 17; i++)
     main_palette_buffer[144 + i] = 0x7fff;
-  } while (--i >= 0);
+
+  for (int i = 0; i < 17; i++)
+    g_zenv.vram[0x27f0 + i] = 0;
+
   R16 = 0x1ffe;
   R18 = 0x1bfe;
 }
@@ -664,7 +664,7 @@ void FadeMusicAndResetSRAMMirror() {  // 8cc2f0
 
 void Intro_InitializeTriforcePolyThread() {  // 8cc33c
   misc_sprites_graphics_index = 8;
-  LoadCommonSprites_2();
+  LoadCommonSprites();
   Intro_InitGfx_Helper();
   intro_sprite_isinited[0] = 1;
   intro_sprite_isinited[1] = 1;
@@ -1007,7 +1007,7 @@ void AnimateSceneSprite_MoveTriangle(int k) {  // 8cc9f1
 
 void TriforceRoom_PrepGFXSlotForPoly() {  // 8cca54
   misc_sprites_graphics_index = 8;
-  LoadCommonSprites_2();
+  LoadCommonSprites();
   Intro_InitGfx_Helper();
   intro_sprite_isinited[0] = 1;
   intro_sprite_isinited[1] = 1;
@@ -1021,7 +1021,7 @@ void TriforceRoom_PrepGFXSlotForPoly() {  // 8cca54
 
 void Credits_InitializePolyhedral() {  // 8cca81
   misc_sprites_graphics_index = 8;
-  LoadCommonSprites_2();
+  LoadCommonSprites();
   Intro_InitGfx_Helper();
   poly_config1 = 0;
   intro_sprite_isinited[0] = 1;

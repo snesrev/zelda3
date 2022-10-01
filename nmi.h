@@ -3,9 +3,6 @@
 
 void NMI_UploadSubscreenOverlayFormer();
 void NMI_UploadSubscreenOverlayLatter();
-void CopyToVram(uint32 dstv, const uint8 *src, int len);
-void CopyToVramVertical(uint32 dstv, const uint8 *src, int len);
-void CopyToVramLow(const uint8 *src, uint32 addr, int num);
 void Interrupt_NMI(uint16 joypad_input);
 void NMI_ReadJoypads(uint16 joypad_input);
 void NMI_DoUpdates();
