@@ -452,8 +452,6 @@ void Attract_InitGraphics() {  // 8cee0c
   COLDATA_copy2 = 0x85;
   CGWSEL_copy = 0x10;
   CGADSUB_copy = 0xa3;
-  zelda_ppu_write(WBGLOG, 0);
-  zelda_ppu_write(WOBJLOG, 0);
 
   music_control = 6;
   attract_legend_flag++;
@@ -516,9 +514,7 @@ void AttractScene_WorldMap() {  // 8ceeff
   zelda_ppu_write(BG2SC, 0x3);
   CGWSEL_copy = 0x80;
   CGADSUB_copy = 0x21;
-  zelda_ppu_write(BGMODE, 7);
   BGMODE_copy = 7;
-  zelda_ppu_write(M7SEL, 0x80);
   WorldMap_LoadLightWorldMap();
   M7Y_copy = 0xed;
   M7X_copy = 0x100;
@@ -532,12 +528,11 @@ void AttractScene_WorldMap() {  // 8ceeff
 }
 
 void AttractScene_ThroneRoom() {  // 8cef4e
-  zelda_snes_dummy_write(HDMAEN, 0);
   HDMAEN_copy = 0;
   CGWSEL_copy = 2;
   CGADSUB_copy = 0x20;
   misc_sprites_graphics_index = 10;
-  LoadCommonSprites_2();
+  LoadCommonSprites();
   uint16 bak0 = attract_var12;
   uint16 bak1 = WORD(attract_state);
   Dungeon_LoadAndDrawEntranceRoom(0x74);
@@ -712,7 +707,6 @@ void AttractDramatize_WorldMap() {  // 8cf176
     }
   } else {
     EnableForceBlank();
-    zelda_ppu_write(BGMODE, 9);
     BGMODE_copy = 9;
     EraseTileMaps_normal();
     attract_sequence++;

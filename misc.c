@@ -549,7 +549,6 @@ void Module05_LoadFile() {  // 828136
   byte_7E0379 = 0;
   byte_7E03FD = 0;
   EraseTileMaps_normal();
-  zelda_ppu_write(OBSEL, 2);
   LoadDefaultGraphics();
   Sprite_LoadGraphicsProperties();
   Init_LoadDefaultTileAttr();

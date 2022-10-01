@@ -15,34 +15,23 @@ typedef struct Ppu Ppu;
 typedef struct BgLayer {
   uint16_t hScroll;
   uint16_t vScroll;
+  // -- snapshot starts here
   bool tilemapWider;
   bool tilemapHigher;
   uint16_t tilemapAdr;
+  // -- snapshot ends here
   uint16_t tileAdr;
-  bool bigTiles_always_zero;
-  bool mosaicEnabled;
 } BgLayer;
-
-typedef struct Layer {
-  bool screenEnabled[2];   // 0 = main, 1 = sub
-  bool screenWindowed[2];  // 0 = main, 1 = sub
-} Layer;
-
-typedef struct WindowLayer {
-  bool window1enabled;
-  bool window2enabled;
-  bool window1inversed;
-  bool window2inversed;
-  uint8_t maskLogic_always_zero;
-} WindowLayer;
 
 enum {
   kPpuXPixels = 256 + kPpuExtraLeftRight * 2,
 };
 
+typedef uint16_t PpuZbufType;
+
 typedef struct PpuPixelPrioBufs {
-  uint8_t pixel[kPpuXPixels];
-  uint8_t prio[kPpuXPixels];
+  // This holds the prio in the upper 8 bits and the color in the lower 8 bits.
+  PpuZbufType data[kPpuXPixels];
 } PpuPixelPrioBufs;
 
 enum {
@@ -65,48 +54,54 @@ struct Ppu {
   uint8_t *renderBuffer;
   uint8_t extraLeftCur, extraRightCur, extraLeftRight, extraBottomCur;
   float mode7PerspectiveLow, mode7PerspectiveHigh;
-  // store 31 extra entries to remove the need for clamp
-  uint8_t brightnessMult[32 + 31]; 
-  uint8_t brightnessMultHalf[32 * 2];
-  PpuPixelPrioBufs bgBuffers[2];
+
+  // TMW / TSW etc
+  uint8 screenEnabled[2];
+  uint8 screenWindowed[2];
+  uint8 mosaicEnabled;
+  uint8 mosaicSize;
+  // object/sprites
+  uint16_t objTileAdr1;
+  uint16_t objTileAdr2;
+  uint8_t objSize;
+  // Window
+  uint8_t window1left;
+  uint8_t window1right;
+  uint8_t window2left;
+  uint8_t window2right;
+  uint32_t windowsel;
+
+  // color math
+  uint8_t clipMode;
+  uint8_t preventMathMode;
+  bool addSubscreen;
+  bool subtractColor;
+  bool halfColor;
+  uint8 mathEnabled;
+  uint8_t fixedColorR, fixedColorG, fixedColorB;
+  // settings
+  bool forcedBlank;
+  uint8_t brightness;
+  uint8_t mode;
+
   // vram access
-  uint16_t vram[0x8000];
   uint16_t vramPointer;
-  bool vramIncrementOnHigh;
   uint16_t vramIncrement;
-  uint8_t vramRemapMode;
-  uint16_t vramReadBuffer;
+  bool vramIncrementOnHigh;
   // cgram access
-  uint16_t cgram[0x100];
   uint8_t cgramPointer;
   bool cgramSecondWrite;
   uint8_t cgramBuffer;
   // oam access
-  uint16_t oam[0x100];
-  uint8_t highOam[0x20];
-  uint8_t oamAdr;
-  uint8_t oamAdrWritten;
-  bool oamInHigh;
-  bool oamInHighWritten;
+  uint16_t oamAdr;
   bool oamSecondWrite;
   uint8_t oamBuffer;
-  // object/sprites
-  bool objPriority;
-  uint16_t objTileAdr1;
-  uint16_t objTileAdr2;
-  uint8_t objSize;
-  PpuPixelPrioBufs objBuffer;
-  bool timeOver;
-  bool rangeOver;
-  bool objInterlace_always_zero;
+
   // background layers
   BgLayer bgLayer[4];
   uint8_t scrollPrev;
   uint8_t scrollPrev2;
-  uint8_t mosaicSize;
-  uint8_t mosaicStartLine;
-  // layers
-  Layer layer[5];
+  
   // mode 7
   int16_t m7matrix[8]; // a, b, c, d, x, y, h, v
   uint8_t m7prev;
@@ -118,45 +113,18 @@ struct Ppu {
   // mode 7 internal
   int32_t m7startX;
   int32_t m7startY;
-  // windows
-  WindowLayer windowLayer[6];
-  uint8_t window1left;
-  uint8_t window1right;
-  uint8_t window2left;
-  uint8_t window2right;
-  // color math
-  uint8_t clipMode;
-  uint8_t preventMathMode;
-  bool addSubscreen;
-  bool subtractColor;
-  bool halfColor;
-  bool mathEnabled[6];
-  uint8_t fixedColorR;
-  uint8_t fixedColorG;
-  uint8_t fixedColorB;
-  // settings
-  bool forcedBlank;
-  uint8_t brightness;
-  uint8_t mode;
-  bool bg3priority;
-  bool evenFrame;
-  bool pseudoHires_always_zero;
-  bool overscan_always_zero;
-  bool frameOverscan_always_zero; // if we are overscanning this frame (determined at 0,225)
-  bool interlace_always_zero;
-  bool frameInterlace_always_zero; // if we are interlacing this frame (determined at start vblank)
-  bool directColor_always_zero;
-  // latching
-  uint16_t hCount;
-  uint16_t vCount;
-  bool hCountSecond;
-  bool vCountSecond;
-  bool countersLatched;
-  uint8_t ppu1openBus;
-  uint8_t ppu2openBus;
 
+  uint16_t oam[0x110];
+  
+  // store 31 extra entries to remove the need for clamp
+  uint8_t brightnessMult[32 + 31];
+  uint8_t brightnessMultHalf[32 * 2];
+  uint16_t cgram[0x100];
   uint8_t mosaicModulo[kPpuXPixels];
   uint32_t colorMapRgb[256];
+  PpuPixelPrioBufs bgBuffers[2];
+  PpuPixelPrioBufs objBuffer;
+  uint16_t vram[0x8000];
 };
 
 Ppu* ppu_init();

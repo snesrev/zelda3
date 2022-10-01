@@ -5915,7 +5915,6 @@ uint16 RoomTag_BuildChestStripes(uint16 pos, uint16 y) {  // 81ef0f
 void Dungeon_SetAttrForActivatedWaterOff() {  // 81ef93
   CGWSEL_copy = 2;
   CGADSUB_copy = 0x32;
-  zelda_ppu_write(TS, 0);
   TS_copy = 0;
   W12SEL_copy = 0;
   dung_hdr_collision = 0;
@@ -6491,11 +6490,8 @@ void Module_PreDungeon_setAmbientSfx() {  // 82838c
 void LoadOWMusicIfNeeded() {  // 82854c
   if (!flag_which_music_type)
     return;
-  zelda_snes_dummy_write(NMITIMEN, 0);
-  zelda_snes_dummy_write(HDMAEN, 0);
   flag_which_music_type = 0;
   LoadOverworldSongs();
-  zelda_snes_dummy_write(NMITIMEN, 0x81);
 }
 
 void Module07_Dungeon() {  // 8287a2
@@ -7853,7 +7849,6 @@ void Module11_02_LoadEntrance() {  // 829b1c
   Dungeon_LoadAttributeTable();
   subsubmodule_index = bak + 1;
   misc_sprites_graphics_index = 10;
-  zelda_ppu_write(OBSEL, 2);
   InitializeTilesets();
   palette_sp6 = 10;
   Dungeon_LoadPalettes();
@@ -7879,11 +7874,8 @@ void Dungeon_LoadSongBankIfNeeded() {  // 829bd7
   } else {
     if (flag_which_music_type)
       return;
-    zelda_snes_dummy_write(NMITIMEN, 0);
-    zelda_snes_dummy_write(HDMAEN, 0);
     flag_which_music_type = 1;
     LoadDungeonSongs();
-    zelda_snes_dummy_write(NMITIMEN, 0x81);
   }
 }
 
@@ -8273,7 +8265,6 @@ uint8 CalculateTransitionLanding() {  // 82c1e5
 // This gets called when entering a dungeon from ow.
 void Dungeon_LoadAndDrawRoom() {  // 82c57b
   int bak = HDMAEN_copy;
-  zelda_snes_dummy_write(HDMAEN, 0);
   HDMAEN_copy = 0;
   Dungeon_LoadRoom();
   overworld_screen_transition = 0;

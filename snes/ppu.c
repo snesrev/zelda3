@@ -20,8 +20,18 @@ static void ppu_calculateMode7Starts(Ppu* ppu, int y);
 static int ppu_getPixelForMode7(Ppu* ppu, int x, int layer, bool priority);
 static bool ppu_getWindowState(Ppu* ppu, int layer, int x);
 static bool ppu_evaluateSprites(Ppu* ppu, int line);
-static uint16_t ppu_getVramRemap(Ppu* ppu);
 static void PpuDrawWholeLine(Ppu *ppu, uint y);
+
+#define IS_SCREEN_ENABLED(ppu, sub, layer) (ppu->screenEnabled[sub] & (1 << layer))
+#define IS_SCREEN_WINDOWED(ppu, sub, layer) (ppu->screenWindowed[sub] & (1 << layer))
+#define IS_MOSAIC_ENABLED(ppu, layer) ((ppu->mosaicEnabled & (1 << layer)))
+#define GET_WINDOW_FLAGS(ppu, layer) (ppu->windowsel >> (layer * 4))
+enum {
+  kWindow1Inversed = 1,
+  kWindow1Enabled = 2,
+  kWindow2Inversed = 4,
+  kWindow2Enabled = 8,
+};
 
 Ppu* ppu_init() {
   Ppu* ppu = (Ppu * )malloc(sizeof(Ppu));
@@ -43,28 +53,18 @@ void ppu_reset(Ppu* ppu) {
   ppu->vramPointer = 0;
   ppu->vramIncrementOnHigh = false;
   ppu->vramIncrement = 1;
-  ppu->vramRemapMode = 0;
-  ppu->vramReadBuffer = 0;
   memset(ppu->cgram, 0, sizeof(ppu->cgram));
   ppu->cgramPointer = 0;
   ppu->cgramSecondWrite = false;
   ppu->cgramBuffer = 0;
   memset(ppu->oam, 0, sizeof(ppu->oam));
-  memset(ppu->highOam, 0, sizeof(ppu->highOam));
   ppu->oamAdr = 0;
-  ppu->oamAdrWritten = 0;
-  ppu->oamInHigh = false;
-  ppu->oamInHighWritten = false;
   ppu->oamSecondWrite = false;
   ppu->oamBuffer = 0;
-  ppu->objPriority = false;
-  ppu->objTileAdr1 = 0;
-  ppu->objTileAdr2 = 0;
+  ppu->objTileAdr1 = 0x4000;
+  ppu->objTileAdr2 = 0x5000;
   ppu->objSize = 0;
   memset(&ppu->objBuffer, 0, sizeof(ppu->objBuffer));
-  ppu->timeOver = false;
-  ppu->rangeOver = false;
-  ppu->objInterlace_always_zero = false;
   for(int i = 0; i < 4; i++) {
     ppu->bgLayer[i].hScroll = 0;
     ppu->bgLayer[i].vScroll = 0;
@@ -72,35 +72,22 @@ void ppu_reset(Ppu* ppu) {
     ppu->bgLayer[i].tilemapHigher = false;
     ppu->bgLayer[i].tilemapAdr = 0;
     ppu->bgLayer[i].tileAdr = 0;
-    ppu->bgLayer[i].bigTiles_always_zero = false;
-    ppu->bgLayer[i].mosaicEnabled = false;
   }
   ppu->scrollPrev = 0;
   ppu->scrollPrev2 = 0;
   ppu->mosaicSize = 1;
-  ppu->mosaicStartLine = 1;
-  for(int i = 0; i < 5; i++) {
-    ppu->layer[i].screenEnabled[0] = false;
-    ppu->layer[i].screenEnabled[1] = false;
-    ppu->layer[i].screenWindowed[0] = false;
-    ppu->layer[i].screenWindowed[1] = false;
-  }
+  ppu->screenEnabled[0] = ppu->screenEnabled[1] = 0;
+  ppu->screenWindowed[0] = ppu->screenWindowed[1] = 0;
   memset(ppu->m7matrix, 0, sizeof(ppu->m7matrix));
   ppu->m7prev = 0;
-  ppu->m7largeField = false;
+  ppu->m7largeField = true;
   ppu->m7charFill = false;
   ppu->m7xFlip = false;
   ppu->m7yFlip = false;
   ppu->m7extBg_always_zero = false;
   ppu->m7startX = 0;
   ppu->m7startY = 0;
-  for(int i = 0; i < 6; i++) {
-    ppu->windowLayer[i].window1enabled = false;
-    ppu->windowLayer[i].window2enabled = false;
-    ppu->windowLayer[i].window1inversed = false;
-    ppu->windowLayer[i].window2inversed = false;
-    ppu->windowLayer[i].maskLogic_always_zero = 0;
-  }
+  ppu->windowsel = 0;
   ppu->window1left = 0;
   ppu->window1right = 0;
   ppu->window2left = 0;
@@ -110,34 +97,29 @@ void ppu_reset(Ppu* ppu) {
   ppu->addSubscreen = false;
   ppu->subtractColor = false;
   ppu->halfColor = false;
-  memset(ppu->mathEnabled, 0, sizeof(ppu->mathEnabled));
+  ppu->mathEnabled = 0;
   ppu->fixedColorR = 0;
   ppu->fixedColorG = 0;
   ppu->fixedColorB = 0;
   ppu->forcedBlank = true;
   ppu->brightness = 0;
   ppu->mode = 0;
-  ppu->bg3priority = false;
-  ppu->evenFrame = false;
-  ppu->pseudoHires_always_zero = false;
-  ppu->overscan_always_zero = false;
-  ppu->frameOverscan_always_zero = false;
-  ppu->interlace_always_zero = false;
-  ppu->frameInterlace_always_zero = false;
-  ppu->directColor_always_zero = false;
-  ppu->hCount = 0;
-  ppu->vCount = 0;
-  ppu->hCountSecond = false;
-  ppu->vCountSecond = false;
-  ppu->countersLatched = false;
-  ppu->ppu1openBus = 0;
-  ppu->ppu2openBus = 0;
 }
 
 void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx) {
-  func(ctx, &ppu->vram, offsetof(Ppu, objBuffer) - offsetof(Ppu, vram));
-  func(ctx, &ppu->objBuffer, 512);
-  func(ctx, &ppu->timeOver, offsetof(Ppu, mosaicModulo) - offsetof(Ppu, timeOver));
+  uint8 tmp[556] = { 0 };
+
+  func(ctx, &ppu->vram, 0x8000 * 2);
+  func(ctx, tmp, 10);
+  func(ctx, &ppu->cgram, 512);
+  func(ctx, tmp, 556);
+  func(ctx, tmp, 520);
+  for (int i = 0; i < 4; i++) {
+    func(ctx, tmp, 4);
+    func(ctx, &ppu->bgLayer[i].tilemapWider, 4);
+    func(ctx, tmp, 4);
+  }
+  func(ctx, tmp, 123);
 }
 
 bool PpuBeginDrawing(Ppu *ppu, uint8_t *pixels, size_t pitch, uint32_t render_flags) {
@@ -168,12 +150,14 @@ bool PpuBeginDrawing(Ppu *ppu, uint8_t *pixels, size_t pitch, uint32_t render_fl
   return hq;
 }
 
+static inline void ClearBackdrop(PpuPixelPrioBufs *buf) {
+  for (size_t i = 0; i != countof(buf->data); i += 4)
+    *(uint64*)&buf->data[i] = 0x0500050005000500;
+}
+
+
 void ppu_runLine(Ppu *ppu, int line) {
-  if(line == 0) {
-    ppu->rangeOver = false;
-    ppu->timeOver = false;
-    ppu->evenFrame = !ppu->evenFrame;
-  } else {
+  if(line != 0) {
     if (ppu->mosaicSize != ppu->lastMosaicModulo) {
       int mod = ppu->mosaicSize;
       ppu->lastMosaicModulo = mod;
@@ -183,8 +167,7 @@ void ppu_runLine(Ppu *ppu, int line) {
       }
     }
     // evaluate sprites
-    memset(&ppu->objBuffer.pixel, 0, sizeof(ppu->objBuffer.pixel));
-    memset(&ppu->objBuffer.prio, 0x05, sizeof(ppu->objBuffer.prio));
+    ClearBackdrop(&ppu->objBuffer);
     ppu->lineHasSprites = !ppu->forcedBlank && ppu_evaluateSprites(ppu, line - 1);
 
     // outside of visible range?
@@ -196,7 +179,6 @@ void ppu_runLine(Ppu *ppu, int line) {
       return;
     }
 
-    // actual line
     if (ppu->renderFlags & kPpuRenderFlags_NewRenderer) {
       PpuDrawWholeLine(ppu, line);
     } else {
@@ -230,10 +212,10 @@ static void PpuWindows_Clear(PpuWindows *win, Ppu *ppu, uint layer) {
 }
 
 static void PpuWindows_Calc(PpuWindows *win, Ppu *ppu, uint layer) {
-  WindowLayer *wl = &ppu->windowLayer[layer];
   // Evaluate which spans to render based on the window settings.
   // There are at most 5 windows.
   // Algorithm from Snes9x
+  uint32 winflags = GET_WINDOW_FLAGS(ppu, layer);
   uint nr = 1;
   int window_right = 256 + (layer != 2 ? ppu->extraRightCur : 0);
   win->edges[0] = - (layer != 2 ? ppu->extraLeftCur : 0);
@@ -241,7 +223,7 @@ static void PpuWindows_Calc(PpuWindows *win, Ppu *ppu, uint layer) {
   uint8 window_bits = 0;
   uint i, j;
   int t;
-  bool w1_ena = wl->window1enabled && ppu->window1left <= ppu->window1right;
+  bool w1_ena = (winflags & kWindow1Enabled) && ppu->window1left <= ppu->window1right;
   if (w1_ena) {
     if (ppu->window1left > win->edges[0]) {
       win->edges[nr] = ppu->window1left;
@@ -252,7 +234,7 @@ static void PpuWindows_Calc(PpuWindows *win, Ppu *ppu, uint layer) {
       win->edges[++nr] = window_right;
     }
   }
-  bool w2_ena = wl->window2enabled && ppu->window2left <= ppu->window2right;
+  bool w2_ena = (winflags & kWindow2Enabled) && ppu->window2left <= ppu->window2right;
   if (w2_ena) {
     for (i = 0; i <= nr && (t = ppu->window2left) != win->edges[i]; i++) {
       if (t < win->edges[i]) {
@@ -279,33 +261,32 @@ static void PpuWindows_Calc(PpuWindows *win, Ppu *ppu, uint layer) {
     for (j = i; win->edges[j] != ppu->window1right + 1; j++);
     w1_bits = ((1 << (j - i)) - 1) << i;
   }
-  if (wl->window1enabled & wl->window1inversed)
+  if ((winflags & (kWindow1Enabled | kWindow1Inversed)) == (kWindow1Enabled | kWindow1Inversed))
     w1_bits = ~w1_bits;
   if (w2_ena) {
     for (i = 0; win->edges[i] != ppu->window2left; i++);
     for (j = i; win->edges[j] != ppu->window2right + 1; j++);
     w2_bits = ((1 << (j - i)) - 1) << i;
   }
-  if (wl->window2enabled & wl->window2inversed)
+  if ((winflags & (kWindow2Enabled | kWindow2Inversed)) == (kWindow2Enabled | kWindow2Inversed))
     w2_bits = ~w2_bits;
   win->bits = w1_bits | w2_bits;
 }
 
 // Draw a whole line of a 4bpp background layer into bgBuffers
-static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8 zhi, uint8 zlo) {
+static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, PpuZbufType zhi, PpuZbufType zlo) {
 #define DO_PIXEL(i) do { \
   pixel = (bits >> i) & 1 | (bits >> (7 + i)) & 2 | (bits >> (14 + i)) & 4 | (bits >> (21 + i)) & 8; \
-  if (pixel && z > dst[kPpuXPixels + i]) dst[i] = paletteBase + pixel, dst[kPpuXPixels + i] = z; } while (0)
+  if ((bits & (0x01010101 << i)) && z > dstz[i]) dstz[i] = z + pixel; } while (0)
 #define DO_PIXEL_HFLIP(i) do { \
   pixel = (bits >> (7 - i)) & 1 | (bits >> (14 - i)) & 2 | (bits >> (21 - i)) & 4 | (bits >> (28 - i)) & 8; \
-  if (pixel && z > dst[kPpuXPixels + i]) dst[i] = paletteBase + pixel, dst[kPpuXPixels + i] = z; } while (0)
+  if ((bits & (0x80808080 >> i)) && z > dstz[i]) dstz[i] = z + pixel; } while (0)
 #define READ_BITS(ta, tile) (addr = &ppu->vram[((ta) + (tile) * 16) & 0x7fff], addr[0] | addr[8] << 16)
   enum { kPaletteShift = 6 };
-  Layer *layerp = &ppu->layer[layer];
-  if (!layerp->screenEnabled[sub])
+  if (!IS_SCREEN_ENABLED(ppu, sub, layer))
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
+  IS_SCREEN_WINDOWED(ppu, sub, layer) ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
   BgLayer *bglayer = &ppu->bgLayer[layer];
   y += bglayer->vScroll;
   int sc_offs = bglayer->tilemapAdr + (((y >> 3) & 0x1f) << 5);
@@ -323,7 +304,7 @@ static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
       continue;  // layer is disabled for this window part
     uint x = win.edges[windex] + bglayer->hScroll;
     uint w = win.edges[windex + 1] - win.edges[windex];
-    uint8 *dst = ppu->bgBuffers[sub].pixel + win.edges[windex] + kPpuExtraLeftRight;
+    PpuZbufType *dstz = ppu->bgBuffers[sub].data + win.edges[windex] + kPpuExtraLeftRight;
     const uint16 *tp = tps[x >> 8 & 1] + ((x >> 3) & 0x1f);
     const uint16 *tp_last = tps[x >> 8 & 1] + 31;
     const uint16 *tp_next = tps[(x >> 8 & 1) ^ 1];
@@ -335,19 +316,19 @@ static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
       uint32 tile = *tp;
       NEXT_TP();
       int ta = (tile & 0x8000) ? tileadr1 : tileadr0;
-      uint8 z = (tile & 0x2000) ? zhi : zlo;
+      PpuZbufType z = (tile & 0x2000) ? zhi : zlo;
       uint32 bits = READ_BITS(ta, tile & 0x3ff);
       if (bits) {
-        int paletteBase = (tile & 0x1c00) >> kPaletteShift;
+        z += ((tile & 0x1c00) >> kPaletteShift);
         if (tile & 0x4000) {
           bits >>= (x & 7), x += curw;
-          do DO_PIXEL(0); while (bits >>= 1, dst++, --curw);
+          do DO_PIXEL(0); while (bits >>= 1, dstz++, --curw);
         } else {
           bits <<= (x & 7), x += curw;
-          do DO_PIXEL_HFLIP(0); while (bits <<= 1, dst++, --curw);
+          do DO_PIXEL_HFLIP(0); while (bits <<= 1, dstz++, --curw);
         }
       } else {
-        dst += curw;
+        dstz += curw;
       }
     }
     // Handle full tiles in the middle
@@ -355,10 +336,10 @@ static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
       uint32 tile = *tp;
       NEXT_TP();
       int ta = (tile & 0x8000) ? tileadr1 : tileadr0;
-      uint8 z = (tile & 0x2000) ? zhi : zlo;
+      PpuZbufType z = (tile & 0x2000) ? zhi : zlo;
       uint32 bits = READ_BITS(ta, tile & 0x3ff);
       if (bits) {
-        int paletteBase = (tile & 0x1c00) >> kPaletteShift;
+        z += ((tile & 0x1c00) >> kPaletteShift);
         if (tile & 0x4000) {
           DO_PIXEL(0); DO_PIXEL(1); DO_PIXEL(2); DO_PIXEL(3);
           DO_PIXEL(4); DO_PIXEL(5); DO_PIXEL(6); DO_PIXEL(7);
@@ -367,20 +348,20 @@ static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
           DO_PIXEL_HFLIP(4); DO_PIXEL_HFLIP(5); DO_PIXEL_HFLIP(6); DO_PIXEL_HFLIP(7);
         }
       }
-      dst += 8, w -= 8;
+      dstz += 8, w -= 8;
     }
     // Handle remaining clipped part
     if (w) {
       uint32 tile = *tp;
       int ta = (tile & 0x8000) ? tileadr1 : tileadr0;
-      uint8 z = (tile & 0x2000) ? zhi : zlo;
+      PpuZbufType z = (tile & 0x2000) ? zhi : zlo;
       uint32 bits = READ_BITS(ta, tile & 0x3ff);
       if (bits) {
-        int paletteBase = (tile & 0x1c00) >> kPaletteShift;
+        z += ((tile & 0x1c00) >> kPaletteShift);
         if (tile & 0x4000) {
-          do DO_PIXEL(0); while (bits >>= 1, dst++, --w);
+          do DO_PIXEL(0); while (bits >>= 1, dstz++, --w);
         } else {
-          do DO_PIXEL_HFLIP(0); while (bits <<= 1, dst++, --w);
+          do DO_PIXEL_HFLIP(0); while (bits <<= 1, dstz++, --w);
         }
       }
     }
@@ -391,20 +372,19 @@ static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
 }
 
 // Draw a whole line of a 2bpp background layer into bgBuffers
-static void PpuDrawBackground_2bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8 zhi, uint8 zlo) {
+static void PpuDrawBackground_2bpp(Ppu *ppu, uint y, bool sub, uint layer, PpuZbufType zhi, PpuZbufType zlo) {
 #define DO_PIXEL(i) do { \
   pixel = (bits >> i) & 1 | (bits >> (7 + i)) & 2; \
-  if (pixel && z > dst[kPpuXPixels + i]) dst[i] = paletteBase + pixel, dst[kPpuXPixels + i] = z; } while (0)
+  if (pixel && z > dstz[i]) dstz[i] = z + pixel; } while (0)
 #define DO_PIXEL_HFLIP(i) do { \
   pixel = (bits >> (7 - i)) & 1 | (bits >> (14 - i)) & 2; \
-  if (pixel && z > dst[kPpuXPixels + i]) dst[i] = paletteBase + pixel, dst[kPpuXPixels + i] = z; } while (0)
+  if (pixel && z > dstz[i]) dstz[i] = z + pixel; } while (0)
 #define READ_BITS(ta, tile) (addr = &ppu->vram[(ta) + (tile) * 8 & 0x7fff], addr[0])
   enum { kPaletteShift = 8 };
-  Layer *layerp = &ppu->layer[layer];
-  if (!layerp->screenEnabled[sub])
+  if (!IS_SCREEN_ENABLED(ppu, sub, layer))
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
+  IS_SCREEN_WINDOWED(ppu, sub, layer) ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
   BgLayer *bglayer = &ppu->bgLayer[layer];
   y += bglayer->vScroll;
   int sc_offs = bglayer->tilemapAdr + (((y >> 3) & 0x1f) << 5);
@@ -423,7 +403,7 @@ static void PpuDrawBackground_2bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
       continue;  // layer is disabled for this window part
     uint x = win.edges[windex] + bglayer->hScroll;
     uint w = win.edges[windex + 1] - win.edges[windex];
-    uint8 *dst = ppu->bgBuffers[sub].pixel + win.edges[windex] + kPpuExtraLeftRight;
+    PpuZbufType *dstz = ppu->bgBuffers[sub].data + win.edges[windex] + kPpuExtraLeftRight;
     const uint16 *tp = tps[x >> 8 & 1] + ((x >> 3) & 0x1f);
     const uint16 *tp_last = tps[x >> 8 & 1] + 31;
     const uint16 *tp_next = tps[(x >> 8 & 1) ^ 1];
@@ -436,19 +416,19 @@ static void PpuDrawBackground_2bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
       uint32 tile = *tp;
       NEXT_TP();
       int ta = (tile & 0x8000) ? tileadr1 : tileadr0;
-      uint8 z = (tile & 0x2000) ? zhi : zlo;
+      PpuZbufType z = (tile & 0x2000) ? zhi : zlo;
       uint32 bits = READ_BITS(ta, tile & 0x3ff);
       if (bits) {
-        int paletteBase = (tile & 0x1c00) >> kPaletteShift;
+        z += ((tile & 0x1c00) >> kPaletteShift);
         if (tile & 0x4000) {
           bits >>= (x & 7), x += curw;
-          do DO_PIXEL(0); while (bits >>= 1, dst++, --curw);
+          do DO_PIXEL(0); while (bits >>= 1, dstz++, --curw);
         } else {
           bits <<= (x & 7), x += curw;
-          do DO_PIXEL_HFLIP(0); while (bits <<= 1, dst++, --curw);
+          do DO_PIXEL_HFLIP(0); while (bits <<= 1, dstz++, --curw);
         }
       } else {
-        dst += curw;
+        dstz += curw;
       }
     }
     // Handle full tiles in the middle
@@ -456,10 +436,10 @@ static void PpuDrawBackground_2bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
       uint32 tile = *tp;
       NEXT_TP();
       int ta = (tile & 0x8000) ? tileadr1 : tileadr0;
-      uint8 z = (tile & 0x2000) ? zhi : zlo;
+      PpuZbufType z = (tile & 0x2000) ? zhi : zlo;
       uint32 bits = READ_BITS(ta, tile & 0x3ff);
       if (bits) {
-        int paletteBase = (tile & 0x1c00) >> kPaletteShift;
+        z += ((tile & 0x1c00) >> kPaletteShift);
         if (tile & 0x4000) {
           DO_PIXEL(0); DO_PIXEL(1); DO_PIXEL(2); DO_PIXEL(3);
           DO_PIXEL(4); DO_PIXEL(5); DO_PIXEL(6); DO_PIXEL(7);
@@ -468,20 +448,20 @@ static void PpuDrawBackground_2bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
           DO_PIXEL_HFLIP(4); DO_PIXEL_HFLIP(5); DO_PIXEL_HFLIP(6); DO_PIXEL_HFLIP(7);
         }
       }
-      dst += 8, w -= 8;
+      dstz += 8, w -= 8;
     }
     // Handle remaining clipped part
     if (w) {
       uint32 tile = *tp;
       int ta = (tile & 0x8000) ? tileadr1 : tileadr0;
-      uint8 z = (tile & 0x2000) ? zhi : zlo;
+      PpuZbufType z = (tile & 0x2000) ? zhi : zlo;
       uint32 bits = READ_BITS(ta, tile & 0x3ff);
       if (bits) {
-        int paletteBase = (tile & 0x1c00) >> kPaletteShift;
+        z += ((tile & 0x1c00) >> kPaletteShift);
         if (tile & 0x4000) {
-          do DO_PIXEL(0); while (bits >>= 1, dst++, --w);
+          do DO_PIXEL(0); while (bits >>= 1, dstz++, --w);
         } else {
-          do DO_PIXEL_HFLIP(0); while (bits <<= 1, dst++, --w);
+          do DO_PIXEL_HFLIP(0); while (bits <<= 1, dstz++, --w);
         }
       }
     }
@@ -493,16 +473,15 @@ static void PpuDrawBackground_2bpp(Ppu *ppu, uint y, bool sub, uint layer, uint8
 }
 
 // Draw a whole line of a 4bpp background layer into bgBuffers, with mosaic applied
-static void PpuDrawBackground_4bpp_mosaic(Ppu *ppu, uint y, bool sub, uint layer, uint8 zhi, uint8 zlo) {
+static void PpuDrawBackground_4bpp_mosaic(Ppu *ppu, uint y, bool sub, uint layer, PpuZbufType zhi, PpuZbufType zlo) {
 #define GET_PIXEL(i) pixel = (bits) & 1 | (bits >> 7) & 2 | (bits >> 14) & 4 | (bits >> 21) & 8
 #define GET_PIXEL_HFLIP(i) pixel = (bits >> 7) & 1 | (bits >> 14) & 2 | (bits >> 21) & 4 | (bits >> 28) & 8
 #define READ_BITS(ta, tile) (addr = &ppu->vram[((ta) + (tile) * 16) & 0x7fff], addr[0] | addr[8] << 16)
   enum { kPaletteShift = 6 };
-  Layer *layerp = &ppu->layer[layer];
-  if (!layerp->screenEnabled[sub])
+  if (!IS_SCREEN_ENABLED(ppu, sub, layer))
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
+  IS_SCREEN_WINDOWED(ppu, sub, layer) ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
   BgLayer *bglayer = &ppu->bgLayer[layer];
   y = ppu->mosaicModulo[y] + bglayer->vScroll;
   int sc_offs = bglayer->tilemapAdr + (((y >> 3) & 0x1f) << 5);
@@ -519,33 +498,33 @@ static void PpuDrawBackground_4bpp_mosaic(Ppu *ppu, uint y, bool sub, uint layer
     if (win.bits & (1 << windex))
       continue;  // layer is disabled for this window part
     int sx = win.edges[windex];
-    uint8 *dst = ppu->bgBuffers[sub].pixel + sx + kPpuExtraLeftRight;
-    uint8 *dst_end = ppu->bgBuffers[sub].pixel + win.edges[windex + 1] + kPpuExtraLeftRight;
+    PpuZbufType *dstz = ppu->bgBuffers[sub].data + sx + kPpuExtraLeftRight;
+    PpuZbufType *dstz_end = ppu->bgBuffers[sub].data + win.edges[windex + 1] + kPpuExtraLeftRight;
     uint x = sx + bglayer->hScroll;
     const uint16 *tp = tps[x >> 8 & 1] + ((x >> 3) & 0x1f);
     const uint16 *tp_last = tps[x >> 8 & 1] + 31, *tp_next = tps[(x >> 8 & 1) ^ 1];
     x &= 7;
     int w = ppu->mosaicSize - (sx - ppu->mosaicModulo[sx]);
     do {
-      w = IntMin(w, dst_end - dst);
+      w = IntMin(w, dstz_end - dstz);
       uint32 tile = *tp;
       int ta = (tile & 0x8000) ? tileadr1 : tileadr0;
-      uint8 z = (tile & 0x2000) ? zhi : zlo;
+      PpuZbufType z = (tile & 0x2000) ? zhi : zlo;
       uint32 bits = READ_BITS(ta, tile & 0x3ff);
-      if (tile & 0x4000) bits >>= x, GET_PIXEL(0); else bits <<= x, GET_PIXEL_HFLIP(0);
+      if (tile & 0x4000) bits >>= x, GET_PIXEL(); else bits <<= x, GET_PIXEL_HFLIP();
       if (pixel) {
         pixel += (tile & 0x1c00) >> kPaletteShift;
         int i = 0;
         do {
-          if (z > dst[i + kPpuXPixels])
-            dst[i] = pixel, dst[i + kPpuXPixels] = z;
+          if (z > dstz[i])
+            dstz[i] = pixel + z;
         } while (++i != w);
       }
-      dst += w, x += w;
+      dstz += w, x += w;
       for (; x >= 8; x -= 8)
         tp = (tp != tp_last) ? tp + 1 : tp_next;
       w = ppu->mosaicSize;
-    } while (dst_end - dst != 0);
+    } while (dstz_end - dstz != 0);
   }
 #undef READ_BITS
 #undef GET_PIXEL
@@ -553,16 +532,15 @@ static void PpuDrawBackground_4bpp_mosaic(Ppu *ppu, uint y, bool sub, uint layer
 }
 
 // Draw a whole line of a 2bpp background layer into bgBuffers, with mosaic applied
-static void PpuDrawBackground_2bpp_mosaic(Ppu *ppu, int y, bool sub, uint layer, uint8 zhi, uint8 zlo) {
+static void PpuDrawBackground_2bpp_mosaic(Ppu *ppu, int y, bool sub, uint layer, PpuZbufType zhi, PpuZbufType zlo) {
 #define GET_PIXEL(i) pixel = (bits) & 1 | (bits >> 7) & 2
 #define GET_PIXEL_HFLIP(i) pixel = (bits >> 7) & 1 | (bits >> 14) & 2
 #define READ_BITS(ta, tile) (addr = &ppu->vram[((ta) + (tile) * 8) & 0x7fff], addr[0])
   enum { kPaletteShift = 8 };
-  Layer *layerp = &ppu->layer[layer];
-  if (!layerp->screenEnabled[sub])
+  if (!IS_SCREEN_ENABLED(ppu, sub, layer))
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
+  IS_SCREEN_WINDOWED(ppu, sub, layer) ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
   BgLayer *bglayer = &ppu->bgLayer[layer];
   y = ppu->mosaicModulo[y] + bglayer->vScroll;
   int sc_offs = bglayer->tilemapAdr + (((y >> 3) & 0x1f) << 5);
@@ -579,33 +557,33 @@ static void PpuDrawBackground_2bpp_mosaic(Ppu *ppu, int y, bool sub, uint layer,
     if (win.bits & (1 << windex))
       continue;  // layer is disabled for this window part
     int sx = win.edges[windex];
-    uint8 *dst = ppu->bgBuffers[sub].pixel + sx + kPpuExtraLeftRight;
-    uint8 *dst_end = ppu->bgBuffers[sub].pixel + win.edges[windex + 1] + kPpuExtraLeftRight;
+    PpuZbufType *dstz = ppu->bgBuffers[sub].data + sx + kPpuExtraLeftRight;
+    PpuZbufType *dstz_end = ppu->bgBuffers[sub].data + win.edges[windex + 1] + kPpuExtraLeftRight;
     uint x = sx + bglayer->hScroll;
     const uint16 *tp = tps[x >> 8 & 1] + ((x >> 3) & 0x1f);
     const uint16 *tp_last = tps[x >> 8 & 1] + 31, *tp_next = tps[(x >> 8 & 1) ^ 1];
     x &= 7;
     int w = ppu->mosaicSize - (sx - ppu->mosaicModulo[sx]);
     do {
-      w = IntMin(w, dst_end - dst);
+      w = IntMin(w, dstz_end - dstz);
       uint32 tile = *tp;
       int ta = (tile & 0x8000) ? tileadr1 : tileadr0;
-      uint8 z = (tile & 0x2000) ? zhi : zlo;
+      PpuZbufType z = (tile & 0x2000) ? zhi : zlo;
       uint32 bits = READ_BITS(ta, tile & 0x3ff);
       if (tile & 0x4000) bits >>= x, GET_PIXEL(0); else bits <<= x, GET_PIXEL_HFLIP(0);
       if (pixel) {
         pixel += (tile & 0x1c00) >> kPaletteShift;
         uint i = 0;
         do {
-          if (z > dst[i + kPpuXPixels])
-            dst[i] = pixel, dst[i + kPpuXPixels] = z;
+          if (z > dstz[i])
+            dstz[i] = pixel + z;
         } while (++i != w);
       }
-      dst += w, x += w;
+      dstz += w, x += w;
       for (; x >= 8; x -= 8)
         tp = (tp != tp_last) ? tp + 1 : tp_next;
       w = ppu->mosaicSize;
-    } while (dst_end - dst != 0);
+    } while (dstz_end - dstz != 0);
   }
 #undef READ_BITS
 #undef GET_PIXEL
@@ -618,38 +596,36 @@ static void PpuDrawBackground_2bpp_mosaic(Ppu *ppu, int y, bool sub, uint layer,
 #define SPRITE_PRIO_TO_PRIO_HI(prio) ((prio) * 4 + 2)
 
 static void PpuDrawSprites(Ppu *ppu, uint y, uint sub, bool clear_backdrop) {
-  Layer *layerp = &ppu->layer[4];
-  if (!layerp->screenEnabled[sub])
+  int layer = 4;
+  if (!IS_SCREEN_ENABLED(ppu, sub, layer))
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, 4) : PpuWindows_Clear(&win, ppu, 4);
+  IS_SCREEN_WINDOWED(ppu, sub, layer) ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
   for (size_t windex = 0; windex < win.nr; windex++) {
     if (win.bits & (1 << windex))
       continue;  // layer is disabled for this window part
     int left = win.edges[windex];
     int width = win.edges[windex + 1] - left;
-    uint8 *src = ppu->objBuffer.pixel + left + kPpuExtraLeftRight;
-    uint8 *dst = ppu->bgBuffers[sub].pixel + left + kPpuExtraLeftRight;
+    PpuZbufType *src = ppu->objBuffer.data + left + kPpuExtraLeftRight;
+    PpuZbufType *dst = ppu->bgBuffers[sub].data + left + kPpuExtraLeftRight;
     if (clear_backdrop) {
-      memcpy(dst, src, width);
-      memcpy(dst + kPpuXPixels, src + kPpuXPixels, width);
+      memcpy(dst, src, width * sizeof(uint16));
     } else {
       do {
-        if (src[kPpuXPixels] > dst[kPpuXPixels])
-          dst[0] = src[0], dst[kPpuXPixels] = src[kPpuXPixels];
+        if (src[0] > dst[0])
+          dst[0] = src[0];
       } while (src++, dst++, --width);
     }
   }
 }
 
 // Assumes it's drawn on an empty backdrop
-static void PpuDrawBackground_mode7(Ppu *ppu, uint y, bool sub, uint8 z) {
+static void PpuDrawBackground_mode7(Ppu *ppu, uint y, bool sub, PpuZbufType z) {
   int layer = 0;
-  Layer *layerp = &ppu->layer[layer];
-  if (!layerp->screenEnabled[sub])
+  if (!IS_SCREEN_ENABLED(ppu, sub, layer))
     return;  // layer is completely hidden
   PpuWindows win;
-  layerp->screenWindowed[sub] ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
+  IS_SCREEN_WINDOWED(ppu, sub, layer) ? PpuWindows_Calc(&win, ppu, layer) : PpuWindows_Clear(&win, ppu, layer);
 
   // expand 13-bit values to signed values
   int hScroll = ((int16_t)(ppu->m7matrix[6] << 3)) >> 3;
@@ -660,7 +636,7 @@ static void PpuDrawBackground_mode7(Ppu *ppu, uint y, bool sub, uint8 z) {
   int clippedV = vScroll - yCenter;
   clippedH = (clippedH & 0x2000) ? (clippedH | ~1023) : (clippedH & 1023);
   clippedV = (clippedV & 0x2000) ? (clippedV | ~1023) : (clippedV & 1023);
-  bool mosaic_enabled = ppu->bgLayer[0].mosaicEnabled && ppu->mosaicSize > 1;
+  bool mosaic_enabled = IS_MOSAIC_ENABLED(ppu, 0);
   if (mosaic_enabled)
     y = ppu->mosaicModulo[y];
   uint32 ry = ppu->m7yFlip ? 255 - y : y;
@@ -672,7 +648,8 @@ static void PpuDrawBackground_mode7(Ppu *ppu, uint y, bool sub, uint8 z) {
     if (win.bits & (1 << windex))
       continue;  // layer is disabled for this window part
     int x = win.edges[windex], x2 = win.edges[windex + 1], tile;
-    uint8 *dst = ppu->bgBuffers[sub].pixel + x + kPpuExtraLeftRight, *dst_end = ppu->bgBuffers[sub].pixel + x2 + kPpuExtraLeftRight;
+    PpuZbufType *dstz = ppu->bgBuffers[sub].data + x + kPpuExtraLeftRight;
+    PpuZbufType *dstz_end = ppu->bgBuffers[sub].data + x2 + kPpuExtraLeftRight;
     uint32 rx = ppu->m7xFlip ? 255 - x : x;
     uint32 xpos = m7startX + ppu->m7matrix[0] * rx;
     uint32 ypos = m7startY + ppu->m7matrix[2] * rx;
@@ -683,7 +660,7 @@ static void PpuDrawBackground_mode7(Ppu *ppu, uint y, bool sub, uint8 z) {
     if (mosaic_enabled) {
       int w = ppu->mosaicSize - (x - ppu->mosaicModulo[x]);
       do {
-        w = IntMin(w, dst_end - dst);
+        w = IntMin(w, dstz_end - dstz);
         if ((uint32)(xpos | ypos) > outside_value) {
           if (!char_fill)
             continue;
@@ -694,9 +671,9 @@ static void PpuDrawBackground_mode7(Ppu *ppu, uint y, bool sub, uint8 z) {
         uint8 pixel = ppu->vram[tile * 64 + (ypos >> 8 & 7) * 8 + (xpos >> 8 & 7)] >> 8;
         if (pixel) {
           int i = 0;
-          do dst[i] = pixel, dst[i + kPpuXPixels] = z; while (++i != w);
+          do dstz[i] = pixel + z; while (++i != w);
         }
-      } while (xpos += dx * w, ypos += dy * w, dst += w, w = ppu->mosaicSize, dst_end - dst != 0);
+      } while (xpos += dx * w, ypos += dy * w, dstz += w, w = ppu->mosaicSize, dstz_end - dstz != 0);
     } else {
       do {
         if ((uint32)(xpos | ypos) > outside_value) {
@@ -708,8 +685,8 @@ static void PpuDrawBackground_mode7(Ppu *ppu, uint y, bool sub, uint8 z) {
         }
         uint8 pixel = ppu->vram[tile * 64 + (ypos >> 8 & 7) * 8 + (xpos >> 8 & 7)] >> 8;
         if (pixel)
-          dst[0] = pixel, dst[kPpuXPixels] = z;
-      } while (xpos += dx, ypos += dy, ++dst != dst_end);
+          dstz[0] = pixel + z;
+      } while (xpos += dx, ypos += dy, ++dstz != dstz_end);
     }
   }
 }
@@ -790,11 +767,11 @@ static void PpuDrawMode7Upsampled(Ppu *ppu, uint y) {
   }
 
   if (ppu->lineHasSprites) {
-    uint8 *pixels = ppu->objBuffer.pixel;
+    PpuZbufType *pixels = ppu->objBuffer.data;
     size_t pitch = ppu->renderPitch;
     uint8 *dst = dst_start + ppu->extraLeftRight * 16;
     for (size_t i = 0; i < 256; i++, dst += 16) {
-      uint32 pixel = pixels[i + kPpuExtraLeftRight];
+      uint32 pixel = pixels[i + kPpuExtraLeftRight] & 0xff;
       if (pixel) {
         uint32 color = ppu->colorMapRgb[pixel];
         ((uint32 *)dst)[3] = ((uint32 *)dst)[2] = ((uint32 *)dst)[1] = ((uint32 *)dst)[0] = color;
@@ -817,10 +794,6 @@ static void PpuDrawMode7Upsampled(Ppu *ppu, uint y) {
     for (int i = 0; i < 4; i++)
       memset(dst_start + pitch * i + (256 + ppu->extraLeftRight * 2 - (ppu->extraLeftRight - ppu->extraRightCur)) * 4 * sizeof(uint32), 0, n);
   }
-    
-      
-
-
 #undef DRAW_PIXEL
 }
 
@@ -844,20 +817,20 @@ static void PpuDrawBackgrounds(Ppu *ppu, int y, bool sub) {
     if (ppu->lineHasSprites)
       PpuDrawSprites(ppu, y, sub, true);
 
-    if (ppu->bgLayer[0].mosaicEnabled && ppu->mosaicSize > 1)
-      PpuDrawBackground_4bpp_mosaic(ppu, y, sub, 0, 0xc0, 0x80);
+    if (IS_MOSAIC_ENABLED(ppu, 0))
+      PpuDrawBackground_4bpp_mosaic(ppu, y, sub, 0, 0xc000, 0x8000);
     else
-      PpuDrawBackground_4bpp(ppu, y, sub, 0, 0xc0, 0x80);
+      PpuDrawBackground_4bpp(ppu, y, sub, 0, 0xc000, 0x8000);
 
-    if (ppu->bgLayer[1].mosaicEnabled && ppu->mosaicSize > 1)
-      PpuDrawBackground_4bpp_mosaic(ppu, y, sub, 1, 0xb1, 0x71);
+    if (IS_MOSAIC_ENABLED(ppu, 1))
+      PpuDrawBackground_4bpp_mosaic(ppu, y, sub, 1, 0xb100, 0x7100);
     else
-      PpuDrawBackground_4bpp(ppu, y, sub, 1, 0xb1, 0x71);
+      PpuDrawBackground_4bpp(ppu, y, sub, 1, 0xb100, 0x7100);
 
-    if (ppu->bgLayer[2].mosaicEnabled && ppu->mosaicSize > 1)
-      PpuDrawBackground_2bpp_mosaic(ppu, y, sub, 2, 0xf2, 0x12);
+    if (IS_MOSAIC_ENABLED(ppu, 2))
+      PpuDrawBackground_2bpp_mosaic(ppu, y, sub, 2, 0xf200, 0x1200);
     else
-      PpuDrawBackground_2bpp(ppu, y, sub, 2, 0xf2, 0x12);
+      PpuDrawBackground_2bpp(ppu, y, sub, 2, 0xf200, 0x1200);
   } else {
     // mode 7
     PpuDrawBackground_mode7(ppu, y, sub, 0xc0);
@@ -881,23 +854,19 @@ static NOINLINE void PpuDrawWholeLine(Ppu *ppu, uint y) {
   }
 
   // Default background is backdrop
-  memset(&ppu->bgBuffers[0].pixel, 0, sizeof(ppu->bgBuffers[0].pixel));
-  memset(&ppu->bgBuffers[0].prio, 0x05, sizeof(ppu->bgBuffers[0].prio));
+  ClearBackdrop(&ppu->bgBuffers[0]);
 
   // Render main screen
   PpuDrawBackgrounds(ppu, y, false);
 
   // The 6:th bit is automatically zero, math is never applied to the first half of the sprites.
-  uint32 math_enabled = ppu->mathEnabled[0] << 0 | ppu->mathEnabled[1] << 1 | ppu->mathEnabled[2] << 2 |
-                        ppu->mathEnabled[3] << 3 | ppu->mathEnabled[4] << 4 | ppu->mathEnabled[5] << 5;
+  uint32 math_enabled = ppu->mathEnabled;
 
   // Render also the subscreen?
   bool rendered_subscreen = false;
   if (ppu->preventMathMode != 3 && ppu->addSubscreen && math_enabled) {
-    memset(&ppu->bgBuffers[1].pixel, 0, sizeof(ppu->bgBuffers[1].pixel));
-    if (ppu->layer[0].screenEnabled[1] | ppu->layer[1].screenEnabled[1] | ppu->layer[2].screenEnabled[1] |
-        ppu->layer[3].screenEnabled[1] | ppu->layer[4].screenEnabled[1]) {
-      memset(&ppu->bgBuffers[1].prio, 0x05, sizeof(ppu->bgBuffers[1].prio));
+    ClearBackdrop(&ppu->bgBuffers[1]);
+    if (ppu->screenEnabled[1] != 0) {
       PpuDrawBackgrounds(ppu, y, true);
       rendered_subscreen = true;
     }
@@ -928,7 +897,7 @@ static NOINLINE void PpuDrawWholeLine(Ppu *ppu, uint y) {
       // Math is disabled (or has no effect), so can avoid the per-pixel maths check
       uint32 i = left;
       do {
-        uint32 color = ppu->cgram[ppu->bgBuffers[0].pixel[i]];
+        uint32 color = ppu->cgram[ppu->bgBuffers[0].data[i] & 0xff];
         dst[1] = dst[0] = ppu->brightnessMult[color & clip_color_mask] << 16 |
                           ppu->brightnessMult[(color >> 5) & clip_color_mask] << 8 |
                           ppu->brightnessMult[(color >> 10) & clip_color_mask];
@@ -940,16 +909,16 @@ static NOINLINE void PpuDrawWholeLine(Ppu *ppu, uint y) {
       // Need to check for each pixel whether to use math or not based on the main screen layer.
       uint32 i = left;
       do {
-        uint32 color = ppu->cgram[ppu->bgBuffers[0].pixel[i]], color2;
-        uint8 main_layer = ppu->bgBuffers[0].prio[i] & 0xf;
+        uint32 color = ppu->cgram[ppu->bgBuffers[0].data[i] & 0xff], color2;
+        uint8 main_layer = (ppu->bgBuffers[0].data[i] >> 8) & 0xf;
         uint32 r = color & clip_color_mask;
         uint32 g = (color >> 5) & clip_color_mask;
         uint32 b = (color >> 10) & clip_color_mask;
         uint8 *color_map = ppu->brightnessMult;
         if (math_enabled_cur & (1 << main_layer)) {
           if (math_enabled_cur & 0x100) {  // addSubscreen ?
-            if (ppu->bgBuffers[1].pixel[i] != 0)
-              color2 = ppu->cgram[ppu->bgBuffers[1].pixel[i]], color_map = half_color_map;
+            if ((ppu->bgBuffers[1].data[i] & 0xff) != 0)
+              color2 = ppu->cgram[ppu->bgBuffers[1].data[i] & 0xff], color_map = half_color_map;
             else  // Don't halve if ppu->addSubscreen && backdrop
               color2 = fixed_color;
           } else {
@@ -998,12 +967,12 @@ static void ppu_handlePixel(Ppu* ppu, int x, int y) {
       r = g = b = 0;
     }
     int secondLayer = 5; // backdrop
-    bool mathEnabled = mainLayer < 6 && ppu->mathEnabled[mainLayer] && !(
+    bool mathEnabled = mainLayer < 6 && (ppu->mathEnabled & (1 << mainLayer)) && !(
       ppu->preventMathMode == 3 ||
       (ppu->preventMathMode == 2 && colorWindowState) ||
       (ppu->preventMathMode == 1 && !colorWindowState)
       );
-    if ((mathEnabled && ppu->addSubscreen) || ppu->pseudoHires_always_zero || ppu->mode == 5 || ppu->mode == 6) {
+    if ((mathEnabled && ppu->addSubscreen) || ppu->mode == 5 || ppu->mode == 6) {
       secondLayer = ppu_getPixel(ppu, x, y, true, &r2, &g2, &b2);
     }
     // TODO: subscreen pixels can be clipped to black as well
@@ -1030,7 +999,7 @@ static void ppu_handlePixel(Ppu* ppu, int x, int y) {
       if (g < 0) g = 0;
       if (b < 0) b = 0;
     }
-    if (!(ppu->pseudoHires_always_zero || ppu->mode == 5 || ppu->mode == 6)) {
+    if (!(ppu->mode == 5 || ppu->mode == 6)) {
       r2 = r; g2 = g; b2 = b;
     }
   }
@@ -1097,7 +1066,7 @@ static int ppu_getPixel(Ppu *ppu, int x, int y, bool sub, int *r, int *g, int *b
   
   // figure out which color is on this location on main- or subscreen, sets it in r, g, b
   // returns which layer it is: 0-3 for bg layer, 4 or 6 for sprites (depending on palette), 5 for backdrop
-  int actMode = ppu->mode == 1 && ppu->bg3priority ? 8 : ppu->mode;
+  int actMode = ppu->mode == 1 ? 8 : ppu->mode;
   actMode = ppu->mode == 7 && ppu->m7extBg_always_zero ? 9 : actMode;
   int layer = 5;
   int pixel = 0;
@@ -1106,12 +1075,12 @@ static int ppu_getPixel(Ppu *ppu, int x, int y, bool sub, int *r, int *g, int *b
     int curPriority = prioritysPerMode[actMode][i];
     bool layerActive = false;
     if (!sub) {
-      layerActive = ppu->layer[curLayer].screenEnabled[0] && (
-        !ppu->layer[curLayer].screenWindowed[0] || !ppu_getWindowState(ppu, curLayer, x)
+      layerActive = IS_SCREEN_ENABLED(ppu, 0, curLayer) && (
+        !IS_SCREEN_WINDOWED(ppu, 0, curLayer) || !ppu_getWindowState(ppu, curLayer, x)
         );
     } else {
-      layerActive = ppu->layer[curLayer].screenEnabled[1] && (
-        !ppu->layer[curLayer].screenWindowed[1] || !ppu_getWindowState(ppu, curLayer, x)
+      layerActive = IS_SCREEN_ENABLED(ppu, 1, curLayer) && (
+        !IS_SCREEN_WINDOWED(ppu, 1, curLayer) || !ppu_getWindowState(ppu, curLayer, x)
         );
     }
     if (layerActive) {
@@ -1119,22 +1088,14 @@ static int ppu_getPixel(Ppu *ppu, int x, int y, bool sub, int *r, int *g, int *b
         // bg layer
         int lx = x;
         int ly = y;
-        if (ppu->bgLayer[curLayer].mosaicEnabled && ppu->mosaicSize > 1) {
+        if (IS_MOSAIC_ENABLED(ppu, curLayer)) {
           lx -= lx % ppu->mosaicSize;
-          ly -= (ly - ppu->mosaicStartLine) % ppu->mosaicSize;
+          ly -= (ly - 1) % ppu->mosaicSize;
         }
         if (ppu->mode == 7) {
           pixel = ppu_getPixelForMode7(ppu, lx, curLayer, curPriority);
         } else {
           lx += ppu->bgLayer[curLayer].hScroll;
-          if (ppu->mode == 5 || ppu->mode == 6) {
-            lx *= 2;
-            lx += (sub || ppu->bgLayer[curLayer].mosaicEnabled) ? 0 : 1;
-            if (ppu->interlace_always_zero) {
-              ly *= 2;
-              ly += (ppu->evenFrame || ppu->bgLayer[curLayer].mosaicEnabled) ? 0 : 1;
-            }
-          }
           ly += ppu->bgLayer[curLayer].vScroll;
           pixel = ppu_getPixelForBgLayer(
             ppu, lx & 0x3ff, ly & 0x3ff,
@@ -1144,8 +1105,8 @@ static int ppu_getPixel(Ppu *ppu, int x, int y, bool sub, int *r, int *g, int *b
       } else {
         // get a pixel from the sprite buffer
         pixel = 0;
-        if ((ppu->objBuffer.prio[x + kPpuExtraLeftRight] >> 4) == SPRITE_PRIO_TO_PRIO_HI(curPriority))
-          pixel = ppu->objBuffer.pixel[x + kPpuExtraLeftRight];
+        if ((ppu->objBuffer.data[x + kPpuExtraLeftRight] >> 12) == SPRITE_PRIO_TO_PRIO_HI(curPriority))
+          pixel = ppu->objBuffer.data[x + kPpuExtraLeftRight] & 0xff;
       }
     }
     if (pixel > 0) {
@@ -1153,16 +1114,10 @@ static int ppu_getPixel(Ppu *ppu, int x, int y, bool sub, int *r, int *g, int *b
       break;
     }
   }
-  if (ppu->directColor_always_zero && layer < 4 && bitDepthsPerMode[actMode][layer] == 8) {
-    *r = ((pixel & 0x7) << 2) | ((pixel & 0x100) >> 7);
-    *g = ((pixel & 0x38) >> 1) | ((pixel & 0x200) >> 8);
-    *b = ((pixel & 0xc0) >> 3) | ((pixel & 0x400) >> 8);
-  } else {
-    uint16_t color = ppu->cgram[pixel & 0xff];
-    *r = color & 0x1f;
-    *g = (color >> 5) & 0x1f;
-    *b = (color >> 10) & 0x1f;
-  }
+  uint16_t color = ppu->cgram[pixel & 0xff];
+  *r = color & 0x1f;
+  *g = (color >> 5) & 0x1f;
+  *b = (color >> 10) & 0x1f;
   if (layer == 4 && pixel < 0xc0) layer = 6; // sprites with palette color < 0xc0
   return layer;
 
@@ -1172,11 +1127,11 @@ static int ppu_getPixel(Ppu *ppu, int x, int y, bool sub, int *r, int *g, int *b
 static int ppu_getPixelForBgLayer(Ppu *ppu, int x, int y, int layer, bool priority) {
   BgLayer *layerp = &ppu->bgLayer[layer];
   // figure out address of tilemap word and read it
-  bool wideTiles = layerp->bigTiles_always_zero || ppu->mode == 5 || ppu->mode == 6;
+  bool wideTiles = ppu->mode == 5 || ppu->mode == 6;
   int tileBitsX = wideTiles ? 4 : 3;
   int tileHighBitX = wideTiles ? 0x200 : 0x100;
-  int tileBitsY = layerp->bigTiles_always_zero ? 4 : 3;
-  int tileHighBitY = layerp->bigTiles_always_zero ? 0x200 : 0x100;
+  int tileBitsY = 3;
+  int tileHighBitY = 0x100;
   uint16_t tilemapAdr = layerp->tilemapAdr + (((y >> tileBitsY) & 0x1f) << 5 | ((x >> tileBitsX) & 0x1f));
   if ((x & tileHighBitX) && layerp->tilemapWider) tilemapAdr += 0x400;
   if ((y & tileHighBitY) && layerp->tilemapHigher) tilemapAdr += layerp->tilemapWider ? 0x800 : 0x400;
@@ -1191,10 +1146,6 @@ static int ppu_getPixelForBgLayer(Ppu *ppu, int x, int y, int layer, bool priori
   if (wideTiles) {
     // if unflipped right half of tile, or flipped left half of tile
     if (((bool)(x & 8)) ^ ((bool)(tile & 0x4000))) tileNum += 1;
-  }
-  if (layerp->bigTiles_always_zero) {
-    // if unflipped bottom half of tile, or flipped upper half of tile
-    if (((bool)(y & 8)) ^ ((bool)(tile & 0x8000))) tileNum += 0x10;
   }
   // read tiledata, ajust palette for mode 0
   int bitDepth = bitDepthsPerMode[ppu->mode][layer];
@@ -1236,8 +1187,8 @@ static void ppu_calculateMode7Starts(Ppu* ppu, int y) {
   int clippedV = vScroll - yCenter;
   clippedH = (clippedH & 0x2000) ? (clippedH | ~1023) : (clippedH & 1023);
   clippedV = (clippedV & 0x2000) ? (clippedV | ~1023) : (clippedV & 1023);
-  if(ppu->bgLayer[0].mosaicEnabled && ppu->mosaicSize > 1) {
-    y -= (y - ppu->mosaicStartLine) % ppu->mosaicSize;
+  if(IS_MOSAIC_ENABLED(ppu, 0)) {
+    y -= (y - 1) % ppu->mosaicSize;
   }
   uint8_t ry = ppu->m7yFlip ? 255 - y : y;
   ppu->m7startX = (
@@ -1255,7 +1206,7 @@ static void ppu_calculateMode7Starts(Ppu* ppu, int y) {
 }
 
 static int ppu_getPixelForMode7(Ppu* ppu, int x, int layer, bool priority) {
-  if (ppu->bgLayer[layer].mosaicEnabled && ppu->mosaicSize > 1)
+  if (IS_MOSAIC_ENABLED(ppu, layer))
     x -= x % ppu->mosaicSize;
   uint8_t rx = ppu->m7xFlip ? 255 - x : x;
   int xPos = (ppu->m7startX + ppu->m7matrix[0] * rx) >> 8;
@@ -1274,35 +1225,30 @@ static int ppu_getPixelForMode7(Ppu* ppu, int x, int layer, bool priority) {
 }
 
 static bool ppu_getWindowState(Ppu* ppu, int layer, int x) {
-  if (!ppu->windowLayer[layer].window1enabled && !ppu->windowLayer[layer].window2enabled) {
+  uint32 winflags = GET_WINDOW_FLAGS(ppu, layer);
+  if (!(winflags & kWindow1Enabled) && !(winflags & kWindow2Enabled)) {
     return false;
   }
-  if (ppu->windowLayer[layer].window1enabled && !ppu->windowLayer[layer].window2enabled) {
+  if ((winflags & kWindow1Enabled) && !(winflags & kWindow2Enabled)) {
     bool test = x >= ppu->window1left && x <= ppu->window1right;
-    return ppu->windowLayer[layer].window1inversed ? !test : test;
+    return (winflags & kWindow1Inversed) ? !test : test;
   }
-  if (!ppu->windowLayer[layer].window1enabled && ppu->windowLayer[layer].window2enabled) {
+  if (!(winflags & kWindow1Enabled) && (winflags & kWindow2Enabled)) {
     bool test = x >= ppu->window2left && x <= ppu->window2right;
-    return ppu->windowLayer[layer].window2inversed ? !test : test;
+    return (winflags & kWindow2Inversed) ? !test : test;
   }
   bool test1 = x >= ppu->window1left && x <= ppu->window1right;
   bool test2 = x >= ppu->window2left && x <= ppu->window2right;
-  if (ppu->windowLayer[layer].window1inversed) test1 = !test1;
-  if (ppu->windowLayer[layer].window2inversed) test2 = !test2;
-  switch (ppu->windowLayer[layer].maskLogic_always_zero) {
-  case 0: return test1 || test2;
-  case 1: return test1 && test2;
-  case 2: return test1 != test2;
-  case 3: return test1 == test2;
-  }
-  return false;
+  if (winflags & kWindow1Inversed) test1 = !test1;
+  if (winflags & kWindow2Inversed) test2 = !test2;
+  return test1 || test2;
 }
 
 static bool ppu_evaluateSprites(Ppu* ppu, int line) {
   // TODO: iterate over oam normally to determine in-range sprites,
   //   then iterate those in-range sprites in reverse for tile-fetching
   // TODO: rectangular sprites, wierdness with sprites at -256
-  int index = ppu->objPriority ? (ppu->oamAdr & 0xfe) : 0, index_end = index;
+  int index = 0, index_end = index;
   int spritesLeft = 32 + 1, tilesLeft = 34 + 1;
   uint8 spriteSizes[2] = { kSpriteSizes[ppu->objSize][0], kSpriteSizes[ppu->objSize][1] };
   int extra_left_right = ppu->extraLeftRight;
@@ -1316,7 +1262,7 @@ static bool ppu_evaluateSprites(Ppu* ppu, int line) {
       continue;  // this works for zelda because sprites are always 8 or 16.
     // check if the sprite is on this line and get the sprite size
     int row = (line - yy) & 0xff;
-    int highOam = ppu->highOam[index >> 3] >> (index & 7);
+    int highOam = ppu->oam[0x100 + (index >> 4)] >> (index & 15);
     int spriteSize = spriteSizes[(highOam >> 1) & 1];
     if (row >= spriteSize)
       continue;
@@ -1328,7 +1274,6 @@ static bool ppu_evaluateSprites(Ppu* ppu, int line) {
       continue;
     // break if we found 32 sprites already
     if (--spritesLeft == 0) {
-      ppu->rangeOver = true;
       break;
     }
     // get some data for the sprite and y-flip row if needed
@@ -1337,14 +1282,14 @@ static bool ppu_evaluateSprites(Ppu* ppu, int line) {
     if (oam1 & 0x8000)
       row = spriteSize - 1 - row;
     // fetch all tiles in x-range
-    uint8 paletteBase = 0x80 + 16 * ((oam1 & 0xe00) >> 9);
-    uint8 prio = SPRITE_PRIO_TO_PRIO((oam1 & 0x3000) >> 12, (oam1 & 0x800) == 0);
+    int paletteBase = 0x80 + 16 * ((oam1 & 0xe00) >> 9);
+    int prio = SPRITE_PRIO_TO_PRIO((oam1 & 0x3000) >> 12, (oam1 & 0x800) == 0);
+    PpuZbufType z = paletteBase + (prio << 8);
     
     for (int col = 0; col < spriteSize; col += 8) {
       if (col + x > -8 - extra_left_right && col + x < 256 + extra_left_right) {
         // break if we found 34 8*1 slivers already
         if (--tilesLeft == 0) {
-          ppu->timeOver = true;
           return true;
         }
         // figure out which tile this uses, looping within 16x16 pages, and get it's data
@@ -1355,15 +1300,15 @@ static bool ppu_evaluateSprites(Ppu* ppu, int line) {
         // go over each pixel
         int px_left = IntMax(-(col + x + kPpuExtraLeftRight), 0);
         int px_right = IntMin(256 + kPpuExtraLeftRight - (col + x), 8);
-        uint8 *dst = ppu->objBuffer.pixel + col + x + px_left + kPpuExtraLeftRight;
+        PpuZbufType *dst = ppu->objBuffer.data + col + x + px_left + kPpuExtraLeftRight;
         
         for (int px = px_left; px < px_right; px++, dst++) {
           int shift = oam1 & 0x4000 ? px : 7 - px;
           uint32 bits = plane >> shift;
           int pixel = (bits >> 0) & 1 | (bits >> 7) & 2 | (bits >> 14) & 4 | (bits >> 21) & 8;
           // draw it in the buffer if there is a pixel here, and the buffer there is still empty
-          if (pixel != 0 && dst[0] == 0)
-            dst[0] = paletteBase + pixel, dst[kPpuXPixels] = prio;
+          if (pixel != 0 && (dst[0] & 0xff) == 0)
+            dst[0] = z + pixel;
         }
       }
     }
@@ -1371,199 +1316,63 @@ static bool ppu_evaluateSprites(Ppu* ppu, int line) {
   return (tilesLeft != tilesLeftOrg);
 }
 
-static uint16_t ppu_getVramRemap(Ppu* ppu) {
-  uint16_t adr = ppu->vramPointer;
-  switch(ppu->vramRemapMode) {
-    case 0: return adr;
-    case 1: return (adr & 0xff00) | ((adr & 0xe0) >> 5) | ((adr & 0x1f) << 3);
-    case 2: return (adr & 0xfe00) | ((adr & 0x1c0) >> 6) | ((adr & 0x3f) << 3);
-    case 3: return (adr & 0xfc00) | ((adr & 0x380) >> 7) | ((adr & 0x7f) << 3);
-  }
-  return adr;
-}
-
 uint8_t ppu_read(Ppu* ppu, uint8_t adr) {
-  switch(adr) {
-    case 0x04: case 0x14: case 0x24:
-    case 0x05: case 0x15: case 0x25:
-    case 0x06: case 0x16: case 0x26:
-    case 0x08: case 0x18: case 0x28:
-    case 0x09: case 0x19: case 0x29:
-    case 0x0a: case 0x1a: case 0x2a: {
-      return ppu->ppu1openBus;
-    }
-    case 0x34:
-    case 0x35:
-    case 0x36: {
-      int result = ppu->m7matrix[0] * (ppu->m7matrix[1] >> 8);
-      ppu->ppu1openBus = (result >> (8 * (adr - 0x34))) & 0xff;
-      return ppu->ppu1openBus;
-    }
-    case 0x37: {
-      // TODO: only when ppulatch is set
-      ppu->hCount = 0;
-      ppu->vCount = 0;
-      ppu->countersLatched = true;
-      return 0xff;
-    }
-    case 0x38: {
-      uint8_t ret = 0;
-      if(ppu->oamInHigh) {
-        ret = ppu->highOam[((ppu->oamAdr & 0xf) << 1) | (uint8_t)ppu->oamSecondWrite];
-        if(ppu->oamSecondWrite) {
-          ppu->oamAdr++;
-          if(ppu->oamAdr == 0) ppu->oamInHigh = false;
-        }
-      } else {
-        if(!ppu->oamSecondWrite) {
-          ret = ppu->oam[ppu->oamAdr] & 0xff;
-        } else {
-          ret = ppu->oam[ppu->oamAdr++] >> 8;
-          if(ppu->oamAdr == 0) ppu->oamInHigh = true;
-        }
-      }
-      ppu->oamSecondWrite = !ppu->oamSecondWrite;
-      ppu->ppu1openBus = ret;
-      return ret;
-    }
-    case 0x39: {
-      uint16_t val = ppu->vramReadBuffer;
-      if(!ppu->vramIncrementOnHigh) {
-        ppu->vramReadBuffer = ppu->vram[ppu_getVramRemap(ppu) & 0x7fff];
-        ppu->vramPointer += ppu->vramIncrement;
-      }
-      ppu->ppu1openBus = val & 0xff;
-      return val & 0xff;
-    }
-    case 0x3a: {
-      uint16_t val = ppu->vramReadBuffer;
-      if(ppu->vramIncrementOnHigh) {
-        ppu->vramReadBuffer = ppu->vram[ppu_getVramRemap(ppu) & 0x7fff];
-        ppu->vramPointer += ppu->vramIncrement;
-      }
-      ppu->ppu1openBus = val >> 8;
-      return val >> 8;
-    }
-    case 0x3b: {
-      uint8_t ret = 0;
-      if(!ppu->cgramSecondWrite) {
-        ret = ppu->cgram[ppu->cgramPointer] & 0xff;
-      } else {
-        ret = ((ppu->cgram[ppu->cgramPointer++] >> 8) & 0x7f) | (ppu->ppu2openBus & 0x80);
-      }
-      ppu->cgramSecondWrite = !ppu->cgramSecondWrite;
-      ppu->ppu2openBus = ret;
-      return ret;
-    }
-    case 0x3c: {
-      uint8_t val = 0x17;// (ppu->ppu2openBus + ppu->cgramPointer * 7) * 0x31337 >> 8;
-      ppu->hCountSecond = !ppu->hCountSecond;
-      ppu->ppu2openBus = val;
-      return val;
-    }
-    case 0x3d: {
-      uint8_t val = 0;
-      uint16_t vCount = 192;// ppu->vCount
-      if(ppu->vCountSecond) {
-        val = ((vCount >> 8) & 1) | (ppu->ppu2openBus & 0xfe);
-      } else {
-        val = vCount & 0xff;
-      }
-      ppu->vCountSecond = !ppu->vCountSecond;
-      ppu->ppu2openBus = val;
-      return val;
-    }
-    case 0x3e: {
-      uint8_t val = 0x1; // ppu1 version (4 bit)
-      val |= ppu->ppu1openBus & 0x10;
-      val |= ppu->rangeOver << 6;
-      val |= ppu->timeOver << 7;
-      ppu->ppu1openBus = val;
-      return val;
-    }
-    case 0x3f: {
-      uint8_t val = 0x3; // ppu2 version (4 bit), bit 4: ntsc/pal
-      val |= ppu->ppu2openBus & 0x20;
-      val |= ppu->countersLatched << 6;
-      val |= ppu->evenFrame << 7;
-      ppu->countersLatched = false; // TODO: only when ppulatch is set
-      ppu->hCountSecond = false;
-      ppu->vCountSecond = false;
-      ppu->ppu2openBus = val;
-      return val;
-    }
-    default: {
-      return 0xff;
-    }
+  switch (adr) {
+  case 0x34:
+  case 0x35:
+  case 0x36: {
+    int result = ppu->m7matrix[0] * (ppu->m7matrix[1] >> 8);
+    return (result >> (8 * (adr - 0x34))) & 0xff;
   }
+  }
+  return 0xff;
 }
 
 void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
   switch(adr) {
-    case 0x00: {
-      // TODO: oam address reset when written on first line of vblank, (and when forced blank is disabled?)
+    case 0x00: {  // INIDISP
       ppu->brightness = val & 0xf;
       ppu->forcedBlank = val & 0x80;
       break;
     }
     case 0x01: {
-      ppu->objSize = val >> 5;
-      ppu->objTileAdr1 = (val & 7) << 13;
-      ppu->objTileAdr2 = ppu->objTileAdr1 + (((val & 0x18) + 8) << 9);
+      assert(val == 2);
       break;
     }
     case 0x02: {
-      ppu->oamAdr = val;
-      ppu->oamAdrWritten = ppu->oamAdr;
-      ppu->oamInHigh = ppu->oamInHighWritten;
+      ppu->oamAdr = (ppu->oamAdr & ~0xff) | val;
       ppu->oamSecondWrite = false;
       break;
     }
     case 0x03: {
-      ppu->objPriority = val & 0x80;
-      ppu->oamInHigh = val & 1;
-      ppu->oamInHighWritten = ppu->oamInHigh;
-      ppu->oamAdr = ppu->oamAdrWritten;
+      assert((val & 0x80) == 0);
+      ppu->oamAdr = (ppu->oamAdr & ~0xff00) | ((val & 1) << 8);
       ppu->oamSecondWrite = false;
       break;
     }
     case 0x04: {
-      if(ppu->oamInHigh) {
-        ppu->highOam[((ppu->oamAdr & 0xf) << 1) | (uint8_t)ppu->oamSecondWrite] = val;
-        if(ppu->oamSecondWrite) {
-          ppu->oamAdr++;
-          if(ppu->oamAdr == 0) ppu->oamInHigh = false;
-        }
+      if (!ppu->oamSecondWrite) {
+        ppu->oamBuffer = val;
       } else {
-        if(!ppu->oamSecondWrite) {
-          ppu->oamBuffer = val;
-        } else {
+        if (ppu->oamAdr < 0x110)
           ppu->oam[ppu->oamAdr++] = (val << 8) | ppu->oamBuffer;
-          if(ppu->oamAdr == 0) ppu->oamInHigh = true;
-        }
       }
       ppu->oamSecondWrite = !ppu->oamSecondWrite;
       break;
     }
-    case 0x05: {
+    case 0x05: {  // BGMODE
       ppu->mode = val & 0x7;
-      ppu->bg3priority = val & 0x8;
       assert(val == 7 || val == 9);
       assert(ppu->mode == 1 || ppu->mode == 7);
-      // bigTiles are never used
       assert((val & 0xf0) == 0);
       break;
     }
-    case 0x06: {
-      // TODO: mosaic line reset specifics
-      ppu->bgLayer[0].mosaicEnabled = val & 0x1;
-      ppu->bgLayer[1].mosaicEnabled = val & 0x2;
-      ppu->bgLayer[2].mosaicEnabled = val & 0x4;
-      ppu->bgLayer[3].mosaicEnabled = val & 0x8;
+    case 0x06: {  // MOSAIC
       ppu->mosaicSize = (val >> 4) + 1;
+      ppu->mosaicEnabled = (ppu->mosaicSize > 1) ? val : 0;
       break;
     }
-    case 0x07:
+    case 0x07:  // BG1SC
     case 0x08:
     case 0x09:
     case 0x0a: {
@@ -1573,17 +1382,17 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
       ppu->bgLayer[adr - 7].tilemapAdr = (val & 0xfc) << 8;
       break;
     }
-    case 0x0b: {
+    case 0x0b: {  // BG12NBA
       ppu->bgLayer[0].tileAdr = (val & 0xf) << 12;
       ppu->bgLayer[1].tileAdr = (val & 0xf0) << 8;
       break;
     }
-    case 0x0c: {
+    case 0x0c: { // BG34NBA
       ppu->bgLayer[2].tileAdr = (val & 0xf) << 12;
       ppu->bgLayer[3].tileAdr = (val & 0xf0) << 8;
       break;
     }
-    case 0x0d: {
+    case 0x0d: { // BG1HOFS
       ppu->m7matrix[6] = ((val << 8) | ppu->m7prev) & 0x1fff;
       ppu->m7prev = val;
       // fallthrough to normal layer BG-HOFS
@@ -1596,7 +1405,7 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
       ppu->scrollPrev2 = val;
       break;
     }
-    case 0x0e: {
+    case 0x0e: { // BG1VOFS
       ppu->m7matrix[7] = ((val << 8) | ppu->m7prev) & 0x1fff;
       ppu->m7prev = val;
       // fallthrough to normal layer BG-VOFS
@@ -1608,7 +1417,7 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
       ppu->scrollPrev = val;
       break;
     }
-    case 0x15: {
+    case 0x15: {  // VMAIN
       if((val & 3) == 0) {
         ppu->vramIncrement = 1;
       } else if((val & 3) == 1) {
@@ -1616,44 +1425,39 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
       } else {
         ppu->vramIncrement = 128;
       }
-      ppu->vramRemapMode = (val & 0xc) >> 2;
+      assert(((val & 0xc) >> 2) == 0);
       ppu->vramIncrementOnHigh = val & 0x80;
       break;
     }
-    case 0x16: {
+    case 0x16: {  // VMADDL
       ppu->vramPointer = (ppu->vramPointer & 0xff00) | val;
-      ppu->vramReadBuffer = ppu->vram[ppu_getVramRemap(ppu) & 0x7fff];
       break;
     }
-    case 0x17: {
+    case 0x17: {  // VMADDH
       ppu->vramPointer = (ppu->vramPointer & 0x00ff) | (val << 8);
-      ppu->vramReadBuffer = ppu->vram[ppu_getVramRemap(ppu) & 0x7fff];
       break;
     }
-    case 0x18: {
-      // TODO: vram access during rendering (also cgram and oam)
-      uint16_t vramAdr = ppu_getVramRemap(ppu);
-      if (val != 0xef) {
-        val += 0;
-      }
+    case 0x18: {  // VMDATAL
+      uint16_t vramAdr = ppu->vramPointer;
       ppu->vram[vramAdr & 0x7fff] = (ppu->vram[vramAdr & 0x7fff] & 0xff00) | val;
       if(!ppu->vramIncrementOnHigh) ppu->vramPointer += ppu->vramIncrement;
       break;
     }
-    case 0x19: {
-      uint16_t vramAdr = ppu_getVramRemap(ppu);
+    case 0x19: {  // VMDATAH
+      uint16_t vramAdr = ppu->vramPointer;
       ppu->vram[vramAdr & 0x7fff] = (ppu->vram[vramAdr & 0x7fff] & 0x00ff) | (val << 8);
       if(ppu->vramIncrementOnHigh) ppu->vramPointer += ppu->vramIncrement;
       break;
     }
-    case 0x1a: {  
+    case 0x1a: {  // M7SEL
+      assert(val == 0x80);
       ppu->m7largeField = val & 0x80;
       ppu->m7charFill = val & 0x40;
       ppu->m7yFlip = val & 0x2;
       ppu->m7xFlip = val & 0x1;
       break;
     }
-    case 0x1b:
+    case 0x1b:  // M7A etc
     case 0x1c:
     case 0x1d:
     case 0x1e: {
@@ -1681,93 +1485,59 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
       ppu->cgramSecondWrite = !ppu->cgramSecondWrite;
       break;
     }
-    case 0x23:
-    case 0x24:
-    case 0x25: {
-      ppu->windowLayer[(adr - 0x23) * 2].window1inversed = (val & 0x1) != 0;
-      ppu->windowLayer[(adr - 0x23) * 2].window1enabled = (val & 0x2) != 0;
-      ppu->windowLayer[(adr - 0x23) * 2].window2inversed = (val & 0x4) != 0;
-      ppu->windowLayer[(adr - 0x23) * 2].window2enabled = (val & 0x8) != 0;
-      ppu->windowLayer[(adr - 0x23) * 2 + 1].window1inversed = (val & 0x10) != 0;
-      ppu->windowLayer[(adr - 0x23) * 2 + 1].window1enabled = (val & 0x20) != 0;
-      ppu->windowLayer[(adr - 0x23) * 2 + 1].window2inversed = (val & 0x40) != 0;
-      ppu->windowLayer[(adr - 0x23) * 2 + 1].window2enabled = (val & 0x80) != 0;
+    case 0x23:  // W12SEL
+      ppu->windowsel = (ppu->windowsel & ~0xff) | val;
       break;
-    }
-    case 0x26: {
+    case 0x24:  // W34SEL
+      ppu->windowsel = (ppu->windowsel & ~0xff00) | (val << 8);
+      break;
+    case 0x25:  // WOBJSEL
+      ppu->windowsel = (ppu->windowsel & ~0xff0000) | (val << 16);
+      break;
+    case 0x26:
       ppu->window1left = val;
       break;
-    }
-    case 0x27: {
+    case 0x27:
       ppu->window1right = val;
       break;
-    }
-    case 0x28: {
+    case 0x28:
       ppu->window2left = val;
       break;
-    }
-    case 0x29: {
+    case 0x29:
       ppu->window2right = val;
       break;
-    }
-    case 0x2a: {
+    case 0x2a:  // WBGLOG
       assert(val == 0);
-      // maskLogic_always_zero
       break;
-    }
-    case 0x2b: {
+    case 0x2b:  // WOBJLOG
       assert(val == 0);
-      // maskLogic_always_zero
       break;
-    }
-    case 0x2c: {
-      ppu->layer[0].screenEnabled[0] = val & 0x1;
-      ppu->layer[1].screenEnabled[0] = val & 0x2;
-      ppu->layer[2].screenEnabled[0] = val & 0x4;
-      ppu->layer[3].screenEnabled[0] = val & 0x8;
-      ppu->layer[4].screenEnabled[0] = val & 0x10;
+    case 0x2c:  // TM
+      ppu->screenEnabled[0] = val;
       break;
-    }
-    case 0x2d: {
-      ppu->layer[0].screenEnabled[1] = val & 0x1;
-      ppu->layer[1].screenEnabled[1] = val & 0x2;
-      ppu->layer[2].screenEnabled[1] = val & 0x4;
-      ppu->layer[3].screenEnabled[1] = val & 0x8;
-      ppu->layer[4].screenEnabled[1] = val & 0x10;
+    case 0x2d:  // TS
+      ppu->screenEnabled[1] = val;
       break;
-    }
-    case 0x2e: {
-      ppu->layer[0].screenWindowed[0] = val & 0x1;
-      ppu->layer[1].screenWindowed[0] = val & 0x2;
-      ppu->layer[2].screenWindowed[0] = val & 0x4;
-      ppu->layer[3].screenWindowed[0] = val & 0x8;
-      ppu->layer[4].screenWindowed[0] = val & 0x10;
+    case 0x2e: // TMW
+      ppu->screenWindowed[0] = val;
       break;
-    }
-    case 0x2f: {
-      ppu->layer[0].screenWindowed[1] = val & 0x1;
-      ppu->layer[1].screenWindowed[1] = val & 0x2;
-      ppu->layer[2].screenWindowed[1] = val & 0x4;
-      ppu->layer[3].screenWindowed[1] = val & 0x8;
-      ppu->layer[4].screenWindowed[1] = val & 0x10;
+    case 0x2f:  // TSW
+      ppu->screenWindowed[1] = val;
       break;
-    }
-    case 0x30: {
+    case 0x30: {  // CGWSEL
       assert((val & 1) == 0);  // directColor always zero
       ppu->addSubscreen = val & 0x2;
       ppu->preventMathMode = (val & 0x30) >> 4;
       ppu->clipMode = (val & 0xc0) >> 6;
       break;
     }
-    case 0x31: {
+    case 0x31: {  // CGADSUB
       ppu->subtractColor = val & 0x80;
       ppu->halfColor = val & 0x40;
-      for(int i = 0; i < 6; i++) {
-        ppu->mathEnabled[i] = val & (1 << i);
-      }
+      ppu->mathEnabled = val & 0x3f;
       break;
     }
-    case 0x32: {
+    case 0x32: {  // COLDATA
       if(val & 0x80) ppu->fixedColorB = val & 0x1f;
       if(val & 0x40) ppu->fixedColorG = val & 0x1f;
       if(val & 0x20) ppu->fixedColorR = val & 0x1f;
@@ -1775,10 +1545,6 @@ void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val) {
     }
     case 0x33: {
       assert(val == 0);
-      ppu->interlace_always_zero = val & 0x1;
-      ppu->objInterlace_always_zero = val & 0x2;
-      ppu->overscan_always_zero = val & 0x4;
-      ppu->pseudoHires_always_zero = val & 0x8;
       ppu->m7extBg_always_zero = val & 0x40;
       break;
     }

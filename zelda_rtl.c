@@ -283,7 +283,6 @@ static void ZeldaInitializationCode() {
   zelda_apu_write(APUI01, 0);
   zelda_apu_write(APUI02, 0);
   zelda_apu_write(APUI03, 0);
-  zelda_ppu_write(INIDISP, 0x80);
 
   Sound_LoadIntroSongBank();
   Startup_InitializeMemory();
@@ -382,7 +381,6 @@ static void Startup_InitializeMemory() {  // 8087c0
     WORD(sram[0x8e5]) = 0;
   if (WORD(sram[0xde5]) != 0x55aa)
     WORD(sram[0xde5]) = 0;
-  zelda_ppu_write(TMW, 0);
   INIDISP_copy = 0x80;
   flag_update_cgram_in_nmi++;
 }

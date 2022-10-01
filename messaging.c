@@ -949,8 +949,6 @@ void Death_Func15(bool count_as_death) {  // 89f50f
     death_var4 = 0;
     death_var5 = 0;
     buffer_for_playing_songs = 0;
-    zelda_snes_dummy_write(NMITIMEN, 0);
-    zelda_snes_dummy_write(HDMAEN, 0);
     BG1HOFS_copy2 = 0;
     BG2HOFS_copy2 = 0;
     BG3HOFS_copy2 = 0;
@@ -964,7 +962,6 @@ void Death_Func15(bool count_as_death) {  // 89f50f
     memset(save_dung_info, 0, 256 * 5);
     flag_which_music_type = 0;
     LoadOverworldSongs();
-    zelda_snes_dummy_write(NMITIMEN, 0x81);
   }
 }
 
@@ -1229,9 +1226,7 @@ void WorldMap_FadeOut() {  // 8ab9a3
   sound_effect_2 = 16;
   sound_effect_ambient = 5;
   music_control = 0xf2;
-  zelda_ppu_write(BGMODE, 7);
   BGMODE_copy = 7;
-  zelda_ppu_write(M7SEL, 0x80);
 }
 
 void WorldMap_LoadLightWorldMap() {  // 8aba30
@@ -1343,7 +1338,6 @@ void WorldMap_RestoreGraphics() {  // 8abbd6
 void Attract_SetUpConclusionHDMA() {  // 8abc33
   HdmaSetup(0xABDDD, 0xABDDD, 0x42, (uint8)M7A, (uint8)M7D, 0);
   HDMAEN_copy = 0x80;
-  zelda_ppu_write(BGMODE, 9);
   BGMODE_copy = 9;
   nmi_disable_core_updates = 0;
 }
@@ -1375,14 +1369,6 @@ void WorldMap_SetUpHDMA() {  // 8abc96
   WOBJSEL_copy = 0;
   TMW_copy = 0;
   TSW_copy = 0;
-  zelda_ppu_write(M7B, 0);
-  zelda_ppu_write(M7B, 0);
-  zelda_ppu_write(M7C, 0);
-  zelda_ppu_write(M7C, 0);
-  zelda_ppu_write(M7X, 0);
-  zelda_ppu_write(M7X, 1);
-  zelda_ppu_write(M7Y, 0);
-  zelda_ppu_write(M7Y, 1);
 
   if (main_module_index == 20) {
     HdmaSetup(0xABDDD, 0xABDDD, 0x42, (uint8)M7A, (uint8)M7D, 0);
@@ -1665,7 +1651,6 @@ void Module0E_03_01_DrawMap() {  // 8ae0dc
 
 void Module0E_03_01_00_PrepMapGraphics() {  // 8ae0e4
   uint8 hdmaen_bak = HDMAEN_copy;
-  zelda_snes_dummy_write(HDMAEN, 0);
   HDMAEN_copy = 0;
   mapbak_main_tile_theme_index = main_tile_theme_index;
   mapbak_sprite_graphics_index = sprite_graphics_index;
@@ -2205,7 +2190,6 @@ int DungeonMap_DrawBossIconByFloor(int spr_pos) {  // 8aee95
 
 void DungeonMap_RecoverGFX() {  // 8aef19
   uint8 hdmaen_bak = HDMAEN_copy;
-  zelda_snes_dummy_write(HDMAEN, 0);
   HDMAEN_copy = 0;
   EraseTileMaps_normal();
 
