@@ -1,0 +1,2509 @@
+###########################################################
+#                                                         #
+#         The Legend of Zelda, a Link to the Past         #
+#                                                         #
+#             Glitches FAQ v0.97, by Zanapher             #
+#(September 2003)                                         #
+###########################################################
+
+
+*********************
+* Table of Contents *
+*********************
+
+To go to the specified paragraph, perform a search of the [.] string but
+replacing the "[" and "]" by "{" and "}".
+In the documents, the keywords will be referenced under squared brackets "[" and
+"]" so that the search is not affected by the references. If you see a reference
+of the form "[BLABLA]" search the string "{BLABLA}" to go directly to the
+referenced section.
+
+I. Introduction and stuff ............................. [INS]
+
+      1. Version updates .............................. [UPD]
+
+      2. Introduction ................................. [INT]
+
+II. The glitches ...................................... [GLI]
+
+      1. Death Mountain Descent (DMD).................. [DMD]
+
+      2. The Levitation Trick ......................... [LEV]
+
+      3. The Exploration Glitches (EG) ................ [EXG]
+            3.a. Skull Dungeon method (SDEG) .......... [SDEG]
+            3.b. Hyrule Castle first method (PBEG) .... [PBEG]
+            3.c. The (Up + Down) combo (UDEG) ......... [UDEG]
+            3.d. "Jump and Save" method (JSEG) ........ [JSEG]
+
+      4. Super Bunny .................................. [SBU]
+            4.a. Lake Hylia ........................... [LHSB]
+            4.b. In a hole ............................ [HOSB]
+
+      5. Moon Pearl emulation ......................... [MPE]
+            5.a. The Surfing Bunny .................... [SUBU]
+            5.b. Surfing Bunny goes to Misery Mire .... [SBMM]
+            5.c. Life after death? .................... [DEAT]
+            5.d. Could you give me a hand? ............ [CEHA]
+            5.e. Fat Faery's power .................... [FFPO]
+
+      6. The Ether Medallion Glitch ................... [ETH]
+
+      7. The Multi-Directional Glitch ................. [MDR]
+            7.a. Fun with the map ..................... [MDMP]
+            7.b. Princess? What Princess? ............. [MDPR]
+            7.c. Take the Princess for a Walk ......... [PRIN]
+
+III. Glitch quests and things to try .................. [QUE]
+
+      1. 15 minutes speed-run ......................... [15MI]
+
+      2. 3 minutes speed-run .......................... [3MIN]
+
+      3. No Master Sword .............................. [NOMS]
+
+      4. No sword quest ............................... [SWOR]
+
+      5. Pink Bunny meets Ganon ....................... [PBGA]
+
+      6. No MS, no MP quest ........................... [MSMP]
+
+      7. Rainy day .................................... [RAIN]
+            7.a. Entering the Desert Palace ........... [DEPA]
+            7.b. The Power Gloves ..................... [PWGL]
+            7.c. The Magic Mirror and the Dark World .. [RAMM]
+            7.d. Rescuing the Smithy's Partner ........ [SMIT]
+           
+      8. Others ....................................... [OTHE]
+            8.a. The Chris Houlihan's room ............ [HOUL]
+
+IV. Technical stuff you might want to know ............ [TEC]
+
+      1. The three phases of the game ................. [3PHA]
+
+      2. The Underworld Map ........................... [UDRW]
+            2.a. What is a Room in this game? ......... [ROOM]
+            2.b. The Two Underworld Zones ............. [ZONE]
+            2.c. Some useful addresses ................ [ADDR]
+
+V. Conclusion ......................................... [CON]
+
+      1. How to contact me ............................ [CME]
+
+      2. Thanks ....................................... [THX]
+
+{INS}
+**************************************
+* Section I : Introduction and stuff *
+**************************************
+
+{UPD}
+Subsection I.1 : Version Updates
+********************************
+
+Version 0.97
+  - Added the JSEG
+  - Added the Undeworld Map section
+Version 0.93b
+  - Corrected the Rainy Day section
+
+Version 0.93
+  - Completed the Rainy Day section with ccexplore's techniques
+  - Fixed some index problems
+  - Corrected some typos
+  - Added the "Others" section with directions to the Houlihan's room
+ 
+Version 0.92
+  - Corrected some minor mistakes here and there
+  - Added the Skull Dungeon glitch
+  - Reversed the order of updates (earlier first)
+Version 0.9
+  - Added all missing "why it happens" sections
+  - Added a short (and boring) introduction
+  - Corrected a few typos
+Version	0.82
+(no v0.81 because of a stupid error when sending the FAQ...)
+  - modified the DMD notes by Frost King
+Version 0.8
+  - Why it happens sections written for some glitches
+  - Rearranged the glitches so the Levitation glitch comes earlier
+  - Added complement info about DMD
+  - Added the version updates section
+  - Some referencing errors have been corrected
+Version 0.7
+  - First version of the FAQ.
+ 
+{INT}
+Subsection I.2 : Introduction
+*****************************
+
+This FAQ is intended for players who have already finished this game (The Legend
+of Zelda: A Link to the Past, for the SNES) and want to try new things. It
+contains major spoilers and I consider that the player is already familiar with
+most names and normal game events. If you haven't finished the game yet or do
+not really remember it, it might be hard to understand my explanations (and it
+can spoil you the pleasure of completing this awesome game normally).
+
+This glitches FAQ does not reference all known glitches for this game. This
+would be too long and I'm not interested in most of the minor glitches of this
+game (so if you know how to have a blue shield or see a purple soldier, I'm not
+interested...). The glitches I talk about in this FAQ are the "useful" ones
+meaning that they let you do things that you weren't supposed to do (or at least
+not at the moment you do them).
+I particularly like to use the glitches I know (the ones I talk about in this
+FAQ) to achieve special "glitch" quests such as speed runs (finish the game as
+fast as possible, I can now do it in less than 3 minutes and 30 seconds...),
+complete as much of the game as you can without taking the Moon Pearl etc.
+
+The main reason why I have written this FAQ was to talk about the Exploration
+glitches (see [EXG]). These glitches are the most powerful ones IMO of this
+game. These glitches can freeze your game or even might damage your saved games
+(it only happens with one of them...). I highly recommend that you first
+experiment most of the glitches that I present here on an emulator (ZSNES is by
+far the best one) so you take no risks, and can use savestates to make the
+experimentation easier. Then, if you know what you are doing go and do it on
+your real SNES if you like (I tried all glitches except the PBEG on my SNES).
+
+{GLI}
+*****************************
+* Section II : The glitches *
+*****************************
+
+In this section I will describe the most important glitches of this game that I
+know. For each one, I'll explain as clearly as possible what it does, how to
+perform it, what are the possible uses, why it happens (programming stuff) and
+some other interesting things you might want to know.
+
+{DMD}
+Subsection II.1 : Death Mountain Descent
+****************************************
+
+Description:
+The Death Mountain Descent (aka. DMD) is a very interesting glitch. It lets you
+get down from Death Mountain in the Dark World (you arrive in the cemetery). It
+can be executed as soon as you have the Magic Mirror.
+Thanks to David Wonn for this glitch that I found on his site.
+
+Requirements:
+You'll need the Magic Mirror and the ability to reach the first portal to the
+Dark World (the one in Death Mountain that leads to the Tower of Hera). Having
+the Moon Pearl could be a good idea if you want to explore the Dark World
+without trouble but it is not necessary.
+
+How to:
+- Go to the portal in Death Mountain (in the Light World) that you use to reach
+the Tower of Hera. Enter the portal.
+- In the Dark World, jump to the foot of the mountain and then move one screen
+east. You should see two plots indicating the place of the broken bridge in the
+Light World.
+- Go between the two plots and move as much to the right as you can (until
+you're against the ledge) and use the mirror.
+- (*) Now this part is tricky: you must move ONE pixel to the right (no more, no
+less). Then wait for the portal to take you back to the Dark World.
+- If the transition to the Dark World doesn't work (ie. you're taken back to the
+Light World) it's because you moved too much to the right. Try agin. If it works
+(and that you actually moved to the right) then proceed to the next step.
+- Use the mirror again. When you reach the Light World, move to the right so
+you're not standing on the portal anymore.
+- Wait for Link to stop blinking. While facing east, charge your sword so you
+can walk to the left while facing right. Move slowly to the left so you enter
+the portal (facing east) as soon as you touch it.
+- If you did this correctly you should now be standing on the ledge between the
+ground and the void. Move right so Link jumps into the void. (if you can't move
+east or if the transition to the Dark World failed, start over from (*)).
+- You are now walking on the void (groovy isn't it ?). Find your way to the
+southern screen. Be careful not to go too much to the right or it will make the
+game enter an infinite scrolling loop.
+- If you changed screen at the right place, you should now be on the top of a
+wall. Jump down.
+- You can now explore this part of the Dark World (including the village, the
+cemetery, the Skull Woods...). If the graphics are buggy (which should be the
+case) simply warp to the Light World and back to the Dark World.
+
+Why it happens:
+The following illustration will help understanding why this weird glitch
+happens.
+
+(1) ======================================  (Light World)
+(2) =================={!}=================  (Dark World)
+(3)         [--Link--]                      (Dark)
+(4)       **[--Link--]**                    (Light)
+(5)       ***[--Link--]*                    (Light)
+(6)          [--Link--]                     (Dark)
+(7)        **[--Link--]**                   (Light)
+(8)        **************    [--Link--]     (Light)
+(9)        *************[--Link--]          (Light)
+(10)                    [--Link--]          (Dark)
+
+In this illustration, each column represents a pixel of the game (for example I
+have here supposed that Link's sprite was 10 pixels wide, and the ledge was 3
+pixels wide). The symbols have the following significations:
+=          -> Solid floor
+{!}        -> The ledge. I have supposed that it was 3 pixels wide.
+[--Link--] -> Link's sprite. I have supposed that it was 10 pixels wide.
+*          -> Pixels of the magic portal created by the magic mirror.
+
+Some points have to be explained.
+- First, I don't know exactly what are the widths of Link's sprite (S), the
+ledge (L) and the portal (P). In the illustration I have chosen arbitrarily S =
+10, L = 3 and P = 14. This is not capital information, however we need to have
+the relation (P - S) = 2(L - 2). (If you try to reproduce the illustration with
+other values you'll easily see why).
+- A key point when understanding why this glitch works is to understand that the
+ledge's borders ("{" and "}") are considered "solid" when walking but not when
+warping from one world to the other. This means that when we try to walk towards
+the ledge the game stops Link in the position [--Link--]{!} because if he went
+further to the right he would be standing on a solid object. However when
+warping to the Dark World from the Light World, the position [--Link--|!} is
+accepted because here the border of the ledge is not solid (but if Link's sprite
+touches the center of the ledge "!" then the warp is not valid and we are taken
+back to the Light World so only the borders are not solid when warping). This is
+a very weird programming inconsistency (solid objects are not the same when
+warping and when walking). I think that this has been done voluntarily by the
+programmers to make warping easier since transitions are considered valid more
+easily this way (a location error of one pixel is accepted). However it is the
+key to this glitch since when walking one step to the right in the Light World
+and back to the Dark World we can be one pixel more to the right than what the
+programmers expected. Therefore we can put our portal one pixel more to the
+right than what they thought was possible and this way we can use the portal on
+the rightmost point and not cover the rightmost pixel of the solid part of the
+ledge "!".
+- Another thing might seem strange. When performing the glitch, we jump on the
+void and we can walk on it. This is very easy to understand since the default
+state of a floor is "solid" and when designing a level, the programmers have to
+specify explicitely where the holes are. In this case, they didn't consider that
+it was possible to walk on the void part east of the ledge so they didn't bother
+in making it a hole.
+- Also, keep in mind that all screens of the outworld are stored in the game the
+ones next to the others. This means that when we go out of bounds of a screen,
+the game scrolls to the next screen (this is what happens every time you change
+screens in the outworld). The Death Mountain part seems isolated since it is
+normally impossible to reach it from another screen of the outworld (we have to
+use the bird or come from a cave). However it is located next to the other
+screens (north of the cemetery and east of the Lost Woods), so when we exit the
+Death Mountain screen from the south we are taken naturally to the cemetery
+screen. Of course the programmers never thought that this transition was
+possible but since they programmed a general scrolling instruction, this default
+action is done by the game.
+
+Notes:
+- You can use the same technique to enter the weird rectangle area that is in
+the village of outcasts at the location where the bottle seller is in the Light
+World. This is just for fun however as there's absolutely nothing to do in
+there.
+- DMD lets you reach the Dark World as soon as you've got the mirror. This means
+that you don't need the pendants (except for the first one as you need the
+Pegasus Boots). Therefore you don't need the hearts in dungeons #2 and #3 of the
+Light World. If you have the flippers and the Moon Pearl (get in in the Tower of
+Hera and exit) you can reach dungeon #1 of the Dark World (Dark Palace) and get
+the hammer. From there, you can reach "normally" the portal that is north of
+Kakariko and the one in the swamp and therefore complete all the Dark World
+dungeons without having the Master Sword. It is possible with this to finish the
+game with only 11 hearts (see [NOMS] for more info).
+- You can also perform this glitch from the other side of the broken bridge
+(thanks to Frost King for this note). However I find it not very interesting
+since it's more complicated to go to the other side and that it can only be done
+later in the game (not before you get the hammer). It was worth mentioning it
+however.
+
+Side effects:
+
+Frost King from the GameFAQs board sent me a few weirdnesses related to the DMD.
+Here they are directly quoted from his posts.
+\begin{quote}
+Infinite Pit:
+  1. Get onto the lava void
+  2. Walk to where the hole in the bridge in the lightworld is
+  3. Warp to the lightworld
+You will now fall. After you fall, you reappear where you originally warped
+from and you then fall again. You will now be falling until you die, save and
+quit, hit the reset button, or hit the power button.
+
+Odd Wall:
+  1. Get onto the lava void
+  2. Walk as far north as you can
+  3. Warp to the lightworld
+  4. Walk further North than you could in the darkworld
+You will see a strange looking wall. If you run into it you will jump, but
+instead of jumping over the wall, you actually jump and end up a bit below of
+where you jumped from.
+
+Mountain Plains:
+  1. Get onto the lava void
+  2. Walk as far southeast as you can without switching to the waterfall
+screen.
+  3. Switch to the waterfall screen
+You should now be on top of the wall above the river in the darkworld. If you
+are stuck in a waterfall you didn't walk far enough east and you must start
+over.
+  4. Warp to the lightworld
+  5. Walk back to the mountain screen
+Now all the mountain terrain will be the terrain of the land outside the
+mountain. It wont look like the normal mountain at all, aside from it being
+different terrain. You will see a cave northwest of you, but if you get to it
+you cannot enter it.
+  6. Get to the cave you see. You will have to wander past all the invisible
+walls. You will probably have to walk west for a while, then go a bit north,
+then back east to get to it.
+  7. East of the cave is a particular wall. If you walk into it you will jump,
+but you will fly upward onto the hill.
+  8. Walk northeast until you get to another cave. Do not enter it.
+  9. Walk west. The "glitch hill" will crawl away as you walk. Eventually the
+entire mountain will be normal accept it will be the different terrain. Warping
+to the darkworld or entering a cave will end this.
+
+Dark Mountain Plains:
+  1. Get onto the lava void
+  2. Walk as far southeast as you can without switching to the waterfall screen
+  3. Switch to the waterfall screen
+  4. Warp to the lightworld
+  5. Walk back into the mountain screen
+  6. Walk back into the waterfall screen, enter the portal
+  7. Walk back into the mountain screen
+Everything will be the same as if you did the mountain plains trick, but you
+will be in the dark world. There appears to be no way to "normalize it" because
+there are a lot more invisible walls. If you warp into the lightworld it will
+be the mountain plains.
+\end{quote}
+
+{LEV}
+Subsection II.2 : The Levitation Trick
+**************************************
+
+Description:
+The levitation trick, as the name says, is a trick that lets you walk over pits
+as if Link was levitating. It also makes Link move slowly without actually
+moving his feet (the sprite is still but you can move in the room) but this is
+not really useful...
+It seems that it cannot be done on a real SNES because it requires a turbo
+controller that would be prefectly synchronised with the timer of the console. I
+haven't been able to verify this as I have no turbo controller on my SNES so I
+only do it on the emulator. If you have a turbo controller and are able to
+perform this glitch please tell me!
+
+Requirements:
+For this glitch you need the Pegasus Boots. You'll also need either an emulator
+with a good turbo controller emulation or a turbo controller that allows this
+glitch (but so far it seems that no real turbo controller for the SNES
+works...).
+
+How to:
+This is very easy to do. When you have the Pegasus Boots, simply use the auto
+fire on the A button and use the directional pad to move. You'll see that Link
+moves slowly but without moving his feet (like levitating). Now if you try to go
+over a pit, you'll be able to walk over the void.
+
+Why it happens:
+I can't enter too much in the details here. However I'll try to give an idea.
+This whole glitch is a priority conflict (at least I think it's the
+explanation).
+When Link is standing on the void, the game should notice it when making a test
+that compares Link's position with the position of all obstacles on the screen
+(holes are here considered obstacles). If the test concludes that Link is on a
+hole, then the falling animation is triggered. However, on another side, when
+the A button is pressed and if the player has already found the Pegasus Boots,
+the boots animation should start. Now when Link is standing on a hole and at the
+moment of the test the A button is pressed then the game gives the priority to
+the Pegasus Boots animation (this is a programming error in my opinion and this
+is what leads to this glitch), and at the next frame, normally the animation
+should be stopped because the game should see that Link is on a hole but if the
+A button is again pressed at the moment of the test (or right before) then a new
+Boots animation is started. As the Boots animation can be started translated to
+one pixel in any direction (depending on the direction that is pressed on the
+pad) this enables Link to move slowly in a given direction without ever letting
+the game see that we are on the hole (in fact the test is never actually done
+since the Boots animation takes the priority).
+This can only be done on an emulator since the pressing on the A button must be
+perfectly synchronised with the tests of the game (1 per frame I think, which is
+60 per second) and that no turbo controller on a real SNES can be perfectly
+synchronised with the console (the console doesn't exchange timing information
+with the controller). At the first synchronisation error the test will show that
+Link is on a hole and the game will trigger the falling animation. The emulator
+has no such problem since the Turbo button is defined to be one per frame (the
+emulator can do this).
+As only the first image of the Boots animation is done each time (since we have
+to start a new animation each time in order for the glitch to work) it seems
+that Link is standing still.
+Also note that the programming error is not really an error since on a real SNES
+it is impossible to obtain a perfect synchronisation so the test happens
+eventually (1 or 2 frames later) and Link falls in the hole. Besides giving the
+priority to the input (buttons pressed) over the game tests is generally a good
+programming choice since it avoids some freezing situations in which the game
+enters a loop and never considers the player's choices.
+
+Notes:
+- This trick enables you to perform the PBEG.
+- This is also very useful in most places where you need the hookshot as you
+won't need it anymore. Note however that it only works on "continuous"
+transitions between the floor and the void. This means that it'll work in all
+places where Link can normally fall in a hole without "jumping" into it.
+- If you are levitating and that you touch a wall the levitation will stop and
+you'll fall if you're over a pit (due to the fact that Link will try to "grab"
+the wall when pressing A on the wall).
+- Places where this glitch is most useful are:
+  * Hyrule Castle so you perform the PBEG
+  * All places where you have to walk on invisible tiles (you don't worry about
+the tiles anymore)
+  * Some rooms in Ice Palace, Ganon's Tower and Misery Mire (maybe even others I
+don't remember) where you're supposed to use the Hookshot in case you don't have
+it yet (or don't want to use it).
+
+{EXG}
+Subsection II.3 : The Exploration Glitches
+******************************************
+
+Description:
+Exploration glitches are the most powerful glitches that I know of in this game.
+It is like a kind of "no-clipping mode" in the sense that it lets you see almost
+any room of any dungeon in the game. However they are quite hard to use (not
+really hard to perform, but hard to manipulate correctly to do what you want to
+do) at first because you easily get lost and the game might freeze quite often
+if you go to the wrong places.
+The main idea of these glitches is that they take you "under" the floor of most
+rooms and this way you can walk either under or "outside" of the rooms (be on
+the other side of the walls). As all rooms of the dungeons are in the same place
+in the program (see [UDRW]), if you don't use the usual connections (doors,
+staircases etc.) you can go from a dungeon to another without problems... These
+glitches are the main reason why I decided to write this FAQ because the
+possible uses are nearly unlimited!
+
+Notes:
+- As I said before, after performing an exploration glitch you are under the
+floor or out of the rooms. This means that you can't obviously interact
+correctly with what's inside the dungeons. The key point when using these
+glitches is to find particular rooms where you can "hop" back to the normal
+floor (from now on "hop" will be the word that I'll use for such action). This
+means that in these rooms you can go back from the outside of the room into the
+room (on the normal floor). Normally this "hopping" action will consist in Link
+jumping from outside of the room on the floor of the room. There are not so many
+"hoppable" rooms (not even one in each dungeon) but still enough to do what we
+want most of the time.
+
+{SDEG}
+Paragraph II.3.A : Skull Dungeon Method (SDEG)
+----------------------------------------------
+
+Description:
+This is the version I like less. It's harder to perform than the two others,
+must be done later in the game and is very hard to use correctly (it's much more
+"bugged" than the other ones). I nearly never use it.
+Its only real good point is that it can be done on a real SNES (no need for an
+emulator) without having to open your controller or use a particular Turbo
+controller (the next ones require such things...).
+Thanks to dvdmth for this glitch.
+
+Requirements:
+Reach Skull Dungeon (#3). Can be done as soon as you can perform the DMD as you
+can reach Skull Dungeon from there.
+
+How to:
+- Go to Skull Dungeon, in the room with 4 bumpers, 3 zombies and spikes (the
+south-east most room)
+- Kill all zombies so they won't bother later
+- Now head to the two upper bumpers and position yourself right between the two
+(remove the skull pot before)
+- When you're correctly placed, move right so you bounce against the first
+bumper and are sent back to the other one
+- If you were correctly placed you should start bouncing back and forth between
+the bumpers. If you are sent away then you weren't correctly aligned with them.
+Try again.
+- When bouncing back and forth, charge your sword so that you can unleash a spin
+attack on the ceiling hand when it falls on you
+- After bouncing long enough (I think that you need to do it around 1 minute)
+exit the bumpers area and go to the room to the north
+- You should see a bumper, a red octopus-like creature and star tiles
+- Approach the door immediately to your left
+- You'll see that the scrolling is weird because the camera will go out of
+bounds letting you see part of the next room even before you enter the door
+- Now enter the door. Two things might happen:
+  (1) * Most of the times the camera will scroll two rooms to the left
+      * From there you'll see a room with 3 zombies and a red skeletton and
+you'll be stuck in the door. There's nothing more to do, the glitch failed. Use
+your magic mirror.
+  (2) * The other possibility is that you go into the left door but the screen
+only scrolls once and so you see the Fire Rod chest
+      * From there go back to your left (return to the room you just came from)
+and try finding your way (it's a little hard because the camera won't be
+correctly placed)
+      * After some moves you should see that you are under the floor (for
+example you'll see yourself walk under the holes in the ground)
+      * From there you're in the exploration zone and can see almost any room of
+any dungeon. Find a hoppable room and go to another dungeon this way.
+
+Why it happens:
+I think that some parameter (used when defining the scrolling of the camera) is
+calculated with an error of one pixel (or so) each time you bounce back and
+forth between the bumpers. This means that if you bounce for long enough this
+parameter has a value that is one screen wrong and so the glitch happens. This
+explanation might not be really clear (in fact I never use this glitch so I know
+very little about it) but it would explain why two different things can happen
+when doing the glitch (I think that if you don't bounce enough times nothing
+happens, if you bounce the correct ammount of times (2) happens and if you
+bounce too many times (1) happens). However I have not tested this enough to
+conclude.
+
+Notes:
+- As you might have noticed it, I don't really like this method and therefore I
+nearly never use it, so I don't have much to say about it.
+- I think that in order for it to worlk correctly (for the option (2) to happen
+instead of (1)) you need to bounce enough but not too much.
+- This exploration glitch is quite hard to use because even when you do it
+correctly you are never in the room that you actually see, so the obstacles are
+not really the ones you see on the screen.
+
+{PBEG}
+Paragraph II.3.B : Hyrule Castle First Method (PBEG)
+----------------------------------------------------
+
+Description:
+This one is the most useful version of the exploration glitch. It lets you
+easily explore all the underworld (rooms of the dungeons and some caves) very
+soon. The bad point is that it requires an auto-fire controller (or an
+emulator). It seems also that not all turbo controller work (so I recommend you
+do it with ZSNES).
+
+Requirements:
+You need the Pegasus Boots, a turbo controller that works with the Levitation
+Trick [LEV] (an emulator does this perfectly) and the possibility to enter
+Hyrule Castle (so can't be done after defeating Agahnim).
+
+How to:
+- Go to Hyrule Castle's underground (where you rescued Princess Zelda).
+- In the second underground (blue) room, there is an infinite pit that has no
+right limit (ie. there's no east wall at some point). Perform the levitation
+trick there (see [LEV]) and exit to the right.
+- You shouldn't see yourself anymore and be in a room from the Desert Dungeon
+(but with messed up colors).
+- Congratulations, you have reached the exploration zone... You can now walk
+around and explore the dungeons (see later sections for more info on what you
+can do with this glitch)
+
+Why it happens:
+This glitch is very simple to understand. All we do is exit the room from a
+point where the programmers didn't think we could. As they didn't consider that
+walking on the void was possible, they didn't consider necessary to close the
+room on the right wall. If we walk on the void (with the levitation glitch) we
+can exit the room to the right. When doing so the game handles it as it does
+normally when going from one room into the next one (most transitions are like
+this, each time the screen scrolls) and takes us to the room that is stored east
+of the current one in the ROM. This room happens to be a room from another
+dungeon since all dungeon rooms are stored together (see [UDRW] for more
+details). Moreover as we were on a lower level in the previous room (remember
+that the entrance door of the room is higher than the floor from which we did
+the levitation trick) the game considers we are in the lower level of the rooms
+we visit.
+This is both a good and a bad point. The good side is that the game doesn't
+freeze when entering a room (most of the time) since we are under the walls and
+not inside the walls (because the walls are most of the time in the upper level,
+since the default level is up). However it happens that we enter a room with a
+lower level out wall (some rooms of the Water Palace are like this for example)
+and in this case we're stuck in the wall. The bad side is that we cannot
+interact with the rooms that don't have a lower level (which is most of them) so
+even if we can see the rooms we can not enter them properly (hop into). Even so,
+don't think that all rooms with a lower level are hoppable... Very few are in
+fact.
+
+Notes:
+- There's so much to say about this glitch that I'm not entering into the
+details right now. Check the later sections [QUE] to see how you can use it to
+do interesting things.
+- If you have Hyrule Magic on your computer and the US version of the ROM, you
+can use the room editor to see how the rooms are located the ones with respect
+to the others. This can help you a lot when exploring.
+- If you use this glitch and hop into a dungeon, most of the times (depending on
+where you enter the dungeon...) everything will act correctly (the pots and
+items will be there, the enemies will see you and attack you etc.).
+- A very interesting thing is that when you perform this glitch and go see other
+rooms of other dungeons the game doesn't realize that you change the current
+dungeon so you're still considered to be in Hyrule Castle. The main consequence
+of this is that if you have the Big Key from Hyrule Castle (which you should
+have if you have the Pegasus Boots) then you'll be able to open all "big doors"
+(and the big chests) in the dungeons you'll hop into. Also the small keys will
+be counted as keys in Hyrule Castle. This means that with the Exploration
+Glitches you can use keys that you found in a dungeon in another one, but be
+careful when doing so since you might run out of keys in some dungeons.
+
+{UDEG}
+Paragraph II.3.C : The (Up + Down) Combo Method (UDEG)
+------------------------------------------------------
+
+Description:
+This is another method to perform the exploration glitch. The good point is that
+everybody can perform it with a real SNES (no need for an emulator), but the bad
+point is you'll have to open your controller for it. It is a strong use of the
+more general multi-directional glitch (see [MDR]). I'll explain here how to
+perform it in the place where I found it works the best and it's the most useful
+(the soonest possible) but there are probably other places where it can be done
+correctly.
+
+Requirements:
+To perform it you have to be able to enter Hyrule Castle. This means that you
+only need the sword and shield (I haven't been able to skip these yet...) and
+that's it. It also means that you mustn't defeat Agahnim as Hyrule Castle is
+closed after the fight. However, as I said before, there must be other places
+where it works correctly so you might still be able to use this method later in
+the game. I'll discuss more in depth the possibility of other places where to do
+it in the "Why it happens" paragraph.
+It also requires that you open your controller if you're playing on a real SNES
+as you'll have to press simultaneously Up and Down... Refer to the
+multi-directional glitch [MDR] subsection for more info.
+
+How to:
+- Go to Hyrule Castle, enter from the main entrance and go to the room to the
+left (ground entrance, not the upper one). It' a vertical room that has an exit
+from the top (that leads to another vertical room).
+- Go to the north exit but don't enter. Now press (Up + Down) and go through the
+door while facing downwards (again refer to the multi-directional glitch [MDR]
+for more details... -am I repeating myself?-)
+- This should make the game glitch (the transition should be erroneous). Wait
+until the transition is finished and press again (Up + Down) until another weird
+transition happens.
+- If you did it correctly you should now see a completely closed and empty room
+but not see Link anymore: you're in the exploration zone...
+
+Why it happens:
+This glitch is very weird. I'm not sure that I correctly understand what
+happens. For now, I think that the game is very confused when we press both
+directions (Up and Down for example) and that it acts in some ways as if we were
+pressing Up and in some other ways as if we were pressing Down. For example Link
+faces down but moves Up. When entering a door, the game loads the southern room
+instead of the northern one and Links location is messed up (I haven't really
+understood which location is chosen and why). However in the particular case
+that I have explained here (in Hyrule Castle if you make two transitions) the
+location is corrected the second time and Link is considered really in the
+southern room. From there it is possible to explore as for the previous glitch,
+and once again we are in a lower level since we performed the glitch from a
+lower level (see [PBEG] explanation).
+
+Notes:
+- Again, there's lots to say about this glitch. It's very useful and some of its
+possible uses will be discussed in the later sections [QUE].
+- This is the earliest glitch you can perform in the game. It requires nearly
+nothing and enables you to do a lot of things (including completing the game)
+without even rescuing Zelda from her cell.
+- If you perform this glitch at the very beginning (ie. before rescuing Zelda)
+keep in mind that you are still in phase I of the game. This will affect lots of
+things in the outworld and even some things inside the dungeons (see subsection
+IV.1 [3PHA])
+- You can use it to see the "secret" Chris Houlihan's room. To see the
+Houlihan's room, start like for the 3 minutes speed run [3MIN] until you reach
+the room with Ganon (meaning, you do the glitch, go to the room with the blue
+archers and the spearman, go along the wall and head up a few rooms). When you
+reach the room (the music changes to the final battle music) you first see the
+top half of the room only (weird glitch). Keep going up and you'll start seeing
+the full room (try it and you'll understand what I mean). Keep going up until
+you start seeing the top wall of the full room. When you see the top wall stop
+going up (if you continue you'll reach the Triforce room...). Now head right and
+do 3 room transitions (you might be stuck when going right, if this happens,
+simply move a few pixels to the up and try to move to the right again). You
+should now be in the room that's one right to the room with the rats (you should
+have seen rats when you were going right). Move to the South (without any room
+transition) to have the camera scroll down and reveal the Chris Houlihan's room
+(but the colors won't be the right ones). If you want correct colors do one
+scrolling to the lower room and come back.
+- Note that here I explained how to do it in one particular room. This room is
+the one that I found it the easiest to do it and where you can do it the
+earliest. However there are other rooms where you can. There's another room in
+HC where you can do it on the Left exit (pressing Left+Right). And also
+ccexplore found that you can do it in a room in Misery Mire. Doing it in Misery
+Mire is only useful if you want the game to think that you are in the Dark
+World. See section [SMIT] for more details on the UDEG in Misery Mire.
+
+{JSEG}
+Paragraph II.3.D : "Jump and Save" method (JSEG)
+------------------------------------------------
+Thanks to Sergio Villicana
+
+Description:
+A very simple to do EG, that has very weird side effects and uses. It was found
+by Sergio Villicana who used a more complicated version of the glitch involving
+the use of the Magic Mirror (see notes). Here, I'll explain a simpler version
+that has the same results.
+Mainly, the JSEG lets you enter both the Primary and the Secundary Exploration
+Zones (see the Underworld Map section [UDRW]) very soon and with very little
+equipment. It can also let you go through sprites in the Outworld (you seem to
+be under the floor too but can't really go through obstacles).
+
+Requirements:
+To perform the glitch, you'll need one or two save slots (it might be better to
+do it with 2 but if you don't have them free then deal with only one). From here
+I'll call them game A and game B.
+***
+WARNING: If you perform this glitch, you'll most likely destroy one of your
+saved games (normally game B but other games might disappear too). Be warned and
+proceed at your own risks. If you're using an emulator, copy your saved games
+before or use saved states to recover a lost game. If you're playing on the
+actual console, then either accept the risk of losing your saves or don't try it
+at all (or try it when you have no other game of interest saved on your
+cartridge).
+***
+
+How to:
+- Start playing game A. Reach a room inside a dungeon with a ledge where you can
+jump from the upper floor to the lower. Note that all rooms don't work for this
+but most do. For a start, I recommend going to Hyrule Castle's room that is left
+of the main entrance (I haven't yet managed to do it in the main entrance).
+- Go to the top level and jump down.
+- While Link is still in the air, press SELECT. Choose "save and quit".
+- Start game B.
+From here, the glitch is already in effect (let's say it's "armed" to use
+dvdmth's terminology). Several things can now happen depending on where you
+start game B:
+a) if you start a new game, after your uncle leaves the house, jump out of your
+bed and you'll go right through the floor! You can now explore the Exploration
+Zone corresponding to Link's House (see notes for further details).
+b) if you start in a room that doesn't have a lower level (Link's House or
+Sanctuary work but not the Mountain Cave for example) you can walk around and
+keep the glitch armed. To use the glitch, either be hurt by an enemy (or a bomb)
+or dash into a wall with the PB (some other things might work too). This will
+make you go through the floor wherever you are (no matter if you're inside or
+outside). Keep in mind that whenever you enter a room with a lower level, you
+disarm the glitch...
+
+Why it happens:
+This glitch has many side effects that I really don't understand (see the notes
+below). However the main glitch is quite understandable. When you're playing
+game A and jump down, Link enters a temporary "jumping" state while he's in the
+air. Programming-wise this special state is useful to solve weird problems that
+could occur with enemies or other things while he jumps, so setting his state to
+"jumping" solves everything (he can't be hurt and such things). Of course, his
+state has to be stored somewhere in the memory and supposedly when he reaches
+the floor, the game will change his state back to "not jumping". However, if you
+save and quit while in this state, the game never resets the value (and that's
+probably a programming mistake since they should reset all such values to the
+defaults when quitting) so when you start a new game, you're still in this
+state.
+Now I think that dashing into a wall or being hurt causes Link to be into
+another special "hurt" state (again you're invincible while in this state to
+make things simpler to program). This means that at this time you're in both
+states "hurt" and "jumping". However at the end of the "hurting" animation, the
+game wants to reset your state back to normal so it checks your status and
+applies the corresponding changes... Normally, after being in state "jumping"
+you should always be in the lower floor, so it is understandable to consider
+that the game automatically puts you in the lower floor whenever you leave the
+"jumping" state. So when the game resets your status, it takes you to the lower
+floor at the same time and so takes you under the floor.
+Also remember that there's no lower floor in the Outworld, so setting you to the
+lower floor always takes you under your normal level.
+The last thing to understand is why entering a room with a lower floor causes
+the glitch to disarm... I think this is simply because when you enter a room
+with a lower floor the game knows that you might have a change of level and so
+prepares the "jumping" state by initialising it to it's default value (which
+would be "not jumping").
+Why it doesn't do it in all rooms even if there's no lower floor you might ask?
+Simply because it saves one operation in the rooms where it seems "useless"...
+In other words this is a typical example of a "lazy" implementation (not that
+the programmers are lazy but that they want their program to do as little
+operations as possible) that creates a bug because they didn't realise that you
+could be in the state "jumping" in a "single level" room.
+
+Notes:
+- If you have already played either with the other EG or with the ROM editor
+Hyrule Magic (or even read the section [UDRW] about the Underworld Map), you
+might have noticed that even using an exploration glitch, some rooms can't be
+reached from a normal dungeon room. These rooms include Link's house, most
+houses and shops and some caves. In fact the rooms of the game are divided into
+two zones: the Primary Exploration Zone (rooms numbered from 0 to 255 in Hyrule
+Magic) and the Secundary Zone (rooms numbered from 256 to 295). So far, all the
+EG that we knew led to the Primary Zone (all dungeon rooms and the Triforce
+Room). However this glitch is more flexible and can let us explore the Secundary
+Zone. Although this is an important novelty, I haven't found any "useful" way to
+exploit this since I can't do much in this zone...
+- About the saved games, what seems to happen most of the time is that after
+leaving game A with the glitch armed and loading game B, if you save and quit
+while in game B the contents of game A are copied into game B's slot and so you
+lose game B... This means that I think that having a third game in a slot that
+you don't mess with could be safe (but I'm not 100% sure about this). I really
+don't understand why it happens though.
+- Going through the floor while in the Outworld isn't really useful. You can't
+go through obstacles such as mountain walls, trees or water. All you can do in
+fact is go through sprites (mostly enemies). In fact the very only use that I
+have found was to enter the Desert's Dungeon without using the Book of Mudora
+since you can walk through the green stones. The effects of the glitch disappear
+if you enter a house/cave/dungeon.
+- Sergio's original method used the Magic Mirror. In fact, what he found was
+that if you were in Blind's Hideout entrance, jumped to the lower side and
+immediately when Link leaves the ground used the mirror you were taken to the
+entrance and go stuck in the entrance. From there, save and quit and the glitch
+is armed. The bad points were that for one it required that you already had the
+mirror in game A, and also the timing was quite hard to get because you had a
+2-frames time where you had to use the mirror...
+
+{SBU}
+Subsection II.4 : Super Bunny
+*****************************
+
+Description:
+The Super Bunny is a weird glitch that lets you use your sword as a Pink Bunny.
+It is only useful of course if you plan on not getting the Moon Pearl...
+Although it gives you the ability to use your sword, you are still very helpless
+as you can't use any of the other items. The Super Bunny reverts to a normal
+bunny when hit.
+
+{LHSB}
+Paragraph II.4.A : Lake Hylia
+-----------------------------
+
+Description:
+This method lets you become a Super Bunny in Lake Hylia (in the Dark World). It
+seems to have many powerful side effects, including recovery of deleted
+savegames and teleportation (some sort of exploration glitch but in the
+outworld). Thanks to David Wonn and his glitch site for this one.
+
+Requirements:
+You'll need the flippers, the Magic Mirror, the ability to reach the Dark World
+version of Lake Hylia and not having the Moon Pearl for this glitch.
+
+How to:
+Check David Wonn's site (I can't give the url because it changes all the time.
+Just search for David Wonn in any good search engine).
+I'll probably experiment this glitch a lot more before I write something of my
+own because it seems very interesting but I have nearly not used it yet.
+
+Why it happens:
+The game gets confused during the incorrect warps between the two worlds. I
+don't know much more about it for now, but it is very similar to all other
+bunny-related glitches: the bunny state is a very particular state, but the
+programmers never imagined that we could try and do interesting stuff in this
+state so they didn't program any error catching system. This is why doing some
+weird things like messing up with the deep water and the world warps has such
+interesting and unexpected consequences.
+
+Notes:
+Not much to say for the moment. I'll experiment it further and tell you what
+there is to know.
+
+{HOSB}
+Paragraph II.4.B : In a hole
+----------------------------
+
+Description:
+You can turn into a Super Bunny if you enter the Dark Underworld from a hole
+without having the Moon Pearl.
+
+Requirements:
+You must be able to reach the Dark Underworld from a hole without having the
+Moon Pearl.
+
+How to:
+There's nothing much to do for this glitch. Simply enter the hole as a Bunny. As
+soon as you enter the room you'll be a Super Bunny. The "only" difficulty is to
+reach a hole without the Moon Pearl...
+Some places where you can do it:
+- Skull Dungeon
+- the final battle with Ganon in the Pyramid of Power
+- some caves.
+
+Why it happens:
+I don't know why this happens since I never really understood what internal
+error in the game could lead to the "Super Bunny" state. However as I said
+before it's due to the fact that the bunny state is so particular and still the
+programmers didn't expect the player to skip the Moon Pearl.
+
+Notes:
+- I accidentally discovered this glitch when trying (and succeeding) to meet
+Ganon as a Pink Bunny (because some Bunny fan at the GameFAQs board asked if it
+was possible). The methods I used (there are two in fact, depending if you want
+or not to be able to defeat Ganon) are explained in the section glitch quests
+([PBGA] and [MSMP]).
+- At first I thought it worked only with the final battle against Ganon but
+Frost King told me that it also works when entering Skull Dungeon from a hole so
+I assume it's a general glitch when you fall down a hole.
+- Note that as the Super Bunny reverts to a regular Pink Bunny when hit, you'll
+have to hit Ganon with your sword without ever being hit by him if you want to
+challenge him as a Bunny. Also as the Super bunny cannot use items you won't be
+able to defeat Ganon but still you can make it to the point where he turns the
+lights off.
+
+{MPE}
+Subsection II.5 : Moon Pearl Emulation
+**************************************
+
+Description:
+This section covers different ways you can use to revert to a normal Link in the
+Dark World when you don't have the Moon Pearl. We'll see later [MSMP] that it is
+possible to use these methods to finish the game by defeating Ganon without ever
+having the Moon Pearl.
+
+{SUBU}
+Paragraph II.5.A : The Surfing Bunny
+------------------------------------
+
+Description:
+The Surfing Bunny glitch is a glitch that lets you revert into Link when in the
+Dark World with no Moon Pearl by having a faery revive you while on deep
+water... Strange, but definitely the most useful and easy to perform method to
+explore the Dark Outworld as Link.
+
+Requirements:
+You need to be able to reach the Dark Swamp (place where dungeon #2 is) as a
+bunny, the flippers, a faery in a bottle and no Moon Pearl of course.
+
+How to:
+- Go to the Dark Swamp in the screen that is one north and one east from the
+entrance of dungeon #2 (you should be as a bunny, or else there's no use in
+doing this glitch!).
+- On the left part of this screen you'll see deep water that continues to the
+western screen.
+- Make sure you have a faery in a bottle, and have enemies hurt you so you only
+have 1 heart left (maybe a little more, the point is that the flying bomber
+enemy should kill you in one hit later).
+- Now as a Bunny walk slowly into the deep water.
+- If you try to move to the left (more into the deep water) you'll see that the
+Bunny starts blinking and if you press repeatedly left (do not keep pressing,
+only go step by step) the Bunny moves slowly to the left more and more into the
+deep water.
+- Continue moving left until you change screens.
+- If everything worked as it should, you should now be on the leftern screen
+walking on deep water and sliding as if it was an icy floor (like surfing on the
+water). If not then simply go back to the right screen, and try again the
+transition until the surfing effect works.
+- Once you're surfing on the water, have an enemy kill you in one hit (there's a
+flying bomber around so he should kill you).
+- After it does, the faery will revive you as Link.
+
+Why it happens:
+A weird glitch indeed. I can't really explain it but it works very well :)
+
+Notes:
+- You'll keep Link's form for as long as you're in the Outworld (you can change
+screens without trouble), and even if you enter a house/cave/dungeon. However
+you'll turn back into a Pink Bunny as soon as you go back to the Dark Outworld
+(also you'll obviously turn back into a bunny if you revert to the Light World
+and use a portal to the Dark World).
+- When you're in Link's form everything will work as if you had the Moon Pearl
+so you'll be able to use all your items.
+
+{SBMM}
+Paragraph II.5.B : Surfing Bunny goes to Misery Mire
+----------------------------------------------------
+
+Description:
+This is a variant of the previous glitch that works in Misery Mire swamp
+(necessary if you want to open dungeon #6 with the Ether Medallion).
+
+Requirements:
+This glitch works similarly to the previous one. You'll need a faery in a
+bottle, the flippers, no Moon Pearl and the ability to reach the swamp of Misery
+Mire.
+
+How to:
+This glitch is very similar to the previous one so I'll assume that you know how
+to perform the normal Surfing Bunny glitch (as it's much harder to reach Misery
+Mire without the Moon Pearl you should be familiar with the previous one if
+you're trying this).
+- Go to the Misery Mire swamp.
+- Have a faery in a bottle and the enemies hurt you so that you'll die in one
+hit when something hurts you.
+- As a bunny, walk into a deep water spot as before, but this time there need
+not to be any change of screens (luckily, as there is none in Misery Mire
+swamp).
+- When you're in the middle of the deep water pond, use the mirror.
+- Once in the Desert (Light World), don't move and have the portal take you back
+to the Dark World.
+- If everything worked correctly you should now be surfing on the deep water (if
+not use the Magic Mirror again until it works).
+- As before, have an enemy kill you in one hit and the faery will revive you as
+Link.
+
+Why it happens:
+This glitch is nearly the same as the previous one. The only difference is how
+to make the bunny surf on the water. As you can't use any change of screens
+you'll have to find something else: in this case the warping between the two
+worlds will do it perfectly since it will take you directly on the deep water,
+as a fresh and normal bunny.
+
+Notes:
+- The only use of this method is to open Misery Mire (dungeon #6) without the
+Moon Pearl. I don't think there's more to do with it. It is used in the No Moon
+Pearl Quest [MSMP].
+
+{DEAT}
+Paragraph II.5.C : Life After Death?
+------------------------------------
+
+Description:
+This glitch lets you turn into Link inside any Dark World dungeon that you can
+enter as a Bunny (thanks to Adam T. for this method).
+
+Requirements:
+You must be able to enter a dungeon of the Dark World as a Bunny.
+
+How to:
+Simply die in the dungeon. Then select save and continue or continue without
+save and you'll start the dungeon again as Link.
+
+Why it happens:
+Quite easy to understand. First, you have to know that the dungeons are not
+really considered as being in the Dark World. This is simply because all dungeon
+rooms (from both the Light and the Dark worlds) are stored the ones next to the
+others (to see clearly what I mean try doing the exploration glitches). Now when
+you die, you are taken back to the beginning of the dungeon in your normal form
+(because there is only one "resurrection" script). Since the dungeon is not in
+the Dark World it won't test whether or not you have the Moon Pearl in order to
+turn you into a bunny. This might seem an inconsistency in the programming but
+it is an understandable error since there should be no possible way to enter a
+Dark World dungeon as a bunny (you should need the hammer, and the only way to
+enter the 1st dungeon is by having Kiki open the door for you but Kiki doesn't
+show up if you're a bunny).
+This being said, you can check that if you die in the outworld (normally... not
+as a surfing bunny...) you are resurrected as Link and immediately changed into
+a bunny since the game checks if you have the Moon Pearl each time you "appear"
+in the Dark World. This is also why you turn back into a bunny when exitting a
+house/cave/dungeon (because at that time you go from a neutral zone, neither
+Light or Dark World to the Dark World so there is a test).
+
+Notes:
+- This trick is really helpful when trying to defeat Ganon without the Moon
+Pearl as you'll be able to complete correctly any dungeon that you can enter.
+- The only problem is that you'll have to die so you won't be able to use it in
+a 000 quest (but if you're using glitches you'll mostly won't care about 000
+finish and if you really want it then use the easy 000 finish trick: see notes
+of [3MIN]).
+
+{CEHA}
+Paragraph II.5.D : Could You Give Me a Hand?
+--------------------------------------------
+
+Description:
+This trick gives an alternative way to turn back into Link in the Skull Dungeon
+(#3) (thanks again to Adam T. for this other method).
+
+Requirements:
+You must be able to enter a room of Skull Dungeon where the ceiling hand tries
+to grab you as a Bunny.
+
+How to:
+Well, as you could guess seeing the requirements, simply have the ceiling hand
+grab you. When it takes you back to the entrance of the dungeon you'll be in
+your original form.
+
+Why it happens:
+Nearly the same as the previous one. The "hand script" has been written only for
+Link's normal form so you are taken to the entrance of the dungeon as a normal
+Link. Since the dungeon isn't considered being in the Dark World you are not
+turned into a bunny.
+
+Notes:
+- This method only works in the Skull Dungeon so it's obviously less general and
+useful than the previous one. Still it doesn't make you die so it won't count in
+a 000 finish (but I don't see why you would use it if you don't want to enter
+the other dungeons as Link so you'll need the other method at some point).
+
+{FFPO}
+Paragraph II.5.E : Fat Faery's Power
+------------------------------------
+
+Description:
+This is not really a useful glitch but I thought I'd mention it. It's another
+way to revert to Links original form in the Dark World when not having the Moon
+Pearl.
+
+Requirements:
+Be able to enter the Fat Faery's pond without the Moon Pearl.
+
+How to:
+There's nothing really to do. Simply enter the pond and you'll be as Link.
+However you won't be able to use your items (well I couldn't... maybe sometimes
+you can) so it seems more like a graphical glitch since I think the game still
+considers that you're a Bunny.
+
+Why it happens:
+I'm not really sure why this one happens... The weirdest thing is that you
+appear as a normal Link but have no abilities, as if you were still a bunny. In
+other words only the visual sprite has been changed. I really don't know what's
+so special about this faery room, since this glitch doesn't happen in other
+rooms or caves.
+
+Notes:
+- This is really not useful at all (since it only works inside the pond and that
+there's nothing to do except throwing your items which I'm pretty sure even the
+Bunny could do).
+- If you're wondering how you can reach the Fat Faery's pond without the Moon
+Pearl check the glitch quests section [MSMP].
+
+{ETH}
+Subsection II.6 : The Ether Medallion Glitch
+********************************************
+
+Description:
+This interesting glitch gives you the Ether Medallion without having the Master
+Sword. It uses the PBEG.
+
+Requirements:
+You must be able to perform the Pegasus Boots Exploration Glitch so you'll need
+both the Pegasus Boots and the ability to enter Hyrule Castle. Also you'll need
+not to have defeated one of the bosses that you can reach with the PBEG
+(Lanmolas from the second Light World dungeon is perfect for this, Arrghus from
+dungeon #6 in the Dark World is also good but harder). As said before, this
+glitch may only be possible on an emulator.
+
+How to:
+- Perform the PBEG.
+- Now find your way so you can hop into a dungeon and be able to reach the final
+boss of the dungeon (I know that it's possible to hop into the room with flying
+tiles (67) that is 2 rooms before Lanmolas in the second Light World dungeon and
+as you have the Big Key from Hyrule Castle you'll be able to reach the boss).
+See [UDRW] and [ADDR] to find your way.
+- Defeat the boss.
+- After the boss dies, he'll give you a heart container and instead of the
+pendant/crystal you'll receive the Ether Medallion (yes... really !).
+
+Why it happens:
+Weird... really weird... However I think that I know why it happens (well, at
+least I know why something weird happens!).
+Remember that we did the PBEG from Hyrule Castle right? Now since we never left
+the castle (meaning that we never exited and entered properly another dungeon)
+the game considers that we're still in the Castle. The Castle is like a real
+dungeon, it has a map, a compass and even a big key (and you can use it in the
+other dungeons!). However it has no pendant or crystal...
+Normally this is not a problem since the boss fight in Hyrule Castle triggers a
+special action (very special in fact because it switches from phase I to phase
+II in the game, see [3PHA]). However, if you go and fight some boss from another
+dungeon, after you defeat the boss, he dies and gives you his heart container
+(the heart container is not part of the dungeon, it's part of the boss since it
+appears where the boss died) and then triggers the pendant/crystal script. This
+is where the glitch happens!
+This script makes some object fall from the sky right in the middle of the room.
+For some obscure reason, when you are in Hyrule Castle and execute this script
+it's the ether medallion that falls from the sky. This is possibly a consequence
+of the fact that since there is no real pendant/crystal for Hyrule Castle the
+game points to some item in the ROM code and this item appears to be the
+medallion... It could have been any object, and even something that was not
+really an object from the inventory.
+Why it is specifically the medallion that falls remains a mystery to me but at
+least I'm nearly sure that the pendant/crystal doesn't fall because we're
+considered as being in HC. Also, when you grab the medallion nothing special
+happens (you are not taken back to the outworld) because the dialogue with the
+princess and the teleportation to the outworld is part of the crystal-grabbing
+script, so it is not executed in this case.
+
+Notes:
+- This glitch is by far the weirdest and most unexpected of all the glitches
+that I know in this game. In fact I discovered it totally by accident at a time
+when I was searching for a way to enter Misery Mire without the Master Sword
+since I couldn't get the Ether Medallion... I was wandering in the Exploration
+Glitch and met a boss (it was Lanmolas first but then I also did it against
+Arrghus) and he gave me the Medallion! I was highly surprised but this appeared
+to be a real miracle since it's the only way that I know of to finish correctly
+Misery Mire without the Master Sword (since entering Misery Mire with the
+Exploration Glitch makes the game believe you have completed Hyrule Castle, not
+Misery Mire).
+- If you want the pendant/crystal that the boss you have just defeated should
+have given you, simply enter normally the dungeon and reach the boss room. When
+you'll enter, the boss won't be here and the pendant/crystal will fall on the
+floor.
+
+{MDR}
+Subsection II.7 : The Multi-Directional Glitch
+**********************************************
+
+Description:
+This glitch is a very weird glitch. The idea is to press simultaneously two
+opposide directions (up and down for example), which you cannot do on a normal
+SNES controller, so that the game is very confused and many interesting things
+happen.
+The main (most useful) use of this glitch is the (Up + Down) combo Exploration
+Glitch (see [UDEG]) that has already been explained earlier. However there are
+other minor uses of this glitch that I will present here.
+
+Requirements:
+To perform this, as I said, you'll have to press simultaneously two opposite (or
+even the four) directions. This can easily be done with an emulator (if your
+computer doesn't act correctly when pressing multiple directional keys as it
+happens to mine simply use the key combos functions of the emulator), but it's
+not possible with a normal SNES controller.
+However, if you really want to try it on your console, you can open carefully
+your controller and take the "directional cross" part so you'll be able to press
+two or more directional buttons at the same time. If you do it carefully there's
+no risk for your controller. I did it and it worked perfectly without any
+damage.
+
+{MDMP}
+Paragraph II.7.A : Fun With the Map
+-----------------------------------
+
+Requirements:
+Be able to do the Multi-Directional Glitch and see the World Map (with the X
+button).
+
+How to:
+- Go to the scrollable version of the Map (press X once while in the Outworld).
+- Move to the right border of it and press (Right + Left) or to the lower border
+and press (Up + Down).
+- You'll see that the map scrolls out of bounds.
+
+Why it happens:
+The game gets confused because you press multiple directions. On one hand it
+tests whether or not you can scroll left/up and sees that you can (because you
+are at the right/bottom border) and after the test is ok, it moves to the
+right/down because this direction is pressed. In fact as you press two
+directions, the first one is used for the test to see if you can scroll or not
+and the second is used for the scrolling. This is why you can go out of bounds.
+Once you are out of bounds, all scrollings are accepted (even if you press only
+one solution) since you are already out of the regular tested values.
+
+Notes:
+- This glitch gives you the answer to the so fundamental question: "what is
+behind the white clouds around Hyrule?". The answer is sadly very disappointing.
+As you'll see if you try it, outside of Hyrule is a glitched zone (graphics are
+all messed up) followed by a completed black area...
+- This also gives us information on the topology of the World Hyrule is in.
+Since when you scroll out of bounds to the east for long enough you reach the
+west part of the map, this means that Hyrule World is cyclic and without limits
+(the same applies if you scroll south, but you reach a "flat" version of the
+map... check it it's very weird...). In other words their world is either
+topologically equivalent to ours (a sphere) or is a torus (shaped like a
+donut)... Interesting isn't it?
+
+{MDPR}
+Paragraph II.7.B : Princess? What Princess?
+-------------------------------------------
+
+Description:
+This glitch lets you do funny things in the very beginning of the game, before
+bringing Princess Zelda to the Sanctuary. With it you can exit the castle
+without rescuing Princess Zelda and reach Kakariko village for example under the
+rain (as it's raining at the very beginning of the game).
+
+Requirements:
+Be able to do the Multi-Directional Glitch and reach the throne room of Hyrule
+Castle at the beginning of the game, before saving Princess Zelda from the
+Castle Prison.
+
+How to:
+- Go to the entrance room of Hyrule Castle and go to the north staircase (the
+one that leads to the throne room) but don't go to the throne room.
+- Now use the (Up + Down + Left + Right) combo to go through the staircase (from
+the main hall to the throne room). You have to be right "in" the staircase
+because the combo will make Link go diagonally up/left. If you have trouble go
+to the throne room, go back to the main hall and you'll be correctly placed to
+do the key combo.
+- Now you should be in the Throne room. Go straight north. If all worked
+correctly the screen should scroll strangely (at some point you won't see Link
+anymore). Continue to go north until you change room. You'll see that you have
+gone through the ornamental shield (even if Link wasn't in the screen) and are
+now in the sewers (all dark and only the lantern light, if you have it).
+- Find your way through the sewers as you would normally do. Some rooms might
+have scrolling errors (I think that the 3 after the one where you enter do) but
+it's not very hard to go through (Link will be in the border of the screen
+instead of being in the center).
+- Exit the Sanctuary, the sage won't talk to you. You're now out under the
+rain... You can explore the Light world, Zelda still being held in the castle.
+
+Why it happens:
+Very similar to the UDEG (see explanations [UDEG]). Since you press multiple
+directions, the game takes you to some room but loads another room's objects and
+sprites. The ornamental shield is such an object and it doesn't appear in the
+room you enter so you can go through the passage to the sewers without Princess
+Zelda. All scrolling errors while in the sewers result from the fact that your
+real position and the camera position have been messed up because of the
+incorrect scrolling (the camera moved in some direction while your position was
+shifted in some other direction).
+All the glitches that happen while you are outside are the consequences of being
+in the outworld during phase I of the game (see [3PHA]).
+
+Notes:
+- Once you have exited from the sanctuary you'll notice that the outworld is
+desert. It still rains and there is absolutely no sprite out there (in some
+particular places you can find one but it'll be all graphically glitched).
+- If you enter a cave/dungeon/house the inside will be totally normal. Therefore
+you can complete the Eastern Palace without problem. You can also complete the
+Desert Palace but it's much more complicated (see later for more explanations).
+- Once you're out of Hyrule Castle it's quite hard to go back to the
+Castle/Link's house perimeter (you know, the little zone you have access to at
+the beginning) because the guards that forbid you to exit at the beginning are
+now a problem to enter...
+- If you save/quit your game you'll restart inside the secret passage where you
+got the sword. From there you can either finish your game correctly or repeat
+the glitch to exit again without Zelda.
+- It is possible to do the escape without having the lantern but in this case
+you'll have to go through the dark rooms without seeing anything... If you know
+them well then you have a chance and therefore the lantern is not strictly
+necessary. If you use an emulator the save states will help greatly, if you play
+it on a real SNES then I strongly recommend you take the lantern.
+
+{PRIN}
+Paragraph II.7.C : Take the Princess for a Walk
+-----------------------------------------------
+
+Description:
+This glitch uses the UDEG to exit Hyrule Castle with Princess Zelda following
+you. Its effects are very similar to the ones of the previous glitch as you'll
+be able to explore the outworld under the rain (now with the the Princess).
+
+Requirements:
+You can only perform this glitch at the beginning of the game while Princess
+Zelda is following you. You'll also need to be able to perform the UDEG.
+
+How to:
+- Start a new game and go see Zelda as you would normally do (note that the
+lantern and the boomerang are not necessary, you can skip them if you want to).
+- Go back to where you performed the 3 minutes speed run (cf. [3MIN]) and
+perform it until you reach the room with the 2 archers and the spearman.
+- When you reach this room, don't head to the east as when you tried to reach
+the triforce room. Instead go west one room. You should now see a throne in a
+very small room with also a staircase. If so then go one room north (until the
+screen scrolls to show you've entered a new room).
+- The new room you see should be the inside of the cave that is in the north
+west of Kakariko village (the colors should be blue like in the Ice palace but
+this is not important. What you'll try to do now is hop inside the cave. To do
+so walk to your left (you should normally still be in the lower side of the
+screen because you should have stopped moving right after the screen scrolling)
+until the two water rectangles are in the middle of the screen.
+- Now walk up until Link appears (he'll hop into the room from the lower wall).
+Zelda will be invisible but don't worry, she's still following you.
+- Exit the cave normally. The game will seem to have frozen but it will not be.
+Wait for a long time and you'll see that the transition is being done very
+slowly (if you're doing this with an emulator use the fast forward key). After
+you've waited long enough (wait about one or two minutes before the transition
+starts at the screen...) you should appear in Kakariko village, under the rain,
+with Zelda behind you (the game will be at normal speed now).
+
+Why it happens:
+It is exactly the UDEG that has been discussed earlier. All other side effects
+while in the outworld are the consequence of being in the outworld while in
+phase I of the game (see [3PHA]).
+
+Notes:
+- Once you exit, almost everything happens like when you exit alone but without
+rescuing Zelda: the rain won't stop, there will be no one in the outworld.
+- You can use this way to exit alone without rescuing Zelda (instead of the (Up
++ Down + Right + Left) combo in the throne room).
+- If you go to Death Mountain with Zelda the old man won't show up in the cave.
+This is in fact a good point since the old man makes the game freeze if you
+haven't rescued Zelda as after giving you the mirror he tries to go back to his
+home but never actually enters so the game freezes. If you have Zelda you
+cannont have the mirror either but at least you can "visit" Death Mountain (but
+you can't see much of it as you can't use the mirror). I'll explain later (see
+[RAIN]) how you can reach Hera's Tower if you don't rescue Zelda (wether she's
+with you or not).
+- If you go to the sanctuary from the normal entrance (not the sewers) and go to
+the sage then the game will act as if you brought Zelda normally from the sewers
+(Zelda's position in the room will be weird but it'll work correctly) and
+everything will be back to normal (the rain will stop etc.).
+- If you save and quit with Zelda with you you'll always be taken back to her
+cell in Hyrule Castle. From there you can either rescue her (and continue your
+game "normally") or repeat the glitch to exit again.
+
+
+{QUE}
+*************************************************
+* Section III : Glitch quests and things to try *
+*************************************************
+
+{15MI}
+Subsection III.1 : 15 minutes speed-run
+***************************************
+
+Description:
+This was my first "very quick method" to finish the game using glitches. It lets
+you complete the game (trigger the ending credits) in about 15 minutes.
+
+Glitches used:
+- PBEG
+
+How to:
+- Start a new game.
+- Do all the beginning normally until you get the Pegasus Boots.
+- Go to Hyrule Castle and perform the PBEG [PBEG].
+- You're now in a room with a laser eye. Go north until the screen scrolls (you
+should see the Desert Dungeon big chest and then the screen scrolls and you'll
+see another laser eye).
+- Immediately after the screen has finished scrolling go west (you mustn't walk
+north after the screen has scrolled). The screen will now scroll west.
+- Walk west across this new room until the screen scrolls once again.
+- You'll be in Hyrule Castle's main entrance room. Walk west until you can't
+move (you'll see that the camera stops moving).
+- Now walk a few steps south so you can continue walking west. Be very careful:
+if you go to the southern room (ie. if the screen scrolls) you'll have to start
+over from the beginning! Try moving one step at a time to the south and then
+press left. If the camera moves to the left this means that you're moving (it's
+good). If not then you'll have to move a few steps more to the south and try
+again. The point of all this is to reach the room that is west to the entrance
+room (so as soon as the camera follows Link to the left, keep walking until the
+screen scrolls to the western room).
+- Now that you are in the western room, walk west until the camera moves to
+follow you (not a screen scrolling, only a camera following effect). When the
+camera starts moving, head north.
+- From now on, follow the instructions given for the next method [3MIN] from (*)
+(that'll lead you to the Triforce room).
+
+Notes:
+- This method was the first one I found that let me finish the game very
+quickly.
+- It is not as good as the next one since it requires the PBEG that needs to be
+done on an emulator, and it is longer (as you'll have to go through the sewers
+and the first Light World dungeon before performing it).
+
+{3MIN}
+Subsection III.2 : 3 minutes speed-run
+**************************************
+
+Description:
+This is a method that lets you finish the game (trigger the ending credits) in
+less than 3 minutes. It is much better than the previous one since it is way
+faster and can be performed on a real SNES.
+
+Glitches used:
+- UDEG
+
+How to:
+- Start a new game, skip the beginning speech as quickly as possible (it's
+horribly long though...).
+- Go directly to the secret passage (don't take the lantern, you won't need it),
+get the sword and shield (I couldn't avoid it) and enter Hyrule Castle. Go to
+the room of the UDEG and perform the glitch [UDEG].
+- Now that you see the empty closed room (and don't see Link anymore) go up
+until the screen scrolls (it should scroll quite correctly). Immediately after
+this go to the left until the screen starts scrolling to follow you (not a
+room-change scroll, only a camera-following effect). The point of this is to go
+enough to the left so that you can avoid the obstacles when you don't see where
+you are. If you are using ZSNES simply press "2" on your keyboard to disable the
+background layer that hides your character, this should make it easier!
+- (*) Head north 2 rooms until you see a small room with 3 soldiers (2 blue
+archers and a red spearman).
+- Go to the right border of the room and north along the wall (don't do any room
+transition while going east). If you did it correctly you should be able to see
+where Link is while going east because the top of his head will appear in the
+southern wall of the room.
+- Now keep going North for a few rooms (something like 5 transitions) and
+eventually you'll be in a room where Ganon is (but you'll be under the ground).
+Continue to go up and you'll reach the room with the Triforce.
+- Congratulations you finished the game, if you do it quickly it shouldn't take
+you more than 3 minutes.
+
+Notes:
+- This is for now the shortest path I have found to finish the game. I'm quite
+sure that it's the quickest possible method (however I thought for several
+months that my previous method in 15 minutes was the best that could be done so
+I might be wrong again...).
+- It's also the shortest equipment you'll need: 3 hearts, a sword and a shield,
+NOTHING ELSE. The previous minimal equipment was 4 hearts, the pegasus boots,
+the sword, the shield, the pendant of courage and a few other things like keys
+for dungeons etc. And most people still believe that even with glitches you
+can't finish the game with less than 11 hearts (they only know about DMD).
+- If you try it you'll see that the end is a little messed up: it still rains on
+the outworld during the ending scene, and some graphics will be weird (see the
+sanctuary walls that scroll with the camera for example...). Also the very end
+(ending credits) will be weird because the rain will hide the mountains in the
+background.
+- After the credits end you can reset your system and you'll have a 000 finish
+(with only 3 hearts !). If you try to load this game you'll see that something
+really strange happens. You'll start on the top of the pyramid of power (so in
+the Dark World) but the rain will still be there and the sprites (enemies and
+so) will be the sprites from the Light World but with Dark world graphics (all
+messed up of course...). Also you'll be a pink bunny and start being hurt by the
+electric barrier of Hyrule Castle (you'll understand when you try it). You can
+try to explore this strange hybrid world for a short time but you won't be able
+to do much. To restore your game to a normal state simply save and quit (as you
+already finished the game it won't count as a death anymore :)). When you load
+it again you'll be in the secret passage of Hyrule Castle and you'll be able to
+finish your game normally (but in the end you'll have a very simple 000 finish).
+
+{NOMS}
+Subsection III.3 : No Master Sword quest
+****************************************
+
+Description:
+My objective when doing this quest was to go as far as I could in the game
+without ever getting the Master Sword. I also made it with as little equipment
+as possible (ie. no pieces of heart, useless items etc.). This quest is very
+hard (as the initial Fighter's Sword is very weak) so I recommend you only try
+it if you're a very good player (or do it on an emulator so you can use
+savestates). You can of course make it a bit easier by taking more than the bare
+essential items.
+
+Glitches used:
+- DMD [DMD]
+- Ether Medallion glitch [ETH]
+
+How to:
+- Start a new game, take the lamp, rescue Zelda. Do not take the boomerang or
+the heart in the Sanctuary.
+- Go to the Eastern palace, take the bow. Defeat the Armos Knights, get the
+boots from Sarahsrala and the book of Mudora in Kakariko village (the Book of
+Mudora is not really necessary as we'll see later that you can enter the Desert
+Palace and get the two useful medallions by other means (see [RAIN]). However
+these methods are quite complex and are not really interesting in a no Master
+Sword quest so I chose to get the Book of Mudora).
+- Go to the Desert Palace, take the Power Gloves and exit as soon as you can
+(DON'T KILL LANMOLAS NOW !!!)
+- Go buy Zora's flippers (they are not absolutely necessary now but it'll save
+time for later...).
+- Go to Death Mountain, get the mirror from the old man, enter the Tower of
+Hera, get the Moon Pearl and exit. (You should now have some bombs, found in the
+Tower of Hera).
+- Use the teleporter in the mountain and do the DMD. Have your shield eaten by
+the pikits (small plant-like creatures that steal items). You can find pikits in
+the swamp in the Dark World.
+- Complete dungeons #1 and #4, getting the hammer and the Titan's mitt.
+- Complete dungeons #3 and #2 (take the Fire Rod and the Hookshot).
+- Go to the ice palace. Complete it without taking the blue mail.
+
+You should now have 9 hearts and no other item than the ones listed before.
+
+- Perform the Ether Medallion glitch to get it [ETH].
+- Now go get the Flute (or Ocarina, whatever) from the boy in the Dark World,
+free the Bird in the village, call him and go to Misery Mire. Open Misery Mire
+with your new medallion (it works with the Fighter's Sword!) and complete the
+dungeon (take the Cane of Somaria inside).
+- Go take the Ice Rod (needed for Turtle Rock's Boss), return to the Dark World
+and get the Quake Medallion from the Fish North East from the Witch's house but
+in the Dark World. Go to Turtle Rock, open it with your new Medallion (it also
+works with the Fighter's Sword) and complete Turtle Rock (don't take the Mirror
+Shield). Be careful when fighting Trinexx because you have very little magic so
+don't miss him with the rods and hit him with the hammer twice each time you've
+frozen/burned him... Get the heart and the crystal.
+
+You should now have all crystals and 12 hearts. However you can't see your
+crystals because you haven't fought Agahnim yet...
+
+- Go to the Tower of Ganon, let the princesses open it. Complete the Tower of
+Ganon without taking the red mail. To fight Agahnim, you can use your Fighter's
+Sword or the Hammer. If you are using an auto-fire controller or an emulator,
+you can avoid fighting Moldorm by doing the Levitation Glitch.
+- You have finished your quest : It is impossible to defeat Ganon without the
+Master Sword :(
+
+Notes:
+- Sadly this quest isn't complete since you can't defeat Ganon. However you'll
+see that many other bosses of the Dark World are quite hard without a Master
+Sword (most of the time the Fighter Sword won't hurt them except with a spin
+attack and I recommend you use the Hammer as often as possible).
+- If you really want to kill Ganon, either get the two missing pendants from the
+dungeons in the Light World (you won't have to fight Lanmolas again, the pendant
+will be waiting for you in the room) or have your Fighter's Sword tempered by
+the dwarves brothers. Then buy the Big Bomb and get the silver arrows. You can
+now kill Ganon...
+- With this quest you can complete the game with only 11 hearts (the minimum
+without glitches being 13). The two hearts that you didn't get are the ones from
+dungeons 2 and 3 in the Light World.
+
+{SWOR}
+Subsection III.4 : No Sword quest
+*********************************
+
+Description:
+Here I wanted to do as much as I could in the game without having a sword at
+all. As the only way to get rid of your sword is to give it to the smithies,
+you'll have to find the smithies as soon as you can. Also some specific actions
+in the game require that you have a sword so you'll have to do all these actions
+before you give your sword, then give the sword and complete as much as possible
+without the sword. I also made it a bare essential quest since it's more fun.
+This makes it very hard so once again I recommend that you only attempt it if
+you know what you're doing!
+Note that this quest doesn't use any glitch but I find it interesting so I put
+it in my FAQ.
+
+Glitches used:
+none
+
+How to:
+- Sart a new game, complete all dungeons normally until you reach the Dark World
+(don't take useless items such as the boomerang, bottles etc. nor pieces of
+hearts if you want to combine it with a bare essential).
+- Once in the Dark World, Get the Hammer (don't kill the boss, it'll be more fun
+later without a sword) and get the Titan's mitt (again, don't kill Blind now).
+- If you haven't already, get both Ether and Quake medallion.
+- Find the flute, call the bird and go to Misery Mire. Open the dungeon while
+you have a sword (you can't use medallions without a sword).
+- Go to Death Mountain, reach Turtle Rock and open the dungeon.
+- Now go to the Skull Dungeon (#3), take the Fire Rod, go to the second part of
+the dungeon (after burning open the giant skull) and reach the room where
+there's a "secret" door hidden behind plants. Open the secret door with the
+sword and exit the dungeon. (while you're in the Skull Woods, have a pikit eat
+your shield, it's more fun).
+- You now have done all that required a sword. Go save the smithy's partner and
+give them your sword.
+- Now complete all dungeons witout a sword and reach the fight against Ganon.
+- You can't go any further as you need a sword to hurt Ganon... As for the
+previous quest, go get your sword back and the silver arrows if you want to
+finish the game.
+
+Notes:
+- As soon as you don't have your sword remember that the Hammer and the arrows
+will be your main weapons.
+
+{PBGA}
+Subsection III.5 : Pink Bunny meets Ganon
+*****************************************
+
+Description:
+This weird quest was inspired by a Pink Bunny fan at the GameFAQs message board.
+The main idea was to be able to bring Link in his Pink Bunny form (so without a
+Moon Pearl) in the final battle against Ganon.
+
+Glitches used:
+- PBEG
+- Levitation trick
+
+How to:
+
+- Start a new game, play a normal game until you get the Lantern, the Bow and
+the Pegasus Boots.
+- Now go back to HC and perform the PBEG [PBEG]. As soon as you're in the
+glitchy area head down until you are in rooms of Misery Mire. There go left and
+try to hop on the floor of the room where there is a door closed by the big key
+(use Hyrule Magic to find your way in the glitchy area if you have trouble).
+- Once inside Misery Mire, find a small key (it's not very hard as this dungeon
+has so many...). When you have the key, save and quit.
+- Restart the game from Link's house, and go back to Hyrule Castle. Perform the
+PBEG once again.
+- Now go to Ganon's Tower's main entrance room (again, you can find your way
+with Hyrule Magic, the rough direction is North then West when you are in the
+room under Ganon's fight room -you know, the room with a telepatic tile and a
+big square infinite pit that you can't fall into-) and hop in the room.
+- Once inside the Tower (as Link) don't exit. Head to the lower floor
+(lefternmost staircase) and get a key under a pot in the second room. You'll
+notice there are no enemies in the rooms... (this will make the first go through
+the tower much easier).
+- Now go back to the main entrance room. Remember that in Hyrule Castle you had
+the big key? Remember that when you went to Misery Mire to get the extra small
+key you didn't exit Hyrule Castle? So now you should be inside Ganon's Tower
+with the Big Key, two small keys (1 from Misery Mire and the one from the lower
+level). Head to the lower stair (middle staircase) and follow the path to the
+end of the Tower.
+- As there are no enemies in the Tower this part will be a piece of cake. Open
+the switches normally, remember that you can walk over pits at any time (you'll
+need it in some rooms) and as you have two extra small keys and the lantern to
+light torches you won't have any problem until you reach the boss room. Open the
+boss room (with the big key of Hyrule Castle) and enter. You'll see that the
+boss isn't there...
+- Save and quit and restart from Link's house. Go to Hyrule Castle and perform
+the PBEG once again (last time). Go back to Ganon's Tower and exit the Tower.
+- You'll be on the stairs leading to the Tower. You won't turn back into a bunny
+because you haven't yet "unlocked" correctly the Dark World by defeating Agahnim
+(it's a little bit complicated to explain, see section about the three phases of
+the game [3PHA] if you want more info). Go back into the Tower.
+
+Now you'll see that you don't have the big key anymore (and the enemies will be
+back in the Tower). However this is not a problem as you have already opened all
+the doors leading to the boss room.
+
+- Go to the central staircase (leading up) and go all the way back to the boss.
+Don't bother taking any of the small keys.
+- Enter the boss room, defeat him (you'll notice that it's Agahnim's first form.
+There's only one, not 3).
+
+After you defeat him you'll be taken to the pyramid of power using the flute
+(even if you don't have it...). If you want you can go and fight Ganon as Link,
+but you won't be able to kill him. Instead you might want to become a bunny and
+defeat him. To do so you have to activate correctly the Dark World by defeating
+Agahnim (in Hyrule Castle).
+
+- Save and quit, restart from Link's house. Here you have a choice. Either you
+complete normally the Light world and defeat Agahnim so he sends you to the Dark
+World as a bunny (don't take the Moon Pearl if you do so) or you can perform the
+PBEG one last time and enter in the room with 2 blue archers and a red spearman
+that I described in the 15 minutes speed run [15MI] (and 3 minutes speed run
+[3MIN]). From there you can go and fight Agahnim.
+- When Agahnim takes you to the Dark World enter the hole and fight Ganon as a
+bunny...
+
+Notes:
+- This is only for fun. You obviously won't be able to kill Ganon as a Pink
+Bunny. However, note that when you fall into the final battle room, even though
+you're a bunny you can use your sword (you are a Super Bunny when you enter the
+room, see [HOSB]). This is of no use whatsoever since you don't have the Silver
+Arrows and can't use the Fire Rod or the Lantern.
+
+
+{MSMP}
+Subsection III.6 : No MS, no MP quest
+*************************************
+
+Description:
+In this quest, the objective was to reach the final battle without the Moon
+Pearl (as done previously) but this time being able to defeat Ganon. I thought
+for a long time that this was not possible since we'll need the Silver Arrows to
+kill Ganon (and therefore the big bomb that requires to finish the Ice Dungeon
+and Misery Mire). However Adam T. (aka. mister yummy) from the GameFAQs LttP
+board gave me some methods that let me complete this quest. Initially, we also
+wanted not to take the Master Sword. As it is impossible to hurt Ganon without a
+Master Sword, we had to take one and so I decided never to get the one from the
+Lost Woods but to have the Fighter's Sword tempered at the last moment right
+before defeating Ganon.
+
+Glitches used:
+- DMD
+- Moon Pearl emulation glitches:
+  * Life after death? [DEATH]
+  * Could you give me a hand? (optional) [CEHA]
+  * Surfing Bunny	[SUBU]
+  * Surfing Bunny goes to Misery Mire [SBMM]
+- PBEG
+- Levitation trick
+
+How to:
+- Start a new game, rescue Zelda, complete the Eastern Palace and get the
+Pegasus Boots.
+- Get the Book of Mudora, at least one bottle and the bug catching net. Go to
+the Desert Palace, get the Power Gloves and exit.
+- Get the Flippers (you can get them later if you don't have enough money but
+you'll need them at some point).
+- Go to Death Mountain, get the mirror and do the DMD.
+- Now head to the Skull Woods. Enter from the east and make your way to enter
+Skull Dungeon (as a Bunny). When inside, either die, save and continue [DEATH]
+or have the ceiling hand grab you [CEHA] (Moon Pearl emulation glitches). Both
+methods will turn you back into Link. Now find the Fire Rod and exit the
+dungeon.
+- Go to the swamp in the Dark World to turn into Link using the surfing bunny
+glitch [SUBU] (you might have to perform DMD again to reach the Dark World as
+exitting Skull Dungeon after dying there might bring you back to the Light
+World).
+- As Link, go to the Dark Palace (#1), have Kiki open the door and get the
+hammer.
+- Go to Hyrule Castle, perform the PBEG and reach Blind's Hideout's entrance
+room. You can jump into this room. Do it and exit the dungeon (I think that an
+UDEG should work here but I'm not sure that you'll be able to open the dungeon
+this way).
+- As soon as you exit, open the dungeon and enter again. Get the Titan's Mitt
+inside.
+- Using the surfing bunny glitch, find the flute and rescue the smithy's
+partner.
+- You can have your sword tempered now if you want as you'll need it in the end
+to defeat Ganon. For a bigger challenge you can wait until the very last moment
+and continue with your Fighter's Sword.
+- Do the Ether Medallion glitch [ETH] to get it.
+- Use the mirror to exit (you might have to select the mirror before the end of
+the fight or else you won't be able to change the current item and be stuck).
+- Have a faery in a bottle, use the flute, go to location 6 (desert). Use the
+portal and jump into Misery Mire. Perform the surfing bunny in Misery Mire
+glitch [SBMM] to turn into Link. Open dungeon #6 with the medallion, enter and
+complete the dungeon (you'll need to use the levitation trick [LEV]).
+
+In Misery Mire, there is a big room with a color changing switch, blue blocks
+(the ones activated by the color switch), a fireball turning around a
+"comb-shaped" wall and at the very far west of the room there is a key under a
+pot... I recommend you complete Misery Mire without taking this key as you might
+need it later when completing Ganon's Tower. It is very possible to complete
+Misery Mire without using this key, but you must be careful which doors you open
+not to waste too many keys (but this dungeon has so many useless keys that you
+should be able to do it quite easily).
+
+- After defeating the boss the crystal should fall. Grab it and go back to the
+Light World.
+- Now use the methods explained earlier to complete Ganon's Tower and defeat
+Agahnim in Ganon's Tower (see [PBGA]) to have Ganon open the hole in the Pyramid
+of Power. You will need an extra key to do so. If you left the one I talked
+about in Misery Mire then go get it, if not find another one somewhere...
+
+There is an alternate method that I haven't tested which is to complete all of
+Ganon's Tower normally as you now have all the necessary items for it (I think).
+If you want to do this simply enter the Tower with the PBEG, exit and re-enter.
+Complete the Tower normally.
+
+- After opening the hole in the Pyramid, go back to the Light World, use the
+PBEG to reach Agahnim in Hyrule Castle (enter the room with two blue archers and
+a red spearman that I talked about in the speed runs subsections [15MI] and
+[3MIN]) and defeat him. This will trigger the phase III of the game (and
+activate the portal in Hyrule Castle).
+- Now go to Lake Hylia, use the portal on the island that takes you to the Ice
+Palace, enter the Ice Palace, die, save and continue [DEATH]. Now as Link
+complete the dungeon  (you'll need the levitation trick again). Grab the
+crystal. You have now matched all requirements for the Big Bomb.
+- Go to the bomb shop, enter as a bunny if you want, buy the Big Bomb and exit.
+Warp to the Light World, go to Hyrule Castle, use the portal and blow the wall
+open in the Pyramid.
+- Enter, throw your bow and arrows in the pond and get the silver arrows. If you
+haven't already have your sword tempered by the smithies.
+- You can now use the surfing bunny glitch and go defeat Ganon. Congratulations,
+you defeated Ganon without the Moon Pearl and never got the Lost Woods Master
+Sword.
+
+Notes:
+- If you want you can jump into the hole as a bunny. As you reach the floor
+you'll turn into a Super Bunny [HOSB] meaning that you'll be able to use your
+sword (and dash with the boots but it's useless here) until you're hit once. If
+you do well, you can reach the part where Ganon turns the lights off as a
+bunny... This is as far as I can go since the bunny cannot use the Fire Rod or
+the Lantern (and can't throw arrows either...).
+
+{RAIN}
+Subsection III.7 : Rainy day
+****************************
+
+Description:
+This section gives some details about what you can do using the glitches that
+let you explore the underworld under the rain in the beginning ([MDPR] and
+[PRIN]). This section is very technical and might be quite hard to understand. I
+recommend that you use an emulator (for the savestates) and Hyrule Magic (for
+finding your way in the exploration area) if you want to explore what can be
+done. However, I find this part very interesting and very challenging in terms
+of "glitch exploration" because when you try to do something many problems arise
+that you didn't think of and you have to find new ways to solve them... This
+section is mainly a summary of some solutions found so far.
+When I first explored this glitch, I was stuck because I couldn't get the Magic
+Mirror (so I couldn't go to the Dark World). A few months later, ccexplore sent
+me an e-mail telling that he had found a way to get the mirror, and that he had
+explored a lot of the Dark World but he still had some problems with a few
+dungeons and items. We started working on this and after one week we were able
+to finally defeat Ganon in Phase I. Here are the solutions to the main problems
+you might encounter in Phase I.
+
+In all this section, I consider that you have already performed one of the
+glitches that let you explore the outworld under the rain (ie. in phase I of the
+game).
+(Note: the first phase of the game (Phase I) goes from the beginning to the
+moment when you bring Zelda to the sanctuary for the first time)
+
+{DEPA}
+Paragraph III.7.A : Entering the Desert Palace
+----------------------------------------------
+
+Description:
+If you try to go to the Desert Palace you'll soon see that there is a problem.
+The first step to reach it is to enter the swamp. There are 3 ways to enter the
+swamp. If you try from Lake Hylia then you'll need the flippers, to get the
+flippers you'll need the power gloves and the gloves are... in the desert. If
+you try from the south of Kakariko, and then east you'll see that you need the
+gloves to lift a rock. The last way is from Link's house but those damn guards
+are still there to bother you. Follow these steps to avoid them.
+
+Glitches used:
+- One of the two that lets you explore the Outworld under the rain
+
+How to:
+- Go to the bridge that is east from Link's house. From there go west to the
+screen with Link's house.
+- The transition will fail and the guards will talk to you. Skip the dialogue
+and go west. You should immediately be taken to another glitched screen.
+- Now go south to change screens once more. You're almost in the swamp, except
+it looks all glitchy (you're between 2 screens).
+- Go to the south-east as much as you can and move around to the south
+(sometimes you'll have to go a little to the west also to unstuck Link) and to
+the east until you don't see the west screen anymore (the west side of your
+screen should be water and not discontinuous). When it's done (be sure you
+haven't changed screens vertically). Go west as much as you can (move up/down if
+you're stuck against an invisible obstacle) until Link reaches the left limit of
+the screen. Cross the limit and you'll appear at the right side of the screen
+(weird isn't it ?). If you did it correctly you should now be in the swamp and
+the obstacles should be correct again.
+- Head to the Desert Palace. Don't worry about the book of Mudora as the
+entrance will be cleared because the strange stones are considered as sprites
+and they don't appear under the rain. You're in...
+
+Notes:
+- This can be done with or without Princess Zelda following you.
+
+{PWGL}
+Paragraph III.7.B : The Power Gloves
+------------------------------------
+
+Description:
+If you've come directly to the Desert Dungeon by using the method explained
+previously without bothering with the Eastern Palace then you probably don't
+have the Pegasus Boots (and if you have them then tell me how you did it without
+completing the Eastern Palace!). In this case you'll see that it seems
+impossible to get the Big Key of the Dungeon because you need to dash into a
+lamp to get a small key that'll open a door that leads to the Big key.
+"Impossible" did you say? Nothing (or nearly) is impossible when you know how to
+manipulate correctly the glitches.
+
+Glitches used:
+- One of the two that lets you explore the Outworld under the rain
+- The previous techniques that let you enter the Desert Dungeon
+- The Multi-dirctional glitch
+
+How to:
+- As you enter the dungeon (Desert Dungeon), head to the northern wall of the
+entrance room. This wall is huge and has 4 doors. Enter the easternmost one.
+- Inside the room kill the enemies and exit (you need to clear the room before
+proceeding with the next step).
+- Once back in the main entrance room stay in front of the door and press (U+D).
+You'll enter the same door again but backwards this time. The screen will scroll
+incorrectly again.
+- From now on don't bother with the enemies as they can't hurt you (you can walk
+across them). You'll be now in the middle of the screen. If you try to go up,
+you'll see that you can't because of an invisible obstacle. Go a few steps to
+the left until you can go north. Go north until you cross the top border of the
+screen. When you do so you should appear in the lower side of the screen (like
+what happened in the swamp).
+- See the locked door on the right side? It's the door that leads to the Big
+key. Now see the door that is under the locked door? That's the door from which
+we'll go to the Big key (I love this game's glitches, don't you ?). Enter the
+lower door.
+- You're now in a room with a laser-eye (that can't hurt you either). Go to the
+south exit of the room. The screen will scroll over a room with a chest and stop
+scrolling in another room (with 2 statues).
+
+Now be careful with the next part as it can make the whole manipulation fail and
+you'll probably have to save/quit and restart from the secret passage in Hyrule
+Castle if it fails.
+
+- When you entered the room, you should have heard the "opening jingle" (the one
+that plays for example when you kill all enemies in a room and the doors open).
+If so then walk to the south until Link appears on the screen. Keep pressing
+down until he is stuck against an invisible obstacle (this should happen very
+quickly as you're still at the top of the screen).
+- Now go back north. New scrolling. You should now be in the room with the chest
+and the "opening jingle" should play, and the north door should be open. If so
+you're almost done. If the door doesn't open you probably didn't make Link
+appear in the previous room by pressing down, and if you're not in the room with
+the chest then you've probably lost track of the manipulation a while ago...
+- Assuming that the north door is open, go to it (avoid the chest, it only
+contains a compass and you don't need that). You'll be in a long vertical room.
+- As soon as you enter head south (as if you wanted to cross back the door) and
+you'll appear in the upper part of the screen (again like in the swamp).
+- Now head north and get the Big key in the chest. Congratulations, you've done
+one of the most complicated manipulations so far.
+
+After getting the big key, chances are you won't be able to go back to the
+entrance of the dungeon (you can try it but you might get stuck which would be
+sad...). What you should do is save and quit and restart. You'll be in the
+secret passage again. Exit without Zelda (or with her if you want) as you did
+once, go back to the Desert as you also already did and enter the dungeon. You
+now have the big key. You can head directly to the Power Gloves' room.
+
+Notes:
+- Once you have the gloves, traveling through Hyrule is easier because new paths
+are possible. You can now access the Hyrule Castle/Link's House perimeter easily
+from the east side (lift a stone), and also go to the swamp from the south of
+Kakariko (and head east then).
+- Be careful if you try to reach Death Mountain: if you're alone (ie. you left
+Zelda in her cell) then the old man will come with you and you won't be able to
+get rid of him because when you'll reach Death Mountain (in the Outworld) it
+will be all messed up since the programmers didn't really consider that it could
+rain in Death Mountain. When all is messed up, if you bring the old man to his
+house, he'll give you the mirror but then he won't enter correctly the cave and
+instead he'll start "climbing" the mountain walls (he misses the entrance to the
+cave). Therefore he'll never enter the cave and you won't be able to move
+anymore. If you go to Death Mountain with Zelda then the old man won't appear
+(as there can only be one character following you at a time) and so you'll be
+able to explore Death Mountain. However as you won't have the Magic Mirror if
+you enter the Dark World you won't be able to go back (except by saving and
+quitting).
+- As soon as you have the Power Gloves, you can go back to the cemetery, open
+the secret passage in the top left grave, fall down and exit to the Sanctuary.
+Why would you want to do that? Simply because if you do so, the game will record
+the Sanctuary as your new restart location, so if you decide to save/quit for
+any reason (and keep in mind that it's one of the best ways to get out when you
+think you are stuck) then you won't have to exit HC again.
+
+{RAMM}
+Paragraph III.7.C : The Magic Mirror and the Dark World
+-------------------------------------------------------
+(thanks to ccexplore)
+
+Description:
+To explore the Dark World correctly, you'll need the Magic Mirror to travel back
+to the Light World (and also do the DMD). Since you can't have it normally
+because of the "old man bug" (see notes of previous paragraph) you'll have to
+use a specific path. From there you can travel in the Dark World in Phase I, but
+you'll see that the sprites are all messed up...
+
+Glitches used:
+- PBEG or UDEG
+- DMD
+- Ether Medallion trick [ETH]
+- Levitation trick (you can do stuff without but you'll need it to reach the
+Silver Arrows and defeat Ganon)
+
+How to:
+As I said in the previous paragraph notes, you cannot get the Magic Mirror
+simply by entering Death Mountain and rescuing the old man, since the game will
+glitch and enter an infinite loop when the old man tries to enter his house.
+However it is possible to enter the Tower of Hera using an EG before you meet
+the old man.
+To do so, perform either a PBEG or an UDEG and find your way to the main
+entrance of the Tower. This room of the dungeon is hoppable but you have to be
+careful because of the red/blue switches. If you did a PBEG, then most likely
+the switches will act correctly so you won't be stuck, but if you did it on a
+real SNES and used an UDEG the switches won't work so if you hop into the hall
+too far from the door you'll be stuck inside. To solve this problem, try to move
+right next to the main door and hop into the room next to the door so you're
+inside the little perimeter delimited by the red blocks and can exit the Tower
+from there (this might not be very clear but I'm sure you'll understand if you
+try and go there). From there exit and re-enter the Tower so you can complete it
+correctly. It's now time to get the Magic Mirror. The detail I was missing and
+that cceplore discovered is that if you exit the Tower of Hera and then head
+back to the cave where you should meet the old man, he will still be there and
+follow you, and for some mysterious reasons, if you take him home from there
+he'll give you the mirror and enter correctly in his house! (note that you don't
+have to complete the Tower of Hera, simply entering with an EG and exitting is
+enough)
+With this technique, you now have the Magic Mirror. This means that you can now
+perform the DMD to explore the Dark World!
+
+As soon as you'll reach the Dark World, you'll notice something very weird: all
+sprites (meaning, enemies, characters, heart pieces etc.) are in fact the Light
+World sprites from Phase II. For example as soon as you use the portal in Death
+Mountain and enter the Dark World Phase I, you'll be attacked by boulders
+falling down and small glitchy creatures that move quickly on the ground and can
+be petrified when hit... These small creatures are in fact the little
+"winged-squirrels" from the Light World!
+After you did the DMD, you'll keep recognizing Light World sprite all around
+you. Why this happens remains quite a mystery to me (well, it's obvious that the
+Dark World shouldn't exist at all in Phase I but still I don't understand why
+the game loads the Light World sprites as a default, it would have been more
+logical if the Dark World was empty as the Light World is in Phase I). This
+"sprite" transposition has both good and bad sides (but compared with an "empty"
+Dark World it only has good sides). The good side is that we will now be able to
+interact with some of the Light World sprites since they can be found in the
+Dark World. The bad side is that the Dark World sprites have completely
+disappeared and are nowhere to be found (we'll see some very special examples
+however where they are not completely lost).
+
+The first thing you might want to do now is find the Hammer since it'll make
+your exploration around the Dark World easier (and let you use some of the
+portals so you don't have to go to Death Mountain every time). Kiki the monkey
+will obviously not appear so you have to enter with an EG. PBEG works fine, and
+I believe an UDEG should also be okay. What you want to do is hop into the
+dungeon (you can try to hop into the room with the mimics that is one north of
+the room where you have to push a statue on a switch, the room with the statue
+and the switch sometimes works too but some other times the red/blue switches
+won't work so you'll be stuck).
+Once inside the dungeon, if you only want to go for the Hammer then find your
+way to the big chest and get the Hammer (remember that you won't need the Big
+Key if you don't exit since you already have the one from HC). If you want to
+complete the dungeon correctly (meaning that you want the Crystal) you'll have
+to exit the dungeon. When you reach the outside, the game will still think
+you're in the Light World (if you did your EG from the Light World, which should
+be the case most likely). When you're outside it should be raining. Use the
+Magic Mirror and it'll take you to the Dark World but without the rain. Now
+since Kiki the monkey never opened the door to the dungeon you can't enter
+pressing up... However pressing down will solve your problem and you'll enter
+the dungeon correctly from the Dark World. Note that if you use the Mirror
+twice, you'll be taken to the Light World, and if you stand on the same place
+you won't be able to return to the Dark World because since the door to the
+dungeon isn't open the game considers that the world switch is invalid. In that
+case simply move up while in the Light World to take your portal from the upper
+side and you'll be taken to the Dark World and enter the dungeon automatically.
+You should now be able to reach the Hammer without trouble.
+Remember that each time you hop into a dungeon from a Light World EG and want to
+get the Crystal of the dungeon you have to exit, use the mirror to be considered
+as being in the Dark World and re-enter.
+
+With similar methods (not very complicated) you can find the Titan's Mitt, but
+you won't be able to enter Blind's hideout normally because the grid that you
+have to pull to enter the dungeon is a Dark World sprite so it can't be opened
+in Phase I, so enter with an EG. The exit/mirror/enter technique doesn't work
+here since you won't be able to re-enter so you can't get the crystal (well...
+at least I don't know how). Also the Skull Dungeon can be completed totally
+without trouble.
+
+You can also get the flute. Interestingly enough, the flute boy sprite is the
+same in the Dark World and in the Light World, only that it doesn't act the same
+depending on the World you're in. This means that if you go to the Dark grove,
+you'll see the "tree-like" flute boy and he'll give you the shovel. This
+"tree-like" flute boy is in fact the Light World flute boy sprite that acts like
+the tree since the game knows that you're in the Dark World (luckily for us
+since we can therefore find the flute). The flute is located in the Light World
+as normal (it's strange since it's a sprite, but somehow this sprite still
+appears in the Light World in Phase I). When you have the flute, you can use the
+Ether Medallion trick [ETH] to find the Ether Medallion, and then enter Misery
+Mire. Complete the dungeon if you want to (you'll need the Levitation Trick
+[LEV] because you can't have the Hookshot so it cannot be done on a real SNES).
+You can also hop into the Ice Palace with an EG (into the room with a moving
+floor, spikes, blue electric jellyfishes and black creatures coming from the
+walls), find your way to the entrance, exit, mirror, re-enter and complete the
+dungeon (again you'll need the levitation trick).
+
+Notes:
+- So far we are now able to complete 4 Dark World dungeons correctly (Dark
+Palace, Skull Dungeon, Ice Palace and Misery Mire) and do all the work in
+Blind's Hideout (including killing Blind) but since we can't enter it correctly
+we can't get the crystal. The last two dungeons (Watergate Dungeon and Turtle
+Rock) are a complete problem since they are not hoppable (the Watergate dungeon
+is but then you are stuck inside the dungeon) and that we can't find the Quake
+Medallion (the big fish doesn't appear) nor the flippers (King Zora doesn't
+appear).
+- Ganon's Tower can be completed quite easily (hop into the main entrance, exit
+and re-enter, you don't even need to use the mirror to trigger Ganon opening the
+hole in the Pyramid of Power) so it's possible to reach the fight against Ganon.
+Also you can use techniques explained in the "Pink Bunny meets Ganon" section
+[PBGA] to complete Ganon's Tower really soon (skipping most of the items).
+However, since we have no Master Sword and don't have the Silver Arrows, it
+seems impossible to kill him (see next paragraph for the solution :))...
+
+{SMIT}
+Paragraph III.7.D : Rescuing the Smithy's Partner
+-------------------------------------------------
+(thanks to ccexplore)
+
+Description:
+It seems impossible to rescue the Smithy's Partner in Phase I of the game since
+the frog sprite doesn't appear in the Dark World... However, there's a solution!
+
+Glitches used:
+- UDEG from a Dark World dungeon room
+
+How to:
+There could be 3 ways to get a Master Sword. The first one would be to take it
+in the Lost Woods with the three pendants but the Master Sword sprite doesn't
+appear in the Woods. The second one would be to rescue the smithy's partner but
+the smithy/frog sprite doesn't appear where it should in the Dark World (since
+it's a Dark World sprite). The third way would be to reach the Fat Faery's pond
+and get the Golden Sword (but I think that I already tried throwing the
+Fighter's Sword in the pond in another quest and it doesn't work). Moreover
+we'll need the Silver Arrows so it seems that we must reach the Fat Faery's
+pond. This would require the Big Bomb, but the Big Bomb only appears after
+having recued the Smithy's Partner and completed Misery Mire and the Ice Palace.
+
+Our only chance seems to be the smithy. ccexplore noticed that the smithy's
+sprite inside the Light World house and the smithy/frog's sprite in the Dark
+World were the same... So his idea was to enter the smithies' house when the
+game thinks we're in the Dark World so the smithy's sprite will act as if it was
+the frog in the Dark World (the same that happened with the flute boy's sprite).
+And guess what? It worked!
+
+Here are ccexplore's instructions on how to do it, directly quoted from one of
+his e-mails (the room number correspond to the Hyrule Magic room numbers):
+\begin{quote}
+I've now found a fairly easy and reliable way to get to room 227.  Here we go:
+
+1) head to swamp palace until you reach the upper-left quarter of room 179.
+2) exit to the left by left+right.  you'd see that the screen scrolls
+incorrectly, to the right.
+3) immediately head left to scroll yourself back to the room 179 screen you just
+scroll off from.
+4) now head down 3 screens (causing 3 vertical screen scrolls).  You'd notice
+that the vertical scrolling is pretty normal.  after the 3rd scroll, you'll see
+that you've reach room 227.
+5) now head to the vertical center of the room, and then head right, you'd find
+the screen scroll to the right incorrectly again.  Basically, the display has
+been off by half a screen horizontally ever since you did the left+right, so it
+looks like you're now on the lower-right quarter of room 227.
+6) however, looks can be deceiving!  the game actually considers you to be in
+the lower-left corner of room 227.  So now, using your visual memory (or just
+have Hyrule Magic open in front of you), hop into the room, climb up that
+invisible stairs and then head to the invisible exit.  You're now in the
+Outworld right outside Smithy's house, with Dark World music!
+If you enter Smithy's house, you'd get the frog.  And you'd get his frog dialog
+and him following you and all! (you might have to be a non-rabbit to do this, I
+haven't tried this as rabbit...)  Now, in the outworld you'd find that you can't
+seem to use your mirror, because your in the Light World outworld (it seems like
+when using the mirror they check your map location rather than the "actual"
+state of the world).  No problem, because as soon as you induce a screen-scroll,
+you'd immediately be placed back into the Dark World, since that's where the
+game thinks you're at anyway.  Now use the mirror to properly head back to the
+Light World, and head to Smithy's house and smile. :)
+\end{quote}
+
+When the smithy is rescued, you can buy the Big Bomb and ask the Silver Arrows
+and the Golden Sword to the Fat Faery and kill Ganon. Congratulations, you have
+finished the game in Phase I.
+
+Notes:
+- Room 227 is the cave that is next to the Smithies' house and where there's an
+altar where you should use your Magic Powder to get the 1/2 magic upgrade.
+- Room 179 is in Misery Mire dungeon. To reach it, go to the central dungeon's
+room (the big room with two levels that you enter normally from the South and
+has 2 North exits, 3 east exits, 2 west exits and a top-level floor that you can
+see through on the left part of the room). From there, take the right exit on
+the North Wall. You'll be in a room with two candles that shoot fireballs at you
+and a block you can push to go North. Go east from there and you'll reach a room
+with a laser-eye and spikes (this is the lower left quarter of room 179). Go
+North (you'll need a key but this room has 2) and you'll be in a small room with
+an upper level North exit and a lower level West exit. This is the Top Left
+quarter of room 179 where you want to do an UDEG (pressing Left+Right) on the
+West exit.
+
+{OTHE}
+Subsection III.8 : Others
+*************************
+
+I'll add in this section some little things that you can do using glitches that
+are of some interest, and that some people ask me to add to the FAQ.
+
+{HOUL}
+Paragraph III.8.A : The Houlihan's Room
+---------------------------------------
+
+Some users at the GameFAQs board asked me to give some directions that lead to
+the Chris Houlihan's room using an exploration glitch. I won't give the "normal"
+methods to reach this room since you can find a good FAQ about it in the LttP
+FAQs section at www.gamefaqs.com
+
+Here's how to see this room (in case you don't believe it exists and can't enter
+it with the usual methods):
+- Start like for the 3 minutes speed run [3MIN] until you reach the room with
+Ganon (meaning, you do the glitch, go to the room with the blue archers and the
+spearman, go along the wall and head up a few rooms).
+- When you reach the room (the music changes to the final battle music) you
+first see the top half of the room only (weird glitch). Keep going up and you'll
+start seeing the full room (try it and you'll understand what I mean).
+- Keep going up until you start seeing the top wall of the full room. When you
+see the top wall stop going up (if you continue you'll reach the Triforce
+room...).
+- Now head right and do 3 room transitions.
+- You should now be in the room that's one right to the room with the rats (you
+should have seen rats when you were going right). Move to the south (without any
+room transition) to have the camera scroll down and reveal the Chris Houlihan's
+room (but the colors won't be the right ones).
+
+Notes: You might be stuck when going right after seeing Ganon. If this happens,
+simply move a few pixels to the up and try to move to the right again.
+If you want correct colors in the Houlihan's room, do one scrolling to the lower
+room and come back.
+
+
+
+{TEC}
+*******************************************************
+* Section IV : Technical stuff you might want to know *
+*******************************************************
+
+{3PHA}
+Subsection IV.1 : The three phases of the game
+**********************************************
+
+[coming soon, or maybe not so soon...]
+
+{UDRW}
+Subsection IV.2 : The Underworld Map
+************************************
+
+First of all this section is not intended to be a real "map" of the Underworld
+area, but an explanation of how the Underworld rooms are coded in the game ROM.
+By Underworld, I refer to all parts of the game that are not the Outworld, which
+include the houses, the caves and the dungeons.
+This part might only be interesting to you if you use the Exploration Glitches.
+***
+I HIGHLY recommend that you download and use the ROM editor Hyrule Magic if you
+are interested in these kinds of details since all I'm about to explain here can
+be understood very simply using it.
+***
+
+{ROOM}
+Paragraph IV.2.A : What is a Room in this game?
+-----------------------------------------------
+
+While you play through the game (without glitching like mad), you get the
+impression that the Underworld room in LttP can be of very different sizes and
+shapes. This is only an illusion. In fact the way the game sees it is very
+simple: all rooms have the same size (quite big in fact) and are square-shaped.
+However, some of them can be filled with walls in such ways that they become
+either very small (if most of the room is a very thick wall then the room seems
+small from the inside) or are divided into a number of smaller rooms (2, 3 or 4
+only as we'll see).
+The maximum size of a room is the size of Hyrule Castle's main entrance (I'm
+sure you've noticed how big this room is). This huge room can then be divided in
+two, three or four parts using only divisions from the middle of the sides as
+shown below (I suck at ASCII art so be gentle):
+
+---------
+|       |
+|       |   This is the maximal size of the room
+|       |
+---------
+
+---------   ---------
+|   |   |   |       |
+|   |   |   |-------|  The two ways of cutting a room in two samller ones
+|   |   |   |       |
+---------   ---------
+
+---------   ---------   ---------   ---------
+|   |   |   |   |   |   |   |   |   |       |  How to cut the room in 3
+|---|   |   |   |---|   |-------|   |-------|  smaller ones
+|   |   |   |   |   |   |       |   |   |   |
+---------   ---------   ---------   ---------
+
+---------
+|   |   |
+|---|---|   Four small rooms
+|   |   |
+---------
+
+For your information, Link's house is the size of a quarter of a room and the
+vertical rooms next to Hyrule Castle main entry are the size of half a room.
+
+Now that you know that, you might have wondered why you never had this
+impression of a big room cut in four parts when you were in Link's House for
+example. Well, it's simply because of the camera effect, that is programmed to
+stay inside of a quarter of a room when asked to (in some rooms you can scoll
+out and in some you can't) and that gives the impression that there's nothing
+out of the bounds of the screen when in fact there's more!
+Have in mind that different "small in-game rooms" can in fact be in the same
+"big coded room". For example, the two fortune tellers' houses (that are both
+only one quarter of a room) are two parts of a same big room. This means that if
+you could walk through the walls inside their houses, you'd go directly from one
+to the other... and that's precisely what we do when using the exploration
+glitches!
+(Again, use Hyrule Magic and see for yourself, it's better than any explanation
+I could give!)
+
+It's now time to talk about the general disposition of the rooms...
+
+{ZONE}
+Paragraph IV.2.B : The Two Underworld Zones
+-------------------------------------------
+
+Now that you know what a room really is, know that there are a total of 296
+rooms in the game. For these rooms, only a few are completely used in the game,
+many of the 4-parts ones have 2 or more empty quarters and there are even rooms
+completely empty (for some strange reason there's no 1-part empty room, all
+empty rooms are divided into at least 2 sections).
+These 296 rooms are divided into 2 groups (for other strange reasons...). The
+first group contains 256 rooms (which is very understandable since it's a power
+of 2) and the second group contains the last 40 rooms (that's more unusual, I
+would have expected at least 64 remaining rooms...).
+
+The 256 first rooms (numbered from 0 to 255) are what I'll call the Primary
+Exploration Zone. They are distributed on an 16x16 square as follows:
+
+0   1   2   3   4   5   ... 14  15
+16  17  18  19  20  21  ... 30  31
+
+.            .                  .
+.              .                .
+.                .              .
+
+240 241 242 243 244 245 ... 254 255
+
+Moving into this square is to be considered as follows. Considering that you're
+in room x:
+- if you move left you go to room (x-1)
+- if you move right you go to room (x+1)
+- if you move up you go to room (x-16)
+- and if you move down you go to room (x+16).
+
+All coordinates should be read "modulo 256" meaning that if you are in room 245
+and go down you reach room (245+16 = 261 = 5 + 256) which means that you reach
+room 5.
+All you have to understand now is that in the game, when you go through a door,
+you are either "teleported" to a given room (that's always what happens when you
+use stairs for example) or the game scrolls to the next room (corresponding to
+the previous explanation). Be careful, sometimes you think that you're changing
+rooms but you're only going from one part of a room to the other without really
+changing rooms!
+When you're playing you can tell what kind of transition the game is doing
+because if you see that the camera scrolls to the next room then you haven't
+"teleported" and if the screen changes completely then you have teleported.
+All rooms of all dungeons are somewhere in this huge 16x16 square of rooms. A
+dungeon is not necessarily represented as a connex set of rooms (and usually two
+levels of a given dungeon are placed at completely different locations in the
+square).
+
+When you perform an Exploration glitch, what you do is that since you go under
+the normal ground level, you can walk under the walls too. So in fact, in almost
+every room you can go to the next one (in any direction) and since you don't
+enter any door or use any staircase the game won't "teleport" you elsewhere and
+since you reach the limits of the room the game naturally scrolls to the next
+room. This is how you can move freely around all (or at least almost all)
+dungeon rooms.
+
+However, there's a second group of rooms in the game. The rooms numbered from
+256 to 295 have a very different disposition, that is as follows:
+
+256 257 258 259 260 261 262 263 264 ... 271
+272 273 274 275 276 277 278 279 280 ... 287
+288 289 290 291 292 293 294 295
+
+Again moving to the right and to the left adds or substracts 1 to your room
+number (so going from 271 to the right goes to 272) but this time every
+transition that would take you to a room numbered less than 256 or more than 296
+will cause the game to crash. In other words, when you're in this zone you have
+to do only transitions that'll keep you inside the zone.
+Note that the zone isn't a complete rectangle (there's nothing under room 280).
+This zone will be called the Secundary Exploration Zone. It contains mainly
+houses, shops and caves.
+So far, there's only one exploration glitch that can let you explore this zone,
+and it's the "Jump and Save" EG [JSEG].
+
+{ADDR}
+Paragraph IV.2.C : Some useful addresses
+----------------------------------------
+
+In this section, I'll give you the numbers of some rooms that might be of
+interest so that it can help you finding your way through one or the other of
+the Exploration Zones. All numbers correspond to the room numbers in Hyrule
+Magic, and also to the disposition of the rooms that I explained.
+One last thing... When you're exploring, sometimes the game goes into a loop
+while going in a given direction (meaning that going right while in room x takes
+back to room x for example). In this case do a few transitions in the opposite
+way (go to room (x-2)) and then go back to your initial direction, this should
+fix it.
+
+Next to the number of the room, I'll sometimes indicate a direction. This
+indicates in which quarter or half of the room is the specific part that I'm
+describing (for example, the final battle room is in the North East quarter of
+the room 0).
+
+Some rooms of the Primary Exploration Zone:
+  0   NE - Final Battle With Ganon (trigger the ending by moving one room up)
+  3   SW - Chris Houlihan's room
+  12     - Ganon's Tower main hall (hoppable)
+  18     - Sanctuary (hoppable)
+  20& 21 - Pipe rooms in Turtle Rock. Don't enter while exploring because it'll
+freeze the game.
+  43  W  - A useful hoppable room of the Palace of Darkness
+  47  S  - A useful hoppable room. It's the cave that's NW of Kakariko
+  64  SE - A very useful hoppable room in HC. It's the room with two archers and
+a spearman that is two rooms before Agahnim.
+  67  SE - A hoppable room in the Desert Palace that lets you kill Lanmolas for
+the Ether Medallion (see [ETH])
+  96  E  - The room in HC that's west of the main entrance. It's the room where
+I recommend you do the UDEG and the JSEG.
+  97     - HC main hall
+  112 NE - It's the room where you start if you do the UDEG from room 96
+  114 S  - This is where you should do the PBEG
+  115 SW - This is where the PBEG should lead you
+  119    - Tower of Hera main room. Hoppable but hop near the door in order not
+to get trapped by the blue blocks.
+  178 N  - A hoppable room in Misery Mire
+  179 NW - Another hoppable room in Misery Mire (but the previous one is easier)
+  194    - Central Hall of Misery Mire (hoppable)
+  195 W  - Another hoppable room in Misery Mire that leads to the central hall
+  203, 204, 219& 220 - Hoppable rooms in Blind's hideout (the four entrance
+rooms). The main entrance is number 219.
+  228 W  - The Mountain Cave (hoppable)
+
+Some rooms of the Secundary Exploration Zone:
+(the whole zone can easily be explored by going to the right from Link's house)
+  260 SE - Link's House
+  263 SE - Hoppable house of Kakariko (but doesn't take you out of the
+Exploration Zone)
+  278 SE - Fat Faery's pond
+  283 SW - Very interesting hoppable room. You can exit to the outworld from
+here but will most likely be stuck outside.
+  289 SW - Smithies shop
+  290 SW& SE - Fortune tellers' shops
+  295    - Last room of the Secundary zone. Don't move to the right or the game
+will freeze!
+
+{CON}
+**************************
+* Section V : Conclusion *
+**************************
+
+{CME}
+Subsection V.1 : How to contact me
+**********************************
+
+You can either send me a mail at zanapher@yahoo.fr or try to see me at the
+GameFAQs Zelda:LttP message board. All comments about this FAQ are welcome (good
+and bad) but I don't guarantee that I'll answer to all. If you think something
+should be added to this FAQ feel free to tell me because I'd be glad to discuss
+new glitches or new intersting challenges with someone (all credit will be given
+where due of course).
+If you see a spelling mistake (even the slightest) send me an e-mail so I can
+correct it (even if it's a mail with only one minor spelling mistake, don't
+hesitate).
+
+{THX}
+Subsection V.2 : Thanks
+***********************
+
+I would like to thank
+- nephalim and DogDaySunrise at the GameFAQs board for some advices and
+interesting discussions that led to this FAQ and for supporting me while writing
+it.
+- mister yummy (aka Adam T.) for a very interesting quest (and some methods to
+solve problems that I couldn't solve about it).
+- ccexplore for solving the Magic Mirror in Phase I problem, and finding the
+necessary techniques to complete the "Rainy Day" quest [RAIN].
+- Frost King for his complement information about the DMD and the Super Bunny in
+a hole glitch [HOSB].
+- Sergio Villicana for telling me about the "Jump and Save" EG.
+- most of the people at the GameFAQs board for liking this game as much as I do.
+- David Wonn, and the people who posted glitches on his site (particularly
+dvdmth) for the Death Mountain Descent, the Skull Dungeon Exploration Glitch and
+the Super Bunny at Lake Hylia glitches.
+- Water Gemini for giving me the will to explore the game even more in depth to
+prove him wrong each time he was.
+Restore Page
+
+Cookie Settings
