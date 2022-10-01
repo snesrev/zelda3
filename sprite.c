@@ -1310,13 +1310,8 @@ void Sprite_DrawDistress_custom(uint16 xin, uint16 yin, uint8 time) {  // 86a733
   int i = 3;
   OamEnt *oam = GetOamCurPtr();
   do {
-    uint16 x = xin + kSpriteDistress_X[i];
-    uint16 y = yin + kSpriteDistress_Y[i];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = 0x83;
-    oam->flags = 0x22;
-    bytewise_extended_oam[oam - oam_buf] = (x >> 8 & 1);
+    SetOamHelper0(oam, xin + kSpriteDistress_X[i], yin + kSpriteDistress_Y[i],
+                  0x83, 0x22, 0);
   } while (oam++, --i >= 0);
 }
 
@@ -1480,13 +1475,10 @@ void Sprite_DrawNumberedAbsorbable(int k, int a) {  // 86d2fa
   int n = (sprite_head_dir[k] < 1) ? 2 : 1;
   do {
     int j = n + a;
-    uint16 x = info.x + kNumberedAbsorbable_X[j];
-    uint16 y = info.y + kNumberedAbsorbable_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kNumberedAbsorbable_Char[j];
-    oam->flags = info.flags;
-    bytewise_extended_oam[oam - oam_buf] = kNumberedAbsorbable_Ext[j] | (x >> 8 & 1);
+    SetOamHelper0(oam,
+                  info.x + kNumberedAbsorbable_X[j], info.y + kNumberedAbsorbable_Y[j],
+                  kNumberedAbsorbable_Char[j], info.flags,
+                  kNumberedAbsorbable_Ext[j]);
   } while (oam++, --n >= 0);
   SpriteDraw_Shadow(k, &info);
 }
@@ -1580,14 +1572,9 @@ void Sprite_DrawThinAndTall(int k) {  // 86dd40
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
   OamEnt *oam = GetOamCurPtr();
-  oam[1].x = oam[0].x = info.x;
-  bytewise_extended_oam[oam - oam_buf + 1] = bytewise_extended_oam[oam - oam_buf] = (info.x >= 256);
-  oam[0].y = ClampYForOam(info.y);
-  oam[1].y = ClampYForOam(info.y + 8);
   uint8 a = kSprite_PrepAndDrawSingleLarge_Tab2[kSprite_PrepAndDrawSingleLarge_Tab1[sprite_type[k]] + sprite_graphics[k]];
-  oam[0].charnum = a;
-  oam[1].charnum = a + 0x10;
-  oam[0].flags = oam[1].flags = info.flags;
+  SetOamHelper0(oam + 0, info.x, info.y + 0, a + 0x00, info.flags, 0);
+  SetOamHelper0(oam + 1, info.x, info.y + 8, a + 0x10, info.flags, 0);
   if (sprite_flags3[k] & 0x10)
     SpriteDraw_Shadow(k, &info);
 }

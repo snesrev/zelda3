@@ -984,13 +984,7 @@ void AnimateSceneSprite_AddObjectsToOamBuffer(int k, const IntroSpriteEnt *src, 
   OamEnt *oam = (OamEnt *)&g_ram[intro_sprite_alloc];
   intro_sprite_alloc += num * 4;
   do {
-    uint16 xcur = x + src->x;
-    uint16 ycur = y + src->y;
-    oam->x = xcur;
-    oam->y = ClampYForOam(ycur);
-    oam->charnum = src->charnum;
-    oam->flags = src->flags;
-    bytewise_extended_oam[oam - oam_buf] = src->ext | (xcur >> 8 & 1);
+    SetOamHelper0(oam, x + src->x, y + src->y, src->charnum, src->flags, src->ext);
   } while (oam++, src++, --num);
 }
 

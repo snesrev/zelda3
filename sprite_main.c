@@ -1007,18 +1007,7 @@ static HandlerFuncK *const kSpritePrep_Main[243] = {
   &SpritePrep_DoNothingA,
   &SpritePrep_MedallionTable,
 };
-static inline uint8 ChainBallMult(uint16 a, uint8 b);
-static inline uint8 GuruguruBarMult(uint16 a, uint8 b);
-static inline int8 GuruguruBarSin(uint16 a, uint8 b);
-static inline uint8 ArrgiMult(uint16 a, uint8 b);
-static inline int8 ArrgiSin(uint16 a, uint8 b);
-static inline uint8 HelmasaurMult(uint16 a, uint8 b);
-static inline int8 HelmasaurSin(uint16 a, uint8 b);
-static inline uint8 TrinexxMult(uint8 a, uint8 b);
-static inline uint8 TrinexxHeadMult(uint16 a, uint8 b);
-static inline int8 TrinexxHeadSin(uint16 a, uint8 b);
-static inline uint8 GanonMult(uint16 a, uint8 b);
-static inline int8 GanonSin(uint16 a, uint8 b);
+
 void Sprite_PullSwitch_bounce(int k) {
   if (sprite_type[k] == 5 || sprite_type[k] == 7)
     PullSwitch_FacingUp(k);
@@ -2054,13 +2043,10 @@ void DebirandoPit_Draw(int k) {  // 8586e4
   uint8 ext = kDebirandoPit_Draw_Ext[g];
   for (int i = 3; i >= 0; i--, oam++) {
     int j = g * 4 + i;
-    uint16 x = info.x + kDebirandoPit_Draw_X[j];
-    uint16 y = info.y + kDebirandoPit_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kDebirandoPit_Draw_Char[j];
-    oam->flags = kDebirandoPit_Draw_Flags[j] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] = ext | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kDebirandoPit_Draw_X[j],
+                       info.y + kDebirandoPit_Draw_Y[j],
+                       kDebirandoPit_Draw_Char[j],
+                       kDebirandoPit_Draw_Flags[j] | info.flags, ext);
   }
 }
 
@@ -2125,14 +2111,13 @@ void Debirando_Draw(int k) {  // 858857
   int d = sprite_graphics[k] * 4;
   for (int i = 3; i >= 0; i--, oam++) {
     int j = d + i;
-    uint16 x = info.x + kDebirando_Draw_X[j];
-    uint16 y = info.y + kDebirando_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kDebirando_Draw_Char[j];
     uint8 f = kDebirando_Draw_Flags[j];
-    oam->flags = (f ^ info.flags) & ((f & 0xf) == 0 ? 0xf0 : 0xff);
-    bytewise_extended_oam[oam - oam_buf] = kDebirando_Draw_Ext[j] | (x >> 8 & 1);
+    SetOamHelper0(oam,
+                  info.x + kDebirando_Draw_X[j],
+                  info.y + kDebirando_Draw_Y[j],
+                  kDebirando_Draw_Char[j],
+                  (f ^ info.flags) & ((f & 0xf) == 0 ? 0xf0 : 0xff),
+                  kDebirando_Draw_Ext[j]);
   }
 }
 
@@ -2483,14 +2468,12 @@ void SpikeRoller_Draw(int k) {  // 858ee3
 
   for (int i = sprite_ai_state[k] ? 7 : 3; i >= 0; i--, oam++) {
     int j = g * 8 + i;
-    uint16 x = info.x + kSpikeRoller_Draw_X[j];
-    uint16 y = info.y + kSpikeRoller_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = chr ? chr : kSpikeRoller_Draw_Char[j];
+    SetOamHelper0(oam,
+                  info.x + kSpikeRoller_Draw_X[j],
+                  info.y + kSpikeRoller_Draw_Y[j],
+                  chr ? chr : kSpikeRoller_Draw_Char[j],
+                  kSpikeRoller_Draw_Flags[j] | info.flags, 2);
     chr = 0;
-    oam->flags = kSpikeRoller_Draw_Flags[j] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
   }
 }
 
@@ -2575,15 +2558,8 @@ void Beamos_Draw(int k) {  // 859068
     Oam_AllocateFromRegionC(12);
   }
   OamEnt *oam = GetOamCurPtr() + spr_offs;
-  for (int i = 1; i >= 0; i--, oam++) {
-    uint16 x = info.x;
-    uint16 y = info.y + kBeamos_Draw_Y[i];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kBeamos_Draw_Char[i];
-    oam->flags = info.flags;
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
-  }
+  for (int i = 1; i >= 0; i--, oam++)
+    SetOamHelper0(oam, info.x, info.y + kBeamos_Draw_Y[i], kBeamos_Draw_Char[i], info.flags, 2);
   SpriteDraw_Beamos_Eyeball(k, &info);
 }
 
@@ -2672,11 +2648,7 @@ void BeamosLaser_Draw(int k) {  // 85925b
     int j = g * 32 + i;
     uint16 x = (beamos_x_lo[j] | beamos_x_hi[j] << 8) - BG2HOFS_copy2;
     uint16 y = (beamos_y_lo[j] | beamos_y_hi[j] << 8) - BG2VOFS_copy2;
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = 0x5c;
-    oam->flags = info.flags;
-    bytewise_extended_oam[oam - oam_buf] = (x >> 8 & 1);
+    SetOamHelper0(oam, x, y, 0x5c, info.flags, 0);
   }
 }
 
@@ -2691,13 +2663,8 @@ void Sprite_Beamos_LaserHit(int k) {  // 8592da
     return;
   OamEnt *oam = GetOamCurPtr();
   for (int i = 3; i >= 0; i--, oam++) {
-    uint16 x = info.x + kBeamosLaserHit_Draw_X[i];
-    uint16 y = info.y + kBeamosLaserHit_Draw_Y[i];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = 0xd6;
-    oam->flags = kBeamosLaserHit_Draw_Flags[i] | info.flags & 0x30;
-    bytewise_extended_oam[oam - oam_buf] = (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kBeamosLaserHit_Draw_X[i], info.y + kBeamosLaserHit_Draw_Y[i],
+                  0xd6, kBeamosLaserHit_Draw_Flags[i] | info.flags & 0x30, 0);
   }
 }
 
@@ -2820,13 +2787,7 @@ void Crab_Draw(int k) {  // 859510
   int d = sprite_graphics[k] * 2;
   for (int i = 1; i >= 0; i--, oam++) {
     int j = d + i;
-    uint16 x = info.x + kCrab_Draw_X[j];
-    uint16 y = info.y;
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kCrab_Draw_Char[j];
-    oam->flags = kCrab_Draw_Flags[j] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kCrab_Draw_X[j], info.y, kCrab_Draw_Char[j], kCrab_Draw_Flags[j] | info.flags, 2);
   }
   SpriteDraw_Shadow(k, &info);
 }
@@ -3045,14 +3006,8 @@ void Zora_Draw(int k) {  // 8598f5
   int d = sprite_graphics[k] * 2;
   for (int i = 1; i >= 0; i--, oam++) {
     int j = d + i;
-    uint16 x = info.x + kZora_Draw_X[j];
-    uint16 y = info.y + kZora_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kZora_Draw_Char[j];
     uint8 f = kZora_Draw_Flags[j];
-    oam->flags = f | (f & 0xf ? 0 : info.flags);
-    bytewise_extended_oam[oam - oam_buf] = kZora_Draw_Ext[j] | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kZora_Draw_X[j], info.y + kZora_Draw_Y[j], kZora_Draw_Char[j], f | (f & 0xf ? 0 : info.flags), kZora_Draw_Ext[j]);
   }
 }
 
@@ -3375,18 +3330,8 @@ void WalkingZora_Draw(int k) {  // 859f08
     info.y--;
 
   int i = sprite_head_dir[k];
-  oam->x = info.x;
-  oam->y = ClampYForOam(info.y - 6);
-  oam->charnum = kWalkingZora_Draw_Char[i];
-  oam->flags = info.flags | kWalkingZora_Draw_Flags[i];
-  bytewise_extended_oam[oam - oam_buf] = 2 | (info.x >> 8 & 1);
-  oam++;
-
-  oam->x = info.x;
-  oam->y = ClampYForOam(info.y + 2);
-  oam->charnum = kWalkingZora_Draw_Char2[g];
-  oam->flags = info.flags | kWalkingZora_Draw_Flags2[g];
-  bytewise_extended_oam[oam - oam_buf] = 2 | (info.x >> 8 & 1);
+  SetOamHelper0(oam + 0, info.x, info.y - 6, kWalkingZora_Draw_Char[i], info.flags | kWalkingZora_Draw_Flags[i], 2);
+  SetOamHelper0(oam + 1, info.x, info.y + 2, kWalkingZora_Draw_Char2[g], info.flags | kWalkingZora_Draw_Flags2[g], 2);
 
   if (!sprite_anim_clock[k])
     SpriteDraw_Shadow(k, &info);
@@ -3542,13 +3487,9 @@ void ArmosKnight_Draw(int k) {  // 85a274
   int g = sprite_graphics[k];
   for (int i = 3; i >= 0; i--, oam++) {
     int j = g * 4 + i;
-    uint16 x = info.x + kArmosKnight_Draw_X[j];
-    uint16 y = info.y + kArmosKnight_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kArmosKnight_Draw_Char[j];
-    oam->flags = kArmosKnight_Draw_Flags[j] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] = kArmosKnight_Draw_Ext[j] | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kArmosKnight_Draw_X[j], info.y + kArmosKnight_Draw_Y[j],
+                  kArmosKnight_Draw_Char[j], kArmosKnight_Draw_Flags[j] | info.flags,
+                  kArmosKnight_Draw_Ext[j]);
   }
   if (g != 0)
     return;
@@ -4079,12 +4020,7 @@ void BallNChain_Animate(int k) {  // 85b0ab
 void SpriteDraw_GuardHead(int k, PrepOamCoordsRet *info, int spr_offs) {  // 85b160
   int j = sprite_head_dir[k];
   OamEnt *oam = GetOamCurPtr() + spr_offs;
-  uint16 x = info->x, y = info->y - 9;
-  oam->x = x;
-  oam->y = ClampYForOam(y);
-  oam->charnum = kChainBallTrooperHead_Char[j];
-  oam->flags = info->flags | kChainBallTrooperHead_Flags[j];
-  bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+  SetOamHelper0(oam, info->x, info->y - 9, kChainBallTrooperHead_Char[j], info->flags | kChainBallTrooperHead_Flags[j], 2);
 }
 
 void SpriteDraw_BNCBody(int k, PrepOamCoordsRet *info, int spr_offs) {  // 85b3cb
@@ -4094,13 +4030,9 @@ void SpriteDraw_BNCBody(int k, PrepOamCoordsRet *info, int spr_offs) {  // 85b3c
   int n = kFlailTrooperBody_Num[g];
   do {
     int j = g * 3 + n;
-    uint16 x = info->x + kFlailTrooperBody_X[j];
-    uint16 y = info->y + kFlailTrooperBody_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kFlailTrooperBody_Char[j];
-    oam->flags = info->flags | kFlailTrooperBody_Flags[j];
-    bytewise_extended_oam[oam - oam_buf] = kFlailTrooperBody_Ext[j] | (x >> 8 & 1);
+    SetOamHelper0(oam, info->x + kFlailTrooperBody_X[j], info->y + kFlailTrooperBody_Y[j],
+                  kFlailTrooperBody_Char[j], info->flags | kFlailTrooperBody_Flags[j],
+                  kFlailTrooperBody_Ext[j]);
     if (n == 2)
       oam++;
   } while (oam++, --n >= 0);
@@ -4183,15 +4115,9 @@ void SpriteDraw_BigCannonball(int k) {  // 85b6a4
   OamEnt *oam = GetOamCurPtr();
   int g = sprite_graphics[k];
   for (int i = 3; i >= 0; i--, oam++) {
-    uint16 x = info.x + kMetalBallLarge_X[i];
-    uint16 y = info.y + kMetalBallLarge_Y[i];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kMetalBallLarge_Char[g * 4 + i];
-    oam->flags = kMetalBallLarge_Flags[i] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kMetalBallLarge_X[i], info.y + kMetalBallLarge_Y[i],
+                  kMetalBallLarge_Char[g * 4 + i], kMetalBallLarge_Flags[i] | info.flags, 2);
   }
-
 }
 
 void Sprite_51_ArmosStatue(int k) {  // 85b703
@@ -4391,13 +4317,8 @@ void GerudoMan_Draw(int k) {  // 85ba24
   int g = sprite_graphics[k];
   for (int i = 2; i >= 0; i--, oam++) {
     int j = g * 3 + i;
-    uint16 x = info.x + kGerudoMan_Draw_X[j];
-    uint16 y = info.y + kGerudoMan_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kGerudoMan_Draw_Char[j];
-    oam->flags = kGerudoMan_Draw_Flags[j] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] = kGerudoMan_Draw_Ext[j] | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kGerudoMan_Draw_X[j], info.y + kGerudoMan_Draw_Y[j],
+                  kGerudoMan_Draw_Char[j], kGerudoMan_Draw_Flags[j] | info.flags, kGerudoMan_Draw_Ext[j]);
   }
 }
 
@@ -4488,16 +4409,13 @@ void Toppo_Draw(int k) {  // 85bbff
   for (int i = 2; i >= 0; i--, oam++) {
     int j = i + g * 3;
     uint8 ext = kToppo_Draw_Ext[j];
-    uint16 x = info.x + kToppo_Draw_X[j];
-    uint16 y = (ext ? info.y : ybase) + kToppo_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kToppo_Draw_Char[j];
     uint8 flags = kToppo_Draw_Flags[j] | info.flags;
     if (ext == 0)
       flags = flags & ~0xf | 2;
-    oam->flags = flags;
-    bytewise_extended_oam[oam - oam_buf] = ext | (x >> 8 & 1);
+    SetOamHelper0(oam,
+                  info.x + kToppo_Draw_X[j],
+                  (ext ? info.y : ybase) + kToppo_Draw_Y[j],
+                  kToppo_Draw_Char[j], flags, ext);
   }
 }
 
@@ -4713,13 +4631,9 @@ void SpriteDraw_BombGuard_Arm(int k, PrepOamCoordsRet *info) {  // 85c089
   static const int8 kBombTrooper_DrawArm_Y[8] = {-12, -12, -12, -12, -16, -14, -12, -14};
   OamEnt *oam = GetOamCurPtr();
   int j = sprite_D[k] * 2 | sprite_subtype2[k];
-  uint16 x = info->x + kBombTrooper_DrawArm_X[j];
-  uint16 y = info->y + kBombTrooper_DrawArm_Y[j];
-  oam->x = x;
-  oam->y = ClampYForOam(y);
-  oam->charnum = 0x6e;
-  oam->flags = info->flags & 0x30 | 0x8;
-  bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+  SetOamHelper0(oam,
+                info->x + kBombTrooper_DrawArm_X[j],
+                info->y + kBombTrooper_DrawArm_Y[j], 0x6e, info->flags & 0x30 | 0x8, 2);
 }
 
 void SpriteDraw_SpriteBombExplosion(int k) {  // 85c113
@@ -5027,23 +4941,16 @@ void Guard_AnimateBody(int k, int oam_idx, const PrepOamCoordsRet *poc) {  // 85
     int j = i + g;
     if (type >= 0x46 && (!kSoldier_Draw2_Ext[j] || i == 3 && kSoldier_Draw2_Char[j] == 0x20))
       continue;
-    uint16 x = poc->x + kSoldier_Draw2_Xd[j];
-    uint16 y = poc->y + kSoldier_Draw2_Yd[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kSoldier_Draw2_Char[j];
-    bool flag = true;
-    uint8 p = 8;
-    if (oam->charnum == 0x20) {
-      p = 2;
-      if (type == 0x46)
-        oam->y = 0xf0;
-    } else {
-      flag = kSoldier_Draw2_Ext[j] == 0;
-    }
     uint8 flags = kSoldier_Draw2_Flags[j] | poc->flags;
-    oam->flags = flag ? (flags & 0xf1 | p) : flags;
-    bytewise_extended_oam[oam - oam_buf] = kSoldier_Draw2_Ext[j] | (x & 0x100) >> 8;
+    if (kSoldier_Draw2_Char[j] == 0x20) {
+      flags = flags & 0xf1 | 2;
+    } else if (kSoldier_Draw2_Ext[j] == 0) {
+      flags = flags & 0xf1 | 8;
+    }
+    SetOamHelper0(oam, poc->x + kSoldier_Draw2_Xd[j], poc->y + kSoldier_Draw2_Yd[j],
+                  kSoldier_Draw2_Char[j], flags, kSoldier_Draw2_Ext[j]);
+    if (oam->charnum == 0x20 && type == 0x46)
+      oam->y = 0xf0;
     oam++;
   }
 }
@@ -5140,11 +5047,9 @@ void SpriteDraw_GuardSpear(int k, PrepOamCoordsRet *info, int spr_offs) {  // 85
     uint16 y = info->y + kSolderThrowing_Draw_Y[j];
     HIBYTE(dungmap_var8) = kSolderThrowing_Draw_X[j];
     BYTE(dungmap_var8) = kSolderThrowing_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kSolderThrowing_Draw_Char[j] - (sprite_type[k] >= 0x48 ? 3 : 0);
-    oam->flags = (kSolderThrowing_Draw_Flags[j] | info->flags) & 0xf1 | 8;
-    bytewise_extended_oam[oam - oam_buf] =  (x >> 8 & 1);
+    SetOamHelper0(oam, x, y,
+                  kSolderThrowing_Draw_Char[j] - (sprite_type[k] >= 0x48 ? 3 : 0),
+                  (kSolderThrowing_Draw_Flags[j] | info->flags) & 0xf1 | 8, 0);
   }
 }
 
@@ -5454,16 +5359,10 @@ void BushSoldierCommon_Draw(int k) {  // 85d321
   int g = sprite_graphics[k] * 2;
   for (int i = 1; i >= 0; i--, oam++) {
     int j = g + i;
-    uint16 x = info.x;
-    uint16 y = info.y + kBushSoldierCommon_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kBushSoldierCommon_Char[j];
     uint8 flags = kBushSoldierCommon_Flags[j] | 0x20;
     if (i == 0)
       flags = flags & ~0xe | info.flags;
-    oam->flags = flags;
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x, info.y + kBushSoldierCommon_Y[j], kBushSoldierCommon_Char[j], flags, 2);
   }
 }
 
@@ -5509,13 +5408,7 @@ void SpriteDraw_Archer_Weapon(int k, int spr_offs, PrepOamCoordsRet *info) {  //
     base = kArcherSoldier_Tab1[sprite_D[k]];
   for (int i = 3; i >= 0; i--, oam++) {
     int j = base * 4 + i;
-    uint16 x = info->x + kArcherSoldier_Draw_X[j];
-    uint16 y = info->y + kArcherSoldier_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kArcherSoldier_Draw_Char[j];
-    oam->flags = kArcherSoldier_Draw_Flags[j] | 0x20;
-    bytewise_extended_oam[oam - oam_buf] = (x >> 8 & 1);
+    SetOamHelper0(oam, info->x + kArcherSoldier_Draw_X[j], info->y + kArcherSoldier_Draw_Y[j], kArcherSoldier_Draw_Char[j], kArcherSoldier_Draw_Flags[j] | 0x20, 0);
   }
 }
 
@@ -5527,16 +5420,10 @@ void TutorialSoldier_Draw(int k) {  // 85d64b
   int d = sprite_graphics[k] * 5;
   for (int i = 4; i >= 0; i--, oam++) {
     int j = d + i;
-    uint16 x = info.x + kTutorialSoldier_X[j];
-    uint16 y = info.y + kTutorialSoldier_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kTutorialSoldier_Char[j];
     uint8 flags = kTutorialSoldier_Flags[j] | info.flags;
-    if (oam->charnum < 0x40)
+    if (kTutorialSoldier_Char[j] < 0x40)
       flags = (flags & 0xf1) | 8;
-    oam->flags = flags;
-    bytewise_extended_oam[oam - oam_buf] = kTutorialSoldier_Ext[j] | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kTutorialSoldier_X[j], info.y + kTutorialSoldier_Y[j], kTutorialSoldier_Char[j], flags, kTutorialSoldier_Ext[j]);
   }
   SpriteDraw_Shadow_custom(k, &info, 12);
 }
@@ -5617,13 +5504,7 @@ void BadPullUpSwitch_Draw(int k) {  // 85d858
   OamEnt *oam = GetOamCurPtr();
   uint8 yoff = kBadPullSwitch_Tab5[kBadPullSwitch_Tab4[sprite_graphics[k]]];
   for (int i = 1; i >= 0; i--, oam++) {
-    uint16 x = info.x;
-    uint16 y = info.y - ((i == 0) ? yoff : 0);
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kBadPullUpSwitch_Tab2[i];
-    oam->flags = info.flags;
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x, info.y - ((i == 0) ? yoff : 0), kBadPullUpSwitch_Tab2[i], info.flags, 2);
   }
 }
 
@@ -8820,13 +8701,8 @@ void Poe_Draw(int k) {  // 869786
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
   OamEnt *oam = GetOamCurPtr();
-  uint16 x = info.x + kPoe_Draw_X[sprite_D[k]];
-  uint16 y = info.y + 9;
-  oam->x = x;
-  oam->y = ClampYForOam(y);
-  oam->charnum =  kPoe_Draw_Char[sprite_subtype2[k] >> 3 & 3];
-  oam->flags = info.flags & 0xf0 | 2;
-  bytewise_extended_oam[oam - oam_buf] = (x >> 8 & 1);
+  SetOamHelper0(oam, info.x + kPoe_Draw_X[sprite_D[k]], info.y + 9,
+                kPoe_Draw_Char[sprite_subtype2[k] >> 3 & 3], info.flags & 0xf0 | 2, 0);
 }
 
 void Sprite_18_MiniMoldorm(int k) {  // 869808
@@ -9836,14 +9712,10 @@ void CoveredRupeeCrab_Draw(int k) {  // 86aa48
   uint8 r6 = sprite_graphics[k] * 2;
   for (int i = 1; i >= 0; i--, oam++) {
     int j = i + r6;
-    uint16 x = info.x;
-    uint16 y = info.y + kCoveredRupeeCrab_DrawY[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
     uint8 ch = kCoveredRupeeCrab_DrawChar[j];
-    oam->charnum = ch + (ch == 0x44 ? r7 : 0);
-    oam->flags = (info.flags & ~1) | kCoveredRupeeCrab_DrawFlags[j];
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x, info.y + kCoveredRupeeCrab_DrawY[j],
+                  ch + (ch == 0x44 ? r7 : 0),
+                  (info.flags & ~1) | kCoveredRupeeCrab_DrawFlags[j], 2);
   }
 }
 
@@ -10631,13 +10503,8 @@ void EnemyArrow_Draw(int k) {  // 86b867
   uint8 r6 = sprite_D[k] * 2, r7 = sprite_A[k] * 8;
   for (int i = 1; i >= 0; i--, oam++) {
     int j = r6 + i;
-    uint16 x = info.x + kEnemyArrow_Draw_X[j];
-    uint16 y = info.y + kEnemyArrow_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kEnemyArrow_Draw_Char[j + r7];
-    oam->flags = kEnemyArrow_Draw_Flags[j + r7] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] =  (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kEnemyArrow_Draw_X[j], info.y + kEnemyArrow_Draw_Y[j],
+                  kEnemyArrow_Draw_Char[j + r7], kEnemyArrow_Draw_Flags[j + r7] | info.flags, 0);
   }
 }
 
@@ -12001,16 +11868,12 @@ void Leever_Draw(int k) {  // 86ce45
   int d = sprite_graphics[k];
   for (int i = kLeever_Draw_Num[d]; i >= 0; i--, oam++) {
     int j = d * 4 + i;
-    uint16 x = info.x + kLeever_Draw_X[j];
-    uint16 y = info.y + kLeever_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kLeever_Draw_Char[j];
+    uint8 charnum = kLeever_Draw_Char[j];
     uint8 f = info.flags;
-    if (oam->charnum >= 0x60 || oam->charnum == 0x28 || oam->charnum == 0x38)
+    if (charnum >= 0x60 || charnum == 0x28 || charnum == 0x38)
       f &= 0xf0;
-    oam->flags = kLeever_Draw_Flags[j] | f;
-    bytewise_extended_oam[oam - oam_buf] = kLeever_Draw_Ext[j] | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kLeever_Draw_X[j], info.y + kLeever_Draw_Y[j],
+                  charnum, kLeever_Draw_Flags[j] | f, kLeever_Draw_Ext[j]);
   }
 }
 
@@ -12264,13 +12127,8 @@ void Octorock_Draw(int k) {  // 86d54a
   if (sprite_D[k] != 3) {
     OamEnt *oam = GetOamCurPtr();
     int j = sprite_C[k] * 3 + sprite_D[k];
-    uint16 x = info.x + kOctorock_Draw_X[j];
-    uint16 y = info.y + kOctorock_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kOctorock_Draw_Char[j];
-    oam->flags = kOctorock_Draw_Flags[j] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] = (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kOctorock_Draw_X[j], info.y + kOctorock_Draw_Y[j],
+                  kOctorock_Draw_Char[j], kOctorock_Draw_Flags[j] | info.flags, 0);
   }
   oam_cur_ptr += 4;
   oam_ext_cur_ptr++;
@@ -12309,13 +12167,8 @@ void SpriteDraw_OctorokStoneCrumbling(int k) {  // 86d643
   int g = ((sprite_delay_main[k] >> 1 & 0xc) ^ 0xc);
   for (int i = 3; i >= 0; i--, oam++) {
     int j = g + i;
-    uint16 x = info.x + kOctostone_Draw_X[j];
-    uint16 y = info.y + kOctostone_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = 0xbc;
-    oam->flags = kOctostone_Draw_Flags[j] | 0x2d;
-    bytewise_extended_oam[oam - oam_buf] = (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kOctostone_Draw_X[j], info.y + kOctostone_Draw_Y[j],
+                  0xbc, kOctostone_Draw_Flags[j] | 0x2d, 0);
   }
 
 }
@@ -12378,13 +12231,8 @@ void Octoballoon_Draw(int k) {  // 86d784
   OamEnt *oam = GetOamCurPtr();
   for (int i = 3; i >= 0; i--, oam++) {
     int j = d + i;
-    uint16 x = info.x + kOctoballoon_Draw_X[j];
-    uint16 y = info.y + kOctoballoon_Draw_Y[j];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kOctoballoon_Draw_Char[j];
-    oam->flags = kOctoballoon_Draw_Flags[j] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kOctoballoon_Draw_X[j], info.y + kOctoballoon_Draw_Y[j],
+                  kOctoballoon_Draw_Char[j], kOctoballoon_Draw_Flags[j] | info.flags, 2);
   }
   SpriteDraw_Shadow(k, &info);
 }
@@ -12474,15 +12322,11 @@ void BuzzBlob_Draw(int k) {  // 86d953
   OamEnt *oam = GetOamCurPtr();
   int g = sprite_graphics[k];
   for (int i = 2; i >= 0; i--, oam++) {
-    uint16 x = info.x + kBuzzBlob_DrawX[i];
-    uint16 y = info.y + kBuzzBlob_DrawY[i];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kBuzzBlob_DrawChar[g * 3 + i];
+    SetOamHelper0(oam, info.x + kBuzzBlob_DrawX[i], info.y + kBuzzBlob_DrawY[i],
+                  kBuzzBlob_DrawChar[g * 3 + i],
+                  kBuzzBlob_DrawFlags[g * 3 + i] | info.flags, kBuzzBlob_DrawExt[i]);
     if (oam->charnum == 0)
       oam->y = 240;
-    oam->flags = kBuzzBlob_DrawFlags[g * 3 + i] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] = kBuzzBlob_DrawExt[i] | (x >> 8 & 1);
   }
   SpriteDraw_Shadow(k, &info);
 }
@@ -13624,13 +13468,8 @@ void Kholdstare_Draw(int k) {  // 8dd98f
     return;
   OamEnt *oam = GetOamCurPtr();
   int j = sprite_A[k];
-  uint16 x = info.x + kKholdstare_Draw_X[j];
-  uint16 y = info.y + kKholdstare_Draw_Y[j];
-  oam->x = x;
-  oam->y = ClampYForOam(y);
-  oam->charnum = kKholdstare_Draw_Char[j];
-  oam->flags = kKholdstare_Draw_Flags[j] | info.flags;
-  bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+  SetOamHelper0(oam, info.x + kKholdstare_Draw_X[j], info.y + kKholdstare_Draw_Y[j],
+                kKholdstare_Draw_Char[j], kKholdstare_Draw_Flags[j] | info.flags, 2);
   oam_cur_ptr += 4, oam_ext_cur_ptr += 1;
   Sprite_DrawMultiple(k, &kKholdstare_Dmd[sprite_graphics[k] * 4], 4, &info);
 }
@@ -14050,13 +13889,8 @@ void Mothula_Draw(int k) {  // 9afdb5
   OamEnt *oam = GetOamCurPtr() + 10;
   int g = sprite_graphics[k];
   for (int i = 8; i >= 0; i--, oam++) {
-    uint16 x = info.x + kMothula_Draw_X[g * 9 + i];
-    uint16 y = info.y + 16;
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = 0x6c;
-    oam->flags = 0x24;
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kMothula_Draw_X[g * 9 + i], info.y + 16,
+                  0x6c, 0x24, 2);
   }
 }
 
@@ -14787,15 +14621,9 @@ void FireBat_Draw(int k) {  // 9d8ca9
     return;
   OamEnt *oam = GetOamCurPtr();
   int g = sprite_graphics[k];
-
   for (int i = 1; i >= 0; i--, oam++) {
-    uint16 x = info.x + kFirebat_Draw_X[i];
-    uint16 y = info.y;
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kFirebat_Draw_Char[g];
-    oam->flags = kFirebat_Draw_Flags[g * 2 + i] | info.flags;
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x + kFirebat_Draw_X[i], info.y, kFirebat_Draw_Char[g],
+                  kFirebat_Draw_Flags[g * 2 + i] | info.flags, 2);
   }
 }
 
@@ -16702,12 +16530,9 @@ void SpriteDraw_TrinexxRockHeadAndBody(int k) {  // 9db587
   int g = overlord_x_lo[2];
   for (int i = 0; i < 5; i++, oam++) {
     int j = g * 5 + i;
-    oam->x = xb + kTrinexx_Draw_X[j];
-    uint16 y = yb - kTrinexx_Draw_Y[j] - 0x20 + WORD(overlord_x_lo[7]);
-    oam->y = ClampYForOam(y);
-    oam->charnum = kTrinexx_Draw_Char[i];
-    oam->flags = info.flags;
-    bytewise_extended_oam[oam - oam_buf] = 2;
+    SetOamHelper0(oam,
+                  xb + kTrinexx_Draw_X[j], yb - kTrinexx_Draw_Y[j] - 0x20 + WORD(overlord_x_lo[7]),
+                  kTrinexx_Draw_Char[i], info.flags, 2);
   }
   tmp_counter = 0xff;
 
@@ -17121,13 +16946,11 @@ void ChainChomp_Draw(int k) {  // 9dc192
   int r8 = (sprite_delay_aux1[k] & 1) + 4;
   int pos = k * 8;
   for (int i = 5; i >= 0; i--, pos++, oam++) {
-    uint16 x = chainchomp_x_hist[pos] + r8 - BG2HOFS_copy2;
-    uint16 y = chainchomp_y_hist[pos] + r8 - BG2VOFS_copy2;
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = 0x8b;
-    oam->flags = flags & 0xf0 | 0xd;
-    bytewise_extended_oam[oam - oam_buf] = (x >> 8 & 1);
+    SetOamHelper0(oam,
+                  chainchomp_x_hist[pos] + r8 - BG2HOFS_copy2,
+                  chainchomp_y_hist[pos] + r8 - BG2VOFS_copy2,
+                  0x8b,
+                  flags & 0xf0 | 0xd, 0);
   }
 }
 
@@ -17437,13 +17260,10 @@ void Hokbok_Draw(int k) {  // 9dc77d
     return;
   OamEnt *oam = GetOamCurPtr() + 3;
   int d = sprite_B[k];
-  uint16 x = info.x, y = info.y;
+  uint16 y = info.y;
   for (int i = sprite_A[k]; i >= 0; i--, oam--) {
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = ((i == 0) ? 0xa2 : 0xa0) - ((d < 7) ? 0x20 : 0);
-    oam->flags = info.flags;
-    bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+    SetOamHelper0(oam, info.x, y,
+                  ((i == 0) ? 0xa2 : 0xa0) - ((d < 7) ? 0x20 : 0), info.flags, 2);
     y -= d;
   }
   SpriteDraw_Shadow(k, &info);
@@ -18174,17 +17994,10 @@ void AltarZelda_DrawBody(int k, PrepOamCoordsRet *info) {  // 9dd5e9
   Oam_AllocateFromRegionA(8);
   int z = sprite_z[k] < 31 ? sprite_z[k] : 31;
   uint8 xoffs = kAltarZelda_XOffs[z >> 1];
-
   int y = Sprite_GetY(k) - BG2VOFS_copy2;
   OamEnt *oam = GetOamCurPtr();
-
-  oam[0].x = info->x + xoffs;
-  oam[1].x = info->x - xoffs;
-  oam[0].y = oam[1].y = ClampYForOam(y + 7);
-  oam[0].charnum = oam[1].charnum = 0x6c;
-  oam[0].flags = oam[1].flags = 0x24;
-  bytewise_extended_oam[oam - oam_buf] = 2;
-  bytewise_extended_oam[oam - oam_buf + 1] = 2;
+  SetOamHelper0(oam + 0, info->x + xoffs, y + 7, 0x6c, 0x24, 2);
+  SetOamHelper0(oam + 1, info->x - xoffs, y + 7, 0x6c, 0x24, 2);
 }
 
 void SpriteDraw_AltarZeldaWarp(int k) {  // 9dd6b1
@@ -19278,11 +19091,7 @@ void Moldorm_Draw(int k) {  // 9df822
     j = ((sprite_subtype2[k] + kMoldorm_Draw_GetOffs[i]) & 0x1f) + k * 32;
     uint16 x = (moldorm_x_lo[j] | moldorm_x_hi[j] << 8) - BG2HOFS_copy2 + kMoldorm_Draw_XY[i];
     uint16 y = (moldorm_y_lo[j] | moldorm_y_hi[j] << 8) - BG2VOFS_copy2 + kMoldorm_Draw_XY[i];
-    oam->x = x;
-    oam->y = ClampYForOam(y);
-    oam->charnum = kMoldorm_Draw_Char[i];
-    oam->flags = info.flags;
-    bytewise_extended_oam[oam - oam_buf] = kMoldorm_Draw_Ext[i] | (x >> 8 & 1);
+    SetOamHelper0(oam, x, y, kMoldorm_Draw_Char[i], info.flags, kMoldorm_Draw_Ext[i]);
   }
 }
 
@@ -21962,11 +21771,9 @@ void SpriteDraw_StalfosKnight_Head(int k, PrepOamCoordsRet *info) {  // 9eae4e
     return;
   int i = sprite_head_dir[k];
   OamEnt *oam = GetOamCurPtr();
-  oam->x = info->x;
-  oam->y = ClampYForOam(info->y + sprite_C[k] - 12);
-  oam->charnum = kStalfosKnight_DrawHead_Char[i];
-  oam->flags = info->flags | kStalfosKnight_DrawHead_Flags[i];
-  bytewise_extended_oam[oam - oam_buf] = 2 | (info->x >> 8 & 1);
+  SetOamHelper0(oam, info->x, info->y + sprite_C[k] - 12,
+                kStalfosKnight_DrawHead_Char[i],
+                info->flags | kStalfosKnight_DrawHead_Flags[i], 2);
 }
 
 void Sprite_90_Wallmaster(int k) {  // 9eaea4
@@ -23264,14 +23071,10 @@ void YellowStalfos_DrawHead(int k, PrepOamCoordsRet *info) {  // 9ec69a
   OamEnt *oam = GetOamCurPtr();
   if (sprite_graphics[k] == 10 || sprite_B[k] == 0x80)
     return;
-  uint16 x = info->x + (int8)sprite_B[k];
-  uint16 y = info->y - sprite_C[k];
   int j = sprite_head_dir[k];
-  oam->x = x;
-  oam->y = ClampYForOam(y);
-  oam->charnum = kYellowStalfos_Head_Char[j];
-  oam->flags = kYellowStalfos_Head_Flags[j] | info->flags;
-  bytewise_extended_oam[oam - oam_buf] = 2 | (x >> 8 & 1);
+  SetOamHelper0(oam, info->x + (int8)sprite_B[k], info->y - sprite_C[k],
+                kYellowStalfos_Head_Char[j],
+                kYellowStalfos_Head_Flags[j] | info->flags, 2);
 }
 
 void SpritePrep_Eyegore(int k) {  // 9ec700

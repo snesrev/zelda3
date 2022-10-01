@@ -42,57 +42,24 @@ typedef struct DrawMultipleData {
 } DrawMultipleData;
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 enum {
   kCheckDamageFromPlayer_Carry = 1,
   kCheckDamageFromPlayer_Ne = 2,
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-static inline uint8 ClampYForOam(uint16 y) {
-  return (uint16)(y + 0x10) < 0x100 ? y : 0xf0;
+static inline void SetOamHelper0(OamEnt *oam, uint16 x, uint16 y, uint8 charnum, uint8 flags, uint8 big) {
+  oam->x = x;
+  oam->y = (uint16)(y + 0x10) < 0x100 ? y : 0xf0;
+  oam->charnum = charnum;
+  oam->flags = flags;
+  bytewise_extended_oam[oam - oam_buf] = big | (x >> 8 & 1);
 }
-
-
-
-
 
 extern const uint8 kAbsorptionSfx[15];
 extern const uint8 kSpriteInit_BumpDamage[243];
 extern const uint16 kSinusLookupTable[256];
 extern const uint8 kThrowableScenery_Flags[9];
 extern const uint8 kWishPond2_OamFlags[76];
-
-
-
 
 uint16 Sprite_GetX(int k);
 uint16 Sprite_GetY(int k);
