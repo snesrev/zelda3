@@ -246,6 +246,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       return true;
     } else if (StringEqualsNoCase(key, "NoSpriteLimits")) {
       return ParseBool(value, &g_config.no_sprite_limits);
+    } else if (StringEqualsNoCase(key, "LinkGraphics")) {
+      g_config.link_graphics = value;
+      return true;
     }
   } else if (section == 2) {
     if (StringEqualsNoCase(key, "EnableAudio")) {
@@ -399,7 +402,7 @@ void ParseConfigFile() {
       }
     }
   }
-  free(file);
+  g_config.memory_buffer = file;
 }
 
 void AfterConfigParse() {

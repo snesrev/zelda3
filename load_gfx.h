@@ -1,4 +1,5 @@
-#pragma once
+#ifndef ZELDA3_LOAD_GFX_H_
+#define ZELDA3_LOAD_GFX_H_
 
 enum {
   kSrmOffs_Gloves = 0x354,
@@ -9,6 +10,8 @@ enum {
   kSrmOffs_Name = 0x3d9,
   kSrmOffs_Health = 0x36c,
 };
+
+extern uint16 kGlovesColor[2];
 
 const uint16 *GetFontPtr();
 void ApplyPaletteFilter_bounce();
@@ -160,3 +163,5 @@ void Palette_LoadForFileSelect_Sword(int k, uint8 sword);
 void Palette_LoadForFileSelect_Shield(int k, uint8 shield);
 void Palette_LoadAgahnim();
 void HandleScreenFlash();
+
+#endif // ZELDA3_LOAD_GFX_H_

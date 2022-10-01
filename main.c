@@ -22,9 +22,12 @@
 
 #include "config.h"
 #include "assets.h"
+#include "load_gfx.h"
+
 
 // Forwards
-static bool LoadRom(const char *name);
+static bool LoadRom(const char *filename);
+static void LoadLinkGraphics();
 static void PlayAudio(SDL_AudioDeviceID device, int channels, int16 *audioBuffer);
 static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen);
 static void HandleInput(int keyCode, int modCode, bool pressed);
@@ -194,6 +197,8 @@ int main(int argc, char** argv) {
   ParseConfigFile();
   AfterConfigParse();
   LoadAssets();
+  LoadLinkGraphics();
+
 
   ZeldaInitialize();
   g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
@@ -653,6 +658,39 @@ static bool LoadRom(const char *filename) {
   free(file);
   return result;
 }
+
+static bool ParseLinkGraphics(uint8 *file, size_t length) {
+  if (length < 27 || memcmp(file, "ZSPR", 4) != 0)
+    return false;
+  uint32 pixel_offs = DWORD(file[9]);
+  uint32 pixel_length = WORD(file[13]);
+  uint32 palette_offs = DWORD(file[15]);
+  uint32 palette_length = WORD(file[19]);
+  if ((uint64)pixel_offs + pixel_length > length ||
+      (uint64)palette_offs + palette_length > length ||
+      pixel_length != 0x7000)
+    return false;
+  if (kPalette_ArmorAndGloves_SIZE != 150 || kLinkGraphics_SIZE != 0x7000)
+    Die("ParseLinkGraphics: Invalid asset sizes");
+  memcpy(kLinkGraphics, file + pixel_offs, 0x7000);
+  if (palette_length >= 120)
+    memcpy(kPalette_ArmorAndGloves, file + palette_offs, 120);
+  if (palette_length >= 124)
+    memcpy(kGlovesColor, file + palette_offs + 120, 4);
+  return true;
+}
+
+static void LoadLinkGraphics() {
+  if (g_config.link_graphics) {
+    fprintf(stderr, "Loading Link Graphics: %s\n", g_config.link_graphics);
+    size_t length = 0;
+    uint8 *file = ReadFile(g_config.link_graphics, &length);
+    if (file == NULL || !ParseLinkGraphics(file, length))
+      Die("Unable to load file");
+    free(file);
+  }
+}
+
 
 const uint8 *g_asset_ptrs[kNumberOfAssets];
 uint32 g_asset_sizes[kNumberOfAssets];
