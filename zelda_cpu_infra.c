@@ -312,7 +312,7 @@ static void RunEmulatedSnesFrame(Snes *snes, int run_what) {
 // Copy state into the emulator, we can skip dsp/apu because 
 // we're not emulating that.
 static void EmuSynchronizeWholeState() {
-  memcpy(&g_snes->ppu->vram, g_zenv.ppu->vram, offsetof(Ppu, ppu2openBus) + 1 - offsetof(Ppu, vram));
+  *g_snes->ppu = *g_zenv.ppu;
   memcpy(g_snes->ram, g_zenv.ram, 0x20000);
   memcpy(g_snes->cart->ram, g_zenv.sram, 0x2000);
   memcpy(g_snes->dma->channel, g_zenv.dma->channel, sizeof(Dma) - offsetof(Dma, channel));

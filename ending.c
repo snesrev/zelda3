@@ -138,7 +138,6 @@ void Intro_SetupScreen() {  // 828000
   TS_copy = 0;
   Intro_InitializeBackgroundSettings();
   CGWSEL_copy = 0x20;
-  zelda_ppu_write(OBSEL, 2);
   load_chr_halfslot_even_odd = 20;
   Graphics_LoadChrHalfSlot();
   load_chr_halfslot_even_odd = 0;
@@ -355,9 +354,7 @@ void Module19_TriforceRoom() {  // 829fec
     break;
   case 2:  //
     EnableForceBlank();
-    zelda_snes_dummy_write(NMITIMEN, 0);
     LoadCreditsSongs();
-    zelda_snes_dummy_write(NMITIMEN, 0x81);
     dungeon_room_index = 0x189;
     EraseTileMaps_normal();
     Palette_RevertTranslucencySwap();
@@ -488,14 +485,11 @@ void Module19_TriforceRoom() {  // 829fec
 }
 
 void Intro_InitializeBackgroundSettings() {  // 82c500
-  zelda_ppu_write(SETINI, 0);
   BGMODE_copy = 9;
   MOSAIC_copy = 0;
   zelda_ppu_write(BG1SC, 0x13);
   zelda_ppu_write(BG2SC, 3);
   zelda_ppu_write(BG3SC, 0x63);
-  zelda_ppu_write(BG12NBA, 0x22);
-  zelda_ppu_write(BG34NBA, 7);
   CGADSUB_copy = 32;
   COLDATA_copy0 = 32;
   COLDATA_copy1 = 64;
@@ -575,7 +569,6 @@ void Intro_Clear1kbBlocksOfWRAM() {  // 8cc1a0
 void Intro_InitializeMemory_darken() {  // 8cc1f5
   EnableForceBlank();
   EraseTileMaps_normal();
-  zelda_ppu_write(OBSEL, 2);
   main_tile_theme_index = 35;
   sprite_graphics_index = 125;
   aux_tile_theme_index = 81;

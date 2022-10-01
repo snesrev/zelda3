@@ -184,7 +184,6 @@ void Intro_FixCksum(uint8 *s) {
 }
 
 void LoadFileSelectGraphics() {  // 80e4e9
-  zelda_ppu_write(OBSEL, 2);
   zelda_ppu_write(VMAIN, 0x80);
   zelda_ppu_write_word(VMADDL, 0x5000);
 

@@ -65,6 +65,48 @@ void CopyToVramLow(const uint8 *src, uint32 addr, int num) {
   }
 }
 
+void WritePpuRegisters() {
+  zelda_ppu_write(W12SEL, W12SEL_copy);
+  zelda_ppu_write(W34SEL, W34SEL_copy);
+  zelda_ppu_write(WOBJSEL, WOBJSEL_copy);
+  zelda_ppu_write(CGWSEL, CGWSEL_copy);
+  zelda_ppu_write(CGADSUB, CGADSUB_copy);
+  zelda_ppu_write(COLDATA, COLDATA_copy0);
+  zelda_ppu_write(COLDATA, COLDATA_copy1);
+  zelda_ppu_write(COLDATA, COLDATA_copy2);
+  zelda_ppu_write(TM, TM_copy);
+  zelda_ppu_write(TS, TS_copy);
+  zelda_ppu_write(TMW, TMW_copy);
+  zelda_ppu_write(TSW, TSW_copy);
+  zelda_ppu_write(BG1HOFS, BG1HOFS_copy);
+  zelda_ppu_write(BG1HOFS, BG1HOFS_copy >> 8);
+  zelda_ppu_write(BG1VOFS, BG1VOFS_copy);
+  zelda_ppu_write(BG1VOFS, BG1VOFS_copy >> 8);
+  zelda_ppu_write(BG2HOFS, BG2HOFS_copy);
+  zelda_ppu_write(BG2HOFS, BG2HOFS_copy >> 8);
+  zelda_ppu_write(BG2VOFS, BG2VOFS_copy);
+  zelda_ppu_write(BG2VOFS, BG2VOFS_copy >> 8);
+  zelda_ppu_write(BG3HOFS, BG3HOFS_copy2);
+  zelda_ppu_write(BG3HOFS, BG3HOFS_copy2 >> 8);
+  zelda_ppu_write(BG3VOFS, BG3VOFS_copy2);
+  zelda_ppu_write(BG3VOFS, BG3VOFS_copy2 >> 8);
+  zelda_ppu_write(INIDISP, INIDISP_copy);
+  zelda_ppu_write(MOSAIC, MOSAIC_copy);
+  zelda_ppu_write(BGMODE, BGMODE_copy);
+  if ((BGMODE_copy & 7) == 7) {
+    zelda_ppu_write(M7B, 0);
+    zelda_ppu_write(M7B, 0);
+    zelda_ppu_write(M7C, 0);
+    zelda_ppu_write(M7C, 0);
+    zelda_ppu_write(M7X, M7X_copy);
+    zelda_ppu_write(M7X, M7X_copy >> 8);
+    zelda_ppu_write(M7Y, M7Y_copy);
+    zelda_ppu_write(M7Y, M7Y_copy >> 8);
+  }
+  zelda_ppu_write(BG12NBA, 0x22);
+  zelda_ppu_write(BG34NBA, 7);
+}
+
 void Interrupt_NMI(uint16 joypad_input) {  // 8080c9
   if (music_control == 0) {
     if (zelda_apu_read(APUI00) == last_music_control)
@@ -92,8 +134,6 @@ void Interrupt_NMI(uint16 joypad_input) {  // 8080c9
   sound_effect_1 = 0;
   sound_effect_2 = 0;
 
-  zelda_ppu_write(INIDISP, 0x80);
-  zelda_snes_dummy_write(HDMAEN, 0);
   if (!nmi_boolean) {
     nmi_boolean = true;
     NMI_DoUpdates();
@@ -101,89 +141,10 @@ void Interrupt_NMI(uint16 joypad_input) {  // 8080c9
   }
 
   if (is_nmi_thread_active) {
-    NMI_SwitchThread();
-  } else {
-    zelda_ppu_write(W12SEL, W12SEL_copy);
-    zelda_ppu_write(W34SEL, W34SEL_copy);
-    zelda_ppu_write(WOBJSEL, WOBJSEL_copy);
-    zelda_ppu_write(CGWSEL, CGWSEL_copy);
-    zelda_ppu_write(CGADSUB, CGADSUB_copy);
-    zelda_ppu_write(COLDATA, COLDATA_copy0);
-    zelda_ppu_write(COLDATA, COLDATA_copy1);
-    zelda_ppu_write(COLDATA, COLDATA_copy2);
-    zelda_ppu_write(TM, TM_copy);
-    zelda_ppu_write(TS, TS_copy);
-    zelda_ppu_write(TMW, TMW_copy);
-    zelda_ppu_write(TSW, TSW_copy);
-    zelda_ppu_write(BG1HOFS, BG1HOFS_copy);
-    zelda_ppu_write(BG1HOFS, BG1HOFS_copy >> 8);
-    zelda_ppu_write(BG1VOFS, BG1VOFS_copy);
-    zelda_ppu_write(BG1VOFS, BG1VOFS_copy >> 8);
-    zelda_ppu_write(BG2HOFS, BG2HOFS_copy);
-    zelda_ppu_write(BG2HOFS, BG2HOFS_copy >> 8);
-    zelda_ppu_write(BG2VOFS, BG2VOFS_copy);
-    zelda_ppu_write(BG2VOFS, BG2VOFS_copy >> 8);
-    zelda_ppu_write(BG3HOFS, BG3HOFS_copy2);
-    zelda_ppu_write(BG3HOFS, BG3HOFS_copy2 >> 8);
-    zelda_ppu_write(BG3VOFS, BG3VOFS_copy2);
-    zelda_ppu_write(BG3VOFS, BG3VOFS_copy2 >> 8);
-    zelda_ppu_write(MOSAIC, MOSAIC_copy);
-    zelda_ppu_write(BGMODE, BGMODE_copy);
-    if ((BGMODE_copy & 7) == 7) {
-      zelda_ppu_write(M7B, 0);
-      zelda_ppu_write(M7B, 0);
-      zelda_ppu_write(M7C, 0);
-      zelda_ppu_write(M7C, 0);
-      zelda_ppu_write(M7X, M7X_copy);
-      zelda_ppu_write(M7X, M7X_copy >> 8);
-      zelda_ppu_write(M7Y, M7Y_copy);
-      zelda_ppu_write(M7Y, M7Y_copy >> 8);
-    }
-    //if (irq_flag) {
-    //  snes_dummy_read(g_snes, TIMEUP);
-    //  snes_dummy_write(g_snes, VTIMEL, 0x80);
-    //  snes_dummy_write(g_snes, VTIMEH, 0);
-    //  snes_dummy_write(g_snes, HTIMEL, 0);
-    //  snes_dummy_write(g_snes, HTIMEH, 0);
-    //  snes_dummy_write(g_snes, NMITIMEN, 0xa1);
-    //}
-    zelda_ppu_write(INIDISP, INIDISP_copy);
-    zelda_snes_dummy_write(HDMAEN, HDMAEN_copy);
+    NMI_UpdateIRQGFX();
+    thread_other_stack = (thread_other_stack != 0x1f31) ? 0x1f31 : 0x1f2;
   }
-}
-
-void NMI_SwitchThread() {  // 80822d
-  NMI_UpdateIRQGFX();
-  //zelda_snes_dummy_write(VTIMEL, virq_trigger);
-  //zelda_snes_dummy_write(VTIMEH, 0);
-  //zelda_snes_dummy_write(NMITIMEN, 0xa1);
-  zelda_ppu_write(W12SEL, W12SEL_copy);
-  zelda_ppu_write(W34SEL, W34SEL_copy);
-  zelda_ppu_write(WOBJSEL, WOBJSEL_copy);
-  zelda_ppu_write(CGWSEL, CGWSEL_copy);
-  zelda_ppu_write(CGADSUB, CGADSUB_copy);
-  zelda_ppu_write(COLDATA, COLDATA_copy0);
-  zelda_ppu_write(COLDATA, COLDATA_copy1);
-  zelda_ppu_write(COLDATA, COLDATA_copy2);
-  zelda_ppu_write(TM, TM_copy);
-  zelda_ppu_write(TS, TS_copy);
-  zelda_ppu_write(TMW, TMW_copy);
-  zelda_ppu_write(TSW, TSW_copy);
-  zelda_ppu_write(BG1HOFS, BG1HOFS_copy);
-  zelda_ppu_write(BG1HOFS, BG1HOFS_copy >> 8);
-  zelda_ppu_write(BG1VOFS, BG1VOFS_copy);
-  zelda_ppu_write(BG1VOFS, BG1VOFS_copy >> 8);
-  zelda_ppu_write(BG2HOFS, BG2HOFS_copy);
-  zelda_ppu_write(BG2HOFS, BG2HOFS_copy >> 8);
-  zelda_ppu_write(BG2VOFS, BG2VOFS_copy);
-  zelda_ppu_write(BG2VOFS, BG2VOFS_copy >> 8);
-  zelda_ppu_write(BG3HOFS, BG3HOFS_copy2);
-  zelda_ppu_write(BG3HOFS, BG3HOFS_copy2 >> 8);
-  zelda_ppu_write(BG3VOFS, BG3VOFS_copy2);
-  zelda_ppu_write(BG3VOFS, BG3VOFS_copy2 >> 8);
-  zelda_ppu_write(INIDISP, INIDISP_copy);
-  zelda_snes_dummy_write(HDMAEN, HDMAEN_copy);
-  thread_other_stack = (thread_other_stack != 0x1f31) ? 0x1f31 : 0x1f2;
+  WritePpuRegisters();
 }
 
 void NMI_ReadJoypads(uint16 joypad_input) {  // 8083d1
@@ -249,8 +210,7 @@ void NMI_DoUpdates() {  // 8089e0
   flag_update_hud_in_nmi = 0;
   flag_update_cgram_in_nmi = 0;
 
-  memcpy(g_zenv.ppu->oam, &g_ram[0x800], 0x200);
-  memcpy(g_zenv.ppu->highOam, &g_ram[0xa00], 0x20);
+  memcpy(g_zenv.ppu->oam, &g_ram[0x800], 0x220);
 
   if (nmi_load_bg_from_vram) {
     const uint8 *p;

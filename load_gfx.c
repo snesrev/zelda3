@@ -877,15 +877,13 @@ void LoadDefaultGraphics() {  // 80e2d0
 void Attract_LoadBG3GFX() {  // 80e36d
   // load 2bpp gfx for attract images
   zelda_ppu_write(VMAIN, 0x80);
-  zelda_ppu_write(VMADDL, 0);
-  zelda_ppu_write(VMADDH, 0x78);
+  zelda_ppu_write_word(VMADDL, 0x7800);
   DecompAndUpload2bpp(0x67);
 }
 
 void LoadCommonSprites_2() {  // 80e384
   zelda_ppu_write(VMAIN, 0x80);
-  zelda_ppu_write(VMADDL, 0);
-  zelda_ppu_write(VMADDH, 0x44);
+  zelda_ppu_write_word(VMADDL, 0x4400);
   LoadCommonSprites();
 }
 
@@ -951,7 +949,6 @@ void Graphics_LoadChrHalfSlot() {  // 80e3fa
 }
 
 void TransferFontToVRAM() {  // 80e556
-  zelda_ppu_write(OBSEL, 2);
   zelda_ppu_write(VMAIN, 0x80);
   zelda_ppu_write_word(VMADDL, 0x7000);
   const uint16 *src = GetFontPtr();
