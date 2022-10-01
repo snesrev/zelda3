@@ -40,9 +40,11 @@ enum {
   kPpuXPixels = 256 + kPpuExtraLeftRight * 2,
 };
 
+typedef uint16_t PpuZbufType;
+
 typedef struct PpuPixelPrioBufs {
-  uint8_t pixel[kPpuXPixels];
-  uint8_t prio[kPpuXPixels];
+  // This holds the prio in the upper 8 bits and the color in the lower 8 bits.
+  PpuZbufType data[kPpuXPixels];
 } PpuPixelPrioBufs;
 
 enum {
@@ -96,6 +98,7 @@ struct Ppu {
   uint16_t objTileAdr2;
   uint8_t objSize;
   PpuPixelPrioBufs objBuffer;
+  uint8 pad[3];
   bool timeOver;
   bool rangeOver;
   bool objInterlace_always_zero;
