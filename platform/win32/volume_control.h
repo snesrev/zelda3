@@ -3,6 +3,7 @@
 
 #include <stdbool.h>
 
+int GetApplicationVolume();
 bool SetApplicationVolume(int volume_level);
 bool SetApplicationMuted(bool muted);
 

@@ -22,6 +22,16 @@ static void InitializeCom() {
     com_initialized = SUCCEEDED(CoInitialize(NULL));
 }
 
+int GetApplicationVolume() {
+  ISimpleAudioVolume *simple_audio_volume = GetSimpleAudioVolume();
+  if (!simple_audio_volume)
+    return false;
+  float volume_level = -1;
+  HRESULT result = ISimpleAudioVolume_GetMasterVolume(simple_audio_volume, &volume_level);
+  ISimpleAudioVolume_Release(simple_audio_volume);
+  return (int)(volume_level * 100);
+}
+
 bool SetApplicationVolume(int volume_level) {
   ISimpleAudioVolume *simple_audio_volume = GetSimpleAudioVolume();
   if (!simple_audio_volume)
