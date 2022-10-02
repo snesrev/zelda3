@@ -7,10 +7,18 @@ import tables
 import yaml
 import extract_music
 import os
+import array
+import argparse
 
 PATH=''
 
-ROM = util.LoadedRom(sys.argv[1] if len(sys.argv) >= 2 else None)
+parser = argparse.ArgumentParser(description='Extract resources.')
+parser.add_argument('rom', nargs='?', help='the rom file')
+parser.add_argument('--convert-hud-icons', action='store_true', help='only convert hud icons')
+args = parser.parse_args()
+
+
+ROM = util.LoadedRom(args.rom)
 
 get_byte = ROM.get_byte
 get_word = ROM.get_word
@@ -259,13 +267,6 @@ def print_all_overworld_areas():
 def print_dialogue():
   text_compression.print_strings(open('dialogue.txt', 'w'), get_byte)
 
-def decomp_one_spr_2bit(data, offs, target, toffs, pitch):
-  for y in range(8):
-    d0, d1 = data[offs + y * 2], data[offs + y * 2 + 1]
-    for x in range(8):
-      t = ((d0 >> x) & 1) * 1 + ((d1 >> x) & 1) * 2
-      target[toffs + y * pitch + (7 - x)] = t * 255 // 3
-
 def decomp_one_spr_3bit(data, offs, target, toffs, pitch):
   for y in range(8):
     d0, d1, d2 = data[offs + y * 2], data[offs + y * 2 + 1], data[offs + y + 16]
@@ -308,15 +309,43 @@ def decode_link_sprites():
   decomp_save(get_bytes(0x108000, 32768), PATH+'linksprite.png',
               decomp_one_spr_4bit, 32, 448, convert_snes_palette(kLinkPalette))
 
-def decomp_save_2bit(data, fname):
-  dst=[0]*128*64
-  for i in range(128):
-    x = i % 16
-    y = i // 16
-    decomp_one_spr_2bit(data, i * 16, dst, x * 8 + y * 8 * 128, 128)
-  img = Image.new("L", (128, 64))
-  img.putdata(dst)
-  img.save(fname)
+def decomp_one_spr_2bit(data, offs, target, toffs, pitch, palette_base):
+  for y in range(8):
+    d0, d1 = data[offs + y * 2], data[offs + y * 2 + 1]
+    for x in range(8):
+      t = ((d0 >> x) & 1) * 1 + ((d1 >> x) & 1) * 2
+      target[toffs + y * pitch + (7 - x)] = t + palette_base
+
+
+def get_hud_snes_palette():
+  hud_palette  = ROM.get_words(0x9BD660, 32)
+  palette = [(31 << 10 | 31) for i in range(256)]
+  for i in range(8):
+    for j in range(4):
+      palette[i * 16 + j] = hud_palette[i * 4 + j]
+  return palette
+
+def decode_hud_icons():
+  kBasePal = { 105 : 2, 106 : 0, 107 : 1 }
+
+  palette_usage = open('palette_usage.bin', 'rb').read()
+
+  dst=[0]*128*64*3
+  for image_set, slot in kBasePal.items():
+    data = util.decomp(tables.kCompSpritePtrs[image_set], get_byte, False)
+    for i in range(128):
+      # find first set bit in usage
+      usage = palette_usage[slot * 128 + i]
+      pal_base = 0
+      for j in range(8):
+        if usage & (1 << j):
+          pal_base = j * 16
+          break
+
+      x = i % 16
+      y = i // 16
+      decomp_one_spr_2bit(data, i * 16, dst, x * 8 + y * 8 * 128 + slot * 128 * 64, 128, pal_base)
+  save_array_as_image((128, 64 * 3), dst, 'hud_icons.png', convert_snes_palette(get_hud_snes_palette()))
 
 
 gfx_desc = {
@@ -353,22 +382,22 @@ gfx_desc = {
   
   103 : ('2bpp', 'Attract images loaded to 7800'),
   104 : ('2bpp', 'empty'),
-  105 : ('2bpp', 'hud icons loaded to 7xxx'),
-  106 : ('2bpp', 'hud icons loaded to 7xxx'),
-  107 : ('2bpp', 'hud icons loaded to 7xxx'),
+  105 : ('2bpp', 'hud icons loaded to 7800'),
+  106 : ('2bpp', 'hud icons loaded to 7000'),
+  107 : ('2bpp', 'hud icons loaded to 7400'),
 }
 
 def decomp_generic(k, mode, fname_add = "misc"):
   fname = 'img/%.3d - %s.png' % (k, fname_add)
   if mode == '2bpp':
-    r = util.decomp(kCompSpritePtrs[k], get_byte, False)
-    decomp_save_2bit(r, fname)
+    r = util.decomp(tables.kCompSpritePtrs[k], get_byte, False)
+    decomp_save_2bit(r, fname, k)
   elif mode == '3bpp_np':
     print(k)
-    r = get_bytes(kCompSpritePtrs[k], 0x600)
+    r = get_bytes(tables.kCompSpritePtrs[k], 0x600)
     decomp_save(r, fname, decomp_one_spr_3bit, 24)
   elif mode== '3bpp':
-    r = util.decomp(kCompSpritePtrs[k], get_byte, False)
+    r = util.decomp(tables.kCompSpritePtrs[k], get_byte, False)
     decomp_save(r, fname, decomp_one_spr_3bit, 24)
   else:
     assert 0
@@ -664,4 +693,40 @@ def print_all():
   extract_music.extract_sound_data(ROM)
 
 
-print_all()
+#print_all()
+#decode_hud_icons()
+
+def convert_hud_icons():
+  # Convert to the new 4bpp ppu format
+  img = Image.open('hud_icons_big.png')
+  data = img.tobytes()
+  palette = img.palette.tobytes()
+  print(len(data))
+  out = []
+  def pack_pixels_4bpp(a):
+    r = []
+    for i in range(len(a) // 2):
+      r.append(a[i * 2 + 0] & 0xf | (a[i * 2 + 1] & 0xf) << 4)
+    return r
+  def convert_single_16x16(data, pos):
+    pixels = []
+    for y in range(16):
+      for x in range(16):
+        pixels.append(data[pos + y * 256 + x])
+    return pack_pixels_4bpp(pixels)
+  for yo in range(24):
+    for xo in range(16):
+      out.extend(convert_single_16x16(data, yo * 256 * 16 + xo * 16))
+  open('hud_icons_binary.bin', 'wb').write(bytes(out))
+
+  snespal = []
+  for i in range(128):
+    r, g, b = palette[i * 3 + 0], palette[i * 3 + 1], palette[i * 3 + 2]
+    snespal.append((r >> 3) << 10 | (g >> 3) << 5 | (b >> 3))
+  open('hud_icons_binary.pal', 'wb').write(array.array('H', snespal).tobytes())
+
+
+if args.convert_hud_icons:
+  convert_hud_icons()
+else:
+  print_all()

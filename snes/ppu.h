@@ -34,6 +34,13 @@ typedef struct PpuPixelPrioBufs {
   PpuZbufType data[kPpuXPixels];
 } PpuPixelPrioBufs;
 
+// This is also the pixel prios but upsampled 2x2
+typedef struct PpuPixelPrioBufs2x2 {
+  // This holds the prio in the upper 8 bits and the color in the lower 8 bits.
+  PpuZbufType data[kPpuXPixels * 4];
+} PpuPixelPrioBufs2x2;
+
+
 enum {
   kPpuRenderFlags_NewRenderer = 1,
   // Render mode7 upsampled by 4x4
@@ -44,9 +51,14 @@ enum {
   kPpuRenderFlags_NoSpriteLimits = 8,
 };
 
+enum {
+  kPpuCgramSize = 256 + 128,
+};
+
 
 struct Ppu {
   bool lineHasSprites;
+  bool cgramDirty;
   uint8_t lastBrightnessMult;
   uint8_t lastMosaicModulo;
   uint8_t renderFlags;
@@ -119,18 +131,24 @@ struct Ppu {
   // store 31 extra entries to remove the need for clamp
   uint8_t brightnessMult[32 + 31];
   uint8_t brightnessMultHalf[32 * 2];
-  uint16_t cgram[0x100];
+  uint16_t cgram[kPpuCgramSize];
+  uint32_t cgramWithBrightness[kPpuCgramSize];
   uint8_t mosaicModulo[kPpuXPixels];
-  uint32_t colorMapRgb[256];
   PpuPixelPrioBufs bgBuffers[2];
   PpuPixelPrioBufs objBuffer;
+
+  PpuPixelPrioBufs2x2 bgBuffers2x2[2];
+
   uint16_t vram[0x8000];
+
+  // Provides 512kb of additional vram
+  uint16_t extendedVram[0x20000];
+
 };
 
 Ppu* ppu_init();
 void ppu_free(Ppu* ppu);
 void ppu_reset(Ppu* ppu);
-void ppu_handleVblank(Ppu* ppu);
 void ppu_runLine(Ppu* ppu, int line);
 uint8_t ppu_read(Ppu* ppu, uint8_t adr);
 void ppu_write(Ppu* ppu, uint8_t adr, uint8_t val);

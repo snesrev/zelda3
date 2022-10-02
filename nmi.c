@@ -202,6 +202,7 @@ void NMI_DoUpdates() {  // 8089e0
   }
 
   if (flag_update_cgram_in_nmi) {
+    g_zenv.ppu->cgramDirty = true;
     memcpy(g_zenv.ppu->cgram, main_palette_buffer, 0x200);
   }
 
