@@ -197,9 +197,6 @@ int main(int argc, char** argv) {
   LoadAssets();
   LoadLinkGraphics();
 
-#ifdef __SWITCH__
-  g_config.audio_samples = 1024;
-#endif
   ZeldaInitialize();
   g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
   g_snes_width = 2 * (g_config.extended_aspect_ratio * 2 + 256);
@@ -241,13 +238,9 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  int window_width = g_current_window_scale * (g_snes_width / kDefaultWindowScale);
-  int window_height = g_current_window_scale * (g_snes_height / kDefaultWindowScale);
-
-#ifdef __SWITCH__
-  window_width = 1280;
-  window_height = 720;
-#endif
+  bool custom_size  = g_config.window_width != 0 && g_config.window_height != 0;
+  int window_width  = custom_size ? g_config.window_width  : g_current_window_scale * (g_snes_width / kDefaultWindowScale);
+  int window_height = custom_size ? g_config.window_height : g_current_window_scale * (g_snes_height / kDefaultWindowScale);
 
   SDL_Window* window = SDL_CreateWindow(kWindowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, g_win_flags);
   if(window == NULL) {
