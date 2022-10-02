@@ -1,5 +1,5 @@
 # Zelda3
-A reimplementation of Zelda 3. 
+A reimplementation of Zelda 3.
 
 Our discord server is: https://discord.gg/AJJbJAzNNJ
 
@@ -47,7 +47,7 @@ Pick up items and destroy pots with Sword.
   - Ubuntu: `apt install libsdl2-dev`
   - macOS: `brew install sdl2`
 - a `tables/zelda3.sfc` US ROM file (for asset extraction step only)
-  - SHA256 : `66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`. 
+  - SHA256 : `66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`.
 - The `pillow` and `pyyaml` python dependencies used by the assets extractor.
   - `python -m pip install -r requirements.txt`
 
@@ -56,7 +56,7 @@ Pick up items and destroy pots with Sword.
 Look at the wiki at https://github.com/snesrev/zelda3/wiki for more help.
 
 ### Windows
-First extract and compile resources. 
+First extract and compile resources.
 
 `cd tables`
 
@@ -104,6 +104,18 @@ make clean all  # clear gen+obj and rebuild
 CC=clang make   # specify compiler
 ```
 </details>
+
+### Nintendo switch
+
+You need [DevKitPro](https://devkitpro.org/wiki/Getting_Started) and [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) installed.
+
+```sh
+(dkp-)pacman -S git switch-dev switch-sdl2 switch-tools
+cd platform/switch
+make # Add -j$(nproc) to build using all cores ( Optional )
+# You can test the build directly onto the switch ( Optional )
+nxlink -s zelda3.nro
+```
 
 In case you're planning to move the executable to a different location, please include the file `tables/zelda3_assets.dat`.
 
