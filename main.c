@@ -3,8 +3,7 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-#undef SDL_VIDEO_OPENGL_EGL
-#include <SDL2/SDL.h>
+#include <SDL.h>
 #ifdef _WIN32
 #include <direct.h>
 #else
@@ -198,7 +197,9 @@ int main(int argc, char** argv) {
   LoadAssets();
   LoadLinkGraphics();
 
-
+#ifdef __SWITCH__
+  g_config.audio_samples = 1024;
+#endif
   ZeldaInitialize();
   g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
   g_snes_width = 2 * (g_config.extended_aspect_ratio * 2 + 256);
@@ -242,6 +243,12 @@ int main(int argc, char** argv) {
 
   int window_width = g_current_window_scale * (g_snes_width / kDefaultWindowScale);
   int window_height = g_current_window_scale * (g_snes_height / kDefaultWindowScale);
+
+#ifdef __SWITCH__
+  window_width = 1280;
+  window_height = 720;
+#endif
+
   SDL_Window* window = SDL_CreateWindow(kWindowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, g_win_flags);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());

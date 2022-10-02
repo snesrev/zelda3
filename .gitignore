@@ -23,6 +23,7 @@ __pycache__
 /*.out
 /*.nacp
 /*.nro
+/*.elf
 /snes/*.o
 /msu/alttp_msu-*.pcm
 /tmp/

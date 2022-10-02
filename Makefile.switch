@@ -39,10 +39,12 @@ include $(DEVKITPRO)/libnx/switch_rules
 #---------------------------------------------------------------------------------
 TARGET		:=	$(notdir $(CURDIR))
 BUILD		:=	build
-SOURCES		:= . snes
-DATA		:=	data
+SOURCES		:=  . snes
 INCLUDES	:=	include
-#ROMFS	:=	romfs
+ICON        :=  ./platform/switch/icon.jpg
+APP_TITLE   :=  The Legend of Zelda: A Link to the Past
+APP_AUTHOR  :=  snesrev & Lywx
+APP_VERSION :=  $(shell git rev-parse --short HEAD) $(shell git rev-parse --abbrev-ref HEAD)
 
 #---------------------------------------------------------------------------------
 # options for code generation
@@ -60,7 +62,7 @@ CFLAGS += -std=gnu11
 ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=$(DEVKITPRO)/libnx/switch.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
-LIBS	:= -ldrm_nouveau -lEGL -lGLESv2 -lSDL2 -lnx -lm
+LIBS :=  `$(PREFIX)pkg-config --libs sdl2` -lnx -lm
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -91,15 +93,7 @@ BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 #---------------------------------------------------------------------------------
 # use CXX for linking C++ projects, CC for standard C
 #---------------------------------------------------------------------------------
-ifeq ($(strip $(CPPFILES)),)
-#---------------------------------------------------------------------------------
-	export LD	:=	$(CC)
-#---------------------------------------------------------------------------------
-else
-#---------------------------------------------------------------------------------
-	export LD	:=	$(CXX)
-#---------------------------------------------------------------------------------
-endif
+export LD	:=	$(CXX)
 #---------------------------------------------------------------------------------
 
 export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
