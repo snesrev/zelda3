@@ -242,9 +242,10 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       while ((s = NextDelim(&value, 'x')) != NULL) {
         if(g_config.window_width == 0) {
           g_config.window_width = atoi(s);
+        } else {
+          g_config.window_height = atoi(s);
+          return true;
         }
-        g_config.window_height = atoi(s);
-        return true;
       }
     } else if (StringEqualsNoCase(key, "EnhancedMode7")) {
       return ParseBool(value, &g_config.enhanced_mode7);
