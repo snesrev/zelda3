@@ -21,10 +21,6 @@ __pycache__
 /*.o
 /*.exe
 /*.out
-/platform/switch/bin
-/platform/switch/*.nacp
-/platform/switch/*.nro
-/platform/switch/*.elf
 /snes/*.o
 /msu/alttp_msu-*.pcm
 /tmp/

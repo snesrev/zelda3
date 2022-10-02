@@ -234,18 +234,17 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
   } else if (section == 1) {
     if (StringEqualsNoCase(key, "WindowSize")) {
       char *s;
+      if (StringEqualsNoCase(value, "Auto")){
+        g_config.window_width  = 0;
+        g_config.window_height = 0;
+        return true;
+      }
       while ((s = NextDelim(&value, 'x')) != NULL) {
-        if (strcmp(s, "Auto") == 0) {
-          g_config.window_width  = 0;
-          g_config.window_height = 0;
-          return true;
-        }
         if(g_config.window_width == 0) {
           g_config.window_width = atoi(s);
-        } else {
-          g_config.window_height = atoi(s);
-          return true;
         }
+        g_config.window_height = atoi(s);
+        return true;
       }
     } else if (StringEqualsNoCase(key, "EnhancedMode7")) {
       return ParseBool(value, &g_config.enhanced_mode7);
