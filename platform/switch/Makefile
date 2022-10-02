@@ -37,11 +37,11 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   of a homebrew executable (.nro). This is intended to be used for sysmodules.
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
+SRC_DIR     := ../..
 TARGET		:=	$(notdir $(CURDIR))
-BUILD		:=	build
-SOURCES		:=  . snes
+BUILD		:=	bin
+SOURCES		:=  $(SRC_DIR) $(SRC_DIR)/snes
 INCLUDES	:=	include
-ICON        :=  ./platform/switch/icon.jpg
 APP_TITLE   :=  The Legend of Zelda: A Link to the Past
 APP_AUTHOR  :=  snesrev & Lywx
 APP_VERSION :=  $(shell git rev-parse --short HEAD) $(shell git rev-parse --abbrev-ref HEAD)
@@ -158,7 +158,7 @@ all: $(BUILD)
 
 $(BUILD):
 	@[ -d $@ ] || mkdir -p $@
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile.switch
+	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
