@@ -227,7 +227,7 @@ int main(int argc, char** argv) {
   if (g_config.audio_freq < 11025 || g_config.audio_freq > 48000)
     g_config.audio_freq = kDefaultFreq;
 
-  // Currently, the SPC/DSP implementation �only supports up to stereo.
+  // Currently, the SPC/DSP implementation only supports up to stereo.
   if (g_config.audio_channels < 1 || g_config.audio_channels > 2)
     g_config.audio_channels = kDefaultChannels;
 
@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
   }
   g_window = window;
   SDL_SetWindowHitTest(window, HitTestCallback, NULL);
-  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   if(renderer == NULL) {
     printf("Failed to create renderer: %s\n", SDL_GetError());
     return 1;
