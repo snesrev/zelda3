@@ -323,9 +323,7 @@ static const int8 kGraphicsLoadSp6[20] = {
   -1, -1, -1, -1, -1,
 };
 static const uint8 kMirrorWarp_LoadNext_NmiLoad[15] = {0, 14, 15, 16, 17, 0, 0, 0, 0, 0, 0, 18, 19, 20, 0};
-const uint16 *GetFontPtr() {
-  return kFontData;
-}
+
 static const uint8 *GetCompSpritePtr(int i) {
   return kSprGfx + *(uint32 *)(kSprGfx + i * 4);
 }
@@ -934,7 +932,7 @@ void Graphics_LoadChrHalfSlot() {  // 80e3fa
 }
 
 void TransferFontToVRAM() {  // 80e556
-  memcpy(&g_zenv.vram[0x7000], GetFontPtr(), 0x800 * sizeof(uint16));
+  memcpy(&g_zenv.vram[0x7000], kFontData, 0x800 * sizeof(uint16));
 }
 
 void Do3To4High(uint16 *vram_ptr, const uint8 *decomp_addr) {  // 80e5af

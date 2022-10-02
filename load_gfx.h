@@ -13,7 +13,6 @@ enum {
 
 extern uint16 kGlovesColor[2];
 
-const uint16 *GetFontPtr();
 void ApplyPaletteFilter_bounce();
 void PaletteFilter_Range(int from, int to);
 void PaletteFilter_IncrCountdown();

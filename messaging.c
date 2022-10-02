@@ -2573,7 +2573,7 @@ void VWF_RenderCharacter() {  // 8ecb5e
   vwf_arr[i + 1] = arrval + width;
   uint16 r10 = (c & 0x70) * 2 + (c & 0xf);
   uint16 r0 = arrval * 2;
-  const uint16 *const kTextBits = GetFontPtr();
+  const uint16 *const kTextBits = kFontData;
   const uint16 *src2 = kTextBits + r10 * 8;
   uint8 *mbuf = (uint8 *)messaging_buf;
   for (int i = 0; i != 16; i += 2) {

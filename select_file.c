@@ -169,7 +169,7 @@ void LoadFileSelectGraphics() {  // 80e4e9
   Decomp_spr(&g_ram[0x14000], 0x5f);
   Do3To4High(&g_zenv.vram[0x5400], &g_ram[0x14000]);
 
-  memcpy(&g_zenv.vram[0x7000], GetFontPtr(), 0x800 * sizeof(uint16));
+  TransferFontToVRAM();
 
   Decomp_spr(&g_ram[0x14000], 0x6b);
   memcpy(&g_zenv.vram[0x7800], &g_ram[0x14000], 0x300 * sizeof(uint16));
