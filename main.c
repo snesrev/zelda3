@@ -98,7 +98,7 @@ void ChangeWindowScale(int scale_step) {
   g_current_window_scale = new_scale;
   int w = new_scale * (g_snes_width / kDefaultWindowScale);
   int h = new_scale * (g_snes_height / kDefaultWindowScale);
-  
+
   //SDL_RenderSetLogicalSize(g_renderer, w, h);
   SDL_SetWindowSize(g_window, w, h);
   if (bt >= 0) {
@@ -115,7 +115,7 @@ void ChangeWindowScale(int scale_step) {
 
 static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area, void *data) {
   uint32 flags = SDL_GetWindowFlags(win);
-  return ((flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (flags & SDL_WINDOW_FULLSCREEN) == 0) && 
+  return ((flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (flags & SDL_WINDOW_FULLSCREEN) == 0) &&
          (SDL_GetModState() & KMOD_CTRL) != 0 ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 
@@ -197,7 +197,6 @@ int main(int argc, char** argv) {
   LoadAssets();
   LoadLinkGraphics();
 
-
   ZeldaInitialize();
   g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
   g_snes_width = 2 * (g_config.extended_aspect_ratio * 2 + 256);
@@ -224,11 +223,11 @@ int main(int argc, char** argv) {
   // audio_freq: Use common sampling rates (see user config file. values higher than 48000 are not supported.)
   if (g_config.audio_freq < 11025 || g_config.audio_freq > 48000)
     g_config.audio_freq = kDefaultFreq;
-  
-  // Currently, the SPC/DSP implementation åonly supports up to stereo.
+
+  // Currently, the SPC/DSP implementation only supports up to stereo.
   if (g_config.audio_channels < 1 || g_config.audio_channels > 2)
     g_config.audio_channels = kDefaultChannels;
-  
+
   // audio_samples: power of 2
   if (g_config.audio_samples <= 0 || ((g_config.audio_samples & (g_config.audio_samples - 1)) != 0))
     g_config.audio_samples = kDefaultSamples;
@@ -239,8 +238,10 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  int window_width = g_current_window_scale * (g_snes_width / kDefaultWindowScale);
-  int window_height = g_current_window_scale * (g_snes_height / kDefaultWindowScale);
+  bool custom_size  = g_config.window_width != 0 && g_config.window_height != 0;
+  int window_width  = custom_size ? g_config.window_width  : g_current_window_scale * (g_snes_width / kDefaultWindowScale);
+  int window_height = custom_size ? g_config.window_height : g_current_window_scale * (g_snes_height / kDefaultWindowScale);
+
   SDL_Window* window = SDL_CreateWindow(kWindowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, g_win_flags);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());
@@ -544,7 +545,7 @@ static void HandleCommand(uint32 j, bool pressed) {
       ZeldaReset(true);
       break;
     case kKeys_Pause: g_paused = !g_paused; break;
-    case kKeys_PauseDimmed: 
+    case kKeys_PauseDimmed:
       g_paused = !g_paused;
       if (g_paused) {
         SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
@@ -719,4 +720,3 @@ static void LoadAssets() {
     offset += size;
   }
 }
-
