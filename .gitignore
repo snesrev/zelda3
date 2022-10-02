@@ -21,6 +21,8 @@ __pycache__
 /*.o
 /*.exe
 /*.out
+/*.nacp
+/*.nro
 /snes/*.o
 /msu/alttp_msu-*.pcm
 /tmp/
@@ -28,3 +30,4 @@ __pycache__
 /third_party/tcc/
 /third_party/SDL2-2.24.0/
 /SDL2.dll
+/build/*

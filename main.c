@@ -3,7 +3,8 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <SDL.h>
+#undef SDL_VIDEO_OPENGL_EGL
+#include <SDL2/SDL.h>
 #ifdef _WIN32
 #include <direct.h>
 #else
@@ -98,7 +99,7 @@ void ChangeWindowScale(int scale_step) {
   g_current_window_scale = new_scale;
   int w = new_scale * (g_snes_width / kDefaultWindowScale);
   int h = new_scale * (g_snes_height / kDefaultWindowScale);
-  
+
   //SDL_RenderSetLogicalSize(g_renderer, w, h);
   SDL_SetWindowSize(g_window, w, h);
   if (bt >= 0) {
@@ -115,7 +116,7 @@ void ChangeWindowScale(int scale_step) {
 
 static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area, void *data) {
   uint32 flags = SDL_GetWindowFlags(win);
-  return ((flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (flags & SDL_WINDOW_FULLSCREEN) == 0) && 
+  return ((flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (flags & SDL_WINDOW_FULLSCREEN) == 0) &&
          (SDL_GetModState() & KMOD_CTRL) != 0 ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 
@@ -224,11 +225,11 @@ int main(int argc, char** argv) {
   // audio_freq: Use common sampling rates (see user config file. values higher than 48000 are not supported.)
   if (g_config.audio_freq < 11025 || g_config.audio_freq > 48000)
     g_config.audio_freq = kDefaultFreq;
-  
-  // Currently, the SPC/DSP implementation åonly supports up to stereo.
+
+  // Currently, the SPC/DSP implementation ï¿½only supports up to stereo.
   if (g_config.audio_channels < 1 || g_config.audio_channels > 2)
     g_config.audio_channels = kDefaultChannels;
-  
+
   // audio_samples: power of 2
   if (g_config.audio_samples <= 0 || ((g_config.audio_samples & (g_config.audio_samples - 1)) != 0))
     g_config.audio_samples = kDefaultSamples;
@@ -248,7 +249,7 @@ int main(int argc, char** argv) {
   }
   g_window = window;
   SDL_SetWindowHitTest(window, HitTestCallback, NULL);
-  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
   if(renderer == NULL) {
     printf("Failed to create renderer: %s\n", SDL_GetError());
     return 1;
@@ -544,7 +545,7 @@ static void HandleCommand(uint32 j, bool pressed) {
       ZeldaReset(true);
       break;
     case kKeys_Pause: g_paused = !g_paused; break;
-    case kKeys_PauseDimmed: 
+    case kKeys_PauseDimmed:
       g_paused = !g_paused;
       if (g_paused) {
         SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
@@ -719,4 +720,3 @@ static void LoadAssets() {
     offset += size;
   }
 }
-
