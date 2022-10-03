@@ -1,10 +1,14 @@
-#ifndef VOLUME_CONTROL_H
-#define VOLUME_CONTROL_H
+#ifndef ZELDA3_PLATFORM_WIN32_VOLUME_CONTROL_H_
+#define ZELDA3_PLATFORM_WIN32_VOLUME_CONTROL_H_
 
 #include <stdbool.h>
+
+#ifndef SYSTEM_VOLUME_MIXER_AVAILABLE
+#define SYSTEM_VOLUME_MIXER_AVAILABLE 1
+#endif  // SYSTEM_VOLUME_MIXER_AVAILABLE
 
 int GetApplicationVolume();
 bool SetApplicationVolume(int volume_level);
 bool SetApplicationMuted(bool muted);
 
-#endif // VOLUME_CONTROL_H
+#endif // ZELDA3_PLATFORM_WIN32_VOLUME_CONTROL_H_
