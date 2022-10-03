@@ -15,6 +15,7 @@ PATH=''
 parser = argparse.ArgumentParser(description='Extract resources.')
 parser.add_argument('rom', nargs='?', help='the rom file')
 parser.add_argument('--convert-hud-icons', action='store_true', help='only convert hud icons')
+parser.add_argument('--fix-palette', action='store_true', help='only fix palette')
 args = parser.parse_args()
 
 
@@ -298,10 +299,15 @@ def decomp_save(data, fname, func, step, height=32, palette=None):
   save_array_as_image((128, height), dst, fname, palette)
 
 def convert_snes_palette(v):
-  r=[]
-  for x in v:
-    r.extend(((x & 0x1f) << 3, (x >> 5 & 0x1f) << 3, (x >> 10 & 0x1f) << 3))
-  return r
+  res=[]
+  for i,x in enumerate(v):
+    r, g, b = (x & 0x1f), (x >> 5 & 0x1f), (x >> 10 & 0x1f)
+    if (i & 15) == 0:
+      # transparent color
+      res.extend((0, 0x80, 0x80))
+    else:
+      res.extend((r << 3 | r >> 2, g << 3 | g >> 2, b << 3 | b >> 2))
+  return res
 
 
 def decode_link_sprites():
@@ -315,37 +321,6 @@ def decomp_one_spr_2bit(data, offs, target, toffs, pitch, palette_base):
     for x in range(8):
       t = ((d0 >> x) & 1) * 1 + ((d1 >> x) & 1) * 2
       target[toffs + y * pitch + (7 - x)] = t + palette_base
-
-
-def get_hud_snes_palette():
-  hud_palette  = ROM.get_words(0x9BD660, 64)
-  palette = [(31 << 10 | 31) for i in range(256)]
-  for i in range(16):
-    for j in range(4):
-      palette[i * 16 + j] = hud_palette[i * 4 + j]
-  return palette
-
-def decode_hud_icons():
-  kBasePal = { 105 : 2, 106 : 0, 107 : 1 }
-
-  palette_usage = open('palette_usage.bin', 'rb').read()
-
-  dst=[0]*128*64*3
-  for image_set, slot in kBasePal.items():
-    data = util.decomp(tables.kCompSpritePtrs[image_set], get_byte, False)
-    for i in range(128):
-      # find first set bit in usage
-      usage = palette_usage[slot * 128 + i]
-      pal_base = 0
-      for j in range(8):
-        if usage & (1 << j):
-          pal_base = j * 16
-          break
-
-      x = i % 16
-      y = i // 16
-      decomp_one_spr_2bit(data, i * 16, dst, x * 8 + y * 8 * 128 + slot * 128 * 64, 128, pal_base)
-  save_array_as_image((128, 64 * 3), dst, 'hud_icons.png', convert_snes_palette(get_hud_snes_palette()[:128]))
 
 
 gfx_desc = {
@@ -692,11 +667,81 @@ def print_all():
   print_map32_to_map16(open(PATH+'map32_to_map16.txt', 'w'))
   extract_music.extract_sound_data(ROM)
 
+def get_hud_snes_palette():
+  hud_palette  = ROM.get_words(0x9BD660, 64)
+  palette = [(31 << 10 | 31) for i in range(256)]
+  for i in range(16):
+    for j in range(1, 4):
+      palette[i * 16 + j] = hud_palette[i * 4 + j]
+  return palette
 
-#print_all()
-#decode_hud_icons()
+class PaletteUsage:
+  def __init__(self):
+    self.data = open('palette_usage.bin', 'rb').read()
+  def get(self, icon):
+    usage = self.data[icon]
+    for j in range(8):
+      if usage & (1 << j):
+        return j 
+    return 0
 
-def convert_hud_icons(iconfile = 'hud_icons_big.png'):
+def decode_hud_icons():
+  kBasePal = { 105 : 2, 106 : 0, 107 : 1 }
+  pu = PaletteUsage()
+
+  dst=[0]*128*64*3
+  for image_set, slot in kBasePal.items():
+    data = util.decomp(tables.kCompSpritePtrs[image_set], get_byte, False)
+
+    for i in range(128):
+      pal_base = pu.get(slot * 128 + i) * 16
+      x = i % 16
+      y = i // 16
+      decomp_one_spr_2bit(data, i * 16, dst, x * 8 + y * 8 * 128 + slot * 128 * 64, 128, pal_base)
+  save_array_as_image((128, 64 * 3), dst, 'hud_icons.png', convert_snes_palette(get_hud_snes_palette()[:128]))
+
+
+def fix_palette(iconfile):
+  img_orig = Image.open('hud_icons_orig.png').tobytes()
+  img = Image.open(iconfile)
+  data = bytearray(img.tobytes())
+  palette = img.palette.tobytes()
+
+  colors = {}
+  snespal = ROM.get_words(0x9BD660, 32)
+  for i in range(8):
+    for j in range(1, 4):
+      colors[(i, snespal[i * 4 + j])] = j
+
+  def fix_pixel(pos, x, y, pal):
+    i = data[pos]
+    r, g, b = palette[i * 3 + 0], palette[i * 3 + 1], palette[i * 3 + 2]
+    if r == 0 and g == 0x80 and b == 0x80:
+      return pal * 16
+    sv = (b >> 3) << 10 | (g >> 3) << 5 | (r >> 3)
+    vv = colors.get((pal, sv))
+    # in the first version both black and transparent had the same color value
+    # if it was transparent in the original, make it transparent here too, otherwise black
+    if (r|g|b) == 0:
+      if vv == None or (img_orig[pos] & 0xf) == 0:
+        return pal * 16
+    if vv == None:
+      raise Exception('pixel at (%d, %d) with value (%d,%d,%d) palette %d not found %s' % (xo + x, yo + y, r, g, b, pal, (pal, sv)))
+    data[pos] = pal * 16 + vv
+
+  def fix_single_16x16(pos, pal):
+    for y in range(16):
+      for x in range(16):
+        fix_pixel(pos + y * 256 + x, x, y, pal)
+
+  pu = PaletteUsage()
+  for yo in range(24):
+    for xo in range(16):
+      fix_single_16x16(yo * 256 * 16 + xo * 16, pu.get(yo * 16 + xo))
+
+  save_array_as_image((256, 128 * 3), data, 'hud_icons_fixed.png', convert_snes_palette(get_hud_snes_palette()[:128]))
+
+def convert_hud_icons(iconfile):
   # Convert to the new 4bpp ppu format
   img = Image.open(iconfile)
   data = img.tobytes()
@@ -725,32 +770,10 @@ def convert_hud_icons(iconfile = 'hud_icons_big.png'):
   snespal.extend(get_hud_snes_palette()[128:])
   open('hud_icons_binary.pal', 'wb').write(array.array('H', snespal).tobytes())
 
-def pumpkin():
-  img = Image.open('hud_icons_big.png')
-  data = bytearray(img.tobytes())
-  palette = bytearray(img.palette.tobytes())
-  pp = Image.open('pumpkin.png')
-  ppdata = pp.tobytes()
-  _, pumppal = pp.palette.getdata()
-  for i in range(12):
-    for j in range(3):
-      palette[(20+i)*3+j] = pumppal[i*3+j]
-
-
-  for y in range(32):
-    for x in range(32):
-      data[(176+y)*256+(192+x)] = ppdata[y*32+x]+20
-  img.putdata(data)
-  img.putpalette(palette)    
-  img.save('pump.png')
-
-
-
-
-
-
 if args.convert_hud_icons:
-#  pumpkin()
-  convert_hud_icons('hud_icons_big2.png')
+  convert_hud_icons('hud_icons_new.png')
+elif args.fix_palette:
+#  decode_hud_icons()
+  fix_palette('hud_icons_broken.png')
 else:
   print_all()
