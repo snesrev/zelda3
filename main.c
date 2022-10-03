@@ -181,13 +181,12 @@ static void SDLCALL AudioCallback(void *userdata, Uint8 *stream, int len) {
       g_audiobuffer_end = g_audiobuffer + g_frames_per_block * g_audio_channels * sizeof(int16);
     }
     int n = IntMin(len, g_audiobuffer_end - g_audiobuffer_cur);
-#if SYSTEM_VOLUME_MIXER_AVAILABLE
-    memcpy(stream, g_audiobuffer_cur, n);
-#else
-    // Ensure destination audio stream is empty/silence.
-    SDL_memset(stream, 0, n);
-    SDL_MixAudioFormat(stream, g_audiobuffer_cur, AUDIO_S16, n, g_sdl_audio_mixer_volume);
-#endif
+    if (g_sdl_audio_mixer_volume == SDL_MIX_MAXVOLUME) {
+      memcpy(stream, g_audiobuffer_cur, n);
+    } else {
+      SDL_memset(stream, 0, n);
+      SDL_MixAudioFormat(stream, g_audiobuffer_cur, AUDIO_S16, n, g_sdl_audio_mixer_volume);
+    }
     g_audiobuffer_cur += n;
     stream += n;
     len -= n;
