@@ -6,10 +6,18 @@
 #include <SDL.h>
 #ifdef _WIN32
 #include <direct.h>
+#define SYSTEM_VOLUME_MIXER_AVAILABLE
 #else
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
+#endif
+
+#ifdef SYSTEM_VOLUME_MIXER_AVAILABLE
+#define VOLUME_INCREMENT 5
+#include "platform/win32/volume_control.h"
+#else
+#define VOLUME_INCREMENT (SDL_MIX_MAXVOLUME >> 4)
 #endif
 
 #include "snes/ppu.h"
@@ -35,6 +43,7 @@ static void HandleCommand(uint32 j, bool pressed);
 static void HandleGamepadInput(int button, bool pressed);
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
+static void HandleVolumeAdjustment(int volume_adjustment);
 static void LoadAssets();
 
 enum {
@@ -60,6 +69,7 @@ static int g_curr_fps;
 static int g_ppu_render_flags = 0;
 static bool g_run_without_emu = false;
 static int g_snes_width, g_snes_height;
+static int g_sdl_audio_mixer_volume = SDL_MIX_MAXVOLUME;
 
 void NORETURN Die(const char *error) {
   fprintf(stderr, "Error: %s\n", error);
@@ -178,7 +188,13 @@ static void SDLCALL AudioCallback(void *userdata, Uint8 *stream, int len) {
       g_audiobuffer_end = g_audiobuffer + g_frames_per_block * g_audio_channels * sizeof(int16);
     }
     int n = IntMin(len, g_audiobuffer_end - g_audiobuffer_cur);
+#ifdef SYSTEM_VOLUME_MIXER_AVAILABLE
     memcpy(stream, g_audiobuffer_cur, n);
+#else
+    // Ensure destination audio stream is empty/silence.
+    SDL_memset(stream, 0, n);
+    SDL_MixAudioFormat(stream, g_audiobuffer_cur, AUDIO_S16, n, g_sdl_audio_mixer_volume);
+#endif
     g_audiobuffer_cur += n;
     stream += n;
     len -= n;
@@ -577,6 +593,12 @@ static void HandleCommand_Locked(uint32 j, bool pressed) {
     case kKeys_WindowSmaller: ChangeWindowScale(-1); break;
     case kKeys_DisplayPerf: g_display_perf ^= 1; break;
     case kKeys_ToggleRenderer: g_ppu_render_flags ^= kPpuRenderFlags_NewRenderer; break;
+    case kKeys_VolumeUp:
+      HandleVolumeAdjustment(VOLUME_INCREMENT);
+      break;
+    case kKeys_VolumeDown:
+      HandleVolumeAdjustment(-VOLUME_INCREMENT);
+      break;
     default: assert(0);
     }
   }
@@ -611,6 +633,18 @@ static void HandleGamepadInput(int button, bool pressed) {
   case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: SetButtonState(10, pressed); break;
   case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: SetButtonState(11, pressed); break;
   }
+}
+
+static void HandleVolumeAdjustment(int volume_adjustment) {
+#ifdef SYSTEM_VOLUME_MIXER_AVAILABLE
+  int current_volume = GetApplicationVolume();
+  int new_volume = IntMin(IntMax(0, current_volume + volume_adjustment), 100);
+  SetApplicationVolume(new_volume);
+  printf("[System Volume]=%i\n", new_volume);
+#else
+  g_sdl_audio_mixer_volume = IntMin(IntMax(0, g_sdl_audio_mixer_volume + volume_adjustment), SDL_MIX_MAXVOLUME);
+  printf("[SDL mixer volume]=%i\n", g_sdl_audio_mixer_volume);
+#endif
 }
 
 // Approximates atan2(y, x) normalized to the [0,4) range
