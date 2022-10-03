@@ -31,6 +31,7 @@ static void LoadLinkGraphics();
 static void PlayAudio(SDL_AudioDeviceID device, int channels, int16 *audioBuffer);
 static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen);
 static void HandleInput(int keyCode, int modCode, bool pressed);
+static void HandleCommand(uint32 j, bool pressed);
 static void HandleGamepadInput(int button, bool pressed);
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
@@ -276,7 +277,6 @@ int main(int argc, char** argv) {
   SDL_AudioSpec want = { 0 }, have;
   g_audio_mutex = SDL_CreateMutex();
   if (!g_audio_mutex) Die("No mutex");
-  if (SDL_LockMutex(g_audio_mutex)) Die("Mutex lock failed!");
 
   if (g_config.enable_audio) {
     want.freq = g_config.audio_freq;
@@ -292,7 +292,6 @@ int main(int argc, char** argv) {
     g_audio_channels = have.channels;
     g_frames_per_block = (534 * have.freq) / 32000;
     g_audiobuffer = malloc(g_frames_per_block * have.channels * sizeof(int16));
-    SDL_PauseAudioDevice(device, 0);
   }
 
   if (argc >= 2 && !g_run_without_emu)
@@ -314,9 +313,10 @@ int main(int argc, char** argv) {
   uint32 lastTick = SDL_GetTicks();
   uint32 curTick = 0;
   uint32 frameCtr = 0;
+  bool audiopaused = true;
 
   if (g_config.autosave)
-    SaveLoadSlot(kSaveLoad_Load, 0);
+    HandleCommand(kKeys_Load + 0, true);
 
   while(running) {
     while(SDL_PollEvent(&event)) {
@@ -357,6 +357,11 @@ int main(int argc, char** argv) {
       }
     }
 
+    if (g_paused != audiopaused) {
+      audiopaused = g_paused;
+      SDL_PauseAudioDevice(device, audiopaused);
+    }
+
     if (g_paused) {
       SDL_Delay(16);
       continue;
@@ -368,13 +373,11 @@ int main(int argc, char** argv) {
       g_gamepad_buttons = 0;
     inputs |= g_gamepad_buttons;
 
+    SDL_LockMutex(g_audio_mutex);
     bool is_replay = ZeldaRunFrame(inputs);
-
-    // Unlock mutex for the final rendering stage.
     SDL_UnlockMutex(g_audio_mutex);
 
     if ((g_turbo ^ (is_replay & g_replay_turbo)) && (frameCtr++ & (g_turbo ? 0xf : 0x7f)) != 0) {
-      SDL_LockMutex(g_audio_mutex);
       continue;
     }
 
@@ -399,16 +402,17 @@ int main(int argc, char** argv) {
       lastTick = curTick;
     }
 #endif
-    SDL_LockMutex(g_audio_mutex);
   }
   if (g_config.autosave)
-    SaveLoadSlot(kSaveLoad_Save, 0);
+    HandleCommand(kKeys_Save + 0, true);
+
   // clean sdl
   if (g_config.enable_audio) {
-    SDL_UnlockMutex(g_audio_mutex);
     SDL_PauseAudioDevice(device, 1);
     SDL_CloseAudioDevice(device);
   }
+
+
   SDL_DestroyMutex(g_audio_mutex);
   free(g_audiobuffer);
   SDL_DestroyTexture(texture);
@@ -503,6 +507,8 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
 
 }
 
+static void HandleCommand_Locked(uint32 j, bool pressed);
+
 static void HandleCommand(uint32 j, bool pressed) {
   if (j <= kKeys_Controls_Last) {
     static const uint8 kKbdRemap[12] = { 4, 5, 6, 7, 2, 3, 8, 0, 9, 1, 10, 11 };
@@ -515,6 +521,14 @@ static void HandleCommand(uint32 j, bool pressed) {
     return;
   }
 
+  // Everything that might access audio state
+  // (like SaveLoad and Reset) must have the lock.
+  SDL_LockMutex(g_audio_mutex);
+  HandleCommand_Locked(j, pressed);
+  SDL_UnlockMutex(g_audio_mutex);
+}
+
+static void HandleCommand_Locked(uint32 j, bool pressed) {
   if (!pressed)
     return;
   if (j <= kKeys_Load_Last) {
