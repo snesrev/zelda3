@@ -596,7 +596,11 @@ static void HandleCommand_Locked(uint32 j, bool pressed) {
   }
 }
 
+extern void ReloadExternalImageFiles(Ppu *ppu);
 static void HandleInput(int keyCode, int keyMod, bool pressed) {
+  if (keyCode == SDLK_SPACE)
+    ReloadExternalImageFiles(g_zenv.ppu);
+  
   int j = FindCmdForSdlKey(keyCode, keyMod);
   if (j >= 0)
     HandleCommand(j, pressed);

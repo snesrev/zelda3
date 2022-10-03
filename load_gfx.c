@@ -868,6 +868,9 @@ void LoadDefaultGraphics() {  // 80e2d0
 void Attract_LoadBG3GFX() {  // 80e36d
   // load 2bpp gfx for attract images
   DecompAndUpload2bpp(&g_zenv.vram[0x7800], 0x67);
+
+  if (kPpuUpsample2x2)
+    Convert2bppToNewFormat(&g_zenv.vram[0x7800], 16 * 16 * 64, 8 * 16);
 }
 
 void Graphics_LoadChrHalfSlot() {  // 80e3fa
@@ -2031,9 +2034,14 @@ void Palette_Load_DungeonMapBG() {  // 9bee3a
   Palette_LoadMultiple(kPalette_PalaceMapBg, 0x40, 15, 5);
 }
 
+struct Ppu;
+extern void PpuLoadHudPalette(struct Ppu *ppu);
+
 void Palette_Load_HUD() {  // 9bee52
   const uint16 *src = kHudPalData + hud_palette * 32;
   Palette_LoadMultiple(src, 0x0, 15, 1);
+
+  PpuLoadHudPalette(g_zenv.ppu);
 }
 
 void Palette_Load_DungeonSet() {  // 9bee74

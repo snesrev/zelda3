@@ -76,4 +76,6 @@ typedef void ZeldaSyncAllFunc();
 
 void ZeldaSetupEmuCallbacks(uint8 *emu_ram, ZeldaRunFrameFunc *func, ZeldaSyncAllFunc *sync_all);
 
+void Convert2bppToNewFormat(const uint16 *src, uint32 dst_addr, size_t count);
+
 #endif  // ZELDA3_ZELDA_RTL_H_

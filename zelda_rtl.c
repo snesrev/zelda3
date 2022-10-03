@@ -471,6 +471,8 @@ void ZeldaReset(bool preserve_sram) {
   ZeldaOpenMsuFile();
 }
 
+extern void PpuLoadHudPalette(struct Ppu *ppu);
+
 static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
   // Do the actual loading
   InternalSaveLoad(func, ctx);
@@ -485,6 +487,8 @@ static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
   EmuSynchronizeWholeState();
   ZeldaResetApuQueue();
   ZeldaOpenMsuFile();
+
+  PpuLoadHudPalette(g_zenv.ppu);
 }
 
 static void SaveSnesState(SaveLoadFunc *func, void *ctx) {
@@ -1085,3 +1089,20 @@ void ZeldaWriteSram() {
     fprintf(stderr, "Unable to write saves/sram.dat\n");
   }
 }
+
+void Convert2bppToNewFormat(const uint16 *src, uint32 dst_addr, size_t count) {
+#define DO_PIXEL(i) r += (uint64)((bits >> (7 - i)) & 1 | (bits >> (14 - i)) & 2) << (i * 8);
+  uint16 *dst = g_zenv.ppu->extendedVram + dst_addr;
+  do {
+    for (size_t j = 0; j < 8; j++) {
+      uint32 bits = *src++;
+      uint64 r = 0;
+      DO_PIXEL(0); DO_PIXEL(1); DO_PIXEL(2); DO_PIXEL(3);
+      DO_PIXEL(4); DO_PIXEL(5); DO_PIXEL(6); DO_PIXEL(7);
+      *(uint64 *)&dst[4] = *(uint64 *)&dst[0] = r + (r << 4);
+      dst += 8;
+    }
+  } while (--count);
+#undef DO_PIXEL
+}
+

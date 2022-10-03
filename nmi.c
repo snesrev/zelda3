@@ -277,7 +277,12 @@ void NMI_UploadTilemap_doNothing() {  // 808ce3
 }
 
 void NMI_UploadBG3Text() {  // 808ce4
-  memcpy(&g_zenv.vram[0x7c00], &g_ram[0x10000], 0x7e0);
+  memcpy(&g_zenv.vram[0x7c00], messaging_buf, 0x7e0);
+
+  // Also duplicate to the enhanced ppu ram.
+  if (kPpuUpsample2x2)
+    Convert2bppToNewFormat(&g_zenv.vram[0x7c00], 24 * 16 * 64, 126);
+  
   nmi_disable_core_updates = 0;
 }
 

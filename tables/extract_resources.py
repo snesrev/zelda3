@@ -318,9 +318,9 @@ def decomp_one_spr_2bit(data, offs, target, toffs, pitch, palette_base):
 
 
 def get_hud_snes_palette():
-  hud_palette  = ROM.get_words(0x9BD660, 32)
+  hud_palette  = ROM.get_words(0x9BD660, 64)
   palette = [(31 << 10 | 31) for i in range(256)]
-  for i in range(8):
+  for i in range(16):
     for j in range(4):
       palette[i * 16 + j] = hud_palette[i * 4 + j]
   return palette
@@ -345,7 +345,7 @@ def decode_hud_icons():
       x = i % 16
       y = i // 16
       decomp_one_spr_2bit(data, i * 16, dst, x * 8 + y * 8 * 128 + slot * 128 * 64, 128, pal_base)
-  save_array_as_image((128, 64 * 3), dst, 'hud_icons.png', convert_snes_palette(get_hud_snes_palette()))
+  save_array_as_image((128, 64 * 3), dst, 'hud_icons.png', convert_snes_palette(get_hud_snes_palette()[:128]))
 
 
 gfx_desc = {
@@ -696,12 +696,11 @@ def print_all():
 #print_all()
 #decode_hud_icons()
 
-def convert_hud_icons():
+def convert_hud_icons(iconfile = 'hud_icons_big.png'):
   # Convert to the new 4bpp ppu format
-  img = Image.open('hud_icons_big.png')
+  img = Image.open(iconfile)
   data = img.tobytes()
   palette = img.palette.tobytes()
-  print(len(data))
   out = []
   def pack_pixels_4bpp(a):
     r = []
@@ -722,11 +721,36 @@ def convert_hud_icons():
   snespal = []
   for i in range(128):
     r, g, b = palette[i * 3 + 0], palette[i * 3 + 1], palette[i * 3 + 2]
-    snespal.append((r >> 3) << 10 | (g >> 3) << 5 | (b >> 3))
+    snespal.append((b >> 3) << 10 | (g >> 3) << 5 | (r >> 3))
+  snespal.extend(get_hud_snes_palette()[128:])
   open('hud_icons_binary.pal', 'wb').write(array.array('H', snespal).tobytes())
+
+def pumpkin():
+  img = Image.open('hud_icons_big.png')
+  data = bytearray(img.tobytes())
+  palette = bytearray(img.palette.tobytes())
+  pp = Image.open('pumpkin.png')
+  ppdata = pp.tobytes()
+  _, pumppal = pp.palette.getdata()
+  for i in range(12):
+    for j in range(3):
+      palette[(20+i)*3+j] = pumppal[i*3+j]
+
+
+  for y in range(32):
+    for x in range(32):
+      data[(176+y)*256+(192+x)] = ppdata[y*32+x]+20
+  img.putdata(data)
+  img.putpalette(palette)    
+  img.save('pump.png')
+
+
+
+
 
 
 if args.convert_hud_icons:
-  convert_hud_icons()
+#  pumpkin()
+  convert_hud_icons('hud_icons_big2.png')
 else:
   print_all()

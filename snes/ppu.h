@@ -25,6 +25,7 @@ typedef struct BgLayer {
 
 enum {
   kPpuXPixels = 256 + kPpuExtraLeftRight * 2,
+  kPpuCgramSize = 256 + 256,
 };
 
 typedef uint16_t PpuZbufType;
@@ -50,11 +51,6 @@ enum {
   // Disable sprite render limits
   kPpuRenderFlags_NoSpriteLimits = 8,
 };
-
-enum {
-  kPpuCgramSize = 256 + 128,
-};
-
 
 struct Ppu {
   bool lineHasSprites;
@@ -91,6 +87,9 @@ struct Ppu {
   bool halfColor;
   uint8 mathEnabled;
   uint8_t fixedColorR, fixedColorG, fixedColorB;
+  uint32_t fixedColor;
+  uint8 *halfColorMap;
+
   // settings
   bool forcedBlank;
   uint8_t brightness;
