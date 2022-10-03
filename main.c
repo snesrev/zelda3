@@ -561,12 +561,16 @@ static void HandleCommand_Locked(uint32 j, bool pressed) {
     case kKeys_Pause: g_paused = !g_paused; break;
     case kKeys_PauseDimmed:
       g_paused = !g_paused;
+      // SDL_RenderPresent may not be called more than once per frame.
+      // Seems to work on Windows still. Temporary measure until it's fixed.
+#ifdef _WIN32
       if (g_paused) {
         SDL_SetRenderDrawBlendMode(g_renderer, SDL_BLENDMODE_BLEND);
         SDL_SetRenderDrawColor(g_renderer, 0, 0, 0, 159);
         SDL_RenderFillRect(g_renderer, NULL);
         SDL_RenderPresent(g_renderer);
       }
+#endif
       break;
     case kKeys_ReplayTurbo: g_replay_turbo = !g_replay_turbo; break;
     case kKeys_WindowBigger: ChangeWindowScale(1); break;
