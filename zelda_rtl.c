@@ -92,6 +92,10 @@ void ZeldaDiscardUnusedAudioFrames() {
   }
 }
 
+void ZeldaResetApuQueue() {
+  g_apu_write_ent_pos = g_apu_total_write = g_apu_write_count = 0;
+}
+
 
 uint8_t zelda_read_apui00() {
   // This needs to be here because the ancilla code reads
@@ -463,6 +467,8 @@ void ZeldaReset(bool preserve_sram) {
 
   SpcPlayer_Initialize(g_zenv.player);
   EmuSynchronizeWholeState();
+  ZeldaResetApuQueue();
+  ZeldaOpenMsuFile();
 }
 
 static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
@@ -477,8 +483,7 @@ static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
   
   // Ensure emulator has the up-to-date state too
   EmuSynchronizeWholeState();
-
-  // Ensure we load any msu files
+  ZeldaResetApuQueue();
   ZeldaOpenMsuFile();
 }
 
