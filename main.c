@@ -397,21 +397,22 @@ int main(int argc, char** argv) {
     // if vsync isn't working, delay manually
     curTick = SDL_GetTicks();
 
-    static const uint8 delays[3] = { 17, 17, 16 }; // 60 fps
-#if 1
-    lastTick += delays[frameCtr % 3];
 
-    if (lastTick > curTick) {
-      uint32 delta = lastTick - curTick;
-      if (delta > 500) {
-        lastTick = curTick - 500;
-        delta = 500;
+    if (!g_config.disable_frame_delay) {
+      static const uint8 delays[3] = { 17, 17, 16 }; // 60 fps
+      lastTick += delays[frameCtr % 3];
+
+      if (lastTick > curTick) {
+        uint32 delta = lastTick - curTick;
+        if (delta > 500) {
+          lastTick = curTick - 500;
+          delta = 500;
+        }
+        SDL_Delay(delta);
+      } else if (curTick - lastTick > 500) {
+        lastTick = curTick;
       }
-      SDL_Delay(delta);
-    } else if (curTick - lastTick > 500) {
-      lastTick = curTick;
     }
-#endif
   }
   if (g_config.autosave)
     HandleCommand(kKeys_Save + 0, true);

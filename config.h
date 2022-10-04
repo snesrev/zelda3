@@ -54,6 +54,7 @@ typedef struct Config {
   bool no_sprite_limits;
   bool display_perf_title;
   bool enable_msu;
+  bool disable_frame_delay;
   uint32 features0;
 
   const char *link_graphics;
