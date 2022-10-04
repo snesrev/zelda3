@@ -157,7 +157,8 @@ static void SwitchDirectory() {
       buf[pos] = 0;
       if (step != 0) {
         printf("Found zelda3.ini in %s\n", buf);
-        chdir(buf);
+        int err = chdir(buf);
+        (void)err;
       }
       return;
     }

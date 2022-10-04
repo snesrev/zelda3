@@ -560,21 +560,26 @@ void StateRecorder_RecordPatchByte(StateRecorder *sr, uint32 addr, const uint8 *
   //  printf("\n");
 }
 
+void ReadFromFile(FILE *f, void *data, size_t n) {
+  if (fread(data, 1, n, f) != n)
+    Die("fread failed\n");
+}
+
 void StateRecorder_Load(StateRecorder *sr, FILE *f, bool replay_mode) {
   // todo: fix robustness on invalid data.
   uint32 hdr[8] = { 0 };
-  fread(hdr, 1, sizeof(hdr), f);
+  ReadFromFile(f, hdr, sizeof(hdr));
 
   assert(hdr[0] == 1);
 
   sr->total_frames = hdr[1];
   ByteArray_Resize(&sr->log, hdr[2]);
-  fread(sr->log.data, 1, sr->log.size, f);
+  ReadFromFile(f, sr->log.data, sr->log.size);
   sr->last_inputs = hdr[3];
   sr->frames_since_last = hdr[4];
 
   ByteArray_Resize(&sr->base_snapshot, (hdr[5] & 1) ? hdr[6] : 0);
-  fread(sr->base_snapshot.data, 1, sr->base_snapshot.size, f);
+  ReadFromFile(f, sr->base_snapshot.data, sr->base_snapshot.size);
 
   sr->replay_next_cmd_at = 0;
 
@@ -603,7 +608,7 @@ void StateRecorder_Load(StateRecorder *sr, FILE *f, bool replay_mode) {
 
     ByteArray arr = { 0 };
     ByteArray_Resize(&arr, hdr[6]);
-    fread(arr.data, 1, arr.size, f);
+    ReadFromFile(f, arr.data, arr.size);
     LoadFuncState state = { arr.data, arr.data + arr.size };
     LoadSnesState(&loadFunc, &state);
     ByteArray_Destroy(&arr);
@@ -1063,7 +1068,8 @@ void ZeldaRenderAudio(int16 *audio_buffer, int samples, int channels) {
 void ZeldaReadSram() {
   FILE *f = fopen("saves/sram.dat", "rb");
   if (f) {
-    fread(g_zenv.sram, 1, 8192, f);
+    if (fread(g_zenv.sram, 1, 8192, f) != 8192)
+      fprintf(stderr, "Error reading saves/sram.dat\n");
     fclose(f);
     EmuSynchronizeWholeState();
   }
