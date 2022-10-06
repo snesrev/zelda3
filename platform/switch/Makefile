@@ -38,7 +38,7 @@ include $(DEVKITPRO)/libnx/switch_rules
 #   NACP building is skipped as well.
 #---------------------------------------------------------------------------------
 SRC_DIR     := ../..
-TARGET		:=	$(notdir $(CURDIR))
+TARGET		:=	zelda3
 BUILD		:=	bin
 SOURCES		:=  $(SRC_DIR) $(SRC_DIR)/snes
 INCLUDES	:=	include
