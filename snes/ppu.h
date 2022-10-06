@@ -21,6 +21,8 @@ typedef struct BgLayer {
   uint16_t tilemapAdr;
   // -- snapshot ends here
   uint16_t tileAdr;
+
+  uint32 tileAdrX2;
 } BgLayer;
 
 enum {
@@ -69,8 +71,6 @@ struct Ppu {
   uint8 mosaicEnabled;
   uint8 mosaicSize;
   // object/sprites
-  uint16_t objTileAdr1;
-  uint16_t objTileAdr2;
   uint8_t objSize;
   // Window
   uint8_t window1left;
@@ -135,6 +135,8 @@ struct Ppu {
   uint8_t mosaicModulo[kPpuXPixels];
   PpuPixelPrioBufs bgBuffers[2];
   PpuPixelPrioBufs objBuffer;
+
+  PpuPixelPrioBufs2x2 objBuffer2x2;
 
   PpuPixelPrioBufs2x2 bgBuffers2x2[2];
 

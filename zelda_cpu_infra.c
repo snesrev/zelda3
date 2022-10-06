@@ -99,6 +99,9 @@ static void VerifySnapshotsEq(Snapshot *b, Snapshot *a, Snapshot *prev) {
   b->ram[0x128] = a->ram[0x128];  // irq_flag
   b->ram[0x463] = a->ram[0x463];  // which_staircase_index_padding
 
+  b->ram[0x1f4e] = a->ram[0x1f4e];
+  memcpy(&b->ram[0x1FB0], &a->ram[0x1FB0], 0x50);  // poly stuff
+
   // c code is authoritative
   WORD(a->ram[0x1f0a]) = WORD(b->ram[0x1f0a]);
 

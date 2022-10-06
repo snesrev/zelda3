@@ -165,14 +165,17 @@ void Intro_FixCksum(uint8 *s) {
 void LoadFileSelectGraphics() {  // 80e4e9
   Decomp_spr(&g_ram[0x14000], 0x5e);
   Do3To4High(&g_zenv.vram[0x5000], &g_ram[0x14000]);
+  CONVERT_SPRITE_TO_X2(0x5000, 64);
 
   Decomp_spr(&g_ram[0x14000], 0x5f);
   Do3To4High(&g_zenv.vram[0x5400], &g_ram[0x14000]);
+  CONVERT_SPRITE_TO_X2(0x5400, 64);
 
   TransferFontToVRAM();
 
   Decomp_spr(&g_ram[0x14000], 0x6b);
   memcpy(&g_zenv.vram[0x7800], &g_ram[0x14000], 0x300 * sizeof(uint16));
+  CONVERT_HUD_TO_X2(0x7800, 96);
 }
 
 void Intro_ValidateSram() {  // 828054

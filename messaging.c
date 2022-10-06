@@ -208,9 +208,6 @@ static const uint8 kText_CommandLengths[25] = {
   1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1,
   2, 2, 2, 2, 1, 1, 1, 1, 1,
 };
-static const uint8 kVWF_RenderCharacter_setMasks[8] = {0x80, 0x40, 0x20, 0x10, 8, 4, 2, 1};
-static const uint16 kVWF_RenderCharacter_renderPos[3] = {0, 0x2a0, 0x540};
-static const uint16 kVWF_RenderCharacter_linePositions[3] = {0, 0x40, 0x80};
 static const uint8 kVWF_RenderCharacter_widths[99] = {
   6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 6, 6, 7, 6, 6, 6, 6, 6, 6, 7, 6, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6,
   6, 6, 3, 5, 6, 3, 7, 6, 6, 6, 6, 5, 6, 6, 6, 7, 7, 7, 7, 6, 6, 4, 6, 6, 6, 6, 6, 6, 6, 6, 3, 7,
@@ -334,6 +331,8 @@ static PlayerHandlerFunc *const kModule_Death[16] = {
 };
 static const uint8 kLocationMenuStartPos[3] = {0, 1, 6};
 static void RunInterface();
+static uint16 *RenderText_DrawBorderRow(uint16 *d, int y);
+
 const uint8 *GetDungmapFloorLayout() {
   return kDungMap_FloorLayout + *(uint32 *)(kDungMap_FloorLayout + (cur_palace_index_x2 >> 1) * 4);
 }
@@ -382,7 +381,7 @@ void SaveGameFile() {  // 80894a
 }
 
 void TransferMode7Characters() {  // 80e399
-  uint16 *dst = g_zenv.vram;
+  uint16 *dst = &g_zenv.vram[0];
   const uint8 *src = kOverworldMapGfx;
   for (int i = 0; i != 0x4000; i++)
     HIBYTE(dst[i]) = src[i];
@@ -1390,7 +1389,7 @@ void WorldMap_SetUpHDMA() {  // 8abc96
 }
 
 void WorldMap_FillTilemapWithEF() {  // 8abda5
-  uint16 *dst = g_zenv.vram;
+  uint16 *dst = &g_zenv.vram[0];
   for (int i = 0; i != 0x4000; i++)
     BYTE(dst[i]) = 0xef;
 }
@@ -1765,17 +1764,17 @@ void Module0E_03_01_03_DrawRooms() {  // 8ae384
 
 void DungeonMap_DrawBorderForRooms(uint16 pd, uint16 mask) {  // 8ae449
   for (int i = 0; i != 4; i++)
-    messaging_buf[((kDungMap_Tab10[i] + pd) & 0xfff) >> 1] = kDungMap_Tab11[i] & mask;
+    dungmap_buf[((kDungMap_Tab10[i] + pd) & 0xfff) >> 1] = kDungMap_Tab11[i] & mask;
   for (int i = 0; i != 2; i++) {
     int r4 = kDungMap_Tab12[i] + pd;
     for (int j = 0; j != 20; j+=2)
-      messaging_buf[((r4 + j) & 0xfff) >> 1] = kDungMap_Tab13[i] & mask;
+      dungmap_buf[((r4 + j) & 0xfff) >> 1] = kDungMap_Tab13[i] & mask;
   }
 
   for (int i = 0; i != 2; i++) {
     int r4 = kDungMap_Tab14[i] + pd;
     for (int j = 0; j != 0x280; j+=0x40)
-      messaging_buf[((r4 + j) & 0xfff) >> 1] = kDungMap_Tab15[i] & mask;
+      dungmap_buf[((r4 + j) & 0xfff) >> 1] = kDungMap_Tab15[i] & mask;
   }
 }
 
@@ -1783,14 +1782,14 @@ void DungeonMap_DrawFloorNumbersByRoom(uint16 pd, uint16 r8) {  // 8ae4f9
   uint16 p = 0xDE;
   do {
     int t = ((p + pd) & 0xfff) >> 1;
-    messaging_buf[t] = 0xf00;
-    messaging_buf[t+1] = 0xf00;
+    dungmap_buf[t] = 0xf00;
+    dungmap_buf[t+1] = 0xf00;
   } while (p += 0x40, p != 0x39e);
   int t = ((0x35e + pd) & 0xfff) >> 1;
   uint16 q1 = (dungmap_cur_floor & 0x80) ? 0x1F1C : kDungMap_Tab16[dungmap_cur_floor & 0xf];
   uint16 q2 = (dungmap_cur_floor & 0x80) ? kDungMap_Tab16[(uint8)~dungmap_cur_floor] : 0x1F1D;
-  messaging_buf[t+0] = q1 & r8;
-  messaging_buf[t+1] = q2 & r8;
+  dungmap_buf[t+0] = q1 & r8;
+  dungmap_buf[t+1] = q2 & r8;
 }
 
 void DungeonMap_DrawDungeonLayout(int pd) {  // 8ae579
@@ -1832,7 +1831,7 @@ void DungeonMap_DrawSingleRowOfRooms(int i, int arg_x) {  // 8ae5bc
     }
     av = ((link_dungeon_map & dungmask) || (r14 & 8)) ? r12 + r12_org : 0xb00;
   write_3:
-    messaging_buf[arg_x] = av;
+    dungmap_buf[arg_x] = av;
 
     r12 = kDungMap_Tab23[yv * 4 + 1], r12_org = r12;
     if (r12 != 0xB00 && (r14 & 4) == 0) {
@@ -1849,7 +1848,7 @@ void DungeonMap_DrawSingleRowOfRooms(int i, int arg_x) {  // 8ae5bc
     }
     av = ((link_dungeon_map & dungmask) || (r14 & 4)) ? r12 + r12_org : 0xb00;
   write_4:
-    messaging_buf[arg_x + 1] = av;
+    dungmap_buf[arg_x + 1] = av;
 
     r12 = kDungMap_Tab23[yv * 4 + 2], r12_org = r12;
     if (r12 != 0xB00 && (r14 & 2) == 0) {
@@ -1866,7 +1865,7 @@ void DungeonMap_DrawSingleRowOfRooms(int i, int arg_x) {  // 8ae5bc
     }
     av = ((link_dungeon_map & dungmask) || (r14 & 2)) ? r12 + r12_org : 0xb00;
   write_5:
-    messaging_buf[arg_x + 32] = av;
+    dungmap_buf[arg_x + 32] = av;
 
     r12 = kDungMap_Tab23[yv * 4 + 3], r12_org = r12;
     if (r12 != 0xB00 && (r14 & 1) == 0) {
@@ -1883,7 +1882,7 @@ void DungeonMap_DrawSingleRowOfRooms(int i, int arg_x) {  // 8ae5bc
     }
     av = ((link_dungeon_map & dungmask) || (r14 & 1)) ? r12 + r12_org : 0xb00;
   write_6:
-    messaging_buf[arg_x + 33] = av;
+    dungmap_buf[arg_x + 33] = av;
   }
 }
 
@@ -2443,7 +2442,7 @@ restart:
   case 6:  //
   case 7:  //
   case 8:  // RenderText_Draw_Ignore
-    byte_7E1CEA = messaging_text_buffer[dialogue_msg_dst_offs + 1];
+    render_vwf_scroll_speed = messaging_text_buffer[dialogue_msg_dst_offs + 1];
     dialogue_msg_dst_offs += 2;
     break;
   case 9:   // RenderText_Draw_Choose2HiOr3
@@ -2560,68 +2559,61 @@ void VWF_RenderSingle() {  // 8ecab8
   vwf_line_mode = vwf_line_speed;
 }
 
+static void RenderFontPixelsInternal(int dst_pos, int width, int icon_index) {
+  
+  const uint16 *src = kFontData + icon_index * 8;
+  for (int i = 0; i != 8; i++) {
+    int bits = *src++;
+    uint8 *dstbuf = (uint8 *)messaging_buf + (dst_pos & 0xff0) + i * 2;
+    int j = (dst_pos >> 1) & 7;
+    int n = width;
+    do {
+      int mask = 0x80 >> j;
+      dstbuf[0] = (dstbuf[0] & ~mask) | ((bits & 0x0080) ? mask : 0);
+      dstbuf[1] = (dstbuf[1] & ~mask) | ((bits & 0x8000) ? mask : 0);
+      bits = (bits & ~0x8080) << 1;
+    } while (--n && ++j != 8);
+    if (bits != 0)
+      WORD(dstbuf[16]) = bits;
+  }
+
+  // Write directly to the region in extended vram. No vblanks to worry about.
+  if (kPpuUpsample2x2) {
+    for (int x = 0; x < width; x++) {
+      // It's at 0x7c00
+      uint8 *dstbuf = (uint8 *)g_zenv.ext_vram + (256 * 384) / 2 +
+        ((dst_pos & 0xff0) >> 4) * (16 * 16 / 2) +
+        ((dst_pos >> 1) & 7);
+      uint8 *src = &g_image_data_x2.font[icon_index * 128] + x;
+      // draw a vertical strip
+      for (int y = 0; y < 8; y++) {
+        dstbuf[y * 16 + 0] = src[y * 16 + 0];
+        dstbuf[y * 16 + 8] = src[y * 16 + 8];
+      }
+      dst_pos += 2;
+    }
+
+  }
+
+}
+
 void VWF_RenderCharacter() {  // 8ecb5e
   if (vwf_flag_next_line) {
-    vwf_line_ptr = kVWF_RenderCharacter_renderPos[vwf_curline>>1];
-    vwf_var1 = kVWF_RenderCharacter_linePositions[vwf_curline>>1];
+    vwf_line_ptr = 0x2a0 * (vwf_curline >> 1);
+    vwf_var1 = 0x40 * (vwf_curline >> 1);
     vwf_flag_next_line = 0;
   }
   uint8 c = messaging_text_buffer[dialogue_msg_dst_offs];
   uint8 width = kVWF_RenderCharacter_widths[c];
   int i = vwf_var1++;
-  uint8 arrval = vwf_arr[i];
-  vwf_arr[i + 1] = arrval + width;
-  uint16 r10 = (c & 0x70) * 2 + (c & 0xf);
-  uint16 r0 = arrval * 2;
-  const uint16 *const kTextBits = kFontData;
-  const uint16 *src2 = kTextBits + r10 * 8;
-  uint8 *mbuf = (uint8 *)messaging_buf;
-  for (int i = 0; i != 16; i += 2) {
-    uint16 r4 = *src2++;
-    int y = r0 + vwf_line_ptr;
-    int x = (y & 0xff0) + i;
-    y = (y >> 1) & 7;
-    uint8 r3 = width;
-    do {
-      if (r4 & 0x0080)
-        mbuf[x + 0] ^= kVWF_RenderCharacter_setMasks[y];
-      else
-        mbuf[x + 0] &= ~kVWF_RenderCharacter_setMasks[y];
-      if (r4 & 0x8000)
-        mbuf[x + 1] ^= kVWF_RenderCharacter_setMasks[y];
-      else
-        mbuf[x + 1] &= ~kVWF_RenderCharacter_setMasks[y];
-      r4 = (r4 & ~0x8080) << 1;
-      //r4 <<= 1;
-    } while (--r3 && ++y != 8);
-    x += 16;
-    if (r4 != 0)
-      WORD(mbuf[x + 0]) = r4;
-  }
-  uint16 r8 = vwf_line_ptr + 0x150;
-  const uint16 *src3 = kTextBits + (r10 + 16) * 8;
-  for (int i = 0; i != 16; i += 2) {
-    uint16 r4 = *src3++;
-    int y = r8 + r0;
-    int x = (y & 0xff0) + i;
-    y = (y >> 1) & 7;
-    uint8 r3 = width;
-    do {
-      if (r4 & 0x0080)
-        mbuf[x + 0] ^= kVWF_RenderCharacter_setMasks[y];
-      else
-        mbuf[x + 0] &= ~kVWF_RenderCharacter_setMasks[y];
-      if (r4 & 0x8000)
-        mbuf[x + 1] ^= kVWF_RenderCharacter_setMasks[y];
-      else
-        mbuf[x + 1] &= ~kVWF_RenderCharacter_setMasks[y];
-      //r4 <<= 1;
-      r4 = (r4 & ~0x8080) << 1;
-    } while (--r3 && ++y != 8);
-    x += 16;
-    if (r4 != 0)
-      WORD(mbuf[x + 0]) = r4;
-  }
+  uint8 base_x = vwf_arr[i];
+  vwf_arr[i + 1] = base_x + width;
+  int icon_index = (c & 0x70) * 2 + (c & 0xf);
+
+  // The two rows are spaced 21 sprites aside.
+  RenderFontPixelsInternal(base_x * 2 + vwf_line_ptr, width, icon_index);
+  RenderFontPixelsInternal(base_x * 2 + vwf_line_ptr + 0x150, width, icon_index + 16);
+
   dialogue_msg_dst_offs++;
 }
 
@@ -2767,10 +2759,12 @@ void RenderText_Draw_Choose1Or2() {  // 8ecf72
 }
 
 void RenderText_Draw_Scroll() {  // 8ecfe2
-  uint8 r2 = byte_7E1CEA;
+  int n = render_vwf_scroll_speed;
   do {
-    for (int i = 0; i < 0x7e0; i += 16) {
-      uint16 *p = (uint16 *)((uint8 *)messaging_buf + i);
+    // Scroll up one line for each of the 21x6 sprites
+    for (size_t i = 0; i < 21 * 6; i++) {
+      uint16 *p = (uint16 *)((uint8 *)messaging_buf + i * 16);
+      // move each sprite up one line
       p[0] = p[1];
       p[1] = p[2];
       p[2] = p[3];
@@ -2778,11 +2772,27 @@ void RenderText_Draw_Scroll() {  // 8ecfe2
       p[4] = p[5];
       p[5] = p[6];
       p[6] = p[7];
-      p[7] = p[168];
+      p[7] = p[0x15 * 8];
     }
+    // Clear the last line (p[7] above) for the bottom-most set of sprites
     uint16 *p = messaging_buf;
-    for (int i = 0x34f; i <= 0x3ef; i += 8)
-      p[i] = 0;
+    for (size_t i = (21 * 5) * 8; i < (21 * 6) * 8; i += 8)
+      p[i + 7] = 0;
+
+    if (kPpuUpsample2x2) {
+      for (size_t i = 0; i < 21 * 6; i++) {
+        uint64 *p = (uint64 *)((uint8*)g_zenv.ext_vram + (256 * 384) / 2 + i * 128);
+        for (size_t j = 0; j < 15; j++) {
+          p[j + 0] = p[j + 2];
+          p[j + 1] = p[j + 3];
+        }
+        p[14] = p[0x15 * 128 / 8 + 0];
+        p[15] = p[0x15 * 128 / 8 + 1];
+      }
+      uint64 *p = (uint64 *)((uint8 *)g_zenv.ext_vram + (256 * 384) / 2);
+      for (size_t i = (21 * 5) * 16; i < (21 * 6) * 16; i += 16)
+        p[i + 14] = p[i + 15] = 0;
+    }
 
     if ((++byte_7E1CDF & 0xf) == 0) {
       dialogue_msg_dst_offs++;
@@ -2792,7 +2802,7 @@ void RenderText_Draw_Scroll() {  // 8ecfe2
       text_next_position = 0;
       break;
     }
-  } while (r2--);
+  } while (n--);
 }
 
 void RenderText_Draw_Command7B() {  // 8ed18d
@@ -2818,7 +2828,10 @@ void RenderText_Draw_ABunchOfSpaces() {  // 8ed1bd
 }
 
 void RenderText_Draw_EmptyBuffer() {  // 8ed1f9
-  memset(messaging_buf, 0, 0x7e0);
+  memset(messaging_buf, 0, 21 * 6 * 16);
+  if (kPpuUpsample2x2)
+    memset((uint8 *)g_zenv.ext_vram + (256 * 384) / 2, 0, 21 * 6 * 128);
+
   dialogue_msg_src_offs = 0;
   dialogue_msg_dst_offs++;
   text_next_position = 0;
@@ -2834,7 +2847,7 @@ void RenderText_DrawBorderInitialize() {  // 8ed29c
   text_msgbox_topleft_copy = text_msgbox_topleft;
 }
 
-uint16 *RenderText_DrawBorderRow(uint16 *d, int y) {  // 8ed2ab
+static uint16 *RenderText_DrawBorderRow(uint16 *d, int y) {  // 8ed2ab
   y >>= 1;
   *d++ = swap16(text_msgbox_topleft_copy);
   text_msgbox_topleft_copy += 0x20;
@@ -2928,7 +2941,7 @@ void DungMap_Backup() {  // 8ed94c
   CGWSEL_copy = 0x02;
   CGADSUB_copy = 0x20;
   for (int i = 0; i < 2048; i++)
-    messaging_buf[i] = 0x300;
+    dungmap_buf[i] = 0x300;
   sound_effect_2 = 16;
   music_control = 0xf2;
 }

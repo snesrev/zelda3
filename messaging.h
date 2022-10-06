@@ -127,7 +127,6 @@ void RenderText_Draw_ABunchOfSpaces();
 void RenderText_Draw_EmptyBuffer();
 void RenderText_SetDefaultWindowPosition();
 void RenderText_DrawBorderInitialize();
-uint16 *RenderText_DrawBorderRow(uint16 *d, int y);
 void Text_BuildCharacterTilemap();
 void RenderText_Refresh();
 void Text_GenerateMessagePointers();

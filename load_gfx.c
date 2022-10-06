@@ -6,6 +6,12 @@
 #include "player.h"
 #include "sprite.h"
 #include "assets.h"
+#include "snes/ppu.h"
+
+
+struct ImageDataX2 g_image_data_x2;
+uint16 g_cgram_data_x2[256];
+
 
 // Allow this to be overwritten
 uint16 kGlovesColor[2] = {0x52f6, 0x376};
@@ -420,7 +426,7 @@ void RecoverPegGFXFromMapping() {
     Dungeon_UpdatePegGFXBuffer(0x180, 0x0);
   else
     Dungeon_UpdatePegGFXBuffer(0x0, 0x180);
-}
+} 
 
 void LoadOverworldMapPalette() {
   memcpy(main_palette_buffer, &kOverworldMapPaletteData[overworld_screen_index & 0x40 ? 0x80 : 0], 256);
@@ -824,6 +830,7 @@ void InitializeTilesets() {  // 80e19b
   LoadSpriteGraphics(&g_zenv.vram[0x5400], sprite_gfx_subset_1, &g_ram[0x7e00]);
   LoadSpriteGraphics(&g_zenv.vram[0x5800], sprite_gfx_subset_2, &g_ram[0x8400]);
   LoadSpriteGraphics(&g_zenv.vram[0x5c00], sprite_gfx_subset_3, &g_ram[0x8a00]);
+  CONVERT_SPRITE_TO_X2(0x5000, 256);
 
   const uint8 *mt = kMainTilesets[main_tile_theme_index];
   const uint8 *at = kAuxTilesets[aux_tile_theme_index];
@@ -841,6 +848,7 @@ void InitializeTilesets() {  // 80e19b
   LoadBackgroundGraphics(&g_zenv.vram[0x3400], aux_bg_subset_2, 2, &g_ram[0x6c00]);
   LoadBackgroundGraphics(&g_zenv.vram[0x3800], aux_bg_subset_3, 1, &g_ram[0x7200]);
   LoadBackgroundGraphics(&g_zenv.vram[0x3c00], mt[7], 0, &g_ram[0x14000]);
+  CONVERT_BG_TO_X2(0x2000, 512);
 }
 
 void LoadDefaultGraphics() {  // 80e2d0
@@ -858,19 +866,22 @@ void LoadDefaultGraphics() {  // 80e2d0
       *vram_ptr++ = src[0] | (src[0] | tmp[i]) << 8;
     }
   } while (--num);
+  CONVERT_SPRITE_TO_X2(0x4000, 64);
 
   // Load 2bpp graphics used for hud
   DecompAndUpload2bpp(&g_zenv.vram[0x7000], 0x6a);
   DecompAndUpload2bpp(&g_zenv.vram[0x7400], 0x6b);
   DecompAndUpload2bpp(&g_zenv.vram[0x7800], 0x69);
+
+  // Load the 2X hud icons
+  if (kPpuXPixels)
+    memcpy(g_zenv.ext_vram, g_image_data_x2.icons, sizeof(g_image_data_x2.icons));
 }
 
 void Attract_LoadBG3GFX() {  // 80e36d
   // load 2bpp gfx for attract images
   DecompAndUpload2bpp(&g_zenv.vram[0x7800], 0x67);
-
-  if (kPpuUpsample2x2)
-    Convert2bppToNewFormat(&g_zenv.vram[0x7800], 16 * 16 * 64, 8 * 16);
+  CONVERT_HUD_TO_X2(0x7800, 8 * 16);
 }
 
 void Graphics_LoadChrHalfSlot() {  // 80e3fa
@@ -936,6 +947,8 @@ void Graphics_LoadChrHalfSlot() {  // 80e3fa
 
 void TransferFontToVRAM() {  // 80e556
   memcpy(&g_zenv.vram[0x7000], kFontData, 0x800 * sizeof(uint16));
+  if (kPpuUpsample2x2)
+    memcpy(g_zenv.ext_vram, g_image_data_x2.font, sizeof(g_image_data_x2.font));
 }
 
 void Do3To4High(uint16 *vram_ptr, const uint8 *decomp_addr) {  // 80e5af
@@ -989,6 +1002,7 @@ void LoadCommonSprites() {  // 80e6b7
     LoadSpriteGraphics(&g_zenv.vram[0x4800], 94, &g_ram[0x14000]);
     LoadSpriteGraphics(&g_zenv.vram[0x4c00], 95, &g_ram[0x14000]);
   }
+  CONVERT_SPRITE_TO_X2(0x4400, 64 * 3);
 }
 
 int Decomp_spr(uint8 *dst, int gfx) {  // 80e772
@@ -1906,11 +1920,6 @@ void LoadGearPalettes(uint8 sword, uint8 shield, uint8 armor) {  // 8ed6e8
   flag_update_cgram_in_nmi++;
 }
 
-void LoadGearPalette(int dst, const uint16 *src, int n) {  // 8ed741
-  memcpy(&aux_palette_buffer[dst >> 1], src, sizeof(uint16) * n);
-  memcpy(&main_palette_buffer[dst >> 1], src, sizeof(uint16) * n);
-}
-
 void Filter_Majorly_Whiten_Bg() {  // 8ed757
   for (int i = 32; i < 128; i++)
     main_palette_buffer[i] = Filter_Majorly_Whiten_Color(aux_palette_buffer[i]);
@@ -2034,14 +2043,10 @@ void Palette_Load_DungeonMapBG() {  // 9bee3a
   Palette_LoadMultiple(kPalette_PalaceMapBg, 0x40, 15, 5);
 }
 
-struct Ppu;
-extern void PpuLoadHudPalette(struct Ppu *ppu);
-
 void Palette_Load_HUD() {  // 9bee52
   const uint16 *src = kHudPalData + hud_palette * 32;
   Palette_LoadMultiple(src, 0x0, 15, 1);
-
-  PpuLoadHudPalette(g_zenv.ppu);
+  LoadHudPaletteX2();
 }
 
 void Palette_Load_DungeonSet() {  // 9bee74
@@ -2147,5 +2152,72 @@ void HandleScreenFlash() {  // 9de9b6
     Palette_Restore_BG_From_Flash();
 
   flag_update_cgram_in_nmi++;
+}
+
+
+void LoadImageFilesX2() {
+  FILE *f = fopen("tables/x2_icons.bin", "rb");
+  if (f) {
+    if (fread(&g_image_data_x2, 1, sizeof(g_image_data_x2), f) != sizeof(g_image_data_x2))
+      fprintf(stderr, "Unable to read all x2 icons\n");
+    fclose(f);
+  } else {
+    printf("Error reading bitmap!\n");
+  }
+  f = fopen("tables/x2_icons.pal", "rb");
+  if (f) {
+    fread(g_cgram_data_x2, 1, sizeof(g_cgram_data_x2), f);
+    fclose(f);
+  } else {
+    printf("Error reading palette!\n");
+  }
+  LoadHudPaletteX2();
+  LoadGraphicsExtended();
+}
+
+void LoadHudPaletteX2() {
+  struct Ppu *ppu = g_zenv.ppu;
+  ppu->cgramDirty = true;
+  memcpy(ppu->cgram + 256, g_cgram_data_x2 + hud_palette * 128, 128 * 2);
+}
+
+void LoadGraphicsExtended() {
+  // todo: fix so snapshot restore works on other places than in-game
+  struct Ppu *ppu = g_zenv.ppu;
+  memcpy(ppu->extendedVram, g_image_data_x2.icons, sizeof(g_image_data_x2.icons));
+}
+
+
+void Convert2bppToX2(const uint16 *src, uint32 dst_addr, size_t count) {
+#define DO_PIXEL(i) r += (uint64)((bits >> (7 - i)) & 1 | (bits >> (14 - i)) & 2) << (i * 8)
+  uint16 *dst = g_zenv.ext_vram + dst_addr;
+  do {
+    for (size_t j = 0; j < 8; j++) {
+      uint32 bits = *src++;
+      uint64 r = 0;
+      DO_PIXEL(0); DO_PIXEL(1); DO_PIXEL(2); DO_PIXEL(3);
+      DO_PIXEL(4); DO_PIXEL(5); DO_PIXEL(6); DO_PIXEL(7);
+      *(uint64 *)&dst[4] = *(uint64 *)&dst[0] = r + (r << 4);
+      dst += 8;
+    }
+  } while (--count);
+#undef DO_PIXEL
+}
+
+void Convert4bppToX2(const uint16 *src, uint32 dst_addr, size_t count) {
+#define DO_PIXEL(i) r += (uint64)((bits >> (7 - i)) & 1 | (bits >> (14 - i)) & 2 | (bits >> (21 - i)) & 4 | (bits >> (28 - i)) & 8) << (i * 8)
+  uint16 *dst = g_zenv.ext_vram + dst_addr;
+  do {
+    for (size_t j = 0; j < 8; j++) {
+      uint32 bits = src[0] | src[8] << 16;
+      uint64 r = 0;
+      DO_PIXEL(0); DO_PIXEL(1); DO_PIXEL(2); DO_PIXEL(3);
+      DO_PIXEL(4); DO_PIXEL(5); DO_PIXEL(6); DO_PIXEL(7);
+     // r = j&1 ? 0x23456789abcdef1 : 0x123456789abcdef;
+      *(uint64 *)&dst[4] = *(uint64 *)&dst[0] = r + (r << 4);
+      dst += 8, src += 1;
+    }
+  } while (src += 8, --count);
+#undef DO_PIXEL
 }
 

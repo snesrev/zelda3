@@ -26,7 +26,6 @@ void NMI_UpdateBGChar3();
 void NMI_UpdateObjChar0();
 void NMI_UpdateObjChar2();
 void NMI_UpdateObjChar3();
-void NMI_RunTileMapUpdateDMA(int dst);
 void NMI_UploadDarkWorldMap();
 void NMI_UploadGameOverText();
 void NMI_UpdatePegTiles();

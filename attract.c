@@ -416,7 +416,11 @@ void Attract_InitGraphics() {  // 8cee0c
   Palette_Load_OWBGMain();
   Palette_Load_HUD();
   Palette_Load_LinkArmorAndGloves();
+  // Set text color blue
   main_palette_buffer[0x1d] = 0x3800;
+  if (kPpuUpsample2x2)
+    g_zenv.cgram[0x171] = 0x3800;
+
   flag_update_cgram_in_nmi++;
   BYTE(BG3VOFS_copy2) = 20;
   Attract_BuildBackgrounds();

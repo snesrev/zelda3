@@ -827,7 +827,7 @@
 #define text_next_position (*(uint8*)(g_ram+0x1CE6))
 #define choice_in_multiselect_box (*(uint8*)(g_ram+0x1CE8))
 #define text_wait_countdown2 (*(uint8*)(g_ram+0x1CE9))
-#define byte_7E1CEA (*(uint8*)(g_ram+0x1CEA))
+#define render_vwf_scroll_speed (*(uint8*)(g_ram+0x1CEA))
 #define dialogue_message_index (*(uint16*)(g_ram+0x1CF0))
 #define byte_7E1CF2 ((uint8*)(g_ram+0x1CF2))
 #define choice_in_multiselect_box_bak (*(uint8*)(g_ram+0x1CF4))
@@ -1355,7 +1355,11 @@
 #define scratch_0 (*(uint16*)(g_ram+0x72))
 #define scratch_1 (*(uint16*)(g_ram+0x74))
 #define srm_var1 (*(uint16*)(g_zenv.sram+0x1ffe))
+
+// These share the same memory
 #define messaging_buf ((uint16*)(g_ram+0x10000))
+#define dungmap_buf ((uint16*)(g_ram+0x10000))
+
 #define quake_arr1 ((uint8*)(g_ram+0x15800))
 #define quake_arr2 ((uint8*)(g_ram+0x15805))
 #define quake_var5 (*(uint8*)(g_ram+0x1580A))

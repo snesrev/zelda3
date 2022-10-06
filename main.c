@@ -60,7 +60,7 @@ static int g_input1_state;
 static bool g_display_perf;
 static int g_curr_fps;
 static int g_ppu_render_flags = 0;
-static bool g_run_without_emu = false;
+static bool g_run_without_emu = 0;
 static int g_snes_width, g_snes_height;
 static int g_sdl_audio_mixer_volume = SDL_MIX_MAXVOLUME;
 
@@ -208,6 +208,8 @@ int main(int argc, char** argv) {
   LoadLinkGraphics();
 
   ZeldaInitialize();
+  LoadImageFilesX2();
+
   g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
   g_snes_width = 2 * (g_config.extended_aspect_ratio * 2 + 256);
   g_snes_height = (g_config.extend_y ? 240 : 224) * 2;
@@ -392,7 +394,7 @@ int main(int argc, char** argv) {
       continue;
     }
 
-    RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
+    RenderScreen(window, renderer, texture, (g_win_flags &SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
     SDL_RenderPresent(renderer); // vsyncs to 60 FPS?
 
     // if vsync isn't working, delay manually
@@ -596,10 +598,9 @@ static void HandleCommand_Locked(uint32 j, bool pressed) {
   }
 }
 
-extern void ReloadExternalImageFiles(Ppu *ppu);
 static void HandleInput(int keyCode, int keyMod, bool pressed) {
   if (keyCode == SDLK_SPACE)
-    ReloadExternalImageFiles(g_zenv.ppu);
+    LoadImageFilesX2(g_zenv.ppu);
   
   int j = FindCmdForSdlKey(keyCode, keyMod);
   if (j >= 0)

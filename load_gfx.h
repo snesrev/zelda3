@@ -126,7 +126,6 @@ void LoadActualGearPalettes();
 void Palette_ElectroThemedGear();
 void LoadGearPalettes_bunny();
 void LoadGearPalettes(uint8 sword, uint8 shield, uint8 armor);
-void LoadGearPalette(int dst, const uint16 *src, int n);
 void Filter_Majorly_Whiten_Bg();
 uint16 Filter_Majorly_Whiten_Color(uint16 c);
 void Palette_Restore_BG_From_Flash();

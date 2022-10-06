@@ -14,7 +14,7 @@ PATH=''
 
 parser = argparse.ArgumentParser(description='Extract resources.')
 parser.add_argument('rom', nargs='?', help='the rom file')
-parser.add_argument('--convert-hud-icons', action='store_true', help='only convert hud icons')
+parser.add_argument('--convert-x2-icons', action='store_true', help='convert X2 icons')
 parser.add_argument('--fix-palette', action='store_true', help='only fix palette')
 args = parser.parse_args()
 
@@ -695,11 +695,18 @@ def decode_hud_icons():
 
     for i in range(128):
       pal_base = pu.get(slot * 128 + i) * 16
-      x = i % 16
-      y = i // 16
+      x, y = i % 16, i // 16
       decomp_one_spr_2bit(data, i * 16, dst, x * 8 + y * 8 * 128 + slot * 128 * 64, 128, pal_base)
   save_array_as_image((128, 64 * 3), dst, 'hud_icons.png', convert_snes_palette(get_hud_snes_palette()[:128]))
 
+def decode_font():
+  data = ROM.get_bytes(0xe8000, 2048 * 2)
+  dst=[0]*128*64*2
+  for i in range(256):
+    x, y = i % 16, i // 16
+    pal_base = 6 * 16
+    decomp_one_spr_2bit(data, i * 16, dst, x * 8 + y * 8 * 128, 128, pal_base)
+  save_array_as_image((128, 64 * 2), dst, 'font.png', convert_snes_palette(get_hud_snes_palette()[:128]))
 
 def fix_palette(iconfile):
   img_orig = Image.open('hud_icons_orig.png').tobytes()
@@ -741,12 +748,7 @@ def fix_palette(iconfile):
 
   save_array_as_image((256, 128 * 3), data, 'hud_icons_fixed.png', convert_snes_palette(get_hud_snes_palette()[:128]))
 
-def convert_hud_icons(iconfile):
-  # Convert to the new 4bpp ppu format
-  img = Image.open(iconfile)
-  data = img.tobytes()
-  palette = img.palette.tobytes()
-  out = []
+def append_4bpp_tiles_to_binary_x2(data, tiles_w, tiles_h):
   def pack_pixels_4bpp(a):
     r = []
     for i in range(len(a) // 2):
@@ -758,22 +760,41 @@ def convert_hud_icons(iconfile):
       for x in range(16):
         pixels.append(data[pos + y * 256 + x])
     return pack_pixels_4bpp(pixels)
-  for yo in range(24):
-    for xo in range(16):
+  out = []
+  for yo in range(tiles_h):
+    for xo in range(tiles_w):
       out.extend(convert_single_16x16(data, yo * 256 * 16 + xo * 16))
-  open('hud_icons_binary.bin', 'wb').write(bytes(out))
+  return out
+
+def convert_x2_icons_to_binary():
+  # Convert to the new 4bpp ppu format
+  out  = []
+
+  img = Image.open('hud_icons_x2.png')
+  img_data, img_palette = img.tobytes(), img.palette.tobytes() # need to call palette last, wtf
+  out.extend(append_4bpp_tiles_to_binary_x2(img_data, 16, 24))
+
+  img = Image.open('hud_font_x2.png')
+  out.extend(append_4bpp_tiles_to_binary_x2(img.tobytes(), 16, 16))
+
+  img = Image.open('linksprite_x2.png')
+  out.extend(append_4bpp_tiles_to_binary_x2(img.tobytes(), 16, 56))
+
+  open('x2_icons.bin', 'wb').write(bytes(out))
 
   snespal = []
   for i in range(128):
-    r, g, b = palette[i * 3 + 0], palette[i * 3 + 1], palette[i * 3 + 2]
+    r, g, b = img_palette[i * 3 + 0], img_palette[i * 3 + 1], img_palette[i * 3 + 2]
     snespal.append((b >> 3) << 10 | (g >> 3) << 5 | (r >> 3))
   snespal.extend(get_hud_snes_palette()[128:])
-  open('hud_icons_binary.pal', 'wb').write(array.array('H', snespal).tobytes())
+  open('x2_icons.pal', 'wb').write(array.array('H', snespal).tobytes())
 
-if args.convert_hud_icons:
-  convert_hud_icons('hud_icons_new.png')
+
+if args.convert_x2_icons:
+  convert_x2_icons_to_binary()
 elif args.fix_palette:
 #  decode_hud_icons()
   fix_palette('hud_icons_broken.png')
 else:
-  print_all()
+  #print_all()
+  decode_font()

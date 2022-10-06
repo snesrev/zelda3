@@ -18,6 +18,8 @@ typedef struct ZeldaEnv {
   uint8 *ram;
   uint8 *sram;
   uint16 *vram;
+  uint16 *ext_vram;
+  uint16 *cgram;
   struct Ppu *ppu;
   struct SpcPlayer *player;
   struct Dma *dma;
@@ -76,6 +78,34 @@ typedef void ZeldaSyncAllFunc();
 
 void ZeldaSetupEmuCallbacks(uint8 *emu_ram, ZeldaRunFrameFunc *func, ZeldaSyncAllFunc *sync_all);
 
-void Convert2bppToNewFormat(const uint16 *src, uint32 dst_addr, size_t count);
+void Convert2bppToX2(const uint16 *src, uint32 dst_addr, size_t count);
+void Convert4bppToX2(const uint16 *src, uint32 dst_addr, size_t count);
+
+// BG uses 0x2xxx, 0x3xxxx
+#define GET_BG_ADDR_X2(addr) (0x10000 + ((addr) - 0x2000) * 4)
+#define CONVERT_BG_TO_X2(addr, count) do { if (kPpuUpsample2x2) Convert4bppToX2(&g_zenv.vram[addr], GET_BG_ADDR_X2(addr), count); } while(0)
+
+// Sprites use 0x4xxx, 0x5xxx
+#define GET_SPRITE_ADDR_X2(addr) (0x8000 + ((addr) - 0x4000) * 4)
+#define CONVERT_SPRITE_TO_X2(addr, count) do { if (kPpuUpsample2x2) Convert4bppToX2(&g_zenv.vram[addr], GET_SPRITE_ADDR_X2(addr), count); } while(0)
+
+// HUD uses 0x7xxx
+#define CONVERT_HUD_TO_X2(addr, count) do { if (kPpuUpsample2x2) Convert2bppToX2(&g_zenv.vram[addr], ((addr) - 0x7000) * 8, count); } while (0)
+
+
+void LoadHudPaletteX2();
+void LoadGraphicsExtended();
+void LoadImageFilesX2();
+
+
+// For the upsampled hud
+struct ImageDataX2 {
+  uint8 icons[3][256 * 128 / 2];
+  uint8 font[256 * 256 / 2];
+  uint8 link_sprite[896][128];
+};
+
+extern struct ImageDataX2 g_image_data_x2;
+extern uint16 g_cgram_data_x2[256];
 
 #endif  // ZELDA3_ZELDA_RTL_H_
