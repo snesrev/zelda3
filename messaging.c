@@ -2220,6 +2220,12 @@ void CopySaveToWRAM() {  // 8ccfbb
   word_7E021F = 0x7f;
   word_7E0221 = 0xffff;
 
+  // If you save / quit in the middle of a mosaic effect, such as
+  // being electrocuted by a buzz blob, the resumed game will skip
+  // the location prompt and start in the sanctuary.
+  if (enhanced_features0 & kFeatures0_MiscBugFixes)
+    mosaic_level = 0;
+
   hud_var1 = 128;
   main_module_index = 5;
   submodule_index = 0;
