@@ -1359,7 +1359,12 @@ void LinkState_Pits() {  // 8792d3
   } else {
     if (!link_is_running)
       goto aux_state;
-    if (link_countdown_for_dash) {
+    // If you use a turbo controller to perfectly spam the dash button,
+    // the check for Link being in a hole is endlessly skipped and you
+    // can levitate across chasms.
+    // Fix this by ensuring that the dash button is held down before proceeding to the dash state.
+    if (link_countdown_for_dash &&
+        (!(enhanced_features0 & kFeatures0_MiscBugFixes) || (joypad1L_last & 0x80))) {
       LinkState_Dashing();
       return;
     }
@@ -1444,6 +1449,8 @@ endif_1:
     ApplyLinksMovementToCamera();
     return;
   }
+
+  // Initiate fall down
   if (player_near_pit_state != 2) {
     if (link_item_moon_pearl) {
       link_need_for_poof_for_transform = 0;
