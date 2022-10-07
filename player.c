@@ -3197,7 +3197,9 @@ void LinkItem_Cape() {  // 87adc1
     link_direction &= ~0xf;
     if (!--cape_decrement_counter) {
       cape_decrement_counter = kCapeDepletionTimers[link_magic_consumption];
-      if (!--link_magic_power) {
+      // Avoid magic underflow if an anti-fairy consumes magic.
+      if (link_magic_power == 0 && (enhanced_features0 & kFeatures0_MiscBugFixes) ||
+          !--link_magic_power) {
         Link_ForceUnequipCape();
         return;
       }
