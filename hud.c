@@ -608,7 +608,7 @@ static void Hud_EquipItemBelow(uint8 *item) {  // 8ddf00
 void Hud_NormalMenu() {  // 8ddf15
   timer_for_flashing_circle++;
   if (!BYTE(joypad1H_last))
-    BYTE(tmp1) = 0;
+    BYTE(hud_tmp1) = 0;
 
   if (filtered_joypad_H & 0x10) {  // start
     overworld_map_state = 5;
@@ -634,7 +634,7 @@ void Hud_NormalMenu() {  // 8ddf15
     } else if (filtered_joypad_H & 1) {
       Hud_ReorderItem(1);
     }
-  } else if (!BYTE(tmp1)) {
+  } else if (!BYTE(hud_tmp1)) {
     // If the x button is down, then move the blue circle
     uint8 *item_p = (joypad1L_last & 0x40 && (enhanced_features0 & kFeatures0_SwitchLR)) ? &hud_cur_item_x : &hud_cur_item;
     uint16 old_item = *item_p;
@@ -647,7 +647,7 @@ void Hud_NormalMenu() {  // 8ddf15
     } else if (filtered_joypad_H & 1) {
       Hud_EquipNextItem(item_p);
     }
-    BYTE(tmp1) = filtered_joypad_H;
+    BYTE(hud_tmp1) = filtered_joypad_H;
     if (*item_p != old_item) {
       timer_for_flashing_circle = 16;
       sound_effect_2 = 32;
