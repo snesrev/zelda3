@@ -642,8 +642,6 @@ void LinkState_Recoil() {  // 8786b5
         t >>= 1;
       } while (!--s); // wtf?
       link_actual_vel_z = t;
-      if (t == 0)
-        link_recoilmode_timer = 3;
     } else {
       link_recoilmode_timer = 3;
     }
