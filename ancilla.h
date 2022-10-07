@@ -219,7 +219,7 @@ void AncillaAdd_ChargedSpinAttackSparkle();
 void AncillaAdd_ExplodingWeatherVane(uint8 a, uint8 y);
 void AncillaAdd_CutsceneDuck(uint8 a, uint8 y);
 void AncillaAdd_SomariaPlatformPoof(int k);
-void AncillaAdd_SuperBombExplosion(uint8 a, uint8 y);
+int AncillaAdd_SuperBombExplosion(uint8 a, uint8 y);
 void ConfigureRevivalAncillae();
 void AncillaAdd_LampFlame(uint8 a, uint8 y);
 void AncillaAdd_MSCutscene(uint8 a, uint8 y);

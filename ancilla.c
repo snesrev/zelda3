@@ -5377,7 +5377,10 @@ void Ancilla3A_BigBombExplosion(int k) {  // 88f18d
   }
   if (ancilla_item_to_link[k] == 3 && ancilla_arr3[k] == 1) {
     Bomb_CheckForDestructibles(Ancilla_GetX(k), Ancilla_GetY(k), 0); // r14?
-    follower_indicator = 0;
+
+    // Changed so this is reset elsewhere
+    if (!(enhanced_features0 & kFeatures0_MiscBugFixes))
+      follower_indicator = 0;
   }
 }
 
@@ -6086,7 +6089,7 @@ void AncillaAdd_SomariaPlatformPoof(int k) {  // 898dd2
   Player_TileDetectNearby();
 }
 
-void AncillaAdd_SuperBombExplosion(uint8 a, uint8 y) {  // 898df9
+int AncillaAdd_SuperBombExplosion(uint8 a, uint8 y) {  // 898df9
   int k = Ancilla_AddAncilla(a, y);
   if (k >= 0) {
     ancilla_R[k] = 0;
@@ -6100,6 +6103,7 @@ void AncillaAdd_SuperBombExplosion(uint8 a, uint8 y) {  // 898df9
     int x = tagalong_x_lo[j] | tagalong_x_hi[j] << 8;
     Ancilla_SetXY(k, x + 8, y + 16);
   }
+  return k;
 }
 
 void ConfigureRevivalAncillae() {  // 898e4e

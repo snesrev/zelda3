@@ -426,8 +426,23 @@ void Follower_NotFollowing() {  // 89a2b2
     Tagalong_Draw();
   } else {
     if (follower_indicator == 13 && !player_is_indoors && !super_bomb_indicator_unk2) {
-      AncillaAdd_SuperBombExplosion(0x3a, 0);
-      follower_dropped = 0;
+      // Fixed so we wait a little bit if we can't spawn the ancilla
+      if (AncillaAdd_SuperBombExplosion(0x3a, 0) >= 0) {
+        follower_dropped = 0;
+
+        // A ticking super bomb will cancel and teleport back to you as a follower if you do
+        // any of these at count 0: (1) change screen via walking, mirror, or bird travel
+        // (2) fill all ancillary slots
+        // (3) die with a bottled faerie.
+        // Fixed this by clearing the follower indicator here, instead of in the ancilla
+        // bomb code.
+        if (enhanced_features0 & kFeatures0_MiscBugFixes) {
+          follower_indicator = 0;
+          return;
+        }
+      } else {
+        super_bomb_indicator_unk1 = 1;
+      }
     }
     Follower_DoLayers();
   }
@@ -650,8 +665,11 @@ skip_first_sprites:
   if (pal == 7 && overworld_palette_swap_flag)
     pal = 0;
 
-  if (follower_indicator == 13 && super_bomb_indicator_unk2 == 1)
-    pal = (frame_counter & 7);
+  if (follower_indicator == 13) {
+    // Display colorful superbomb palette also on frame 0.
+    if (enhanced_features0 & kFeatures0_MiscBugFixes ? (super_bomb_indicator_unk2 <= 1) : (super_bomb_indicator_unk2 == 1))
+     pal = (frame_counter & 7);
+  }
 
   const TagalongSprXY *sprd = kTagalongDraw_SprXY + frame + (kTagalongDraw_Offs[follower_indicator] >> 3);
   const TagalongDmaFlags *sprf = kTagalongDmaAndFlags + frame;
