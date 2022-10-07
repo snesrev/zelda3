@@ -3260,18 +3260,30 @@ void LinkItem_CaneOfSomaria() {  // 87aec0
     if (player_on_somaria_platform || is_standing_in_doorway || !CheckYButtonPress())
       return;
     int i = 4;
+    bool did_charge_magic = false;
+
     while (ancilla_type[i] != 0x2c) {
       if (--i < 0) {
         if (!LinkCheckMagicCost(4)) {
+          // If you use the Cane of Somaria with an empty magic meter,
+          // then quickly switch to the mushroom or magic powder after
+          // the "no magic" prompt, you will automatically sprinkle magic powder
+          // despite pressing no button and having no magic.
           if (enhanced_features0 & kFeatures0_MiscBugFixes)
             goto out;
           return;
         }
+        did_charge_magic = true;
         break;
       }
     }
     link_debug_value_2 = 1;
-    AncillaAdd_SomariaBlock(44, 1);
+    if (AncillaAdd_SomariaBlock(0x2c, 1) < 0) {
+      // If you use the Cane of Somaria while two bombs and the boomerang are active,
+      // magic will be refunded instead of used.
+      if (did_charge_magic || !(enhanced_features0 & kFeatures0_MiscBugFixes))
+        Refund_Magic(4);
+    }
     link_delay_timer_spin_attack = kRodAnimDelays[0];
     link_animation_steps = 0;
     player_handler_timer = 0;

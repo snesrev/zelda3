@@ -4753,12 +4753,10 @@ endif_5:
   }
 }
 
-void AncillaAdd_SomariaBlock(uint8 type, uint8 y) {  // 88e078
+int AncillaAdd_SomariaBlock(uint8 type, uint8 y) {  // 88e078
   int k = AncillaAdd_AddAncilla_Bank08(type, y);
-  if (k < 0) {
-    Refund_Magic(4);
-    return;
-  }
+  if (k < 0)
+    return k;
   for (int j = 4; j >= 0; j--) {
     if (j == k || ancilla_type[j] != 0x2c)
       continue;
@@ -4771,7 +4769,7 @@ void AncillaAdd_SomariaBlock(uint8 type, uint8 y) {  // 88e078
       bitmask_of_dragstate = 0;
       link_speed_setting = 0;
     }
-    return;
+    return k;
   }
 
   Ancilla_Sfx3_Near(0x2a);
@@ -4804,6 +4802,7 @@ void AncillaAdd_SomariaBlock(uint8 type, uint8 y) {  // 88e078
     Ancilla_SetY(k, link_y_coord + kCaneOfSomaria_Y[j]);
     SomariaBlock_CheckForTransitTile(k);
   }
+  return k;
 }
 
 void SomariaBlock_CheckForTransitTile(int k) {  // 88e191

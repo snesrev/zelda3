@@ -173,7 +173,7 @@ void Ancilla31_ByrnaSpark(int k);
 void Ancilla_SwordBeam(int k);
 void Ancilla0D_SpinAttackFullChargeSpark(int k);
 void Ancilla27_Duck(int k);
-void AncillaAdd_SomariaBlock(uint8 type, uint8 y);
+int AncillaAdd_SomariaBlock(uint8 type, uint8 y);
 void SomariaBlock_CheckForTransitTile(int k);
 int Ancilla_CheckBasicSpriteCollision(int k);
 bool Ancilla_CheckBasicSpriteCollision_Single(int k, int j);
