@@ -3262,8 +3262,11 @@ void LinkItem_CaneOfSomaria() {  // 87aec0
     int i = 4;
     while (ancilla_type[i] != 0x2c) {
       if (--i < 0) {
-        if (!LinkCheckMagicCost(4))
+        if (!LinkCheckMagicCost(4)) {
+          if (enhanced_features0 & kFeatures0_MiscBugFixes)
+            goto out;
           return;
+        }
         break;
       }
     }
@@ -3289,8 +3292,9 @@ void LinkItem_CaneOfSomaria() {  // 87aec0
   player_handler_timer = 0;
   link_delay_timer_spin_attack = 0;
   link_debug_value_2 = 0;
-  button_mask_b_y &= ~0x40;
   link_position_mode &= ~8;
+out:
+  button_mask_b_y &= ~0x40;
 }
 
 void LinkItem_CaneOfByrna() {  // 87af3e
