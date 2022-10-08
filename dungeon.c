@@ -8591,7 +8591,7 @@ void HandleLinkOnSpiralStairs() {  // 87f2c1
       link_actual_vel_x = 2;
     }
   }
-  LinkHop_FindArbitraryLandingSpot();
+  Link_MovePosition();
   Link_HandleMovingAnimation_StartWithDash();
   if (!link_timer_push_get_tired && sign8(--countdown_timer_for_staircases)) {
     countdown_timer_for_staircases = 0;
@@ -8630,7 +8630,7 @@ void SpiralStairs_FindLandingSpot() {  // 87f391
     link_actual_vel_x = -4, link_actual_vel_y = 2;
   if (some_animation_timer_steps == 2)
     link_actual_vel_x = 0, link_actual_vel_y = 16;
-  LinkHop_FindArbitraryLandingSpot();
+  Link_MovePosition();
   Link_HandleMovingAnimation_StartWithDash();
   if ((uint8)link_x_coord == (uint8)tiledetect_which_y_pos[1])
     some_animation_timer_steps = 2;

@@ -207,7 +207,7 @@ void FlagMovingIntoSlopes_X();
 void Link_HandleRecoiling();
 void Player_HandleIncapacitated_Inner2();
 void Link_HandleVelocity();
-void LinkHop_FindArbitraryLandingSpot();
+void Link_MovePosition();
 void Link_HandleVelocityAndSandDrag(uint16 x, uint16 y);
 void HandleSwimStrokeAndSubpixels();
 void Player_SomethingWithVelocity_TiredOrSwim(uint16 xvel, uint16 yvel);

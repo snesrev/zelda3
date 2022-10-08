@@ -737,7 +737,7 @@ lbl_jump_into_middle:
     if ((link_direction & 0xc) == 0)
       link_actual_vel_y = 0;
   }
-  LinkHop_FindArbitraryLandingSpot(); // not
+  Link_MovePosition(); // not
 timer_running:
   if (link_player_handler_state != 6) {
     Link_HandleCardinalCollision(); // not
@@ -791,7 +791,7 @@ void LinkHop_HoppingSouthOW() {  // 87894e
   link_actual_vel_z_copy = link_actual_vel_z_copy_mirror;
   link_z_coord = link_z_coord_mirror;
   link_actual_vel_z -= 2;
-  LinkHop_FindArbitraryLandingSpot();
+  Link_MovePosition();
   if (sign8(link_actual_vel_z)) {
     if (link_actual_vel_z < 0xa0)
       link_actual_vel_z = 0xa0;
@@ -827,7 +827,7 @@ void LinkState_HandlingJump() {  // 878a05
   link_actual_vel_z_copy = link_actual_vel_z_copy_mirror;
   BYTE(link_z_coord) = link_z_coord_mirror;
   link_actual_vel_z -= 2;
-  LinkHop_FindArbitraryLandingSpot();
+  Link_MovePosition();
   if (sign8(link_actual_vel_z)) {
     if (link_actual_vel_z < 0xa0)
       link_actual_vel_z = 0xa0;
@@ -1014,7 +1014,7 @@ finish:
 void LinkState_HoppingDiagonallyUpOW() {  // 878dc6
   draw_water_ripples_or_grass = 0;
   Player_ChangeZ(2);
-  LinkHop_FindArbitraryLandingSpot();
+  Link_MovePosition();
   if (sign8(link_z_coord)) {
     Link_SplashUponLanding();
     if (link_player_handler_state != kPlayerState_Swimming && !link_is_in_deep_water)
@@ -2743,7 +2743,7 @@ void LinkState_UsingQuake() {  // 87a6d6
     BYTE(link_z_coord) = link_z_coord_mirror;
     link_auxiliary_state = 2;
     Player_ChangeZ(2);
-    LinkHop_FindArbitraryLandingSpot();
+    Link_MovePosition();
     link_actual_vel_z_mirror = link_actual_vel_z;
     link_actual_vel_z_copy_mirror = link_actual_vel_z_copy;
     BYTE(link_z_coord_mirror) = link_z_coord;
@@ -3151,7 +3151,7 @@ void LinkState_Hookshotting() {  // 87ab7c
   }
   return;
 loc_87AD49:
-  LinkHop_FindArbitraryLandingSpot();
+  Link_MovePosition();
   TileDetect_MainHandler(5);
   if (player_is_indoors) {
     uint8 x = tiledetect_vertical_ledge >> 4 | tiledetect_vertical_ledge | detection_of_ledge_tiles_horiz_uphoriz;
@@ -3733,7 +3733,7 @@ reset_to_normal:
   if (!(link_direction & 0xc))
     link_actual_vel_y = 0;
 out:
-  LinkHop_FindArbitraryLandingSpot();
+  Link_MovePosition();
 out2:
   Link_HandleCardinalCollision();
   HandleIndoorCameraAndDoors();
@@ -5702,10 +5702,10 @@ void Link_HandleVelocity() {  // 87e245
   link_actual_vel_z = 0xff;
   link_z_coord = 0xffff;
   link_subpixel_z = 0;
-  LinkHop_FindArbitraryLandingSpot();
+  Link_MovePosition();
 }
 
-void LinkHop_FindArbitraryLandingSpot() {  // 87e370
+void Link_MovePosition() {  // 87e370
   uint16 x = link_x_coord, y = link_y_coord;
   link_y_coord_safe_return_lo = link_y_coord;
   link_y_coord_safe_return_hi = link_y_coord >> 8;
