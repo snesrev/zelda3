@@ -11804,6 +11804,12 @@ void Sprite_D8_Heart(int k) {  // 86cec0
   if (Sprite_ReturnIfInactive(k))
     return;
   Sprite_CheckAbsorptionByPlayer(k);
+
+  // Avoid calling Sprite_HandleAbsorptionByPlayer twice, it's called
+  // also from within Sprite_HandleDraggingByAncilla
+  if (sprite_state[k] == 0 && (enhanced_features0 & kFeatures0_MiscBugFixes))
+    return;
+
   if (Sprite_HandleDraggingByAncilla(k))
     return;
   Sprite_MoveXY(k);
