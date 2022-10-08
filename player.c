@@ -1041,9 +1041,15 @@ void LinkState_HoppingDiagonallyDownOW() {  // 878e15
     LinkHop_FindLandingSpotDiagonallyDown();
     link_x_coord = old_x;
 
-    static const uint8 kLedgeVelX[] = { 4, 4, 4, 10, 10, 10, 11, 18, 18, 18, 20, 20, 20, 20, 22, 22, 26, 26, 26, 26, 28, 28, 28, 28 };
+    static const uint8 kLedgeVelX[] = { 
+      4, 4, 4, 10, 10, 10, 11, 18,
+      18, 18, 20, 20, 20, 20, 22, 22,
+      26, 26, 26, 26, 28, 28, 28, 28
+    };
 
-    int8 velx = kLedgeVelX[(uint16)(link_y_coord - link_y_coord_original) >> 3];
+    int t = (uint16)(link_y_coord - link_y_coord_original);
+    // Fix out of bounds read
+    int8 velx = kLedgeVelX[IntMin(t >> 3, 23)];
     link_actual_vel_x = (dir != 2) ? velx : -velx;
     if (!player_is_indoors)
       link_is_on_lower_level = 2;
@@ -5124,11 +5130,17 @@ void StartMovementCollisionChecks_X_HandleOutdoors() {  // 87c8e9
     return;
   } // endif_8
 
-  if ((R14 & 2) == 0 && (R12 & 5) != 0 && (!link_is_running || (link_direction_facing & 4))) {
-    FlagMovingIntoSlopes_X();
-    if ((link_moving_against_diag_tile & 0xf) != 0)
-      return;
-  }  // endif_9
+  // If force facing down (hold B button), while turboing on the Run key, we'll never
+  // reach FlagMovingIntoSlopes_X causing a Dash Buffering glitch.
+  // Fix by always calling it, not sure why you wouldn't always want to call it.
+  if ((R14 & 2) == 0 && (R12 & 5) != 0) {
+    bool skip_check = link_is_running && !(link_direction_facing & 4);
+    if (!skip_check || (enhanced_features0 & kFeatures0_MiscBugFixes)) {
+      FlagMovingIntoSlopes_X();
+      if ((link_moving_against_diag_tile & 0xf) != 0)
+        return;
+    }  // endif_9
+  }
 
   link_moving_against_diag_tile = 0;
 
@@ -5239,8 +5251,9 @@ void Link_HandleDiagonalKickback() {  // 87ccab
     static const int8 x1[] = { 0, -1, -1, -1, -2, -2, -2, -3, -3, -3 };
     link_x_coord += sign8(link_x_vel) ? x1[-(int8)link_x_vel] : x0[link_x_vel];
 
-    static const int8 y0[] = { 0, 0, 0, 1, 1, 1, 2, 2, 2, 3 };
-    static const int8 y1[] = { 0, 1, 1, 2, 2, 2, 3, 3, 3, 3 };
+    static const int8 y0[10] = { 0, 0, 0, 1, 1, 1, 2, 2, 2, 3 };
+    // Bug in zelda, might read index 15
+    static const int8 y1[16] = { 0, 1, 1, 2, 2, 2, 3, 3, 3, 3, 0xa5, 0x30, 0xf0, 0x04, 0xa5, 0x31 };
     link_y_coord += sign8(link_y_vel) ? y1[-(int8)link_y_vel] : y0[link_y_vel];
   } else {
 noHorizOrNoVertical:
@@ -5536,12 +5549,25 @@ void FlagMovingIntoSlopes_Y() {  // 87e076
   if (tiledetect_diagonal_tile & 5) {
     int8 ym = tiledetect_which_y_pos[0] & 7;
 
-    if (!(tiledetect_diag_state & 2)) {
-      ym = 8 - ym;
+    if (enhanced_features0 & kFeatures0_MiscBugFixes) {
+      if (tiledetect_diag_state & 2) {
+        ym = -ym;
+      } else {
+        ym = kAvoidJudder1[o] - (8 - ym);
+      }
     } else {
-      ym += 8;
+      // This code is bad because it could cause the player
+      // to move up to 15 pixels, causing an array out bounds read.
+      // Not sure how it works, but changed it to look more like the X version.
+      if (!(tiledetect_diag_state & 2)) {
+        ym = 8 - ym; // 0 to 8
+      } else {
+        ym += 8; // 8 to 15
+      }
+      // -15 to 7
+      ym = kAvoidJudder1[o] - ym;
     }
-    ym = kAvoidJudder1[o] - ym;
+
     if (link_y_vel == 0)
       return;
     if (sign8(link_y_vel))
@@ -5573,12 +5599,9 @@ void FlagMovingIntoSlopes_X() {  // 87e112
     int8 xm = link_x_coord & 7;
 
     if (tiledetect_diag_state != 4 && tiledetect_diag_state != 6) {
-      o ^= 7;
       xm = -xm;
     } else {
-      xm -= 8;
-      xm = -xm;
-      xm = kAvoidJudder1[o] - xm;
+      xm = kAvoidJudder1[o] - (8 - xm);
     } // endif_5
     if (link_x_vel == 0)
       return;
