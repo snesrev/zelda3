@@ -4284,6 +4284,14 @@ void Dungeon_FlipCrystalPegAttribute() {  // 81c22a
 void Dungeon_HandleRoomTags() {  // 81c2fd
   if (!flag_skip_call_tag_routines) {
     Dungeon_DetectStaircase();
+
+    // Dungeon_DetectStaircase might change the submodule, so avoid
+    // calling the tag routines cause they could also change the submodule,
+    // causing items to spawn in incorrect locations cause link_x/y_coord gets
+    // out of sync if you enter a staircase exactly when a room tag triggers.
+    if (enhanced_features0 & kFeatures0_MiscBugFixes && submodule_index != 0)
+      return;
+
     g_ram[14] = 0;
     kDungTagroutines[dung_hdr_tag[0]](0);
     g_ram[14] = 1;
