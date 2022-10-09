@@ -46,12 +46,14 @@ static void MakeSnapshot(Snapshot *s) {
   memcpy(s->ram, g_snes->ram, 0x20000);
   memcpy(s->sram, g_snes->cart->ram, g_snes->cart->ramSize);
   memcpy(s->vram, g_snes->ppu->vram, sizeof(uint16) * 0x8000);
+  memcpy(s->ram + 0x1DBA0, s->ram + 0x1B00, 224 * 2);  // hdma_table (partial)
 }
 
 static void MakeMySnapshot(Snapshot *s) {
   memcpy(s->ram, g_zenv.ram, 0x20000);
   memcpy(s->sram, g_zenv.sram, 0x2000);
   memcpy(s->vram, g_zenv.ppu->vram, sizeof(uint16) * 0x8000);
+  memcpy(s->ram + 0x1B00, s->ram + 0x1DBA0, 224 * 2);  // hdma_table (partial)
 }
 
 static void RestoreMySnapshot(Snapshot *s) {
@@ -105,10 +107,8 @@ static void VerifySnapshotsEq(Snapshot *b, Snapshot *a, Snapshot *prev) {
   memcpy(&b->ram[0x1f0d], &a->ram[0x1f0d], 0x3f - 0xd);
   memcpy(b->ram + 0x138, a->ram + 0x138, 256 - 0x38); // copy the stack over
 
-  memcpy(a->ram + 0x1DBA0, b->ram + 0x1DBA0, 240 * 2);  // hdma_table
-  memcpy(b->ram + 0x1B00, b->ram + 0x1DBA0, 224 * 2);  // hdma_table (partial)
-
   memcpy(a->ram + 0x1cc0, b->ram + 0x1cc0, 2);  // some leftover stuff in hdma table
+  memcpy(a->ram + 0x1dd60, b->ram + 0x1dd60, 16 * 2);  // some leftover stuff in hdma table
 
   if (memcmp(b->ram, a->ram, 0x20000)) {
     fprintf(stderr, "@%d: Memory compare failed (mine != theirs, prev):\n", frame_counter);
@@ -351,7 +351,7 @@ again_mine:
   VerifySnapshotsEq(&g_snapshot_mine, &g_snapshot_theirs, &g_snapshot_before);
 
   if (g_fail) {
-    //    g_fail = false;
+    g_fail = false;
     if (1) {
       RestoreMySnapshot(&g_snapshot_before);
       //SaveLoadSlot(kSaveLoad_Save, 0);
