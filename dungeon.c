@@ -2052,13 +2052,14 @@ void RoomBounds_SubA(RoomBounds *r) {
 }
 
 void Dungeon_StartInterRoomTrans_Left() {
+  assert(submodule_index == 0);
   link_quadrant_x ^= 1;
   Dungeon_AdjustQuadrant();
   RoomBounds_SubA(&room_bounds_x);
   Dung_SaveDataForCurrentRoom();
   DungeonTransition_AdjustCamera_X(link_quadrant_x ^ 1);
   HandleEdgeTransition_AdjustCameraBoundaries(3);
-  submodule_index++;
+  submodule_index = 1;
   if (link_quadrant_x) {
     RoomBounds_SubB(&room_bounds_x);
     BYTE(dungeon_room_index_prev) = dungeon_room_index;
@@ -2072,7 +2073,7 @@ void Dungeon_StartInterRoomTrans_Left() {
       }
       dungeon_room_index--;
     }
-    submodule_index += 1;
+    submodule_index = 2;
     if (room_transitioning_flags & 1) {
       link_is_on_lower_level ^= 1;
       link_is_on_lower_level_mirror = link_is_on_lower_level;
@@ -2091,13 +2092,14 @@ void Dung_StartInterRoomTrans_Left_Plus() {
 }
 
 void Dungeon_StartInterRoomTrans_Up() {
+  assert(submodule_index == 0);
   link_quadrant_y ^= 2;
   Dungeon_AdjustQuadrant();
   RoomBounds_SubA(&room_bounds_y);
   Dung_SaveDataForCurrentRoom();
   DungeonTransition_AdjustCamera_Y(link_quadrant_y ^ 2);
   HandleEdgeTransition_AdjustCameraBoundaries(1);
-  submodule_index++;
+  submodule_index = 1;
   if (link_quadrant_y) {
     RoomBounds_SubB(&room_bounds_y);
     BYTE(dungeon_room_index_prev) = dungeon_room_index;
@@ -2119,7 +2121,7 @@ void Dungeon_StartInterRoomTrans_Up() {
       Dungeon_AdjustAfterSpiralStairs();
     }
     BYTE(dungeon_room_index) -= 0x10;
-    submodule_index += 1;
+    submodule_index = 2;
     if (room_transitioning_flags & 1) {
       link_is_on_lower_level ^= 1;
       link_is_on_lower_level_mirror = link_is_on_lower_level;
@@ -2133,13 +2135,14 @@ void Dungeon_StartInterRoomTrans_Up() {
 }
 
 void Dungeon_StartInterRoomTrans_Down() {
+  assert(submodule_index == 0);
   link_quadrant_y ^= 2;
   Dungeon_AdjustQuadrant();
   RoomBounds_AddA(&room_bounds_y);
   Dung_SaveDataForCurrentRoom();
   DungeonTransition_AdjustCamera_Y(link_quadrant_y);
   HandleEdgeTransition_AdjustCameraBoundaries(0);
-  submodule_index++;
+  submodule_index = 1;
   if (!link_quadrant_y) {
     RoomBounds_AddB(&room_bounds_y);
     BYTE(dungeon_room_index_prev) = dungeon_room_index;
@@ -2153,7 +2156,7 @@ void Dungeon_StartInterRoomTrans_Down() {
       Dungeon_AdjustAfterSpiralStairs();
     }
     BYTE(dungeon_room_index) += 16;
-    submodule_index += 1;
+    submodule_index = 2;
     if (room_transitioning_flags & 1) {
       link_is_on_lower_level ^= 1;
       link_is_on_lower_level_mirror = link_is_on_lower_level;
@@ -7958,13 +7961,14 @@ void HandleEdgeTransitionMovementEast_RightBy8() {  // 82b62e
 }
 
 void Dungeon_StartInterRoomTrans_Right() {  // 82b63a
+  assert(submodule_index == 0);
   link_quadrant_x ^= 1;
   Dungeon_AdjustQuadrant();
   RoomBounds_AddA(&room_bounds_x);
   Dung_SaveDataForCurrentRoom();
   DungeonTransition_AdjustCamera_X(link_quadrant_x);
   HandleEdgeTransition_AdjustCameraBoundaries(2);
-  submodule_index++;
+  submodule_index = 1;
   if (!link_quadrant_x) {
     RoomBounds_AddB(&room_bounds_x);
     BYTE(dungeon_room_index_prev) = dungeon_room_index;
@@ -7978,7 +7982,7 @@ void Dungeon_StartInterRoomTrans_Right() {  // 82b63a
       }
       dungeon_room_index += 1;
     }
-    submodule_index += 1;
+    submodule_index = 2;
     if (room_transitioning_flags & 1) {
       link_is_on_lower_level ^= 1;
       link_is_on_lower_level_mirror = link_is_on_lower_level;

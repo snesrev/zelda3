@@ -242,13 +242,19 @@ void PlayerHandler_00_Ground_3() {  // 8781a0
       Link_HandleYItem();
       if (sram_progress_indicator != 0) {
         Link_HandleSwordCooldown();
-        if (link_player_handler_state == 3) {
-          link_x_vel = link_y_vel = 0;
-          goto getout_dostuff;
-        }
       }
     }
   }
+
+  // Ensure we're not handling potions. Things further
+  // down don't assume this and change the module indexes randomly.
+  // Also check for spin attack for some reason.
+  if ((enhanced_features0 & kFeatures0_MiscBugFixes) && main_module_index == 14 && submodule_index != 2 ||
+      link_player_handler_state == 3) {
+    link_x_vel = link_y_vel = 0;
+    goto getout_dostuff;
+  }
+
 
   Link_HandleCape_passive_LiftCheck();
   if (link_incapacitated_timer) {
@@ -6062,6 +6068,14 @@ void HandleDoorTransitions() {  // 87e901
 
   link_x_page_movement_delta = 0;
   link_y_page_movement_delta = 0;
+
+  // Using a potion might have changed us into a different module, and the routines
+  // below just increment the submodule value, causing all kinds of havoc.
+  // There's an added return to catch the same behavior a bit up, but this one catches more cases,
+  // at the expense of link already having done his movement, so by returning here we might
+  // miss handling the door causing other kinds of issues.
+  if ((enhanced_features0 & kFeatures0_MiscBugFixes) && !(main_module_index == 7 && submodule_index == 0))
+    return;
 
   if (link_direction_last & 0xC && is_standing_in_doorway == 1) {
     if (link_direction_last & 4) {
