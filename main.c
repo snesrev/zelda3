@@ -123,13 +123,12 @@ static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area,
          (SDL_GetModState() & KMOD_CTRL) != 0 ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 
-static bool RenderScreenWithPerf(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
-  bool rv;
+static void RenderScreenWithPerf(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
   if (g_display_perf || g_config.display_perf_title) {
     static float history[64], average;
     static int history_pos;
     uint64 before = SDL_GetPerformanceCounter();
-    rv = ZeldaDrawPpuFrame(pixel_buffer, pitch, render_flags);
+    ZeldaDrawPpuFrame(pixel_buffer, pitch, render_flags);
     uint64 after = SDL_GetPerformanceCounter();
     float v = (double)SDL_GetPerformanceFrequency() / (after - before);
     average += v - history[history_pos];
@@ -137,9 +136,8 @@ static bool RenderScreenWithPerf(uint8 *pixel_buffer, size_t pitch, uint32 rende
     history_pos = (history_pos + 1) & 63;
     g_curr_fps = average * (1.0f / 64);
   } else {
-    rv = ZeldaDrawPpuFrame(pixel_buffer, pitch, render_flags);
+    ZeldaDrawPpuFrame(pixel_buffer, pitch, render_flags);
   }
-  return rv;
 }
 
 // Go some steps up and find zelda3.ini
@@ -481,30 +479,27 @@ static void RenderNumber(uint8 *dst, size_t pitch, int n, bool big) {
 }
 
 static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen) {
-  uint8* pixels = NULL;
+  uint8 *pixels = 0;
   int pitch = 0;
+  int render_scale = PpuGetCurrentRenderScale(g_zenv.ppu, g_ppu_render_flags);
+  SDL_Rect src_rect = { 0, 0, g_snes_width * render_scale >> 1, g_snes_height * render_scale >> 1};
+
   uint64 t0 = SDL_GetPerformanceCounter();
-  if(SDL_LockTexture(texture, NULL, (void**)&pixels, &pitch) != 0) {
+  if(SDL_LockTexture(texture, &src_rect, (void**)&pixels, &pitch) != 0) {
     printf("Failed to lock texture: %s\n", SDL_GetError());
     return;
   }
   uint64 t1 = SDL_GetPerformanceCounter();
-  bool hq = RenderScreenWithPerf(pixels, pitch, g_ppu_render_flags);
+  RenderScreenWithPerf(pixels, pitch, g_ppu_render_flags);
   if (g_display_perf) {
-    RenderNumber(pixels + (pitch * 2 << hq), pitch, g_curr_fps, hq);
-  }
-  if (g_config.display_perf_title) {
-    char title[60];
-    snprintf(title, sizeof(title), "%s | FPS: %d", kWindowTitle, g_curr_fps);
-    SDL_SetWindowTitle(window, title);
+    RenderNumber(pixels + pitch * render_scale, pitch, g_curr_fps, render_scale == 4);
   }
   uint64 t2 = SDL_GetPerformanceCounter();
   SDL_UnlockTexture(texture);
   uint64 t3 = SDL_GetPerformanceCounter();
   SDL_RenderClear(renderer);
   uint64 t4 = SDL_GetPerformanceCounter();
-  SDL_Rect src_rect = { 0, 0, g_snes_width, g_snes_height };
-  SDL_RenderCopy(renderer, texture, hq ? NULL : &src_rect, NULL);
+  SDL_RenderCopy(renderer, texture, &src_rect, NULL);
   uint64 t5 = SDL_GetPerformanceCounter();
 
   double f = 1e3 / (double)SDL_GetPerformanceFrequency();
@@ -516,7 +511,11 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
     (t5 - t4) * f
   );
 
-
+  if (g_config.display_perf_title) {
+    char title[60];
+    snprintf(title, sizeof(title), "%s | FPS: %d", kWindowTitle, g_curr_fps);
+    SDL_SetWindowTitle(window, title);
+  }
 }
 
 static void HandleCommand_Locked(uint32 j, bool pressed);

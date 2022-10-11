@@ -122,10 +122,14 @@ void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx) {
   func(ctx, tmp, 123);
 }
 
-bool PpuBeginDrawing(Ppu *ppu, uint8_t *pixels, size_t pitch, uint32_t render_flags) {
+int PpuGetCurrentRenderScale(Ppu *ppu, uint32_t render_flags) {
+  bool hq = ppu->mode == 7 && !ppu->forcedBlank &&
+    (ppu->renderFlags & (kPpuRenderFlags_4x4Mode7 | kPpuRenderFlags_NewRenderer)) == (kPpuRenderFlags_4x4Mode7 | kPpuRenderFlags_NewRenderer);
+  return hq ? 4 : 2;
+}
+
+void PpuBeginDrawing(Ppu *ppu, uint8_t *pixels, size_t pitch, uint32_t render_flags) {
   ppu->renderFlags = render_flags;
-  bool hq = ppu->mode == 7 && !ppu->forcedBlank && 
-      (ppu->renderFlags & (kPpuRenderFlags_4x4Mode7 | kPpuRenderFlags_NewRenderer)) == (kPpuRenderFlags_4x4Mode7 | kPpuRenderFlags_NewRenderer);
   ppu->renderPitch = (uint)pitch;
   ppu->renderBuffer = pixels;
 
@@ -140,14 +144,12 @@ bool PpuBeginDrawing(Ppu *ppu, uint8_t *pixels, size_t pitch, uint32_t render_fl
     memset(&ppu->brightnessMult[32], ppu->brightnessMult[31], 31);
   }
 
-  if (hq) {
+  if (PpuGetCurrentRenderScale(ppu, ppu->renderFlags) == 4) {
     for (int i = 0; i < 256; i++) {
       uint32 color = ppu->cgram[i];
       ppu->colorMapRgb[i] = ppu->brightnessMult[color & 0x1f] << 16 | ppu->brightnessMult[(color >> 5) & 0x1f] << 8 | ppu->brightnessMult[(color >> 10) & 0x1f];
     }
   }
-  
-  return hq;
 }
 
 static inline void ClearBackdrop(PpuPixelPrioBufs *buf) {

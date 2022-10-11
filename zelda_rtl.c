@@ -215,10 +215,10 @@ static void ConfigurePpuSideSpace() {
   PpuSetExtraSideSpace(g_zenv.ppu, extra_left, extra_right, extra_bottom);
 }
 
-bool ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
+void ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
   SimpleHdma hdma_chans[2];
 
-  bool rv = PpuBeginDrawing(g_zenv.ppu, pixel_buffer, pitch, render_flags);
+  PpuBeginDrawing(g_zenv.ppu, pixel_buffer, pitch, render_flags);
 
   dma_startDma(g_zenv.dma, HDMAEN_copy, true);
 
@@ -257,8 +257,6 @@ bool ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
     SimpleHdma_DoLine(&hdma_chans[0]);
     SimpleHdma_DoLine(&hdma_chans[1]);
   }
-
-  return rv;
 }
 
 void HdmaSetup(uint32 addr6, uint32 addr7, uint8 transfer_unit, uint8 reg6, uint8 reg7, uint8 indirect_bank) {
