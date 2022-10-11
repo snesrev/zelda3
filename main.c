@@ -260,7 +260,9 @@ int main(int argc, char** argv) {
   }
   g_window = window;
   SDL_SetWindowHitTest(window, HitTestCallback, NULL);
-  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 
+      g_config.software_rendering ? SDL_RENDERER_SOFTWARE :
+                                    SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
   if(renderer == NULL) {
     printf("Failed to create renderer: %s\n", SDL_GetError());
     return 1;

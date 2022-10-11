@@ -259,6 +259,8 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "WindowScale")) {
       g_config.window_scale = (uint8)strtol(value, (char**)NULL, 10);
       return true;
+    } else if (StringEqualsNoCase(key, "SoftwareRendering")) {
+      return ParseBool(value, &g_config.software_rendering);
     } else if (StringEqualsNoCase(key, "NoSpriteLimits")) {
       return ParseBool(value, &g_config.no_sprite_limits);
     } else if (StringEqualsNoCase(key, "LinkGraphics")) {

@@ -44,6 +44,7 @@ typedef struct Config {
   bool ignore_aspect_ratio;
   uint8 fullscreen;
   uint8 window_scale;
+  bool software_rendering;
   bool enable_audio;
   uint16 audio_freq;
   uint8 audio_channels;
