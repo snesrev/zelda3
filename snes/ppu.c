@@ -833,7 +833,7 @@ static void PpuDrawBackgrounds(Ppu *ppu, int y, bool sub) {
       PpuDrawBackground_2bpp(ppu, y, sub, 2, 0xf200, 0x1200);
   } else {
     // mode 7
-    PpuDrawBackground_mode7(ppu, y, sub, 0xc0);
+    PpuDrawBackground_mode7(ppu, y, sub, 0xc000);
     if (ppu->lineHasSprites)
       PpuDrawSprites(ppu, y, sub, false);
   }
