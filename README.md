@@ -14,7 +14,7 @@ You need a copy of the ROM to extract game resources (levels, images). Then once
 It uses the PPU and DSP implementation from [LakeSnes](https://github.com/elzo-d/LakeSnes), but with lots of speed optimizations.
 Additionally, it can be configured to also run the original machine code side by side. Then the RAM state is compared after each frame, to verify that the C implementation is correct.
 
-I got much assistance from spannierism's Zelda 3 JP disassembly and the other ones that documented loads of function names and variables.
+I got much assistance from spannerism's Zelda 3 JP disassembly and the other ones that documented loads of function names and variables.
 
 ## Additional features
 
@@ -40,55 +40,35 @@ Disable low health beep.
 
 Pick up items and destroy pots with Sword.
 
-## Dependencies
+## Installing Python & libraries on Windows (required for asset extraction steps)
+1. Download [Python](https://www.python.org/ftp/python/3.10.7/python-3.10.7-amd64.exe) installer and install
+2. Open the command prompt
+3. Type "python -m pip install --upgrade pip" and hit enter
+4. Type "python -m pip install --upgrade Pillow" and hit enter
+5. Type "python -m pip install --upgrade pyyaml" and hit enter
+6. Close the command prompt
 
-- the `libsdl2-dev` library
-  - Windows: automatically installed with NuGet
-  - Ubuntu: `apt install libsdl2-dev`
-  - macOS: `brew install sdl2`
-- a `tables/zelda3.sfc` US ROM file (for asset extraction step only)
-  - SHA256 : `66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`.
-- The `pillow` and `pyyaml` python dependencies used by the assets extractor.
-  - `python -m pip install -r requirements.txt`
+## Compiling on Windows with TCC (1mb Tiny C Compiler)
+1. Download the project by clicking "Code > Download ZIP" on the github page
+2. Extract the ZIP to your hard drive
+3. Place the USA rom named "zelda3.sfc" in the "\tables" subfolder
+4. Open the command prompt and navigate to that folder
+5. Type "python extract_resources.py" and hit enter
+6. Type "python compile_resources.py" and hit enter
+7. Close the command prompt
+8. Download [TCC](https://download.savannah.gnu.org/releases/tinycc/tcc-0.9.27-win64-bin.zip) and extract to the "\third_party" subfolder
+9. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.24.0/SDL2-devel-2.24.0-VC.zip) and extract to the "\third_party" subfolder
+10. Double-click "run_with_tcc.bat" in the main dir to create zelda3.exe in that same dir
+11. Configure with zelda3.ini in the main dir
 
-## Compiling
+## Compiling on Windows with Visual Studio (4.5gb IDE and compiler)
+Same Steps 1-7 above
+8. Double-click "Zelda3.sln"
+9. Change "debug" to "release" in the top dropdown
+10. Choose "build > build Zelda3" in the menu to create zelda3.exe in the "/bin/release" subfolder
+11. Configure with zelda3.ini in the main dir
 
-Look at the wiki at https://github.com/snesrev/zelda3/wiki for more help.
-
-### Windows
-First extract and compile resources.
-
-`cd tables`
-
-Run `python3 extract_resources.py` to extract resources from the ROM into a more human readable format.
-
-Run `python3 compile_resources.py` to create a file called `zelda3_assets.dat` that gets loaded by the executable.
-
-In case you're planning to move the .exe to a different folder, please include `zelda3_assets.dat`.
-
-Then build the .sln file with Visual Studio.
-
-### Building with TCC instead of Visual Studio on Windows
-
-You can also build and run it through TCC in case you don't have Visual Studio. Note that TCC builds without optimizations so the game will run considerably slower.
-
-
-<details>
-<summary>
-Read about how to use TCC here...
-</summary>
-Extract the assets as detailed above.
-
-Unzip [TCC for win64](http://download.savannah.gnu.org/releases/tinycc/tcc-0.9.27-win64-bin.zip) into `third_party/tcc`.
-
-Unzip [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.24.0/SDL2-devel-2.24.0-VC.zip) into `third_party/SDL2-2.24.0`.
-
-Start `run_with_tcc.bat`. It will perform some basic error checks and then start the game.
-
-</details>
-
-
-### Linux/macOS
+## Compiling on Linux/MacOS
 
 ```sh
 make
@@ -105,7 +85,7 @@ CC=clang make   # specify compiler
 ```
 </details>
 
-### Nintendo switch
+## Nintendo Switch
 
 You need [DevKitPro](https://devkitpro.org/wiki/Getting_Started) and [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) installed.
 
@@ -116,6 +96,10 @@ make # Add -j$(nproc) to build using all cores ( Optional )
 # You can test the build directly onto the switch ( Optional )
 nxlink -s zelda3.nro
 ```
+
+## More Compilation Help
+
+Look at the wiki at https://github.com/snesrev/zelda3/wiki for more help.
 
 In case you're planning to move the executable to a different location, please include the file `tables/zelda3_assets.dat`.
 
