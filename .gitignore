@@ -25,6 +25,4 @@ __pycache__
 /msu/alttp_msu-*.pcm
 /tmp/
 /tables/zelda3_assets.dat
-/third_party/tcc/
-/third_party/SDL2-2.24.0/
 /SDL2.dll
