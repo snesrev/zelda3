@@ -62,11 +62,11 @@ Pick up items and destroy pots with Sword.
 11. Configure with zelda3.ini in the main dir
 
 ## Compiling on Windows with Visual Studio (4.5gb IDE and compiler)
-Same Steps 1-7 above
-8. Double-click "Zelda3.sln"
-9. Change "debug" to "release" in the top dropdown
-10. Choose "build > build Zelda3" in the menu to create zelda3.exe in the "/bin/release" subfolder
-11. Configure with zelda3.ini in the main dir
+Same Steps 1-7 above<br/>
+8. Double-click "Zelda3.sln"<br/>
+9. Change "debug" to "release" in the top dropdown<br/>
+10. Choose "build > build Zelda3" in the menu to create zelda3.exe in the "/bin/release" subfolder<br/>
+11. Configure with zelda3.ini in the main dir<br/>
 
 ## Compiling on Linux/MacOS
 
