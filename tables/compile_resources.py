@@ -6,10 +6,8 @@ import yaml
 import tables
 import compile_music
 import array, hashlib, struct
-
-print_int_array = util.print_int_array
-
-PATH = ''
+from functools import cache
+import sprite_sheets
 
 def flatten(xss):
     return [x for xs in xss for x in xs]
@@ -18,7 +16,6 @@ def invert_dict(xs):
   return {s:i for i,s in xs.items()}
 
 assets = {}
-
 
 def add_asset_uint8(name, data):
   assert name not in assets
@@ -38,7 +35,7 @@ def add_asset_int16(name, data):
 
 def print_map32_to_map16():
   tab = {}
-  for line in open(PATH + 'map32_to_map16.txt'):
+  for line in open('map32_to_map16.txt'):
     line = line.strip()
     x, xs = line.split(':', 1)
     tab[int(x)] = [int(t) for t in xs.split(',')]
@@ -67,7 +64,7 @@ def print_map32_to_map16():
 def print_dialogue():
   new_r = []
   offs = []
-  for line in open(PATH + 'dialogue.txt'):
+  for line in open('dialogue.txt'):
     line = line.strip('\n')
     a, b = line.split(': ', 1)
     index = int(a)
@@ -79,41 +76,6 @@ def print_dialogue():
   add_asset_uint8('kDialogueText', new_r)
 
 ROM = util.LoadedRom(sys.argv[1] if len(sys.argv) >= 2 else None)
-
-kCompSpritePtrs = [
-  0x10f000,0x10f600,0x10fc00,0x118200,0x118800,0x118e00,0x119400,0x119a00,
-  0x11a000,0x11a600,0x11ac00,0x11b200,0x14fffc,0x1585d4,0x158ab6,0x158fbe,
-  0x1593f8,0x1599a6,0x159f32,0x15a3d7,0x15a8f1,0x15aec6,0x15b418,0x15b947,
-  0x15bed0,0x15c449,0x15c975,0x15ce7c,0x15d394,0x15d8ac,0x15ddc0,0x15e34c,
-  0x15e8e8,0x15ee31,0x15f3a6,0x15f92d,0x15feba,0x1682ff,0x1688e0,0x168e41,
-  0x1692df,0x169883,0x169cd0,0x16a26e,0x16a275,0x16a787,0x16aa06,0x16ae9d,
-  0x16b3ff,0x16b87e,0x16be6b,0x16c13d,0x16c619,0x16cbbb,0x16d0f1,0x16d641,
-  0x16d95a,0x16dd99,0x16e278,0x16e760,0x16ed25,0x16f20f,0x16f6b7,0x16fa5f,
-  0x16fd29,0x1781cd,0x17868d,0x178b62,0x178fd5,0x179527,0x17994b,0x179ea7,
-  0x17a30e,0x17a805,0x17acf8,0x17b2a2,0x17b7f9,0x17bc93,0x17c237,0x17c78e,
-  0x17cd55,0x17d2bc,0x17d82f,0x17dcec,0x17e1cc,0x17e36b,0x17e842,0x17eb38,
-  0x17ed58,0x17f06c,0x17f4fd,0x17fa39,0x17ff86,0x18845c,0x1889a1,0x188d64,
-  0x18919d,0x189610,0x189857,0x189b24,0x189dd2,0x18a03f,0x18a4ed,0x18a7ba,
-  0x18aedf,0x18af0d,0x18b520,0x18b953,
-]
-
-kCompBgPtrs = [
-  0x11b800,0x11bce2,0x11c15f,0x11c675,0x11cb84,0x11cf4c,0x11d2ce,0x11d726,
-  0x11d9cf,0x11dec4,0x11e393,0x11e893,0x11ed7d,0x11f283,0x11f746,0x11fc21,
-  0x11fff2,0x128498,0x128a0e,0x128f30,0x129326,0x129804,0x129d5b,0x12a272,
-  0x12a6fe,0x12aa77,0x12ad83,0x12b167,0x12b51d,0x12b840,0x12bd54,0x12c1c9,
-  0x12c73d,0x12cc86,0x12d198,0x12d6b1,0x12db6a,0x12e0ea,0x12e6bd,0x12eb51,
-  0x12f135,0x12f6c5,0x12fc71,0x138129,0x138693,0x138bad,0x139117,0x139609,
-  0x139b21,0x13a074,0x13a619,0x13ab2b,0x13b00c,0x13b4f5,0x13b9eb,0x13bebf,
-  0x13c3ce,0x13c817,0x13cb68,0x13cfb5,0x13d460,0x13d8c2,0x13dd7a,0x13e266,
-  0x13e7af,0x13ece5,0x13f245,0x13f6f0,0x13fc30,0x1480e9,0x14863b,0x148a7c,
-  0x148f2a,0x149346,0x1497ed,0x149cc2,0x14a173,0x14a61d,0x14ab5d,0x14b083,
-  0x14b4bd,0x14b94e,0x14be0e,0x14c291,0x14c7ba,0x14cce4,0x14d1db,0x14d6bd,
-  0x14db77,0x14ded1,0x14e2ac,0x14e754,0x14ebae,0x14ef4e,0x14f309,0x14f6f4,
-  0x14fa55,0x14ff8c,0x14ff93,0x14ff9a,0x14ffa1,0x14ffa8,0x14ffaf,0x14ffb6,
-  0x14ffbd,0x14ffc4,0x14ffcb,0x14ffd2,0x14ffd9,0x14ffe0,0x14ffe7,0x14ffee,
-  0x14fff5,0x18b520,0x18b953,
-]
 
 def compress_store(r):
   rr = []
@@ -135,19 +97,23 @@ def pack_u32_arrays(arr):
   return b''.join([struct.pack('I', i) for i in all_offs] + arr)
 
 def print_images():
-  lengths = b''
+  sprsheet = sprite_sheets.load_sprite_sheets()
+
   all = []
-  for i in range(12):
-    all.append(bytes(ROM.get_bytes(kCompSpritePtrs[i], 0x600)))
-  for i in range(12, 108):
-    decomp, comp_len = util.decomp(kCompSpritePtrs[i], ROM.get_byte, False, True)
-    all.append(bytes(ROM.get_bytes(kCompSpritePtrs[i], comp_len)))
+  for i in range(108):
+    if sprsheet != None and i < 103:
+      all.append(sprsheet.encode_sheet_in_snes_format(i))
+    elif i < 12:
+      all.append(bytes(ROM.get_bytes(tables.kCompSpritePtrs[i], 0x600)))   
+    else:
+      decomp, comp_len = util.decomp(tables.kCompSpritePtrs[i], ROM.get_byte, False, True)
+      all.append(bytes(ROM.get_bytes(tables.kCompSpritePtrs[i], comp_len)))
   add_asset_uint8('kSprGfx', pack_u32_arrays(all))
 
   all = []
-  for i in range(len(kCompBgPtrs)):
-    decomp, comp_len = util.decomp(kCompBgPtrs[i], ROM.get_byte, False, True)
-    all.append(bytes(ROM.get_bytes(kCompBgPtrs[i], comp_len)))
+  for i in range(len(tables.kCompBgPtrs)):
+    decomp, comp_len = util.decomp(tables.kCompBgPtrs[i], ROM.get_byte, False, True)
+    all.append(bytes(ROM.get_bytes(tables.kCompBgPtrs[i], comp_len)))
   add_asset_uint8('kBgGfx', pack_u32_arrays(all))
 
 
@@ -193,13 +159,10 @@ def print_misc():
 
   add_asset_uint16('kOverworldMapPaletteData', ROM.get_words(0x8ADB27, 256))
 
-g_overworld_yaml_cache = {}
+@cache
 def load_overworld_yaml(room):
-  if room not in g_overworld_yaml_cache:
-    g_overworld_yaml_cache[room] = yaml.safe_load(open(PATH+'overworld/overworld-%d.yaml' % room, 'r'))
-  return g_overworld_yaml_cache[room]
+  return yaml.safe_load(open('overworld/overworld-%d.yaml' % room, 'r'))
     
-
 def print_overworld():
   r = []
   for i in range(160):
@@ -465,11 +428,9 @@ def print_dungeon_map():
   add_asset_uint8('kDungMap_Tiles', pack_u32_arrays(r2))
 
 
-g_dungeon_yaml_cache = {}
+@cache
 def load_dungeon_yaml(room):
-  if room not in g_dungeon_yaml_cache:
-    g_dungeon_yaml_cache[room] = yaml.safe_load(open(PATH+'dungeon/dungeon-%d.yaml' % room, 'r'))
-  return g_dungeon_yaml_cache[room]
+  return yaml.safe_load(open('dungeon/dungeon-%d.yaml' % room, 'r'))
   
 def print_dungeon_sprites():
   offsets=[0 for i in range(320)]
@@ -700,7 +661,7 @@ def print_dungeon_rooms():
 
   data = []
   offsets = [0] * 8
-  default_yaml = yaml.safe_load(open(PATH+'dungeon/default_rooms.yaml', 'r'))
+  default_yaml = yaml.safe_load(open('dungeon/default_rooms.yaml', 'r'))
   for i in range(len(offsets)):
     offsets[i] = len(data)
     print_layer(default_yaml['Default%d' % i], None)
@@ -709,7 +670,7 @@ def print_dungeon_rooms():
 
   data = []
   offsets = [0] * 19
-  overlay_yaml = yaml.safe_load(open(PATH+'dungeon/overlay_rooms.yaml', 'r'))
+  overlay_yaml = yaml.safe_load(open('dungeon/overlay_rooms.yaml', 'r'))
   for i in range(len(offsets)):
     offsets[i] = len(data)
     print_layer(overlay_yaml['Overlay%d' % i], None)
@@ -746,7 +707,7 @@ def print_tilemaps():
     add_asset_uint8('kBgTilemap_%d' % i, ROM.get_bytes(s, l))
 
 def print_link_graphics():
-  image = Image.open(PATH+'linksprite.png')
+  image = Image.open('linksprite.png')
   data = image.tobytes()
   def encode_4bit_sprite(data, offset, pitch):
     b = [0] * 32
@@ -768,7 +729,6 @@ def print_sound_banks():
   for song in ['intro', 'indoor', 'ending']:
     name, data = compile_music.print_song(song)
     add_asset_uint8(name, data)
-
 
 def print_all():
   print_sound_banks()

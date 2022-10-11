@@ -382,6 +382,14 @@ static void PatchRomWord(uint8_t *rom, uint32_t addr, uint16 old_value, uint16 v
   WORD(rom[(addr >> 16) << 15 | (addr & 0x7fff)]) = value;
 }
 
+static void PatchRomArray(uint8_t *rom, uint32_t addr, const uint8 *values, int n) {
+  for (int i = 0; i < n; i++) {
+    rom[(addr >> 16) << 15 | (addr & 0x7fff)] = values[i];
+    addr += 1;
+  }
+}
+
+
 
 static void PatchRom(uint8_t *rom) {
   //  fix a bug with unitialized memory
@@ -552,6 +560,10 @@ static void PatchRom(uint8_t *rom) {
 
   PatchRomWord(rom, 0xddfac + 1, 0xfa85, 0xfa70); // call Hud_Rebuild instead of Hud_UpdateOnly
 
+  // Make sure it's not calling Decomp_spr on tilesheets less than 12
+  PatchRomWord(rom, 0xe589, 0xe772, 0xe852);  // call New addr
+  static const uint8 kFixSoItWontDecodeSheetLessThan12[] = { 0xc0, 0x0c, 0xb0, 0x02, 0xa0, 0x0c, 0x4c, 0x72, 0xe7 };
+  PatchRomArray(rom, 0xe852, kFixSoItWontDecodeSheetLessThan12, sizeof(kFixSoItWontDecodeSheetLessThan12));
 }
 
 

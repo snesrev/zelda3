@@ -3742,7 +3742,7 @@ void Ancilla29_MilestoneItemReceipt(int k) {  // 88ca8c
     }
     if (!ancilla_arr3[k] && ancilla_item_to_link[k] == 0x20) {
       ancilla_arr3[k] = 1;
-      palette_sp6 = 4;
+      palette_sp6r_indoors = 4;
       overworld_palette_aux_or_main = 0x200;
       Palette_Load_SpriteEnvironment_Dungeon();
       flag_update_cgram_in_nmi++;
@@ -3902,7 +3902,7 @@ lbl_else:
     ancilla_x_lo[k] = bak0;
     ancilla_x_hi[k] = bak1;
     if (breaktowerseal_var4 >= 240) {
-      palette_sp6 = 0;
+      palette_sp6r_indoors = 0;
       overworld_palette_aux_or_main = 0x200;
       Palette_Load_SpriteEnvironment_Dungeon();
       flag_update_cgram_in_nmi++;
@@ -6716,7 +6716,7 @@ void AncillaAdd_GTCutscene() {  // 899b83
   for (int i = 0x17; i >= 0; i--)
     breaktowerseal_sparkle_var1[i] = 0xff;
   DecodeAnimatedSpriteTile_variable(0x28);
-  palette_sp6 = 4;
+  palette_sp6r_indoors = 4;
   overworld_palette_aux_or_main = 0x200;
   Palette_Load_SpriteEnvironment_Dungeon();
   flag_update_cgram_in_nmi++;

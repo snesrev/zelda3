@@ -829,7 +829,7 @@ void Death_Func6() {  // 89f458
   load_chr_halfslot_even_odd = 15;
   Graphics_LoadChrHalfSlot();
   load_chr_halfslot_even_odd = 0;
-  palette_sp6 = 5;
+  palette_sp6r_indoors = 5;
   overworld_palette_aux_or_main = 0x200;
   Palette_Load_SpriteEnvironment_Dungeon();
   Palette_Load_SpriteMain();
@@ -2036,7 +2036,7 @@ void DungeonMap_DrawLinkPointing(int spr_pos, uint8 r2, uint8 r3) {  // 8aeaf0
     if (a >= 0)
       r3 -= a;
   }
-  SetOamPlain(&oam_buf[spr_pos], 0x19, kDungMap_Tab33[r3] - 4, 0, overworld_palette_swap_flag ? 0x30 : 0x3e, 2);
+  SetOamPlain(&oam_buf[spr_pos], 0x19, kDungMap_Tab33[r3] - 4, 0, palette_swap_flag ? 0x30 : 0x3e, 2);
 }
 
 int DungeonMap_DrawBlinkingIndicator(int spr_pos) {  // 8aeb50

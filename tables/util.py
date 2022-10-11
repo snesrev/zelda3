@@ -2,11 +2,42 @@ import array
 import sys
 import hashlib
 import os
+from functools import cache
 
 # Both are common SNES rom extensions. For Zelda3 (NA), they are equivalent files.
 COMMON_ROM_NAMES = ['zelda3.sfc', 'zelda3.smc']
 DEFAULT_ROM_DIRECTORY = os.path.dirname(__file__)
 ZELDA3_SHA256 = '66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb'
+
+def load_rom(filename):
+  global ROM
+  ROM = LoadedRom(filename)
+  return ROM
+
+def get_byte(addr):
+  return ROM.get_byte(addr)
+
+@cache
+def get_bytes(addr, n):
+  return ROM.get_bytes(addr, n)
+
+@cache
+def get_words(addr, n):
+  return ROM.get_words(addr, n)
+
+def get_int8(ea):
+  b = get_byte(ea)
+  if b & 0x80: b -= 256
+  return b
+
+def get_int16(ea):
+  b = get_word(ea)
+  if b & 0x8000: b -= 65536
+  return b
+
+def get_word(addr):
+  return ROM.get_word(addr)
+
 
 class LoadedRom:
   def __init__(self, path = None):
@@ -28,7 +59,7 @@ class LoadedRom:
     return self.get_byte(ea) + self.get_byte(ea + 1) * 256 + self.get_byte(ea + 2) * 65536
 
   def get_bytes(self, addr, n):
-    r = []
+    r = bytearray()
     for i in range(n):
       r.append(self.get_byte(addr))
       addr += 1

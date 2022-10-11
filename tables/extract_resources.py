@@ -2,30 +2,13 @@ from ast import literal_eval as make_tuple
 import sys
 import text_compression
 import util
-from PIL import Image
+from util import get_bytes, get_words, get_byte, get_word, get_int8, get_int16
 import tables
 import yaml
 import extract_music
 import os
-
-PATH=''
-
-ROM = util.LoadedRom(sys.argv[1] if len(sys.argv) >= 2 else None)
-
-get_byte = ROM.get_byte
-get_word = ROM.get_word
-get_bytes = ROM.get_bytes
-
-def get_int8(ea):
-  b = get_byte(ea)
-  if b & 0x80: b -= 256
-  return b
-
-def get_int16(ea):
-  b = get_word(ea)
-  if b & 0x8000: b -= 65536
-  return b
-
+import sprite_sheets
+from functools import cache
 
 def print_map32_to_map16(f):
   for i in range(2218):
@@ -44,6 +27,7 @@ def print_map32_to_map16(f):
     for j in range(4):
       print('%5d: %4d, %4d, %4d, %4d' % (i * 4 + j, t0[j], t1[j], t2[j], t3[j]), file = f)
 
+@cache
 def get_exit_datas():
   r = {}
   for i in range(79):
@@ -99,7 +83,6 @@ def get_exit_datas():
       y['door'] = ['palace' if fdoor & 0x8000 else 'sanctuary', (fdoor & 0x7e) >> 1, (fdoor & 0x3f80) >> 7]
     r.setdefault(screen_index, []).append(y)
   return r
-EXIT_DATAS = get_exit_datas()
 
 def get_loadoffs(c, d):
   x, y = c[0] >> 4, c[1] >> 4
@@ -107,6 +90,7 @@ def get_loadoffs(c, d):
   y += d[1]
   return (y&0x3f) << 7 | (x&0x3f) << 1
 
+@cache
 def get_ow_travel_infos():
   r = {}
   for i in range(17):
@@ -138,8 +122,8 @@ def get_ow_travel_infos():
     y['unk'] = [unk1, unk3]
     r.setdefault(screen_index, []).append(y)
   return r
-OW_TRAVEL_INFOS = get_ow_travel_infos()
 
+@cache
 def get_ow_entrance_info():
   r = {}
   for i in range(129):
@@ -148,8 +132,8 @@ def get_ow_entrance_info():
     entrance_id = get_byte(0x9BBB73 + i)
     r.setdefault(area, []).append({'index' : i, 'x' : (pos >> 1) & 0x3f, 'y' : (pos >> 7) & 0x3f, 'entrance_id' : entrance_id})
   return r
-OW_ENTRANCE_INFO = get_ow_entrance_info()
 
+@cache
 def get_hole_infos():
   r = {}
   for i in range(19):
@@ -158,7 +142,6 @@ def get_hole_infos():
     entrance_id = get_byte(0x9BB84C + i)
     r.setdefault(area, []).append({'x' : (pos >> 1) & 0x3f, 'y' : (pos >> 7) & 0x3f, 'entrance_id' : entrance_id})
   return r
-HOLE_INFO = get_hole_infos()
 
 def print_overworld_area(overworld_area):
   is_small = get_bytes(0x82F88D, 192)
@@ -204,11 +187,12 @@ def print_overworld_area(overworld_area):
   }
       
   y['Header'] = header
-  y['Travel'] = OW_TRAVEL_INFOS.get(overworld_area, [])
-  y['Entrances'] = OW_ENTRANCE_INFO.get(overworld_area, [])
-  if overworld_area in HOLE_INFO:
-    y['Holes'] = HOLE_INFO[overworld_area]
-  y['Exits'] = EXIT_DATAS.get(overworld_area, [])
+  y['Travel'] = get_ow_travel_infos().get(overworld_area, [])
+  y['Entrances'] = get_ow_entrance_info().get(overworld_area, [])
+  hole_infos = get_hole_infos()
+  if overworld_area in hole_infos:
+    y['Holes'] = hole_infos[overworld_area]
+  y['Exits'] = get_exit_datas().get(overworld_area, [])
   y['Items'] = get_items()
   
   def decode_sprites(base_addr):
@@ -247,10 +231,10 @@ def print_overworld_area(overworld_area):
     }
     
   s = yaml.dump(y, default_flow_style=None, sort_keys=False)
-  open(PATH+'overworld/overworld-%d.yaml' % overworld_area, 'w').write(s)
+  open('overworld/overworld-%d.yaml' % overworld_area, 'w').write(s)
 
 def print_all_overworld_areas():
-  area_heads = ROM.get_bytes(0x82A5EC, 64)
+  area_heads = get_bytes(0x82A5EC, 64)
   
   for i in range(160):
     if i >= 128 or area_heads[i&63] == (i&63):
@@ -258,124 +242,6 @@ def print_all_overworld_areas():
 
 def print_dialogue():
   text_compression.print_strings(open('dialogue.txt', 'w'), get_byte)
-
-def decomp_one_spr_2bit(data, offs, target, toffs, pitch):
-  for y in range(8):
-    d0, d1 = data[offs + y * 2], data[offs + y * 2 + 1]
-    for x in range(8):
-      t = ((d0 >> x) & 1) * 1 + ((d1 >> x) & 1) * 2
-      target[toffs + y * pitch + (7 - x)] = t * 255 // 3
-
-def decomp_one_spr_3bit(data, offs, target, toffs, pitch):
-  for y in range(8):
-    d0, d1, d2 = data[offs + y * 2], data[offs + y * 2 + 1], data[offs + y + 16]
-    for x in range(8):
-      t = ((d0 >> x) & 1) * 1 + ((d1 >> x) & 1) * 2 + ((d2 >> x) & 1) * 4
-      target[toffs + y * pitch + (7 - x)] = t * 255 // 7
-
-def decomp_one_spr_4bit(data, offs, target, toffs, pitch):
-  for y in range(8):
-    d0, d1, d2, d3 = data[offs + y * 2 + 0], data[offs + y * 2 + 1], data[offs + y * 2 + 16], data[offs + y * 2 + 17]
-    for x in range(8):
-      t = ((d0 >> x) & 1) * 1 + ((d1 >> x) & 1) * 2 + ((d2 >> x) & 1) * 4 + ((d3 >> x) & 1) * 8
-      target[toffs + y * pitch + (7 - x)] = t
-
-def save_array_as_image(dimensions, data, fname, palette = None):
-  img = Image.new('L' if palette == None else 'P', dimensions)
-  img.putdata(data)
-  if palette != None:
-    img.putpalette(palette)
-  img.save(fname)
-
-
-def decomp_save(data, fname, func, step, height=32, palette=None):
-  dst=[0]*128*height
-  for i in range(16*height//8):
-    x = i % 16
-    y = i // 16
-    func(data, i * step, dst, x * 8 + y * 8 * 128, 128)
-  save_array_as_image((128, height), dst, fname, palette)
-
-def convert_snes_palette(v):
-  r=[]
-  for x in v:
-    r.extend(((x & 0x1f) << 3, (x >> 5 & 0x1f) << 3, (x >> 10 & 0x1f) << 3))
-  return r
-
-
-def decode_link_sprites():
-  kLinkPalette = [0, 0x7fff, 0x237e, 0x11b7, 0x369e, 0x14a5,  0x1ff, 0x1078, 0x599d, 0x3647, 0x3b68,  0xa4a, 0x12ef, 0x2a5c, 0x1571, 0x7a18]
-  decomp_save(get_bytes(0x108000, 32768), PATH+'linksprite.png',
-              decomp_one_spr_4bit, 32, 448, convert_snes_palette(kLinkPalette))
-
-def decomp_save_2bit(data, fname):
-  dst=[0]*128*64
-  for i in range(128):
-    x = i % 16
-    y = i // 16
-    decomp_one_spr_2bit(data, i * 16, dst, x * 8 + y * 8 * 128, 128)
-  img = Image.new("L", (128, 64))
-  img.putdata(dst)
-  img.save(fname)
-
-
-gfx_desc = {
-  0x00 : ('3bpp_np', 'Half slot images'),
-  
-  0x01 : ('3bpp_np', 'Half slot images'),
-  0x02 : ('3bpp_np', 'Half slot images'),
-  0x03 : ('3bpp_np', 'Half slot images'),
-  0x04 : ('3bpp_np', 'Half slot images'),
-  0x05 : ('3bpp_np', 'Half slot images'),
-
-  0x06 : ('3bpp_np', 'common spr gfx'),
-  0x07 : ('3bpp_np', 'common spr gfx'),
-
-  0x08 : ('3bpp_np', 'Half slot images'),
-  0x09 : ('3bpp_np', 'Half slot images'),
-  0x0a : ('3bpp_np', 'Half slot images'),
-  0x0b : ('3bpp_np', 'Half slot images'),
-
-  88 : ('3bpp', 'Tagalong gfx'),
-  89 : ('3bpp', 'Tagalong gfx'),
-
-  90 : ('3bpp', 'animated sprites'),
-  91 : ('3bpp', 'animated sprites'),
-  92 : ('3bpp', 'animated sprites'),
-  93 : ('3bpp', 'animated sprites'),
-  94 : ('3bpp', 'sword/shield gfx'),
-  95 : ('3bpp', 'sword/shield gfx'),
-  
-
-  100 : ('3bpp', 'Tagalong gfx'),
-  101 : ('3bpp', 'Tagalong gfx'),
-  102 : ('3bpp', 'Tagalong gfx'),
-  
-  103 : ('2bpp', 'Attract images loaded to 7800'),
-  104 : ('2bpp', 'empty'),
-  105 : ('2bpp', 'hud icons loaded to 7xxx'),
-  106 : ('2bpp', 'hud icons loaded to 7xxx'),
-  107 : ('2bpp', 'hud icons loaded to 7xxx'),
-}
-
-def decomp_generic(k, mode, fname_add = "misc"):
-  fname = 'img/%.3d - %s.png' % (k, fname_add)
-  if mode == '2bpp':
-    r = util.decomp(kCompSpritePtrs[k], get_byte, False)
-    decomp_save_2bit(r, fname)
-  elif mode == '3bpp_np':
-    print(k)
-    r = get_bytes(kCompSpritePtrs[k], 0x600)
-    decomp_save(r, fname, decomp_one_spr_3bit, 24)
-  elif mode== '3bpp':
-    r = util.decomp(kCompSpritePtrs[k], get_byte, False)
-    decomp_save(r, fname, decomp_one_spr_3bit, 24)
-  else:
-    assert 0
-
-if 0:
-  for k, v in gfx_desc.items():
-    decomp_generic(k, v[0])
 
 def decode_room_objects(p):
   objs = []
@@ -418,6 +284,7 @@ def decode_room_objects(p):
     doors.append({'type':get_byte(p + 1), 'pos' : get_byte(p) >> 4, 'dir' : A & 3})
     p += 2
 
+@cache
 def get_chest_info():
   ea = 0x81e96e
   all = {}
@@ -426,8 +293,6 @@ def get_chest_info():
     data = get_byte(ea + i * 3 + 2)
     all.setdefault(room & 0x7fff, []).append((data, (room & 0x8000) != 0))
   return all
-
-CHEST_INFO = get_chest_info()
 
 def _get_entrance_info_one(i, set):
   def get_exit_door(i):
@@ -498,7 +363,7 @@ def _get_entrance_info_one(i, set):
     y['associated_entrance_index'] = get_word(0x82DC40 + i * 2)
   return room, y 
 
-
+@cache
 def get_entrance_info(set):
   r = {}
   for i in range(133 if set == 0 else 7):
@@ -506,9 +371,9 @@ def get_entrance_info(set):
     r.setdefault(room, []).append(y)
   return r
 
-ENTRANCE_INFO = get_entrance_info(0)
-STARTING_POINT_INFO = get_entrance_info(1)
-PITS_HURT_PLAYER = set(get_word(0x80990C + i * 2) for i in range(57))
+@cache 
+def pits_hurt_player():
+  return set(get_word(0x80990C + i * 2) for i in range(57))
 
 def print_room(room_index):
   p = 0x1f8000 + room_index * 3
@@ -545,7 +410,7 @@ def print_room(room_index):
     'stair3_dest' : [get_byte(p+13),p8 & 3],
     'tele_msg' : get_word(0x87F61D+room_index*2),
     'sort_sprites' : sort_sprites_setting,
-    'pits_hurt_player' : room_index in PITS_HURT_PLAYER
+    'pits_hurt_player' : room_index in pits_hurt_player()
   }
 
   def get_sprites():
@@ -587,7 +452,7 @@ def print_room(room_index):
 
   def get_chests():
     r = []
-    for data, big in CHEST_INFO.get(room_index, []):
+    for data, big in get_chest_info().get(room_index, []):
       if big:
         r.append('%d!' % data)
       else:
@@ -598,9 +463,9 @@ def print_room(room_index):
   secrets = get_secrets()
 
   data = {'Header' : header, 'Sprites' : sprites, 'Secrets' : secrets, 'Chests' : get_chests()}
-  data['Entrances'] = ENTRANCE_INFO.get(room_index, [])
-  if room_index in STARTING_POINT_INFO:
-    data['StartingPoints'] = STARTING_POINT_INFO[room_index]
+  data['Entrances'] = get_entrance_info(0).get(room_index, [])
+  if room_index in get_entrance_info(1):
+    data['StartingPoints'] = get_entrance_info(1)[room_index]
 
   p = room_addr + 2
   p, objs, doors = decode_room_objects(p)
@@ -615,13 +480,12 @@ def print_room(room_index):
   data['Layer3'] = objs
   if doors: data['Layer3.doors'] = doors
   
-  
   return yaml.dump(data, default_flow_style=None, sort_keys=False)
 
 def print_all_dungeon_rooms():
   for i in range(320):
     s = print_room(i)
-    open(PATH + 'dungeon/dungeon-%d.yaml' % i, 'w').write(s)
+    open( 'dungeon/dungeon-%d.yaml' % i, 'w').write(s)
 
 def print_default_rooms():
   def print_default_room(idx):
@@ -634,7 +498,7 @@ def print_default_rooms():
   for i in range(8):
     default_rooms['Default%d' % i] = print_default_room(i)
   s = yaml.dump(default_rooms, default_flow_style=None, sort_keys=False)
-  open(PATH + 'dungeon/default_rooms.yaml', 'w').write(s)
+  open('dungeon/default_rooms.yaml', 'w').write(s)
 
 def print_overlay_rooms():
   def print_overlay_room(idx):
@@ -647,21 +511,26 @@ def print_overlay_rooms():
   for i in range(19):
     default_rooms['Overlay%d' % i] = print_overlay_room(i)
   s = yaml.dump(default_rooms, default_flow_style=None, sort_keys=False)
-  open(PATH + 'dungeon/overlay_rooms.yaml', 'w').write(s)
+  open('dungeon/overlay_rooms.yaml', 'w').write(s)
 
-def print_all():
+def make_directories():
   os.makedirs('img', exist_ok=True)
   os.makedirs('overworld', exist_ok=True)
   os.makedirs('dungeon', exist_ok=True)
   os.makedirs('sound', exist_ok=True)
+
+def print_all_text_stuff():
   print_all_overworld_areas()
-  decode_link_sprites()
   print_all_dungeon_rooms()
   print_overlay_rooms()
   print_default_rooms()
   print_dialogue()
-  print_map32_to_map16(open(PATH+'map32_to_map16.txt', 'w'))
-  extract_music.extract_sound_data(ROM)
+  print_map32_to_map16(open('map32_to_map16.txt', 'w'))
+  
+ROM = util.load_rom(sys.argv[1] if len(sys.argv) >= 2 else None)
 
-
-print_all()
+make_directories()
+print_all_text_stuff()
+extract_music.extract_sound_data(ROM)
+sprite_sheets.decode_link_sprites()
+sprite_sheets.decode_sprite_sheets()

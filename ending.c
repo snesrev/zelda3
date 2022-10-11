@@ -246,11 +246,11 @@ void Credits_LoadScene_Dungeon() {  // 8286fd
   int i = submodule_index >> 1;
   sprite_graphics_index = kEnding_SpritePack[i];
   const DungPalInfo *dpi = GetDungPalInfo(kEnding_SpritePal[i] & 0x3f);
-  sprite_aux1_palette = dpi->pal2;
-  sprite_aux2_palette = dpi->pal3;
+  palette_sp5l = dpi->pal2;
+  palette_sp6l = dpi->pal3;
   misc_sprites_graphics_index = 10;
   InitializeTilesets();
-  palette_sp6 = 10;
+  palette_sp6r_indoors = 10;
   Dungeon_LoadPalettes();
   BGMODE_copy = 9;
   R16 = 0;
@@ -578,7 +578,7 @@ void Intro_InitializeMemory_darken() {  // 8cc1f5
   DecompressAnimatedDungeonTiles(0x5d);
   bg_tile_animation_countdown = 2;
   BYTE(overworld_screen_index) = 0;
-  dung_hdr_palette_1 = 0;
+  palette_main_indoors = 0;
   overworld_palette_aux3_bp7_lo = 0;
   R16 = 0;
   R18 = 0;

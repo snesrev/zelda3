@@ -25,6 +25,9 @@
 #include "assets.h"
 #include "load_gfx.h"
 
+static bool g_run_without_emu = 0;
+
+
 
 // Forwards
 static bool LoadRom(const char *filename);
@@ -60,7 +63,6 @@ static int g_input1_state;
 static bool g_display_perf;
 static int g_curr_fps;
 static int g_ppu_render_flags = 0;
-static bool g_run_without_emu = false;
 static int g_snes_width, g_snes_height;
 static int g_sdl_audio_mixer_volume = SDL_MIX_MAXVOLUME;
 

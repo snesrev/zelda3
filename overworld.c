@@ -1449,7 +1449,7 @@ void Module09_2E_Whirlpool() {  // 82b40f
     overworld_palette_aux_or_main = 0;
     Palette_Load_SpriteMain();
     Palette_Load_SpriteEnvironment();
-    Palette_Load_SpritePal0Left();
+    Palette_Load_Sp0L();
     Palette_Load_HUD();
     Palette_Load_OWBGMain();
     uint8 sc = overworld_screen_index;

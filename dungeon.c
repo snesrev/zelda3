@@ -3702,10 +3702,10 @@ void Dungeon_LoadHeader() {  // 81b564
   dung_want_lights_out_copy = dung_want_lights_out;
   dung_want_lights_out = hdr_ptr[0] & 1;
   const DungPalInfo *dpi = &kDungPalinfos[hdr_ptr[1]];
-  dung_hdr_palette_1 = dpi->pal0;
-  overworld_palette_sp0 = dpi->pal1;
-  sprite_aux1_palette = dpi->pal2;
-  sprite_aux2_palette = dpi->pal3;
+  palette_main_indoors = dpi->pal0;
+  palette_sp0l = dpi->pal1;
+  palette_sp5l = dpi->pal2;
+  palette_sp6l = dpi->pal3;
   aux_tile_theme_index = hdr_ptr[2];
   sprite_graphics_index = hdr_ptr[3] + 0x40;
   dung_hdr_collision_2 = hdr_ptr[4];
@@ -6432,7 +6432,7 @@ void Module_PreDungeon() {  // 82821e
   Dungeon_LoadAttributeTable();
   misc_sprites_graphics_index = 10;
   InitializeTilesets();
-  palette_sp6 = 10;
+  palette_sp6r_indoors = 10;
   Dungeon_LoadPalettes();
   if (link_is_bunny_mirror | link_is_bunny)
     LoadGearPalettes_bunny();
@@ -7743,7 +7743,7 @@ void Module07_19_MirrorFade() {  // 8298f7
     submodule_index = 0;
     nmi_load_bg_from_vram = 0;
     last_music_control = music_unk1;
-    if (overworld_palette_swap_flag)
+    if (palette_swap_flag)
       Palette_RevertTranslucencySwap();
   }
 }
@@ -7861,7 +7861,7 @@ void Module11_02_LoadEntrance() {  // 829b1c
   subsubmodule_index = bak + 1;
   misc_sprites_graphics_index = 10;
   InitializeTilesets();
-  palette_sp6 = 10;
+  palette_sp6r_indoors = 10;
   Dungeon_LoadPalettes();
   Hud_RestoreTorchBackground();
   button_mask_b_y = 0;

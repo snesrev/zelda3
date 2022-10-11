@@ -360,10 +360,10 @@ void Dungeon_SaveAndLoadLoadAllPalettes(uint8 a, uint8 k) {  // 82c546
   overworld_palette_aux_or_main = 0x200;
   flag_update_cgram_in_nmi++;
   Palette_BgAndFixedColor_Black();
-  Palette_Load_SpritePal0Left();
+  Palette_Load_Sp0L();
   Palette_Load_SpriteMain();
-  Palette_Load_SpriteAux1();
-  Palette_Load_SpriteAux2();
+  Palette_Load_Sp5L();
+  Palette_Load_Sp6L();
   Palette_Load_SpriteEnvironment_Dungeon();
   Palette_Load_HUD();
   Palette_Load_DungeonSet();
@@ -524,10 +524,10 @@ void AttractScene_ThroneRoom() {  // 8cef4e
   Dungeon_LoadAndDrawEntranceRoom(0x74);
   WORD(attract_state) = bak1;
   attract_var12 = bak0;
-  dung_hdr_palette_1 = 0;
-  overworld_palette_sp0 = 0;
-  sprite_aux1_palette = 14;
-  sprite_aux2_palette = 3;
+  palette_main_indoors = 0;
+  palette_sp0l = 0;
+  palette_sp5l = 14;
+  palette_sp6l = 3;
   Dungeon_SaveAndLoadLoadAllPalettes(0, 0x7e);
 
   main_palette_buffer[0x1d] = 0x3800;
@@ -560,10 +560,10 @@ void Attract_PrepZeldaPrison() {  // 8cefe3
   WORD(attract_state) = bak1;
   attract_var12 = bak0;
 
-  dung_hdr_palette_1 = 2;
-  overworld_palette_sp0 = 0;
-  sprite_aux1_palette = 14;
-  sprite_aux2_palette = 3;
+  palette_main_indoors = 2;
+  palette_sp0l = 0;
+  palette_sp5l = 14;
+  palette_sp6l = 3;
   Dungeon_SaveAndLoadLoadAllPalettes(1, 0x7f);
   main_palette_buffer[0x1d] = 0x3800;
 
@@ -589,16 +589,16 @@ void Attract_PrepMaidenWarp() {  // 8cf058
   WORD(attract_state) = bak1;
   attract_var12 = bak0;
 
-  dung_hdr_palette_1 = 0;
-  overworld_palette_sp0 = 0;
-  sprite_aux1_palette = 14;
-  sprite_aux2_palette = 3;
+  palette_main_indoors = 0;
+  palette_sp0l = 0;
+  palette_sp5l = 14;
+  palette_sp6l = 3;
 
   overworld_palette_aux_or_main = 0;
-  Palette_Load_SpritePal0Left();
+  Palette_Load_Sp0L();
   Palette_Load_SpriteMain();
-  Palette_Load_SpriteAux1();
-  Palette_Load_SpriteAux2();
+  Palette_Load_Sp5L();
+  Palette_Load_Sp6L();
   Palette_Load_SpriteEnvironment_Dungeon();
   Palette_Load_HUD();
   Palette_Load_DungeonSet();

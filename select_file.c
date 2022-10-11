@@ -211,7 +211,7 @@ void Module_SelectFile_0() {  // 8ccd9d
   music_control = 11;
   submodule_index++;
   overworld_palette_aux_or_main = 0x200;
-  dung_hdr_palette_1 = 6;
+  palette_main_indoors = 6;
   nmi_disable_core_updates = 6;
   Palette_Load_DungeonSet();
   Palette_Load_OWBG3();

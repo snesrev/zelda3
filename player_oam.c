@@ -927,7 +927,7 @@ continue_after_set:
   int r2 = kPlayerOamOtherOffs[dir * 40 + yt] + rt;
   int r4loc = kPlayerOamSpriteLocs[r2];
 
-  link_palette_bits_of_oam = overworld_palette_swap_flag ? 0 : 0xe00;
+  link_palette_bits_of_oam = palette_swap_flag ? 0 : 0xe00;
   link_dma_var1 = link_dma_var2 = 0;
 
   int xt = FindInByteArray(kPlayerOam_Tab5, yt, 7);

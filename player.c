@@ -177,7 +177,6 @@ void Link_ControlHandler() {  // 87807f
   }
   if (link_player_handler_state)
     Player_CheckHandleCapeStuff();
-
   kPlayerHandlers[link_player_handler_state]();
 }
 
@@ -6518,7 +6517,7 @@ void ResetSomeThingsAfterDeath(uint8 a) {  // 8bffbf
   byte_7E03F3 = 0;
   byte_7E0322 = 0;
   flag_is_link_immobilized = 0;
-  overworld_palette_swap_flag = 0;
+  palette_swap_flag = 0;
   player_unk1 = 0;
   link_give_damage = 0;
   link_actual_vel_y = 0;

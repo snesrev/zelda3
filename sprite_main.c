@@ -73,58 +73,6 @@ static const uint8 kWishPondItemData[50] = {
   0x09, 0x13, 0x14, 0x4a, 0x21, 0x1d, 0x15, 0x18, 0x19, 0x31, 0x1a, 0x1a, 0x1b, 0x1c, 0x4b, 0x1e,
   0x1f, 0x49, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x22, 0x23, 0x29, 0x16, 0x2b, 0x2c, 0x2d, 0x3d, 0x3c, 0x48
 };
-static const DrawMultipleData kUncleDraw_Table[48] = {
-  {  0, -10, 0x0e00, 2},
-  {  0,   0, 0x0c06, 2},
-  {  0, -10, 0x0e00, 2},
-  {  0,   0, 0x0c06, 2},
-  {  0, -10, 0x0e00, 2},
-  {  0,   0, 0x0c06, 2},
-  {  0, -10, 0x0e02, 2},
-  {  0,   0, 0x0c06, 2},
-  {  0, -10, 0x0e02, 2},
-  {  0,   0, 0x0c06, 2},
-  {  0, -10, 0x0e02, 2},
-  {  0,   0, 0x0c06, 2},
-  { -7,   2, 0x0d07, 2},
-  { -7,   2, 0x0d07, 2},
-  { 10,  12, 0x8d05, 0},
-  { 10,   4, 0x8d15, 0},
-  {  0, -10, 0x0e00, 2},
-  {  0,   0, 0x0c04, 2},
-  { -7,   1, 0x0d07, 2},
-  { -7,   1, 0x0d07, 2},
-  { 10,  13, 0x8d05, 0},
-  { 10,   5, 0x8d15, 0},
-  {  0,  -9, 0x0e00, 2},
-  {  0,   1, 0x4c04, 2},
-  { -7,   8, 0x8d05, 0},
-  {  1,   8, 0x8d06, 0},
-  {  0, -10, 0x0e02, 2},
-  { -6,  -1, 0x4d07, 2},
-  {  0,   0, 0x0c23, 2},
-  {  0,   0, 0x0c23, 2},
-  { -9,   7, 0x8d05, 0},
-  { -1,   7, 0x8d06, 0},
-  {  0,  -9, 0x0e02, 2},
-  { -6,   0, 0x4d07, 2},
-  {  0,   1, 0x0c25, 2},
-  {  0,   1, 0x0c25, 2},
-  {-10, -17, 0x0d07, 2},
-  { 15, -12, 0x8d15, 0},
-  { 15,  -4, 0x8d05, 0},
-  {  0, -28, 0x0e08, 2},
-  { -8, -19, 0x0c20, 2},
-  {  8, -19, 0x4c20, 2},
-  {  0, -28, 0x0e08, 2},
-  {  0, -28, 0x0e08, 2},
-  { -8, -19, 0x0c20, 2},
-  {  8, -19, 0x4c20, 2},
-  { -8, -19, 0x0c20, 2},
-  {  8, -19, 0x4c20, 2},
-};
-static const uint8 kUncleDraw_Dma3[8] = {8, 8, 0, 0, 6, 6, 0, 0};
-static const uint8 kUncleDraw_Dma4[8] = {0, 0, 0, 0, 4, 4, 0, 0x8b}; // wtf
 static const uint8 kUncle_LeaveHouse_Delay[2] = {64, 224};
 static const uint8 kUncle_LeaveHouse_Dir[2] = {2, 1};
 static const int8 kUncle_LeaveHouse_Xvel[4] = {0, 0, -12, 12};
@@ -535,7 +483,7 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_11_Hinox,
   &Sprite_12_Moblin,
   &Sprite_13_MiniHelmasaur,
-  &Sprite_14_ThievesTownGrate_bounce,
+  &Sprite_14_ThievesTownGrate,
   &Sprite_15_Antifairy,
   &Sprite_16_Elder_bounce,
   &Sprite_17_Hoarder,
@@ -552,7 +500,7 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_22_Ropa,
   &Sprite_23_RedBari,
   &Sprite_23_RedBari,
-  &Sprite_25_TalkingTree_bounce,
+  &Sprite_25_TalkingTree,
   &Sprite_26_HardhatBeetle,
   &Sprite_27_Deadrock,
   &Sprite_28_DarkWorldHintNPC,
@@ -560,32 +508,32 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_SweepingLady,
   &Sprite_2B_Hobo,
   &Sprite_Lumberjacks,
-  &Sprite_2D_TelepathicTile_bounce,
+  &Sprite_2D_TelepathicTile,
   &Sprite_2E_FluteKid,
   &Sprite_MazeGameLady,
   &Sprite_MazeGameGuy,
   &Sprite_FortuneTeller,
   &Sprite_QuarrelBros,
-  &Sprite_33_RupeePull_bounce,
+  &Sprite_33_RupeePull,
   &Sprite_YoungSnitchLady,
   &Sprite_InnKeeper,
   &Sprite_Witch,
-  &Sprite_37_Waterfall_bounce,
-  &Sprite_38_EyeStatue_bounce,
+  &Sprite_37_Waterfall,
+  &Sprite_38_EyeStatue,
   &Sprite_39_Locksmith,
-  &Sprite_3A_MagicBat_bounce,
+  &Sprite_3A_MagicBat,
   &Sprite_DashItem,
   &Sprite_TroughBoy,
   &Sprite_OldSnitchLady,
   &Sprite_17_Hoarder,
-  &Sprite_TutorialGuardOrBarrier_bounce,
-  &Sprite_TutorialGuardOrBarrier_bounce,
+  &Sprite_TutorialGuardOrBarrier,
+  &Sprite_TutorialGuardOrBarrier,
   // Trampoline 48 entries
   &Sprite_41_BlueGuard,
   &Sprite_41_BlueGuard,
   &Sprite_41_BlueGuard,
   &Sprite_44_BluesainBolt,
-  &Sprite_45_UsainBolt,
+  &Sprite_45_HogSpearMan,
   &Sprite_46_BlueArcher,
   &Sprite_47_GreenBushGuard,
   &Sprite_48_RedJavelinGuard,
@@ -623,20 +571,20 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_66_WallCannonVerticalLeft,
   &Sprite_66_WallCannonVerticalLeft,
   &Sprite_6A_BallNChain,
-  &Sprite_CannonTrooper,
+  &Sprite_6B_CannonTrooper,
   &Sprite_6C_MirrorPortal,
   &Sprite_6D_Rat,
   &Sprite_6E_Rope,
   &Sprite_6F_Keese,
-  &Sprite_70_KingHelmasaurFireball_bounce,
+  &Sprite_70_KingHelmasaurFireball,
   &Sprite_71_Leever,
   &Sprite_72_FairyPond,
-  &Sprite_73_UncleAndPriest_bounce,
+  &Sprite_73_UncleAndPriest,
   &Sprite_RunningMan,
   &Sprite_BottleVendor,
   &Sprite_76_Zelda,
   &Sprite_15_Antifairy,
-  &Sprite_78_MrsSahasrahla_bounce,
+  &Sprite_78_MrsSahasrahla,
   // Trampoline 68 entries
   &Sprite_79_Bee,
   &Sprite_7A_Agahnim,
@@ -749,18 +697,18 @@ static HandlerFuncK *const kSpriteActiveRoutines[243] = {
   &Sprite_E4_SmallKey,
   &Sprite_E4_SmallKey,
   &Sprite_D9_GreenRupee,
-  &Sprite_Mushroom,
-  &Sprite_FakeSword,
-  &Sprite_PotionShop,
+  &Sprite_E7_Mushroom,
+  &Sprite_E8_FakeSword,
+  &Sprite_E9_PotionShop,
   &Sprite_HeartContainer,
   &Sprite_HeartPiece,
   &Sprite_EC_ThrownItem,
-  &Sprite_SomariaPlatform,
-  &Sprite_MovableMantleTrampoline,
-  &Sprite_SomariaPlatform,
-  &Sprite_SomariaPlatform,
-  &Sprite_SomariaPlatform,
-  &Sprite_F2_MedallionTablet_bounce,
+  &Sprite_ED_SomariaPlatform,
+  &Sprite_EE_MovableMantle,
+  &Sprite_ED_SomariaPlatform,
+  &Sprite_ED_SomariaPlatform,
+  &Sprite_ED_SomariaPlatform,
+  &Sprite_F2_MedallionTablet,
 };
 static HandlerFuncK *const kSpritePrep_Main[243] = {
   &SpritePrep_Raven,
@@ -772,7 +720,7 @@ static HandlerFuncK *const kSpritePrep_Main[243] = {
   &SpritePrep_Switch,
   &SpritePrep_SwitchFacingUp,
   &SpritePrep_Octorok,
-  &SpritePrep_Moldorm_bounce,
+  &SpritePrep_Moldorm,
   &SpritePrep_Octorok,
   &SpritePrep_DoNothingA,
   &SpritePrep_DoNothingA,
@@ -847,7 +795,7 @@ static HandlerFuncK *const kSpritePrep_Main[243] = {
   &SpritePrep_DoNothingD,
   &SpritePrep_KingZora,
   &SpritePrep_ArmosKnight,
-  &SpritePrep_Lanmolas_bounce,
+  &SpritePrep_Lanmolas,
   &SpritePrep_SwimmingZora,
   &SpritePrep_WalkingZora,
   &SpritePrep_DesertStatue,
@@ -1371,7 +1319,7 @@ void HeartUpgrade_CheckIfAlreadyObtained(int k) {
   }
 }
 
-void Sprite_MovableMantleTrampoline(int k) {
+void Sprite_EE_MovableMantle(int k) {
   MovableMantle_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
@@ -1467,7 +1415,7 @@ void ChainBallTrooper_Draw(int k) {
     SpriteDraw_Shadow_custom(k, &info, kSoldier_DrawShadow[sprite_D[k]]);
 }
 
-void Sprite_CannonTrooper(int k) {
+void Sprite_6B_CannonTrooper(int k) {
   if (sprite_C[k] != 0) {
     Sprite_Cannonball(k);
     return;
@@ -1716,7 +1664,7 @@ void Sprite_SpawnSparkleGarnish(int k) {  // 858008
   garnish_countdown[j] = 15;
 }
 
-void Sprite_70_KingHelmasaurFireball_bounce(int k) {  // 85807f
+void Sprite_70_KingHelmasaurFireball(int k) {  // 85807f
   static const uint8 kHelmasaurFireball_Char[3] = {0xcc, 0xcc, 0xca};
   static const uint8 kHelmasaurFireball_Flags[2] = {0x33, 0x73};
   static const uint8 kHelmasaurFireball_Gfx[4] = {2, 2, 1, 0};
@@ -2590,8 +2538,6 @@ void SpriteDraw_Beamos_Eyeball(int k, PrepOamCoordsRet *info) {  // 859151
 }
 
 void Sprite_Beamos_Laser(int k) {  // 8591b5
-
-
   if (sprite_delay_aux1[k])
     return;
   BeamosLaser_Draw(k);
@@ -4918,7 +4864,7 @@ void Guard_AnimateWeapon(int k, const PrepOamCoordsRet *poc) {  // 85cb64
   }
 }
 
-void Sprite_45_UsainBolt(int k) {  // 85cbe0
+void Sprite_45_HogSpearMan(int k) {  // 85cbe0
   Guard_HandleAllAnimation(k);
   if (Sprite_ReturnIfInactive(k))
     return;
@@ -6427,7 +6373,7 @@ void SpritePrep_Mushroom(int k) {  // 85ee53
   }
 }
 
-void Sprite_Mushroom(int k) {  // 85ee78
+void Sprite_E7_Mushroom(int k) {  // 85ee78
   SpriteDraw_SingleLarge(k);
   if (Sprite_CheckIfLinkIsBusy())
     return;
@@ -6445,7 +6391,7 @@ void Sprite_Mushroom(int k) {  // 85ee78
   }
 }
 
-void Sprite_FakeSword(int k) {  // 85eeaf
+void Sprite_E8_FakeSword(int k) {  // 85eeaf
   FakeSword_Draw(k);
   if (Sprite_ReturnIfPaused(k))
     return;
@@ -6826,7 +6772,7 @@ void MagicShopAssistant_SpawnRedCauldron(int k) {  // 85f5f0
   sprite_defl_bits[j] |= 0x20;
 }
 
-void Sprite_PotionShop(int k) {  // 85f633
+void Sprite_E9_PotionShop(int k) {  // 85f633
   switch(sprite_subtype2[k]) {
   case 0: Sprite_MagicShopAssistant_Main(k); return;
   case 1: Sprite_BagOfPowder(k); return;
@@ -7996,14 +7942,14 @@ void SpritePrep_Octorok(int k) {  // 868f71
   sprite_delay_main[k] = GetRandomNumber() & 127;
 }
 
-void SpritePrep_Moldorm_bounce(int k) {  // 868f8a
+void SpritePrep_Moldorm(int k) {  // 868f8a
   if (Sprite_ReturnIfBossFinished(k))
     return;
   sprite_ignore_projectile[k]++;
   Sprite_InitializedSegmented(k);
 }
 
-void SpritePrep_Lanmolas_bounce(int k) {  // 868f95
+void SpritePrep_Lanmolas(int k) {  // 868f95
   static const uint8 kLanmola_InitDelay[3] = {128, 192, 255};
 
   if (Sprite_ReturnIfBossFinished(k))
@@ -10586,7 +10532,7 @@ void PushSwitch_Draw(int k) {  // 86bb22
   if (Sprite_PrepOamCoordOrDoubleRet(k, &info))
     return;
   uint8 flags;
-  sprite_oam_flags[k] = flags = overworld_palette_swap_flag ? sprite_oam_flags[k] | 0xe : sprite_oam_flags[k] & ~0xe;
+  sprite_oam_flags[k] = flags = palette_swap_flag ? sprite_oam_flags[k] | 0xe : sprite_oam_flags[k] & ~0xe;
   uint8 r1 = sprite_B[k] >> 2 & 3;
 
   oam_cur_ptr += 4, oam_ext_cur_ptr += 1;
@@ -10899,7 +10845,7 @@ void Hobo_SpawnSmoke(int k) {  // 86bfaf
   }
 }
 
-void Sprite_73_UncleAndPriest_bounce(int k) {  // 86bfe0
+void Sprite_73_UncleAndPriest(int k) {  // 86bfe0
   switch (sprite_E[k]) {
   case 0:
     Sprite_Uncle(k);
@@ -10980,7 +10926,7 @@ void SpritePrep_OldMan_bounce(int k) {  // 86bff9
   }
 }
 
-void Sprite_TutorialGuardOrBarrier_bounce(int k) {  // 86bffe
+void Sprite_TutorialGuardOrBarrier(int k) {  // 86bffe
   if (sprite_type[k] == 0x40) {
     Sprite_EvilBarrier(k);
     return;
@@ -11013,7 +10959,7 @@ void Sprite_TutorialGuardOrBarrier_bounce(int k) {  // 86bffe
   }
 }
 
-void Sprite_F2_MedallionTablet_bounce(int k) {  // 86c00d
+void Sprite_F2_MedallionTablet(int k) {  // 86c00d
   switch (sprite_subtype2[k]) {
   case 0:
     MedallionTablet_Main(k);
@@ -11024,7 +10970,7 @@ void Sprite_F2_MedallionTablet_bounce(int k) {  // 86c00d
   }
 }
 
-void Sprite_33_RupeePull_bounce(int k) {  // 86c017
+void Sprite_33_RupeePull(int k) {  // 86c017
   PrepOamCoordsRet info;
   Sprite_PrepOamCoord(k, &info);
   if (Sprite_ReturnIfInactive(k))
@@ -11046,7 +10992,7 @@ void Sprite_33_RupeePull_bounce(int k) {  // 86c017
   }
 }
 
-void Sprite_14_ThievesTownGrate_bounce(int k) {  // 86c01c
+void Sprite_14_ThievesTownGrate(int k) {  // 86c01c
   PrepOamCoordsRet info;
   Sprite_PrepOamCoord(k, &info);
   if (Sprite_ReturnIfInactive(k))
@@ -11079,14 +11025,14 @@ void SpritePrep_Snitch_bounce_3(int k) {  // 86c030
   SpritePrep_Snitches(k);
 }
 
-void Sprite_37_Waterfall_bounce(int k) {  // 86c03a
+void Sprite_37_Waterfall(int k) {  // 86c03a
   switch (sprite_subtype2[k]) {
   case 0: Waterfall(k); break;
   case 1: Sprite_BatCrash(k); break;
   }
 }
 
-void Sprite_38_EyeStatue_bounce(int k) {  // 86c03f
+void Sprite_38_EyeStatue(int k) {  // 86c03f
   if (!sprite_B[k]) {
     PrepOamCoordsRet info;
     Sprite_PrepOamCoord(k, &info);
@@ -11099,7 +11045,7 @@ void Sprite_38_EyeStatue_bounce(int k) {  // 86c03f
   }
 }
 
-void Sprite_3A_MagicBat_bounce(int k) {  // 86c044
+void Sprite_3A_MagicBat(int k) {  // 86c044
   if (sprite_head_dir[k]) {
     Sprite_MadBatterBolt(k);
     return;
@@ -11206,7 +11152,7 @@ void SpritePrep_Zelda_bounce(int k) {  // 86c06c
   }
 }
 
-void Sprite_78_MrsSahasrahla_bounce(int k) {  // 86c071
+void Sprite_78_MrsSahasrahla(int k) {  // 86c071
   ElderWife_Draw(k);
   if (Sprite_ReturnIfInactive(k))
     return;
@@ -11259,11 +11205,11 @@ void SpritePrep_HeartPiece(int k) {  // 86c0a8
   HeartUpgrade_CheckIfAlreadyObtained(k);
 }
 
-void Sprite_2D_TelepathicTile_bounce(int k) {  // 86c0b2
+void Sprite_2D_TelepathicTile(int k) {  // 86c0b2
   assert(0);
 }
 
-void Sprite_25_TalkingTree_bounce(int k) {  // 86c0d5
+void Sprite_25_TalkingTree(int k) {  // 86c0d5
   switch (sprite_subtype2[k]) {
   case 0: TalkingTree_Mouth(k); break;
   case 1: TalkingTree_Eye(k); break;
@@ -13176,6 +13122,59 @@ void MedallionTablet_Draw(int k) {  // 8dd1e2
 }
 
 void Uncle_Draw(int k) {  // 8dd391
+  static const DrawMultipleData kUncleDraw_Table[48] = {
+    {  0, -10, 0x0e00, 2},
+    {  0,   0, 0x0c06, 2},
+    {  0, -10, 0x0e00, 2},
+    {  0,   0, 0x0c06, 2},
+    {  0, -10, 0x0e00, 2},
+    {  0,   0, 0x0c06, 2},
+    {  0, -10, 0x0e02, 2},
+    {  0,   0, 0x0c06, 2},
+    {  0, -10, 0x0e02, 2},
+    {  0,   0, 0x0c06, 2},
+    {  0, -10, 0x0e02, 2},
+    {  0,   0, 0x0c06, 2},
+    { -7,   2, 0x0d07, 2},
+    { -7,   2, 0x0d07, 2},
+    { 10,  12, 0x8d05, 0},
+    { 10,   4, 0x8d15, 0},
+    {  0, -10, 0x0e00, 2},
+    {  0,   0, 0x0c04, 2},
+    { -7,   1, 0x0d07, 2},
+    { -7,   1, 0x0d07, 2},
+    { 10,  13, 0x8d05, 0},
+    { 10,   5, 0x8d15, 0},
+    {  0,  -9, 0x0e00, 2},
+    {  0,   1, 0x4c04, 2},
+    { -7,   8, 0x8d05, 0},
+    {  1,   8, 0x8d06, 0},
+    {  0, -10, 0x0e02, 2},
+    { -6,  -1, 0x4d07, 2},
+    {  0,   0, 0x0c23, 2},
+    {  0,   0, 0x0c23, 2},
+    { -9,   7, 0x8d05, 0},
+    { -1,   7, 0x8d06, 0},
+    {  0,  -9, 0x0e02, 2},
+    { -6,   0, 0x4d07, 2},
+    {  0,   1, 0x0c25, 2},
+    {  0,   1, 0x0c25, 2},
+    {-10, -17, 0x0d07, 2},
+    { 15, -12, 0x8d15, 0},
+    { 15,  -4, 0x8d05, 0},
+    {  0, -28, 0x0e08, 2},
+    { -8, -19, 0x0c20, 2},
+    {  8, -19, 0x4c20, 2},
+    {  0, -28, 0x0e08, 2},
+    {  0, -28, 0x0e08, 2},
+    { -8, -19, 0x0c20, 2},
+    {  8, -19, 0x4c20, 2},
+    { -8, -19, 0x0c20, 2},
+    {  8, -19, 0x4c20, 2},
+  };
+  static const uint8 kUncleDraw_Dma3[8] = { 8, 8, 0, 0, 6, 6, 0, 0 };
+  static const uint8 kUncleDraw_Dma4[8] = { 0, 0, 0, 0, 4, 4, 0, 0x8b }; // wtf
+
   Oam_AllocateFromRegionB(0x18);
   const DrawMultipleData *src = &kUncleDraw_Table[sprite_D[k] * 12 + sprite_graphics[k] * 6];
 
@@ -13210,6 +13209,7 @@ void BugNetKid_Draw(int k) {  // 8dd47b
     {-8, 14, 0x840a, 2},
     { 8, 14, 0xc40a, 2},
   };
+  sprite_graphics[k] = 0;
   Sprite_DrawMultiplePlayerDeferred(k, &kBugNetKid_Dmd[sprite_graphics[k] * 6], 6, NULL);
 }
 
@@ -22816,7 +22816,7 @@ void Sprite_85_YellowStalfos(int k) {  // 9ec37f
   }
 
   sprite_obj_prio[k] |= kYellowStalfos_ObjPrio[sprite_ai_state[k]];
-  YellowStalfos_Draw(k);
+  YellowStalfos_Draw(k);  
   if (Sprite_ReturnIfInactive(k))
     return;
   if (link_sword_type >= 3) {
@@ -25466,7 +25466,7 @@ void SomariaPlatform_LocatePath(int k) {  // 9ef640
   sprite_graphics[k]++;
 }
 
-void Sprite_SomariaPlatform(int k) {  // 9ef6d4
+void Sprite_ED_SomariaPlatform(int k) {  // 9ef6d4
   switch(sprite_graphics[k]) {
   case 0: {
     SomariaPlatform_LocatePath(k);

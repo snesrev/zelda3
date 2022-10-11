@@ -877,9 +877,9 @@ void Graphics_LoadChrHalfSlot() {  // 80e3fa
 
   int8 sp6 = kGraphicsLoadSp6[k - 1];
   if (sp6 >= 0) {
-    palette_sp6 = sp6;
+    palette_sp6r_indoors = sp6;
     if (k == 1) {
-      palette_sp6 = 10;
+      palette_sp6r_indoors = 10;
       overworld_palette_aux_or_main = 0x200;
       Palette_Load_SpriteEnvironment();
       flag_update_cgram_in_nmi++;
@@ -989,7 +989,14 @@ void LoadCommonSprites() {  // 80e6b7
 }
 
 int Decomp_spr(uint8 *dst, int gfx) {  // 80e772
-  return Decompress(dst, GetCompSpritePtr(gfx));
+  if (gfx < 12)
+    gfx = 12; // ensure it wont decode bad sheets.
+  const uint8 *sprite_data = GetCompSpritePtr(gfx);
+  // If the size is not 0x600 then it's compressed
+  if (gfx >= 103 || (((uint32 *)kSprGfx)[gfx + 1] - ((uint32 *)kSprGfx)[gfx]) != 0x600)
+    return Decompress(dst, sprite_data);
+  memcpy(dst, sprite_data, 0x600);
+  return 0x600;
 }
 
 int Decomp_bg(uint8 *dst, int gfx) {  // 80e78f
@@ -1649,7 +1656,7 @@ void Dungeon_UpdatePegGFXBuffer(int x, int y) {  // 829773
 }
 
 void Dungeon_HandleTranslucencyAndPalette() {  // 82a1e9
-  if (overworld_palette_swap_flag)
+  if (palette_swap_flag)
     Palette_RevertTranslucencySwap();
 
   CGWSEL_copy = 2;
@@ -1683,9 +1690,9 @@ void Dungeon_HandleTranslucencyAndPalette() {  // 82a1e9
   darkening_or_lightening_screen = 2;
   overworld_palette_aux_or_main = 0;
   Palette_Load_DungeonSet();
-  Palette_Load_SpritePal0Left();
-  Palette_Load_SpriteAux1();
-  Palette_Load_SpriteAux2();
+  Palette_Load_Sp0L();
+  Palette_Load_Sp5L();
+  Palette_Load_Sp6L();
   subsubmodule_index += 1;
 }
 
@@ -1697,12 +1704,12 @@ void Overworld_LoadAllPalettes() {  // 82c5b2
   overworld_palette_aux1_bp2to4_hi = 3;
   overworld_palette_aux2_bp5to7_hi = 3;
   overworld_palette_aux3_bp7_lo = 0;
-  palette_sp6 = 5;
-  overworld_palette_sp0 = 11;
-  overworld_palette_swap_flag = 0;
+  palette_sp6r_indoors = 5;
+  palette_sp0l = 11;
+  palette_swap_flag = 0;
   overworld_palette_aux_or_main = 0;
   Palette_BgAndFixedColor_Black();
-  Palette_Load_SpritePal0Left();
+  Palette_Load_Sp0L();
   Palette_Load_SpriteMain();
   Palette_Load_OWBGMain();
   Palette_Load_OWBG1();
@@ -1718,10 +1725,10 @@ void Overworld_LoadAllPalettes() {  // 82c5b2
 void Dungeon_LoadPalettes() {  // 82c630
   overworld_palette_aux_or_main = 0;
   Palette_BgAndFixedColor_Black();
-  Palette_Load_SpritePal0Left();
+  Palette_Load_Sp0L();
   Palette_Load_SpriteMain();
-  Palette_Load_SpriteAux1();
-  Palette_Load_SpriteAux2();
+  Palette_Load_Sp5L();
+  Palette_Load_Sp6L();
   Palette_Load_Sword();
   Palette_Load_Shield();
   Palette_Load_SpriteEnvironment();
@@ -1732,7 +1739,7 @@ void Dungeon_LoadPalettes() {  // 82c630
 }
 
 void Overworld_LoadPalettesInner() {  // 82c65f
-  overworld_pal_unk1 = dung_hdr_palette_1;
+  overworld_pal_unk1 = palette_main_indoors;
   overworld_pal_unk2 = overworld_palette_aux3_bp7_lo;
   overworld_pal_unk3 = byte_7E0AB7;
   darkening_or_lightening_screen = 2;
@@ -1753,13 +1760,13 @@ void Overworld_LoadAreaPalettesEx(uint8 x) {  // 82c6ad
   overworld_palette_aux_or_main &= 0xff;
   Palette_Load_SpriteMain();
   Palette_Load_SpriteEnvironment();
-  Palette_Load_SpriteAux1();
-  Palette_Load_SpriteAux2();
+  Palette_Load_Sp5L();
+  Palette_Load_Sp6L();
   Palette_Load_Sword();
   Palette_Load_Shield();
   Palette_Load_LinkArmorAndGloves();
-  overworld_palette_sp0 = (savegame_is_darkworld & 0x40) ? 3 : 1;
-  Palette_Load_SpritePal0Left();
+  palette_sp0l = (savegame_is_darkworld & 0x40) ? 3 : 1;
+  Palette_Load_Sp0L();
   Palette_Load_HUD();
   Palette_Load_OWBGMain();
 }
@@ -1800,14 +1807,14 @@ void Overworld_LoadPalettes(uint8 bg, uint8 spr) {  // 8ed5a8
 
   d = kOwSprPalInfo + spr * 2;
   if (d[0] >= 0)
-    sprite_aux1_palette = d[0];
+    palette_sp5l = d[0];
   if (d[1] >= 0)
-    sprite_aux2_palette = d[1];
+    palette_sp6l = d[1];
   Palette_Load_OWBG1();
   Palette_Load_OWBG2();
   Palette_Load_OWBG3();
-  Palette_Load_SpriteAux1();
-  Palette_Load_SpriteAux2();
+  Palette_Load_Sp5L();
+  Palette_Load_Sp6L();
 }
 
 void Palette_BgAndFixedColor_Black() {  // 8ed5f4
@@ -1852,7 +1859,7 @@ void Palette_AssertTranslucencySwap() {  // 8ed657
 }
 
 void Palette_SetTranslucencySwap(bool v) {  // 8ed65c
-  overworld_palette_swap_flag = v;
+  palette_swap_flag = v;
   uint16 a, b;
   for (int i = 0; i < 8; i++) {
     a = aux_palette_buffer[i + 0x80];
@@ -1959,35 +1966,64 @@ void Palette_Restore_BG_And_HUD() {  // 8ed8fb
   Palette_Restore_Coldata();
 }
 
-void Palette_Load_SpritePal0Left() {  // 9bec77
-  const uint16 *src = kPalette_SpriteAux3 + overworld_palette_sp0 * 7;
-  Palette_LoadSingle(src, overworld_palette_swap_flag ? 0x1e2 : 0x102, 6);
+/* Summary of sprite palette usage 
+0l: kPalette_SpriteAux3[palette_sp0l]
+0r: kPalette_MiscSprite[7 / 9] or kPalette_DungBgMain[(palette_main_indoors >> 1) * 90]
+1 : common sprites
+2 :      -"-
+3 :      -"-
+4 :      -"-
+5l: palette_sp5l
+5r: link sword/shield
+6l: palette_sp6l
+6r: kPalette_MiscSprite[6 / 8] or kPalette_MiscSprite[palette_sp6r_indoors]
+7 : link armor and gloves
+*/
+
+enum {
+  kPal_sp0l = 0x102,
+  kPal_sp0r = 0x112,
+  kPal_sp1to4 = 0x122,   // This is used for 64 colors, colors switched if in darkworld mode
+  kPal_sp5l = 0x1a2,
+  kPal_Sword = 0x1b2,
+  kPal_Shield = 0x1b8,
+  kPal_sp6l = 0x1c2,
+  kPal_sp6r = 0x1d2,
+  kPal_sp7l = 0x1e2,
+  kPal_sp7r = 0x1f2,
+  kPal_ArmorGloves = 0x1e2,
+  kPal_PalaceMap = 0x182,
+};
+
+void Palette_Load_Sp0L() {  // 9bec77
+  const uint16 *src = kPalette_SpriteAux3 + palette_sp0l * 7;
+  Palette_LoadSingle(src, palette_swap_flag ? kPal_sp7l : kPal_sp0l, 6);
 }
 
 void Palette_Load_SpriteMain() {  // 9bec9e
   const uint16 *src = kPalette_MainSpr + (overworld_screen_index & 0x40 ? 60 : 0);
-  Palette_LoadMultiple(src, 0x122, 14, 3);
+  Palette_LoadMultiple(src, kPal_sp1to4, 14, 3);
 }
 
-void Palette_Load_SpriteAux1() {  // 9becc5
-  const uint16 *src = kPalette_SpriteAux1 + (sprite_aux1_palette) * 7;
-  Palette_LoadSingle(src, 0x1A2, 6);
+void Palette_Load_Sp5L() {  // 9becc5
+  const uint16 *src = kPalette_SpriteAux1 + (palette_sp5l) * 7;
+  Palette_LoadSingle(src, kPal_sp5l, 6);
 }
 
-void Palette_Load_SpriteAux2() {  // 9bece4
-  const uint16 *src = kPalette_SpriteAux1 + (sprite_aux2_palette) * 7;
-  Palette_LoadSingle(src, 0x1C2, 6);
+void Palette_Load_Sp6L() {  // 9bece4
+  const uint16 *src = kPalette_SpriteAux1 + (palette_sp6l) * 7;
+  Palette_LoadSingle(src, kPal_sp6l, 6);
 }
 
 void Palette_Load_Sword() {  // 9bed03
   const uint16 *src = kPalette_Sword + ((int8)link_sword_type > 0 ? link_sword_type - 1 : 0) * 3;  // wtf: zelda reads offset 0xff
-  Palette_LoadMultiple_Arbitrary(src, 0x1b2, 2);
+  Palette_LoadMultiple_Arbitrary(src, kPal_Sword, 2);
   flag_update_cgram_in_nmi += 1;
 }
 
 void Palette_Load_Shield() {  // 9bed29
   const uint16 *src = kPalette_Shield + (link_shield_type ? link_shield_type - 1 : 0) * 4;
-  Palette_LoadMultiple_Arbitrary(src, 0x1b8, 3);
+  Palette_LoadMultiple_Arbitrary(src, kPal_Shield, 3);
   flag_update_cgram_in_nmi += 1;
 }
 
@@ -1998,26 +2034,28 @@ void Palette_Load_SpriteEnvironment() {  // 9bed6e
     Palette_MiscSprite_Outdoors();
 }
 
+// avoid renaming in assets.dat
+#define kPalette_MiscSprite kPalette_MiscSprite_Indoors
+
 void Palette_Load_SpriteEnvironment_Dungeon() {  // 9bed72
-  const uint16 *src = kPalette_MiscSprite_Indoors + palette_sp6 * 7;
-  Palette_LoadSingle(src, 0x1d2, 6);
+  const uint16 *src = kPalette_MiscSprite + palette_sp6r_indoors * 7;
+  Palette_LoadSingle(src, kPal_sp6r, 6);
 }
 
 void Palette_MiscSprite_Outdoors() {  // 9bed91
   int t = (overworld_screen_index & 0x40) ? 9 : 7;
-  const uint16 *src = kPalette_MiscSprite_Indoors + t * 7;
-  Palette_LoadSingle(src, overworld_palette_swap_flag ? 0x1f2 : 0x112, 6);
-  src = kPalette_MiscSprite_Indoors + (t - 1) * 7;
-  Palette_LoadSingle(src, 0x1d2, 6);
+  const uint16 *src = kPalette_MiscSprite + t * 7;
+  Palette_LoadSingle(src, palette_swap_flag ? kPal_sp7r : kPal_sp0r, 6);
+  Palette_LoadSingle(src - 7, kPal_sp6r, 6);
 }
 
 void Palette_Load_DungeonMapSprite() {  // 9beddd
-  Palette_LoadMultiple(kPalette_PalaceMapSpr, 0x182, 6, 2);
+  Palette_LoadMultiple(kPalette_PalaceMapSpr, kPal_PalaceMap, 6, 2);
 }
 
 void Palette_Load_LinkArmorAndGloves() {  // 9bedf9
   const uint16 *src = kPalette_ArmorAndGloves + link_armor * 15;
-  Palette_LoadMultiple_Arbitrary(src, 0x1e2, 14);
+  Palette_LoadMultiple_Arbitrary(src, kPal_ArmorGloves, 14);
   Palette_UpdateGlovesColor();
 }
 
@@ -2037,9 +2075,9 @@ void Palette_Load_HUD() {  // 9bee52
 }
 
 void Palette_Load_DungeonSet() {  // 9bee74
-  const uint16 *src = kPalette_DungBgMain + (dung_hdr_palette_1 >> 1) * 90;
+  const uint16 *src = kPalette_DungBgMain + (palette_main_indoors >> 1) * 90;
   Palette_LoadMultiple(src, 0x42, 14, 5);
-  Palette_LoadSingle(src, overworld_palette_swap_flag ? 0x1f2 : 0x112, 6);
+  Palette_LoadSingle(src, palette_swap_flag ? kPal_sp7r : kPal_sp0r, 6);
 }
 
 void Palette_Load_OWBG3() {  // 9beea8

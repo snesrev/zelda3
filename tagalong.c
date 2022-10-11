@@ -662,7 +662,7 @@ incr:
  uint8 pal;
 skip_first_sprites:
   pal = kTagalongDraw_Pals[follower_indicator];
-  if (pal == 7 && overworld_palette_swap_flag)
+  if (pal == 7 && palette_swap_flag)
     pal = 0;
 
   if (follower_indicator == 13) {
