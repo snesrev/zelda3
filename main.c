@@ -65,6 +65,9 @@ static int g_snes_width, g_snes_height;
 static int g_sdl_audio_mixer_volume = SDL_MIX_MAXVOLUME;
 
 void NORETURN Die(const char *error) {
+#if defined(NDEBUG) && defined(_WIN32)
+  SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, kWindowTitle, error, NULL);
+#endif
   fprintf(stderr, "Error: %s\n", error);
   exit(1);
 }
@@ -742,7 +745,7 @@ static void LoadAssets() {
   uint8 *data = ReadFile("tables/zelda3_assets.dat", &length);
   if (!data)
     data = ReadFile("zelda3_assets.dat", &length);
-  if (!data) Die("Failed to read zelda3_assets.dat");
+  if (!data) Die("Failed to read zelda3_assets.dat. Please see the README for information about how you get this file.");
 
   static const char kAssetsSig[] = { kAssets_Sig };
 
