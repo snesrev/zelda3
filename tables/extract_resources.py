@@ -526,11 +526,15 @@ def print_all_text_stuff():
   print_default_rooms()
   print_dialogue()
   print_map32_to_map16(open('map32_to_map16.txt', 'w'))
+
+def main():
+  make_directories()
+  print_all_text_stuff()
+  extract_music.extract_sound_data(ROM)
+  sprite_sheets.decode_link_sprites()
+  sprite_sheets.decode_sprite_sheets()
   
 ROM = util.load_rom(sys.argv[1] if len(sys.argv) >= 2 else None)
 
-make_directories()
-print_all_text_stuff()
-extract_music.extract_sound_data(ROM)
-sprite_sheets.decode_link_sprites()
-sprite_sheets.decode_sprite_sheets()
+main()
+#sprite_sheets.decode_sprite_sheets()

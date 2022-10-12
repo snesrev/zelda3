@@ -358,33 +358,37 @@ class MasterTilesheets:
           raise Exception('Pixel has more than one value')
         sheet8[o] = pixel8
 
-  def save_to_all_sheets(self):
+  def save_to_all_sheets(self, save_also_8bit = False):
     rv = array.array('I')
-    rv8 = bytearray()
+    if save_also_8bit:
+      rv8 = bytearray()
 
     def extend_with_string_line(text):
       header = array.array('I', [0xf0f0f0] * 128 * 8)
       draw_string3x5(header, 128, 1, 2, text, 0x404040)
       rv.extend(header)
-      header8 = bytearray([255] * 128 * 8)
-      draw_string3x5(header8, 128, 1, 2, text, 254)
-      rv8.extend(header8)
+      if save_also_8bit:
+        header8 = bytearray([255] * 128 * 8)
+        draw_string3x5(header8, 128, 1, 2, text, 254)
+        rv8.extend(header8)
     extend_with_string_line('AUTO GENERATED DO NOT EDIT')
     kk = 0
     for k in sorted(self.sheets.keys()):
       extend_with_string_line('Sheet %d' % k)
       rv.extend(self.sheets[k][0])
-      rv8.extend(self.sheets[k][1])
+      if save_also_8bit:
+        rv8.extend(self.sheets[k][1])
       if k != kk:
         print('Missing %d' % kk)
       kk = k + 1
-    palette8 = get_full_palette(4, 0)
-    for i, v in enumerate(convert_snes_palette_to_int(get_palette_subset(5, 0))):
-      palette8[i + 9] = v
-    palette8[248] = 0x00f000
-    save_as_png((128, len(rv)//128), rv8, 'sprites/all_sheets_8bit.png', palette = convert_int24_palette_to_bytes(palette8))
+    if save_also_8bit:
+      palette8 = get_full_palette(4, 0)
+      for i, v in enumerate(convert_snes_palette_to_int(get_palette_subset(5, 0))):
+        palette8[i + 9] = v
+      palette8[248] = 0x00f000
+      save_as_png((128, len(rv)//128), rv8, 'sprites/all_sheets_8bit.png', palette = convert_int24_palette_to_bytes(palette8))
+      self.verify_identical_to_snes()
     save_as_24bpp_png((128, len(rv)//128), rv, 'sprites/all_sheets.png')
-    self.verify_identical_to_snes()
 
   def verify_identical_to_snes(self):
     for tileset in range(103):
