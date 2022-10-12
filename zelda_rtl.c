@@ -478,6 +478,11 @@ static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
   SpcPlayer_CopyVariablesFromRam(g_zenv.player);
   // This is not stored in the snapshot
   g_zenv.player->timer_cycles = 0;
+
+  // Restore input ports state
+  SpcPlayer *spc_player = g_zenv.player;
+  memcpy(spc_player->input_ports, &spc_player->ram[0x410], 4);
+  memcpy(g_apu_write.ports, spc_player->input_ports, 4);
   
   // Ensure emulator has the up-to-date state too
   EmuSynchronizeWholeState();
@@ -488,6 +493,13 @@ static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
 static void SaveSnesState(SaveLoadFunc *func, void *ctx) {
   memcpy(g_zenv.ram + 0x1b00, g_zenv.ram + 0x1DBA0, 224 * 2); // hdma table was moved
   SpcPlayer_CopyVariablesToRam(g_zenv.player);
+
+  // SpcPlayer.input_ports is not saved to the SpcPlayer ram by SpcPlayer_CopyVariablesToRam,
+  // in any case, we want to save the most recently written data, and that might still
+  // be in the queue. 0x410 is a free memory location in the SPC ram, so store it there.
+  SpcPlayer *spc_player = g_zenv.player;
+  memcpy(&spc_player->ram[0x410], g_apu_write.ports, 4);
+
   InternalSaveLoad(func, ctx);
 }
 
