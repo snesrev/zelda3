@@ -70,12 +70,11 @@ Same Steps 1-7 above<br/>
 1. Open a terminal
 2. Install pip if not already installed
 ```sh
-curl -sSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
-python3 get-pip.py
+python3 -m ensurepip
 ```
-3. Install `pillow` and `pyyaml` using pip
+3. Install requirements using pip
 ```sh
-python3 -m pip install pillow pyyaml
+python3 -m pip install -r requirements.txt
 ```
 4. Install SDL2
 * Ubuntu/Debian `sudo apt install libsdl2-dev`
