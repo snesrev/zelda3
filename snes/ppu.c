@@ -124,7 +124,7 @@ void ppu_saveload(Ppu *ppu, SaveLoadFunc *func, void *ctx) {
 
 int PpuGetCurrentRenderScale(Ppu *ppu, uint32_t render_flags) {
   bool hq = ppu->mode == 7 && !ppu->forcedBlank &&
-    (ppu->renderFlags & (kPpuRenderFlags_4x4Mode7 | kPpuRenderFlags_NewRenderer)) == (kPpuRenderFlags_4x4Mode7 | kPpuRenderFlags_NewRenderer);
+    (render_flags & (kPpuRenderFlags_4x4Mode7 | kPpuRenderFlags_NewRenderer)) == (kPpuRenderFlags_4x4Mode7 | kPpuRenderFlags_NewRenderer);
   return hq ? 4 : 2;
 }
 
