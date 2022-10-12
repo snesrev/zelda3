@@ -267,10 +267,12 @@ def save_sprite_set_entry(finaldst, e, master_tilesheets = None):
     if e.high_palette:
       pal_name = '%sR' % e.pal_base
     else:
-      pal_name = ' %s' % e.pal_base
+      pal_name = '%s' % e.pal_base
       if e.pal_base in (1, 2, 3):
         assert e.pal_subidx in (0, 1)
         pal_subidx = 'LW' if pal_subidx == 0 else 'DW'
+    if pal_subidx != None:
+      pal_name = '%s-%s' % (pal_name, pal_subidx)
 
     header = bytearray([255] * BIGW * 9)
     draw_string3x5(header, BIGW, 1, 3, e.name[:22], 254)
@@ -279,10 +281,12 @@ def save_sprite_set_entry(finaldst, e, master_tilesheets = None):
       xx = BIGW - 37 + i * 5 - 9
       fillrect(header, xx, xx + 4, 3, 7, i + (9 if e.high_palette else 1))
 
-    if pal_subidx != None:
-      draw_string3x5(header, BIGW, BIGW - 9, 3, '%2s' % pal_subidx, 252)
+    #if pal_subidx != None:
+    #  draw_string3x5(header, BIGW, BIGW - 9, 3, '%2s' % pal_subidx, 252)
 
-    draw_string3x5(header, BIGW, BIGW - 45 - 9, 3, pal_name, 252)
+    draw_string3x5(header, BIGW, BIGW - 9, 3, '%2s' % e.tileset, 252)
+
+    draw_string3x5(header, BIGW, BIGW - 45 - 1 - len(pal_name) * 4, 3, pal_name, 252)
     finaldst.extend(convert_to_24bpp(header, palette))
 
   bigdst = bytearray([255] * BIGW * 36)
@@ -307,14 +311,18 @@ def save_sprite_set_entry(finaldst, e, master_tilesheets = None):
       if master_tilesheets:
         master_tilesheets.insert(e.tileset, src, x, y, palette, 0)
 
+  # display vram addresses
+  draw_string3x5(bigdst, BIGW, BIGW - 9, 4, '%Xx' % (e.ss_idx * 0x4), 252)
+  draw_string3x5(bigdst, BIGW, BIGW - 9, 4 + 17, '%Xx' % (e.ss_idx * 0x4 + 2), 252)
+
   # collapse unused matrix sections
   if all(m=='.' for m in e.matrix[0]) and all(m=='.' for m in e.matrix[1]):
     del bigdst[1*BIGW:17*BIGW]
   elif all(m=='.' for m in e.matrix[2]) and all(m=='.' for m in e.matrix[3]):
     del bigdst[18*BIGW:34*BIGW]
 
-  draw_string3x5(bigdst, BIGW, BIGW - 9, 2, ' %d' % e.ss_idx, 252)
-  draw_string3x5(bigdst, BIGW, BIGW - 9, 2 + 9, '%.2d' % e.tileset, 252)
+  if e.skip_header:
+    draw_string3x5(bigdst, BIGW, BIGW - 9, len(bigdst)//BIGW - 8, '%.2d' % e.tileset, 252)
   
   finaldst.extend(convert_to_24bpp(bigdst, palette))
 

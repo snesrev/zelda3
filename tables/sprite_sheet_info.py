@@ -1,6 +1,6 @@
 class Entry:
   def __init__(self, name, dungeon_or_ow, tileset_and_pal, ss_idx, matrix, pal_base):
-    self.name = name
+    self.name = name.replace(' - ', ': ')
     self.dungeon_or_ow = dungeon_or_ow
     self.tileset, self.palset_idx = tileset_and_pal
     self.ss_idx = ss_idx
