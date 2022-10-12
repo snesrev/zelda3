@@ -8,6 +8,14 @@ import compile_music
 import array, hashlib, struct
 from util import cache
 import sprite_sheets
+import argparse
+
+parser = argparse.ArgumentParser(description='Compile resources.')
+parser.add_argument('rom', nargs='?', help='the rom file')
+parser.add_argument('--sprites-from-png', action='store_true', help='Use the sprite images from the .PNG files')
+args = parser.parse_args()
+
+ROM = util.LoadedRom(args.rom)
 
 def flatten(xss):
     return [x for xs in xss for x in xs]
@@ -75,8 +83,6 @@ def print_dialogue():
   add_asset_uint16('kDialogueOffs', offs)
   add_asset_uint8('kDialogueText', new_r)
 
-ROM = util.LoadedRom(sys.argv[1] if len(sys.argv) >= 2 else None)
-
 def compress_store(r):
   rr = []
   j, jend = 0, len(r)
@@ -97,7 +103,7 @@ def pack_u32_arrays(arr):
   return b''.join([struct.pack('I', i) for i in all_offs] + arr)
 
 def print_images():
-  sprsheet = sprite_sheets.load_sprite_sheets()
+  sprsheet = sprite_sheets.load_sprite_sheets() if args.sprites_from_png else None
 
   all = []
   for i in range(108):
