@@ -43,30 +43,28 @@ Pick up items and destroy pots with Sword.
 ## Installing Python & libraries on Windows (required for asset extraction steps)
 1. Download [Python](https://www.python.org/ftp/python/3.10.7/python-3.10.7-amd64.exe) installer and install
 2. Open the command prompt
-3. Type "python -m pip install --upgrade pip" and hit enter
-4. Type "python -m pip install --upgrade Pillow" and hit enter
-5. Type "python -m pip install --upgrade pyyaml" and hit enter
-6. Close the command prompt
+3. Upgrade pip & install `pillow` and `pyyaml` by typing `python -m pip install --upgrade pip pillow pyyaml` and hit enter
+4. Close the command prompt
 
 ## Compiling on Windows with TCC (1mb Tiny C Compiler)
 1. Download the project by clicking "Code > Download ZIP" on the github page
 2. Extract the ZIP to your hard drive
-3. Place the USA rom named "zelda3.sfc" in the "\tables" subfolder
+3. Place the USA rom named `zelda3.sfc` in the "\tables" subfolder
 4. Open the command prompt and navigate to that folder
-5. Type "python extract_resources.py" and hit enter
-6. Type "python compile_resources.py" and hit enter
+5. Extract resources by typing `python extract_resources.py` and hit enter
+6. Compile the extracted resources by typing `python compile_resources.py` and hit enter
 7. Close the command prompt
 8. Download [TCC](https://download.savannah.gnu.org/releases/tinycc/tcc-0.9.27-win64-bin.zip) and extract to the "\third_party" subfolder
 9. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.24.0/SDL2-devel-2.24.0-VC.zip) and extract to the "\third_party" subfolder
-10. Double-click "run_with_tcc.bat" in the main dir to create zelda3.exe in that same dir
-11. Configure with zelda3.ini in the main dir
+10. Double-click `run_with_tcc.bat` in the main dir to create `zelda3.exe` in that same dir
+11. Configure with `zelda3.ini` in the main dir
 
 ## Compiling on Windows with Visual Studio (4.5gb IDE and compiler)
 Same Steps 1-7 above<br/>
-8. Double-click "Zelda3.sln"<br/>
+8. Double-click `Zelda3.sln`<br/>
 9. Change "debug" to "release" in the top dropdown<br/>
-10. Choose "build > build Zelda3" in the menu to create zelda3.exe in the "/bin/release" subfolder<br/>
-11. Configure with zelda3.ini in the main dir<br/>
+10. Choose "build > build Zelda3" in the menu to create `zelda3.exe` in the "/bin/release" subfolder<br/>
+11. Configure with `zelda3.ini` in the main dir<br/>`
 
 ## Installing libraries on Linux/MacOS
 1. Open a terminal
