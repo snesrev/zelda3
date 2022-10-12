@@ -168,6 +168,7 @@ def get_full_palette(pal_idx, pal_subidx):
   # change the transparent to teal #008080
   for i in range(0, 128, 8):
     rv[i] = 0x808000
+  rv[251] = 0xe0c0c0 # blueish text
   rv[252] = 0xc0c0c0 # palette text
   rv[253] = 0xf0f0f0 # unallocated
   rv[254] = 0x404040 # lines
@@ -281,11 +282,7 @@ def save_sprite_set_entry(finaldst, e, master_tilesheets = None):
       xx = BIGW - 37 + i * 5 - 9
       fillrect(header, xx, xx + 4, 3, 7, i + (9 if e.high_palette else 1))
 
-    #if pal_subidx != None:
-    #  draw_string3x5(header, BIGW, BIGW - 9, 3, '%2s' % pal_subidx, 252)
-
     draw_string3x5(header, BIGW, BIGW - 9, 3, '%2s' % e.tileset, 252)
-
     draw_string3x5(header, BIGW, BIGW - 45 - 1 - len(pal_name) * 4, 3, pal_name, 252)
     finaldst.extend(convert_to_24bpp(header, palette))
 
@@ -312,8 +309,8 @@ def save_sprite_set_entry(finaldst, e, master_tilesheets = None):
         master_tilesheets.insert(e.tileset, src, x, y, palette, 0)
 
   # display vram addresses
-  draw_string3x5(bigdst, BIGW, BIGW - 9, 4, '%Xx' % (e.ss_idx * 0x4), 252)
-  draw_string3x5(bigdst, BIGW, BIGW - 9, 4 + 17, '%Xx' % (e.ss_idx * 0x4 + 2), 252)
+  draw_string3x5(bigdst, BIGW, BIGW - 9, 4, '%Xx' % (e.ss_idx * 0x4), 251)
+  draw_string3x5(bigdst, BIGW, BIGW - 9, 4 + 17, '%Xx' % (e.ss_idx * 0x4 + 2), 251)
 
   # collapse unused matrix sections
   if all(m=='.' for m in e.matrix[0]) and all(m=='.' for m in e.matrix[1]):
@@ -322,7 +319,7 @@ def save_sprite_set_entry(finaldst, e, master_tilesheets = None):
     del bigdst[18*BIGW:34*BIGW]
 
   if e.skip_header:
-    draw_string3x5(bigdst, BIGW, BIGW - 9, len(bigdst)//BIGW - 8, '%.2d' % e.tileset, 252)
+    draw_string3x5(bigdst, BIGW, BIGW - 9, len(bigdst)//BIGW - 6, '%.2d' % e.tileset, 252)
   
   finaldst.extend(convert_to_24bpp(bigdst, palette))
 
