@@ -6,7 +6,7 @@ import yaml
 import tables
 import compile_music
 import array, hashlib, struct
-from functools import cache
+from util import cache
 import sprite_sheets
 
 def flatten(xss):

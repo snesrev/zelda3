@@ -2,13 +2,12 @@ from ast import literal_eval as make_tuple
 import sys
 import text_compression
 import util
-from util import get_bytes, get_words, get_byte, get_word, get_int8, get_int16
+from util import get_bytes, get_words, get_byte, get_word, get_int8, get_int16, cache
 import tables
 import yaml
 import extract_music
 import os
 import sprite_sheets
-from functools import cache
 
 def print_map32_to_map16(f):
   for i in range(2218):

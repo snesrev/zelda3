@@ -2,7 +2,11 @@ import array
 import sys
 import hashlib
 import os
-from functools import cache
+from functools import lru_cache
+
+def cache(user_function, /):
+  'Simple lightweight unbounded cache.  Sometimes called "memoize".'
+  return lru_cache(maxsize=None)(user_function)
 
 # Both are common SNES rom extensions. For Zelda3 (NA), they are equivalent files.
 COMMON_ROM_NAMES = ['zelda3.sfc', 'zelda3.smc']

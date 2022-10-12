@@ -1,10 +1,9 @@
 from PIL import Image
 import sprite_sheet_info
 import util
-from util import get_bytes, get_words, get_byte
+from util import get_bytes, get_words, get_byte, cache
 import array
 import tables
-from functools import cache
 
 def save_as_png(dimensions, data, fname, palette = None):
   img = Image.new('L' if palette == None else 'P', dimensions)
