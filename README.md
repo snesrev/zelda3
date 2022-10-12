@@ -68,9 +68,32 @@ Same Steps 1-7 above<br/>
 10. Choose "build > build Zelda3" in the menu to create zelda3.exe in the "/bin/release" subfolder<br/>
 11. Configure with zelda3.ini in the main dir<br/>
 
-## Compiling on Linux/MacOS
-
+## Installing libraries on Linux/MacOS
+1. Open a terminal
+2. Install pip if not already installed
 ```sh
+curl -sSL https://bootstrap.pypa.io/get-pip.py -o get-pip.py
+python3 get-pip.py
+```
+3. Install `pillow` and `pyyaml` using pip
+```sh
+python3 -m pip install pillow pyyaml
+```
+4. Install SDL2
+* Ubuntu/Debian `sudo apt install libsdl2-dev`
+* Fedora Linux `sudo dnf in sdl2-devel`
+* Arch Linux `sudo pacman -S sdl2`
+* macOS: `brew install sdl2` (you can get homebrew [here](https://brew.sh/))
+
+## Compiling on Linux/MacOS
+1. Clone the repo
+```sh
+git clone https://github.com/snesrev/zelda3
+```
+2. Place your US ROM file named `zelda3.sfc` in `zelda3/tables`
+3. `cd` into the repo and compile
+```sh
+cd zelda3 
 make
 ```
 <details>
@@ -100,6 +123,9 @@ nxlink -s zelda3.nro
 ## More Compilation Help
 
 Look at the wiki at https://github.com/snesrev/zelda3/wiki for more help.
+
+The ROM needs to be named `zelda3.sfc` and has to be from the US region with this exact SHA256 hash
+`66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`
 
 In case you're planning to move the executable to a different location, please include the file `tables/zelda3_assets.dat`.
 
