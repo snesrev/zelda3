@@ -189,13 +189,11 @@ void ppu_runLine(Ppu *ppu, int line) {
       for (int x = 0; x < 256; x++)
         ppu_handlePixel(ppu, x, line);
 
-      uint8 *dst = ppu->renderBuffer + ((line - 1) * 2 * ppu->renderPitch);
-
+      uint8 *dst = ppu->renderBuffer + ((line - 1) * ppu->renderPitch);
       if (ppu->extraLeftRight != 0) {
-        memset(dst, 0, 2 * sizeof(uint32) * ppu->extraLeftRight);
-        memset(dst + 2 * sizeof(uint32) * (256 + ppu->extraLeftRight), 0, 2 * sizeof(uint32) * ppu->extraLeftRight);
+        memset(dst, 0, sizeof(uint32) * ppu->extraLeftRight);
+        memset(dst + sizeof(uint32) * (256 + ppu->extraLeftRight), 0, sizeof(uint32) * ppu->extraLeftRight);
       }
-      memcpy(dst + ppu->renderPitch, dst, 2 * sizeof(uint32) * (256 + ppu->extraLeftRight * 2));
     }
   }
 }
