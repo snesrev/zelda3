@@ -8,6 +8,7 @@
 #include "snes/snes_regs.h"
 #include "snes/dma.h"
 #include "spc_player.h"
+#include "util.h"
 
 ZeldaEnv g_zenv;
 uint8 g_ram[131072];
@@ -385,38 +386,6 @@ static void Startup_InitializeMemory() {  // 8087c0
     WORD(sram[0xde5]) = 0;
   INIDISP_copy = 0x80;
   flag_update_cgram_in_nmi++;
-}
-
-
-typedef struct ByteArray {
-  uint8 *data;
-  size_t size, capacity;
-} ByteArray;
-
-void ByteArray_Resize(ByteArray *arr, size_t new_size) {
-  arr->size = new_size;
-  if (new_size > arr->capacity) {
-    size_t minsize = arr->capacity + (arr->capacity >> 1) + 8;
-    arr->capacity = new_size < minsize ? minsize : new_size;
-    void *data = realloc(arr->data, arr->capacity);
-    if (!data) Die("memory allocation failed");
-    arr->data = data;
-  }
-}
-
-void ByteArray_Destroy(ByteArray *arr) {
-  free(arr->data);
-  arr->data = NULL;
-}
-
-void ByteArray_AppendData(ByteArray *arr, const uint8 *data, size_t data_size) {
-  ByteArray_Resize(arr, arr->size + data_size);
-  memcpy(arr->data + arr->size - data_size, data, data_size);
-}
-
-void ByteArray_AppendByte(ByteArray *arr, uint8 v) {
-  ByteArray_Resize(arr, arr->size + 1);
-  arr->data[arr->size - 1] = v;
 }
 
 void ByteArray_AppendVl(ByteArray *arr, uint32 v) {
@@ -888,8 +857,6 @@ void SaveLoadSlot(int cmd, int which) {
     fclose(f);
   }
 }
-
-
 
 typedef struct StateRecoderMultiPatch {
   uint32 count;

@@ -23,6 +23,9 @@
     <Filter Include="Deploy\tables">
       <UniqueIdentifier>{af7accb3-a27b-402b-ab20-86bbb57bd9a3}</UniqueIdentifier>
     </Filter>
+    <Filter Include="third_party">
+      <UniqueIdentifier>{29eb2519-e785-4828-a9e2-1d6eca0d4087}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="snes\apu.c">
@@ -132,6 +135,18 @@
     </ClCompile>
     <ClCompile Include="snes\tracing.c">
       <Filter>Snes</Filter>
+    </ClCompile>
+    <ClCompile Include="opengl.c">
+      <Filter>Zelda</Filter>
+    </ClCompile>
+    <ClCompile Include="glsl_shader.c">
+      <Filter>Zelda</Filter>
+    </ClCompile>
+    <ClCompile Include="util.c">
+      <Filter>Zelda</Filter>
+    </ClCompile>
+    <ClCompile Include="third_party\gl_core\gl_core_3_1.c">
+      <Filter>third_party</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -260,6 +275,15 @@
     </ClInclude>
     <ClInclude Include="snes\tracing.h">
       <Filter>Snes</Filter>
+    </ClInclude>
+    <ClInclude Include="glsl_shader.h">
+      <Filter>Zelda</Filter>
+    </ClInclude>
+    <ClInclude Include="util.h">
+      <Filter>Zelda</Filter>
+    </ClInclude>
+    <ClInclude Include="third_party\gl_core\gl_core_3_1.h">
+      <Filter>third_party</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

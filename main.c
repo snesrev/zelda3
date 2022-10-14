@@ -24,16 +24,17 @@
 #include "config.h"
 #include "assets.h"
 #include "load_gfx.h"
+#include "util.h"
 
-static bool g_run_without_emu = 0;
+static bool g_run_without_emu = 1;
 
-
+void ShaderInit();
 
 // Forwards
 static bool LoadRom(const char *filename);
 static void LoadLinkGraphics();
 static void PlayAudio(SDL_AudioDeviceID device, int channels, int16 *audioBuffer);
-static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen);
+static void RenderNumber(uint8 *dst, size_t pitch, int n, bool big);
 static void HandleInput(int keyCode, int modCode, bool pressed);
 static void HandleCommand(uint32 j, bool pressed);
 static void HandleGamepadInput(int button, bool pressed);
@@ -41,6 +42,8 @@ static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
 static void HandleVolumeAdjustment(int volume_adjustment);
 static void LoadAssets();
+static void SwitchDirectory();
+
 
 enum {
   kDefaultFullscreen = 0,
@@ -54,7 +57,7 @@ static const char kWindowTitle[] = "The Legend of Zelda: A Link to the Past";
 
 static uint32 g_win_flags = SDL_WINDOW_RESIZABLE;
 static SDL_Window *g_window;
-static SDL_Renderer *g_renderer;
+
 static uint8 g_paused, g_turbo, g_replay_turbo = true, g_cursor = true;
 static uint8 g_current_window_scale;
 static uint8 g_gamepad_buttons;
@@ -64,6 +67,7 @@ static int g_curr_fps;
 static int g_ppu_render_flags = 0;
 static int g_snes_width, g_snes_height;
 static int g_sdl_audio_mixer_volume = SDL_MIX_MAXVOLUME;
+static struct RendererFuncs g_renderer_funcs;
 
 void NORETURN Die(const char *error) {
 #if defined(NDEBUG) && defined(_WIN32)
@@ -127,12 +131,19 @@ static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area,
          (SDL_GetModState() & KMOD_CTRL) != 0 ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
 }
 
-static void RenderScreenWithPerf(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
+static void DrawPpuFrameWithPerf() {
+  int render_scale = PpuGetCurrentRenderScale(g_zenv.ppu, g_ppu_render_flags);
+  uint8 *pixel_buffer = 0;
+  int pitch = 0;
+
+  g_renderer_funcs.BeginDraw(g_snes_width * render_scale,
+                             g_snes_height * render_scale,
+                             &pixel_buffer, &pitch);
   if (g_display_perf || g_config.display_perf_title) {
     static float history[64], average;
     static int history_pos;
     uint64 before = SDL_GetPerformanceCounter();
-    ZeldaDrawPpuFrame(pixel_buffer, pitch, render_flags);
+    ZeldaDrawPpuFrame(pixel_buffer, pitch, g_ppu_render_flags);
     uint64 after = SDL_GetPerformanceCounter();
     float v = (double)SDL_GetPerformanceFrequency() / (after - before);
     average += v - history[history_pos];
@@ -140,34 +151,11 @@ static void RenderScreenWithPerf(uint8 *pixel_buffer, size_t pitch, uint32 rende
     history_pos = (history_pos + 1) & 63;
     g_curr_fps = average * (1.0f / 64);
   } else {
-    ZeldaDrawPpuFrame(pixel_buffer, pitch, render_flags);
+    ZeldaDrawPpuFrame(pixel_buffer, pitch, g_ppu_render_flags);
   }
-}
-
-// Go some steps up and find zelda3.ini
-static void SwitchDirectory() {
-  char buf[4096];
-  if (!getcwd(buf, sizeof(buf) - 32))
-    return;
-  size_t pos = strlen(buf);
-
-  for (int step = 0; pos != 0 && step < 3; step++) {
-    memcpy(buf + pos, "/zelda3.ini", 12);
-    FILE *f = fopen(buf, "rb");
-    if (f) {
-      fclose(f);
-      buf[pos] = 0;
-      if (step != 0) {
-        printf("Found zelda3.ini in %s\n", buf);
-        int err = chdir(buf);
-        (void)err;
-      }
-      return;
-    }
-    pos--;
-    while (pos != 0 && buf[pos] != '/' && buf[pos] != '\\')
-      pos--;
-  }
+  if (g_display_perf)
+    RenderNumber(pixel_buffer + pitch * render_scale, pitch, g_curr_fps, render_scale == 4);
+  g_renderer_funcs.EndDraw();
 }
 
 static SDL_mutex *g_audio_mutex;
@@ -199,7 +187,79 @@ static void SDLCALL AudioCallback(void *userdata, Uint8 *stream, int len) {
   SDL_UnlockMutex(g_audio_mutex);
 }
 
+// State for sdl renderer
+static SDL_Renderer *g_renderer;
+static SDL_Texture *g_texture;
+static SDL_Rect g_sdl_renderer_rect;
 
+static bool SdlRenderer_Init(SDL_Window *window) {
+
+  if (g_config.shader)
+    fprintf(stderr, "Warning: Shaders are supported only with the OpenGL backend\n");
+
+  SDL_Renderer *renderer = SDL_CreateRenderer(g_window, -1,
+                                              g_config.output_method == kOutputMethod_SDLSoftware ? SDL_RENDERER_SOFTWARE :
+                                              SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  if (renderer == NULL) {
+    printf("Failed to create renderer: %s\n", SDL_GetError());
+    return false;
+  }
+  SDL_RendererInfo renderer_info;
+  SDL_GetRendererInfo(renderer, &renderer_info);
+  if (kDebugFlag) {
+    printf("Supported texture formats:");
+    for (int i = 0; i < renderer_info.num_texture_formats; i++)
+      printf(" %s", SDL_GetPixelFormatName(renderer_info.texture_formats[i]));
+    printf("\n");
+  }
+  g_renderer = renderer;
+  if (!g_config.ignore_aspect_ratio)
+    SDL_RenderSetLogicalSize(renderer, g_snes_width, g_snes_height);
+  if (g_config.linear_filtering)
+    SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
+  g_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888/*SDL_PIXELFORMAT_RGBA8888*/, SDL_TEXTUREACCESS_STREAMING,
+                                g_snes_width * 4, g_snes_height * 4);
+  if (g_texture == NULL) {
+    printf("Failed to create texture: %s\n", SDL_GetError());
+    return false;
+  }
+  return true;
+}
+
+static void SdlRenderer_Destroy() {
+  SDL_DestroyTexture(g_texture);
+  SDL_DestroyRenderer(g_renderer);
+}
+
+static void SdlRenderer_BeginDraw(int width, int height, uint8 **pixels, int *pitch) {
+  g_sdl_renderer_rect.w = width;
+  g_sdl_renderer_rect.h = height;
+  if (SDL_LockTexture(g_texture, &g_sdl_renderer_rect, (void **)pixels, pitch) != 0) {
+    printf("Failed to lock texture: %s\n", SDL_GetError());
+    return;
+  }
+}
+
+static void SdlRenderer_EndDraw() {
+
+  uint64 before = SDL_GetPerformanceCounter();
+  SDL_UnlockTexture(g_texture);
+  uint64 after = SDL_GetPerformanceCounter();
+  float v = (double)(after - before) / SDL_GetPerformanceFrequency();
+//  printf("%f ms\n", v * 1000);
+  SDL_RenderClear(g_renderer);
+  SDL_RenderCopy(g_renderer, g_texture, &g_sdl_renderer_rect, NULL);
+  SDL_RenderPresent(g_renderer); // vsyncs to 60 FPS?
+}
+
+static const struct RendererFuncs kSdlRendererFuncs  = {
+  &SdlRenderer_Init,
+  &SdlRenderer_Destroy,
+  &SdlRenderer_BeginDraw,
+  &SdlRenderer_EndDraw,
+};
+
+void OpenGLRenderer_Create(struct RendererFuncs *funcs);
 
 #undef main
 int main(int argc, char** argv) {
@@ -211,7 +271,7 @@ int main(int argc, char** argv) {
 
   ZeldaInitialize();
   g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
-  g_snes_width =  (g_config.extended_aspect_ratio * 2 + 256);
+  g_snes_width = (g_config.extended_aspect_ratio * 2 + 256);
   g_snes_height = (g_config.extend_y ? 240 : 224);
 
 
@@ -254,6 +314,13 @@ int main(int argc, char** argv) {
   int window_width  = custom_size ? g_config.window_width  : g_current_window_scale * g_snes_width;
   int window_height = custom_size ? g_config.window_height : g_current_window_scale * g_snes_height;
 
+  if (g_config.output_method == kOutputMethod_OpenGL) {
+    g_win_flags |= SDL_WINDOW_OPENGL;
+    OpenGLRenderer_Create(&g_renderer_funcs);
+  } else {
+    g_renderer_funcs = kSdlRendererFuncs;
+  }
+
   SDL_Window* window = SDL_CreateWindow(kWindowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, g_win_flags);
   if(window == NULL) {
     printf("Failed to create window: %s\n", SDL_GetError());
@@ -261,30 +328,9 @@ int main(int argc, char** argv) {
   }
   g_window = window;
   SDL_SetWindowHitTest(window, HitTestCallback, NULL);
-  SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, 
-      g_config.software_rendering ? SDL_RENDERER_SOFTWARE :
-                                    SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
-  if(renderer == NULL) {
-    printf("Failed to create renderer: %s\n", SDL_GetError());
-    return 1;
-  }
 
-  SDL_RendererInfo renderer_info;
-  SDL_GetRendererInfo(renderer, &renderer_info);
-  printf("Supported texture formats:");
-  for (int i = 0; i < renderer_info.num_texture_formats; i++)
-    printf(" %s", SDL_GetPixelFormatName(renderer_info.texture_formats[i]));
-  printf("\n");
-
-  g_renderer = renderer;
-  if (!g_config.ignore_aspect_ratio)
-    SDL_RenderSetLogicalSize(renderer, g_snes_width, g_snes_height);
-  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, g_snes_width * 4, g_snes_height * 4);
-  if(texture == NULL) {
-    printf("Failed to create texture: %s\n", SDL_GetError());
+  if (!g_renderer_funcs.Initialize(window))
     return 1;
-  }
-  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
 
   SDL_AudioDeviceID device;
   SDL_AudioSpec want = { 0 }, have;
@@ -396,12 +442,16 @@ int main(int argc, char** argv) {
       continue;
     }
 
-    RenderScreen(window, renderer, texture, (g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0);
-    SDL_RenderPresent(renderer); // vsyncs to 60 FPS?
+    DrawPpuFrameWithPerf();
+
+    if (g_config.display_perf_title) {
+      char title[60];
+      snprintf(title, sizeof(title), "%s | FPS: %d", kWindowTitle, g_curr_fps);
+      SDL_SetWindowTitle(g_window, title);
+    }
 
     // if vsync isn't working, delay manually
     curTick = SDL_GetTicks();
-
 
     if (!g_config.disable_frame_delay) {
       static const uint8 delays[3] = { 17, 17, 16 }; // 60 fps
@@ -413,6 +463,7 @@ int main(int argc, char** argv) {
           lastTick = curTick - 500;
           delta = 500;
         }
+//        printf("Sleeping %d\n", delta);
         SDL_Delay(delta);
       } else if (curTick - lastTick > 500) {
         lastTick = curTick;
@@ -428,11 +479,11 @@ int main(int argc, char** argv) {
     SDL_CloseAudioDevice(device);
   }
 
-
   SDL_DestroyMutex(g_audio_mutex);
   free(g_audiobuffer);
-  SDL_DestroyTexture(texture);
-  SDL_DestroyRenderer(renderer);
+
+  g_renderer_funcs.Destroy();
+
   SDL_DestroyWindow(window);
   SDL_Quit();
   //SaveConfigFile();
@@ -482,46 +533,6 @@ static void RenderNumber(uint8 *dst, size_t pitch, int n, bool big) {
     RenderDigit(dst + ((pitch + i + 4) << big), pitch, *s - '0', 0x404040, big);
   for (s = buf, i = 2 * 4; *s; s++, i += 8 * 4)
     RenderDigit(dst + (i << big), pitch, *s - '0', 0xffffff, big);
-}
-
-static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture *texture, bool fullscreen) {
-  uint8 *pixels = 0;
-  int pitch = 0;
-  int render_scale = PpuGetCurrentRenderScale(g_zenv.ppu, g_ppu_render_flags);
-  SDL_Rect src_rect = { 0, 0, g_snes_width * render_scale, g_snes_height * render_scale};
-
-  uint64 t0 = SDL_GetPerformanceCounter();
-  if(SDL_LockTexture(texture, &src_rect, (void**)&pixels, &pitch) != 0) {
-    printf("Failed to lock texture: %s\n", SDL_GetError());
-    return;
-  }
-  uint64 t1 = SDL_GetPerformanceCounter();
-  RenderScreenWithPerf(pixels, pitch, g_ppu_render_flags);
-  if (g_display_perf) {
-    RenderNumber(pixels + pitch * render_scale, pitch, g_curr_fps, render_scale == 4);
-  }
-  uint64 t2 = SDL_GetPerformanceCounter();
-  SDL_UnlockTexture(texture);
-  uint64 t3 = SDL_GetPerformanceCounter();
-  SDL_RenderClear(renderer);
-  uint64 t4 = SDL_GetPerformanceCounter();
-  SDL_RenderCopy(renderer, texture, &src_rect, NULL);
-  uint64 t5 = SDL_GetPerformanceCounter();
-
-  double f = 1e3 / (double)SDL_GetPerformanceFrequency();
-  if (0) printf("RenderPerf %6.2f %6.2f %6.2f %6.2f %6.2f\n",
-    (t1 - t0) * f,
-    (t2 - t1) * f,
-    (t3 - t2) * f,
-    (t4 - t3) * f,
-    (t5 - t4) * f
-  );
-
-  if (g_config.display_perf_title) {
-    char title[60];
-    snprintf(title, sizeof(title), "%s | FPS: %d", kWindowTitle, g_curr_fps);
-    SDL_SetWindowTitle(window, title);
-  }
 }
 
 static void HandleCommand_Locked(uint32 j, bool pressed);
@@ -700,7 +711,7 @@ static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
 
 static bool LoadRom(const char *filename) {
   size_t length = 0;
-  uint8 *file = ReadFile(filename, &length);
+  uint8 *file = ReadWholeFile(filename, &length);
   if(!file) Die("Failed to read file");
   bool result = EmuInitialize(file, length);
   free(file);
@@ -732,7 +743,7 @@ static void LoadLinkGraphics() {
   if (g_config.link_graphics) {
     fprintf(stderr, "Loading Link Graphics: %s\n", g_config.link_graphics);
     size_t length = 0;
-    uint8 *file = ReadFile(g_config.link_graphics, &length);
+    uint8 *file = ReadWholeFile(g_config.link_graphics, &length);
     if (file == NULL || !ParseLinkGraphics(file, length))
       Die("Unable to load file");
     free(file);
@@ -745,9 +756,9 @@ uint32 g_asset_sizes[kNumberOfAssets];
 
 static void LoadAssets() {
   size_t length = 0;
-  uint8 *data = ReadFile("tables/zelda3_assets.dat", &length);
+  uint8 *data = ReadWholeFile("tables/zelda3_assets.dat", &length);
   if (!data)
-    data = ReadFile("zelda3_assets.dat", &length);
+    data = ReadWholeFile("zelda3_assets.dat", &length);
   if (!data) Die("Failed to read zelda3_assets.dat. Please see the README for information about how you get this file.");
 
   static const char kAssetsSig[] = { kAssets_Sig };
@@ -767,5 +778,31 @@ static void LoadAssets() {
     g_asset_sizes[i] = size;
     g_asset_ptrs[i] = data + offset;
     offset += size;
+  }
+}
+
+// Go some steps up and find zelda3.ini
+static void SwitchDirectory() {
+  char buf[4096];
+  if (!getcwd(buf, sizeof(buf) - 32))
+    return;
+  size_t pos = strlen(buf);
+
+  for (int step = 0; pos != 0 && step < 3; step++) {
+    memcpy(buf + pos, "/zelda3.ini", 12);
+    FILE *f = fopen(buf, "rb");
+    if (f) {
+      fclose(f);
+      buf[pos] = 0;
+      if (step != 0) {
+        printf("Found zelda3.ini in %s\n", buf);
+        int err = chdir(buf);
+        (void)err;
+      }
+      return;
+    }
+    pos--;
+    while (pos != 0 && buf[pos] != '/' && buf[pos] != '\\')
+      pos--;
   }
 }

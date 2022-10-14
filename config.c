@@ -4,7 +4,7 @@
 #include <string.h>
 #include <SDL.h>
 #include "features.h"
-
+#include "util.h"
 
 enum {
   kKeyMod_ScanCode = 0x200,
@@ -114,41 +114,6 @@ int FindCmdForSdlKey(SDL_Keycode code, SDL_Keymod mod) {
   return KeyMapHash_Find(key);
 }
 
-static char *NextDelim(char **s, int sep) {
-  char *r = *s;
-  if (r) {
-    while (r[0] == ' ' || r[0] == '\t')
-      r++;
-    char *t = strchr(r, sep);
-    *s = t ? (*t++ = 0, t) : NULL;
-  }
-  return r;
-}
-
-static inline int ToLower(int a) {
-  return a + (a >= 'A' && a <= 'Z') * 32;
-}
-
-static bool StringEqualsNoCase(const char *a, const char *b) {
-  for (;;) {
-    int aa = ToLower(*a++), bb = ToLower(*b++);
-    if (aa != bb)
-      return false;
-    if (aa == 0)
-      return true;
-  }
-}
-
-static bool StringStartsWithNoCase(const char *a, const char *b) {
-  for (;;) {
-    int aa = ToLower(*a++), bb = ToLower(*b++);
-    if (bb == 0)
-      return true;
-    if (aa != bb)
-      return false;
-  }
-}
-
 static void ParseKeyArray(char *value, int cmd, int size) {
   char *s;
   int i = 0;
@@ -177,7 +142,6 @@ static void ParseKeyArray(char *value, int cmd, int size) {
   }
 }
 
-
 static void RegisterDefaultKeys() {
   for (int i = 0; i < countof(kKeyNameId); i++) {
     if (!has_keynameid[i]) {
@@ -187,7 +151,6 @@ static void RegisterDefaultKeys() {
     }
   }
 }
-
 
 static int GetIniSection(const char *s) {
   if (StringEqualsNoCase(s, "[KeyMap]"))
@@ -203,15 +166,26 @@ static int GetIniSection(const char *s) {
   return -1;
 }
 
-static bool ParseBool(const char *value, bool *result) {
-  if (StringEqualsNoCase(value, "0") || StringEqualsNoCase(value, "false")) {
-    *result = false;
-    return true;
-  } else if (StringEqualsNoCase(value, "1") || StringEqualsNoCase(value, "true")) {
-    *result = true;
+bool ParseBool(const char *value, bool *result) {
+  bool rv = false;
+  switch (*value++ | 32) {
+  case '0': if (*value == 0) break; return false;
+  case 'f': if (StringEqualsNoCase(value, "alse")) break; return false;
+  case 'n': if (StringEqualsNoCase(value, "o")) break; return false;
+  case 'o':
+    rv = (*value | 32) == 'n';
+    if (StringEqualsNoCase(value, rv ? "n" : "ff")) break;
+    return false;
+  case '1': rv = true; if (*value == 0) break; return false;
+  case 'y': rv = true; if (StringEqualsNoCase(value, "es")) break; return false;
+  case 't': rv = true; if (StringEqualsNoCase(value, "rue")) break; return false;
+  default: return false;
+  }
+  if (result) {
+    *result = rv;
     return true;
   }
-  return false;
+  return rv;
 }
 
 static bool ParseBoolBit(const char *value, uint32 *data, uint32 mask) {
@@ -259,12 +233,19 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "WindowScale")) {
       g_config.window_scale = (uint8)strtol(value, (char**)NULL, 10);
       return true;
-    } else if (StringEqualsNoCase(key, "SoftwareRendering")) {
-      return ParseBool(value, &g_config.software_rendering);
+    } else if (StringEqualsNoCase(key, "OutputMethod")) {
+      g_config.output_method = StringEqualsNoCase(value, "SDL-Software") ? kOutputMethod_SDLSoftware :
+                               StringEqualsNoCase(value, "OpenGL") ? kOutputMethod_OpenGL : kOutputMethod_SDL;
+      return true;
+    } else if (StringEqualsNoCase(key, "LinearFiltering")) {
+      return ParseBool(value, &g_config.linear_filtering);
     } else if (StringEqualsNoCase(key, "NoSpriteLimits")) {
       return ParseBool(value, &g_config.no_sprite_limits);
     } else if (StringEqualsNoCase(key, "LinkGraphics")) {
       g_config.link_graphics = value;
+      return true;
+    } else if (StringEqualsNoCase(key, "Shader")) {
+      g_config.shader = *value ? value : NULL;
       return true;
     }
   } else if (section == 2) {
@@ -351,53 +332,20 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
   return false;
 }
 
-
-uint8 *ReadFile(const char *name, size_t *length) {
-  FILE *f = fopen(name, "rb");
-  if (f == NULL)
-    return NULL;
-  fseek(f, 0, SEEK_END);
-  size_t size = ftell(f);
-  rewind(f);
-  uint8 *buffer = (uint8 *)malloc(size + 1);
-  if (!buffer) Die("malloc failed");
-  // Always zero terminate so this function can be used also for strings.
-  buffer[size] = 0;
-  if (fread(buffer, 1, size, f) != size)
-    Die("fread failed");
-  fclose(f);
-  if (length) *length = size;
-  return buffer;
-}
-
 void ParseConfigFile() {
-  uint8 *file = ReadFile("zelda3.user.ini", NULL);
-  if (!file) {
-    file = ReadFile("zelda3.ini", NULL);
-    if (!file)
+  char *filedata = (char*)ReadWholeFile("zelda3.user.ini", NULL), *p;
+  if (!filedata) {
+    filedata = (char *)ReadWholeFile("zelda3.ini", NULL);
+    if (!filedata)
       return;
   }
   fprintf(stderr, "Loading zelda3.ini\n");
   int section = -2;
-  int lineno = 1;
-  char *p, *next_p = (char*)file;
-  for (; (p = next_p) != NULL; lineno++) {
-    // find end of line
-    char *eol = strchr(p, '\n');
-    next_p = eol ? eol + 1 : NULL;
-    eol = eol ? eol : p + strlen(p);
-    // strip comments
-    char *comment = memchr(p, '#', eol - p);
-    eol = (comment != 0) ? comment : eol;
-    // strip trailing whitespace
-    while (eol > p && (eol[-1] == '\r' || eol[-1] == ' ' || eol[-1] == '\t'))
-      eol--;
-    *eol = 0;
-    if (p == eol)
+  g_config.memory_buffer = filedata;
+
+  for (int lineno = 1; (p = NextLineStripComments(&filedata)) != NULL; lineno++) {
+    if (*p == 0)
       continue; // empty line
-    // strip leading whitespace
-    while (p[0] == ' ' || p[0] == '\t')
-      p++;
     if (*p == '[') {
       section = GetIniSection(p);
       if (section < 0)
@@ -405,23 +353,15 @@ void ParseConfigFile() {
     } else if (section == -2) {
       fprintf(stderr, "zelda3.ini:%d: Expecting [section]\n", lineno);
     } else {
-      char *equals = memchr(p, '=', eol - p);
-      if (equals == NULL) {
+      char *v = SplitKeyValue(p);
+      if (v == NULL) {
         fprintf(stderr, "zelda3.ini:%d: Expecting 'key=value'\n", lineno);
-      } else {
-        char *kr = equals;
-        while (kr > p && (kr[-1] == ' ' || kr[-1] == '\t'))
-          kr--;
-        *kr = 0;
-        char *v = equals + 1;
-        while (v[0] == ' ' || v[0] == '\t')
-          v++;
-        if (section >= 0 && !HandleIniConfig(section, p, v))
-          fprintf(stderr, "zelda3.ini:%d: Can't parse '%s'\n", lineno, p);
+        continue;
       }
+      if (section >= 0 && !HandleIniConfig(section, p, v))
+        fprintf(stderr, "zelda3.ini:%d: Can't parse '%s'\n", lineno, p);
     }
   }
-  g_config.memory_buffer = file;
 }
 
 void AfterConfigParse() {

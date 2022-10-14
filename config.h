@@ -36,6 +36,12 @@ enum {
   kKeys_Total,
 };
 
+enum {
+  kOutputMethod_SDL,
+  kOutputMethod_SDLSoftware,
+  kOutputMethod_OpenGL,
+};
+
 typedef struct Config {
   int window_width;
   int window_height;
@@ -44,8 +50,9 @@ typedef struct Config {
   bool ignore_aspect_ratio;
   uint8 fullscreen;
   uint8 window_scale;
-  bool software_rendering;
   bool enable_audio;
+  bool linear_filtering;
+  uint8 output_method;
   uint16 audio_freq;
   uint8 audio_channels;
   uint16 audio_samples;
@@ -59,13 +66,12 @@ typedef struct Config {
   uint32 features0;
 
   const char *link_graphics;
-  uint8 *memory_buffer;
+  char *memory_buffer;
+  char *shader;
 } Config;
 
 extern Config g_config;
 
-uint8 *ReadFile(const char *name, size_t *length);
 void ParseConfigFile();
 void AfterConfigParse();
-
 int FindCmdForSdlKey(SDL_Keycode code, SDL_Keymod mod);

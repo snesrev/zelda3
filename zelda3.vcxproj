@@ -217,6 +217,7 @@
     <ClCompile Include="config.c" />
     <ClCompile Include="dungeon.c" />
     <ClCompile Include="ending.c" />
+    <ClCompile Include="glsl_shader.c" />
     <ClCompile Include="hud.c" />
     <ClCompile Include="load_gfx.c" />
     <ClCompile Include="main.c">
@@ -234,6 +235,7 @@
     <ClCompile Include="player_oam.c" />
     <ClCompile Include="poly.c" />
     <ClCompile Include="select_file.c" />
+    <ClCompile Include="opengl.c" />
     <ClCompile Include="snes\apu.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
@@ -280,7 +282,9 @@
       <Optimization Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">MaxSpeed</Optimization>
     </ClCompile>
     <ClCompile Include="tagalong.c" />
+    <ClCompile Include="third_party\gl_core\gl_core_3_1.c" />
     <ClCompile Include="tile_detect.c" />
+    <ClCompile Include="util.c" />
     <ClCompile Include="zelda_cpu_infra.c" />
     <ClCompile Include="zelda_rtl.c" />
   </ItemGroup>
@@ -292,6 +296,7 @@
     <ClInclude Include="dungeon.h" />
     <ClInclude Include="ending.h" />
     <ClInclude Include="features.h" />
+    <ClInclude Include="glsl_shader.h" />
     <ClInclude Include="hud.h" />
     <ClInclude Include="load_gfx.h" />
     <ClInclude Include="messaging.h" />
@@ -322,8 +327,10 @@
     <ClInclude Include="sprite.h" />
     <ClInclude Include="sprite_main.h" />
     <ClInclude Include="tagalong.h" />
+    <ClInclude Include="third_party\gl_core\gl_core_3_1.h" />
     <ClInclude Include="tile_detect.h" />
     <ClInclude Include="types.h" />
+    <ClInclude Include="util.h" />
     <ClInclude Include="variables.h" />
     <ClInclude Include="zelda_cpu_infra.h" />
     <ClInclude Include="zelda_rtl.h" />
