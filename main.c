@@ -239,8 +239,10 @@ static bool SdlRenderer_Init(SDL_Window *window) {
     SDL_RenderSetLogicalSize(renderer, g_snes_width, g_snes_height);
   if (g_config.linear_filtering)
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
-  g_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888/*SDL_PIXELFORMAT_RGBA8888*/, SDL_TEXTUREACCESS_STREAMING,
-                                g_snes_width * 4, g_snes_height * 4);
+
+  int tex_mult = (g_ppu_render_flags & kPpuRenderFlags_4x4Mode7) ? 4 : 1;
+  g_texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING,
+                                g_snes_width * tex_mult, g_snes_height * tex_mult);
   if (g_texture == NULL) {
     printf("Failed to create texture: %s\n", SDL_GetError());
     return false;
