@@ -125,10 +125,32 @@ void ChangeWindowScale(int scale_step) {
   }
 }
 
-static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *area, void *data) {
+#define RESIZE_BORDER 20
+static SDL_HitTestResult HitTestCallback(SDL_Window *win, const SDL_Point *pt, void *data) {
   uint32 flags = SDL_GetWindowFlags(win);
-  return ((flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (flags & SDL_WINDOW_FULLSCREEN) == 0) &&
-         (SDL_GetModState() & KMOD_CTRL) != 0 ? SDL_HITTEST_DRAGGABLE : SDL_HITTEST_NORMAL;
+  if ((flags & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0 || (flags & SDL_WINDOW_FULLSCREEN) != 0)
+    return SDL_HITTEST_NORMAL;
+
+  if ((SDL_GetModState() & KMOD_CTRL) != 0)
+    return SDL_HITTEST_DRAGGABLE;
+
+  int w, h;
+  SDL_GetWindowSize(win, &w, &h);
+
+  if (pt->y < RESIZE_BORDER) {
+    return (pt->x < RESIZE_BORDER) ? SDL_HITTEST_RESIZE_TOPLEFT :
+           (pt->x >= w - RESIZE_BORDER) ? SDL_HITTEST_RESIZE_TOPRIGHT : SDL_HITTEST_RESIZE_TOP;
+  } else if (pt->y >= h - RESIZE_BORDER) {
+    return (pt->x < RESIZE_BORDER) ? SDL_HITTEST_RESIZE_BOTTOMLEFT :
+           (pt->x >= w - RESIZE_BORDER) ? SDL_HITTEST_RESIZE_BOTTOMRIGHT : SDL_HITTEST_RESIZE_BOTTOM;
+  } else {
+    if (pt->x < RESIZE_BORDER) {
+      return SDL_HITTEST_RESIZE_LEFT;
+    } else if (pt->x >= w - RESIZE_BORDER) {
+      return SDL_HITTEST_RESIZE_RIGHT;
+    }
+  }
+  return SDL_HITTEST_NORMAL;
 }
 
 static void DrawPpuFrameWithPerf() {
@@ -399,12 +421,12 @@ int main(int argc, char** argv) {
         HandleGamepadInput(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
         break;
       case SDL_MOUSEWHEEL:
-        if (((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (g_win_flags & SDL_WINDOW_FULLSCREEN) == 0) && event.wheel.y != 0 && SDL_GetModState() & KMOD_CTRL)
+        if ((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && (g_win_flags & SDL_WINDOW_FULLSCREEN) == 0 && event.wheel.y != 0 && SDL_GetModState() & KMOD_CTRL)
           ChangeWindowScale(event.wheel.y > 0 ? 1 : -1);
         break;
       case SDL_MOUSEBUTTONDOWN:
         if (event.button.button == SDL_BUTTON_LEFT && event.button.state == SDL_PRESSED && event.button.clicks == 2) {
-          if (((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 || (g_win_flags & SDL_WINDOW_FULLSCREEN) == 0) && SDL_GetModState() & KMOD_SHIFT) {
+          if ((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && (g_win_flags & SDL_WINDOW_FULLSCREEN) == 0 && SDL_GetModState() & KMOD_SHIFT) {
             g_win_flags ^= SDL_WINDOW_BORDERLESS;
             SDL_SetWindowBordered(g_window, (g_win_flags & SDL_WINDOW_BORDERLESS) == 0);
           }
