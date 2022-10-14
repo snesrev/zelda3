@@ -263,9 +263,15 @@ void OpenGLRenderer_Create(struct RendererFuncs *funcs);
 
 #undef main
 int main(int argc, char** argv) {
-  SwitchDirectory();
-  ParseConfigFile();
-  AfterConfigParse();
+  argc--, argv++;
+  const char *config_file = NULL;
+  if (argc >= 2 && strcmp(argv[0], "--config") == 0) {
+    config_file = argv[1];
+    argc -= 2, argv += 2;
+  } else {
+    SwitchDirectory();
+  }
+  ParseConfigFile(config_file);
   LoadAssets();
   LoadLinkGraphics();
 
@@ -353,8 +359,8 @@ int main(int argc, char** argv) {
     g_audiobuffer = malloc(g_frames_per_block * have.channels * sizeof(int16));
   }
 
-  if (argc >= 2 && !g_run_without_emu)
-    LoadRom(argv[1]);
+  if (argc >= 1 && !g_run_without_emu)
+    LoadRom(argv[0]);
 
 #if defined(_WIN32)
   _mkdir("saves");

@@ -72,6 +72,5 @@ typedef struct Config {
 
 extern Config g_config;
 
-void ParseConfigFile();
-void AfterConfigParse();
+void ParseConfigFile(const char *filename);
 int FindCmdForSdlKey(SDL_Keycode code, SDL_Keymod mod);

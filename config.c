@@ -332,14 +332,11 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
   return false;
 }
 
-void ParseConfigFile() {
-  char *filedata = (char*)ReadWholeFile("zelda3.user.ini", NULL), *p;
-  if (!filedata) {
-    filedata = (char *)ReadWholeFile("zelda3.ini", NULL);
-    if (!filedata)
-      return;
-  }
-  fprintf(stderr, "Loading zelda3.ini\n");
+static bool ParseOneConfigFile(const char *filename, int depth) {
+  char *filedata = (char*)ReadWholeFile(filename, NULL), *p;
+  if (!filedata)
+    return false;
+  
   int section = -2;
   g_config.memory_buffer = filedata;
 
@@ -349,21 +346,34 @@ void ParseConfigFile() {
     if (*p == '[') {
       section = GetIniSection(p);
       if (section < 0)
-        fprintf(stderr, "zelda3.ini:%d: Invalid .ini section %s\n", lineno, p);
+        fprintf(stderr, "%s:%d: Invalid .ini section %s\n", filename, lineno, p);
+    } else if (*p == '!' && SkipPrefix(p + 1, "include ")) {
+      char *tt = p + 8;
+      char *new_filename = ReplaceFilenameWithNewPath(filename, NextPossiblyQuotedString(&tt));
+      if (depth > 10 || !ParseOneConfigFile(new_filename, depth + 1))
+        fprintf(stderr, "Warning: Unable to read %s\n", new_filename);
+      free(new_filename);
     } else if (section == -2) {
-      fprintf(stderr, "zelda3.ini:%d: Expecting [section]\n", lineno);
+      fprintf(stderr, "%s:%d: Expecting [section]\n", filename, lineno);
     } else {
       char *v = SplitKeyValue(p);
       if (v == NULL) {
-        fprintf(stderr, "zelda3.ini:%d: Expecting 'key=value'\n", lineno);
+        fprintf(stderr, "%s:%d: Expecting 'key=value'\n", filename, lineno);
         continue;
       }
       if (section >= 0 && !HandleIniConfig(section, p, v))
-        fprintf(stderr, "zelda3.ini:%d: Can't parse '%s'\n", lineno, p);
+        fprintf(stderr, "%s:%d: Can't parse '%s'\n", filename, lineno, p);
     }
   }
+  return true;
 }
 
-void AfterConfigParse() {
+void ParseConfigFile(const char *filename) {
+  if (filename != NULL || !ParseOneConfigFile("zelda3.user.ini", 0)) {
+    if (filename == NULL)
+      filename = "zelda3.ini";
+    if (!ParseOneConfigFile(filename, 0))
+      fprintf(stderr, "Warning: Unable to read config file %s\n", filename);
+  }
   RegisterDefaultKeys();
 }
