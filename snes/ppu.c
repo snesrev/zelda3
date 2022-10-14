@@ -843,10 +843,9 @@ static void PpuDrawBackgrounds(Ppu *ppu, int y, bool sub) {
 
 static NOINLINE void PpuDrawWholeLine(Ppu *ppu, uint y) {
   if (ppu->forcedBlank) {
-    uint8 *dst = &ppu->renderBuffer[(y - 1) * 2 * ppu->renderPitch];
-    size_t n = sizeof(uint32) * 2 * (256 + ppu->extraLeftRight * 2);
+    uint8 *dst = &ppu->renderBuffer[(y - 1) * ppu->renderPitch];
+    size_t n = sizeof(uint32) * (256 + ppu->extraLeftRight * 2);
     memset(dst, 0, n);
-    memset(dst + ppu->renderPitch, 0, n);
     return;
   }
 
