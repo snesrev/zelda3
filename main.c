@@ -44,7 +44,6 @@ static void LoadAssets();
 
 enum {
   kDefaultFullscreen = 0,
-  kDefaultWindowScale = 2,
   kMaxWindowScale = 10,
   kDefaultFreq = 44100,
   kDefaultChannels = 2,
@@ -99,14 +98,14 @@ void ChangeWindowScale(int scale_step) {
       bt = 31;
     }
     // Allow a scale level slightly above the max that fits on screen
-    int mw = (bounds.w - bl - br + (g_snes_width / kDefaultWindowScale) / 4) / (g_snes_width / kDefaultWindowScale);
-    int mh = (bounds.h - bt - bb + (g_snes_height / kDefaultWindowScale) / 4) / (g_snes_height / kDefaultWindowScale);
+    int mw = (bounds.w - bl - br + g_snes_width / 4) / g_snes_width;
+    int mh = (bounds.h - bt - bb + g_snes_height / 4) / g_snes_height;
     max_scale = IntMin(mw, mh);
   }
   int new_scale = IntMax(IntMin(g_current_window_scale + scale_step, max_scale), 1);
   g_current_window_scale = new_scale;
-  int w = new_scale * (g_snes_width / kDefaultWindowScale);
-  int h = new_scale * (g_snes_height / kDefaultWindowScale);
+  int w = new_scale * g_snes_width;
+  int h = new_scale * g_snes_height;
 
   //SDL_RenderSetLogicalSize(g_renderer, w, h);
   SDL_SetWindowSize(g_window, w, h);
@@ -212,8 +211,8 @@ int main(int argc, char** argv) {
 
   ZeldaInitialize();
   g_zenv.ppu->extraLeftRight = UintMin(g_config.extended_aspect_ratio, kPpuExtraLeftRight);
-  g_snes_width = 2 * (g_config.extended_aspect_ratio * 2 + 256);
-  g_snes_height = (g_config.extend_y ? 240 : 224) * 2;
+  g_snes_width =  (g_config.extended_aspect_ratio * 2 + 256);
+  g_snes_height = (g_config.extend_y ? 240 : 224);
 
 
   // Delay actually setting those features in ram until any snapshots finish playing.
@@ -252,8 +251,8 @@ int main(int argc, char** argv) {
   }
 
   bool custom_size  = g_config.window_width != 0 && g_config.window_height != 0;
-  int window_width  = custom_size ? g_config.window_width  : g_current_window_scale * (g_snes_width / kDefaultWindowScale);
-  int window_height = custom_size ? g_config.window_height : g_current_window_scale * (g_snes_height / kDefaultWindowScale);
+  int window_width  = custom_size ? g_config.window_width  : g_current_window_scale * g_snes_width;
+  int window_height = custom_size ? g_config.window_height : g_current_window_scale * g_snes_height;
 
   SDL_Window* window = SDL_CreateWindow(kWindowTitle, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, window_width, window_height, g_win_flags);
   if(window == NULL) {
@@ -280,7 +279,7 @@ int main(int argc, char** argv) {
   g_renderer = renderer;
   if (!g_config.ignore_aspect_ratio)
     SDL_RenderSetLogicalSize(renderer, g_snes_width, g_snes_height);
-  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, g_snes_width * 2, g_snes_height * 2);
+  SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_ARGB8888, SDL_TEXTUREACCESS_STREAMING, g_snes_width * 4, g_snes_height * 4);
   if(texture == NULL) {
     printf("Failed to create texture: %s\n", SDL_GetError());
     return 1;
@@ -489,7 +488,7 @@ static void RenderScreen(SDL_Window *window, SDL_Renderer *renderer, SDL_Texture
   uint8 *pixels = 0;
   int pitch = 0;
   int render_scale = PpuGetCurrentRenderScale(g_zenv.ppu, g_ppu_render_flags);
-  SDL_Rect src_rect = { 0, 0, g_snes_width * render_scale >> 1, g_snes_height * render_scale >> 1};
+  SDL_Rect src_rect = { 0, 0, g_snes_width * render_scale, g_snes_height * render_scale};
 
   uint64 t0 = SDL_GetPerformanceCounter();
   if(SDL_LockTexture(texture, &src_rect, (void**)&pixels, &pitch) != 0) {
