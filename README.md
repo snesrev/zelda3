@@ -18,27 +18,19 @@ I got much assistance from spannerism's Zelda 3 JP disassembly and the other one
 
 ## Additional features
 
-Some features have been added that are not supported by the original game.
+A bunch of features have been added that are not supported by the original game. Some of them are:
 
-Secondary item slot on button X (Hold X in inventory to select).
-
-Displays max rupees, bombs and arrows with yellow or orange color.
-
-Extends throwing bombs to four instead of two.
-
-Support for MSU audio tracks.
+Support for pixel shaders.
 
 Support for enhanced aspect ratios of 16:9 or 16:10.
 
+Higher quality world map.
+
+Support for MSU audio tracks.
+
+Secondary item slot on button X (Hold X in inventory to select).
+
 Switching current item with L/R keys.
-
-Reordering of inventory by pressing Y+Arrows.
-
-Higher quality map screen.
-
-Disable low health beep.
-
-Pick up items and destroy pots with Sword.
 
 ## Installing Python & libraries on Windows (required for asset extraction steps)
 1. Download [Python](https://www.python.org/ftp/python/3.10.7/python-3.10.7-amd64.exe) installer and install
