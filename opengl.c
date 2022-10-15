@@ -17,7 +17,7 @@ static unsigned int g_program, g_VAO;
 static GlTextureWithSize g_texture;
 static GlslShader *g_glsl_shader;
 
-static void APIENTRY MessageCallback(GLenum source,
+static void GL_APIENTRY MessageCallback(GLenum source,
                 GLenum type,
                 GLuint id,
                 GLenum severity,

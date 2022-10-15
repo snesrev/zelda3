@@ -26,32 +26,18 @@
 #define __gltypes_h_
 #define __gl_ATI_h_
 
-#ifndef APIENTRY
-	#if defined(__MINGW32__)
-		#ifndef WIN32_LEAN_AND_MEAN
-			#define WIN32_LEAN_AND_MEAN 1
-		#endif
-		#ifndef NOMINMAX
-			#define NOMINMAX
-		#endif
-		#include <windows.h>
-	#elif (_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED) || defined(__BORLANDC__)
-		#ifndef WIN32_LEAN_AND_MEAN
-			#define WIN32_LEAN_AND_MEAN 1
-		#endif
-		#ifndef NOMINMAX
-			#define NOMINMAX
-		#endif
-		#include <windows.h>
-	#else
-		#define APIENTRY
-	#endif
-#endif /*APIENTRY*/
+#ifndef GL_APIENTRY
+#if (_MSC_VER >= 800) || defined(_STDCALL_SUPPORTED)
+#define GL_APIENTRY __stdcall
+#else
+#define GL_APIENTRY
+#endif
+#endif  // GL_APIENTRY
 
 #ifndef CODEGEN_FUNCPTR
 	#define CODEGEN_REMOVE_FUNCPTR
 	#if defined(_WIN32)
-		#define CODEGEN_FUNCPTR APIENTRY
+		#define CODEGEN_FUNCPTR GL_APIENTRY
 	#else
 		#define CODEGEN_FUNCPTR
 	#endif
@@ -60,7 +46,6 @@
 #ifndef GLAPI
 	#define GLAPI extern
 #endif
-
 
 #ifndef GL_LOAD_GEN_BASIC_OPENGL_TYPEDEFS
 #define GL_LOAD_GEN_BASIC_OPENGL_TYPEDEFS
@@ -143,9 +128,9 @@ typedef unsigned int GLhandleARB;
 		typedef struct __GLsync *GLsync;
 		struct _cl_context;
 		struct _cl_event;
-		typedef void (APIENTRY *GLDEBUGPROC)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
-		typedef void (APIENTRY *GLDEBUGPROCARB)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
-		typedef void (APIENTRY *GLDEBUGPROCAMD)(GLuint id,GLenum category,GLenum severity,GLsizei length,const GLchar *message,void *userParam);
+		typedef void (GL_APIENTRY *GLDEBUGPROC)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
+		typedef void (GL_APIENTRY *GLDEBUGPROCARB)(GLenum source,GLenum type,GLuint id,GLenum severity,GLsizei length,const GLchar *message,const void *userParam);
+		typedef void (GL_APIENTRY *GLDEBUGPROCAMD)(GLuint id,GLenum category,GLenum severity,GLsizei length,const GLchar *message,void *userParam);
 		typedef unsigned short GLhalfNV;
 		typedef GLintptr GLvdpauSurfaceNV;
 
