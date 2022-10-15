@@ -313,6 +313,7 @@ int main(int argc, char** argv) {
                        g_config.extend_y * kPpuRenderFlags_Height240 |
                        g_config.no_sprite_limits * kPpuRenderFlags_NoSpriteLimits;
   msu_enabled = g_config.enable_msu;
+  msu_max_volume = g_config.max_msu_volume;
 
   if (g_config.fullscreen == 1)
     g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;

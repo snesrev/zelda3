@@ -53,6 +53,7 @@ enum {
 
 extern uint32 g_wanted_zelda_features;
 extern bool msu_enabled;
+extern uint8 msu_max_volume;
 
 
 #endif  // ZELDA3_FEATURES_H_

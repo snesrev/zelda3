@@ -918,6 +918,7 @@ void LoadSongBank(const uint8 *p) {  // 808888
 }
 
 bool msu_enabled;
+uint8 msu_max_volume;
 static FILE *msu_file;
 static uint32 msu_loop_start;
 static uint32 msu_buffer_size, msu_buffer_pos;
@@ -965,7 +966,7 @@ void ZeldaPlayMsuAudioTrack() {
   }
   if ((music_control & 0xf0) != 0xf0) {
     msu_track = music_control;
-    msu_volume = 255;
+    msu_volume = msu_max_volume;
     msu_curr_sample = 0;
     ZeldaOpenMsuFile();
   } else if (msu_file == NULL) {
@@ -982,9 +983,9 @@ void MixinMsuAudioData(int16 *audio_buffer, int audio_samples) {
     if (last_music_control == 0xf1)
       msu_volume = IntMax(msu_volume - 3, 0);
     else if (last_music_control == 0xf2)
-      msu_volume = IntMax(msu_volume - 3, 0x40);
+      msu_volume = IntMax(msu_volume - 3, IntMin(msu_max_volume, 0x40));
     else if (last_music_control == 0xf3)
-      msu_volume = IntMin(msu_volume + 3, 0xff);
+      msu_volume = IntMin(msu_volume + 3, IntMin(msu_max_volume, 0xff));
   }
   if (msu_volume == 0)
     return;

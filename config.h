@@ -62,6 +62,7 @@ typedef struct Config {
   bool no_sprite_limits;
   bool display_perf_title;
   bool enable_msu;
+  uint8 max_msu_volume;
   bool disable_frame_delay;
   uint32 features0;
 
