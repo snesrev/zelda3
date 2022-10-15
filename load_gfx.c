@@ -1494,8 +1494,8 @@ void IrisSpotlight_ConfigureTable() {  // 80f312
   if (main_module_index == 7 || main_module_index == 16) {
     if (!player_is_indoors)
       sound_effect_ambient = overworld_music[BYTE(overworld_screen_index)] >> 4;
-    if (buffer_for_playing_songs != 0xff)
-      music_control = buffer_for_playing_songs;
+    if (queued_music_control != 0xff)
+      music_control = queued_music_control;
   }
   main_module_index = saved_module_for_menu;
   if (main_module_index == 6)

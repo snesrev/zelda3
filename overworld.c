@@ -445,7 +445,7 @@ void PreOverworld_LoadProperties() {  // 8283c7
     if (dr != 0 && dr != 0xe1) {
 dark:
       xt = 0xf3;
-      if (buffer_for_playing_songs == 0xf2)
+      if (queued_music_control == 0xf2)
         goto setsong;
       xt = sram_progress_indicator < 2 ? 3 : 2;
     }
@@ -456,7 +456,7 @@ dark:
       xt = 4;
   }
 setsong:
-  buffer_for_playing_songs = xt;
+  queued_music_control = xt;
   DecompressAnimatedOverworldTiles(ow_anim_tiles);
   InitializeTilesets();
   OverworldLoadScreensPaletteSet();
@@ -605,11 +605,11 @@ void Dungeon_PrepExitWithSpotlight() {  // 8299ca
     Ancilla_TerminateWaterfallSplashes();
     link_y_coord_exit = link_y_coord;
   }
-  uint8 m = GetEntranceMusicTrack(which_entrance);
+  uint8 m = ZeldaGetEntranceMusicTrack(which_entrance);
   if (m != 3 || (m = sram_progress_indicator) >= 2) {
-    if (m != 0xf2)
-      m = 0xf1;
-    else if (music_unk1 == 0xc)
+    if (m != 0xf2)  // fade to 0x40
+      m = 0xf1;  // fade to zero
+    else if (music_unk1 == 12)
       m = 7;
     music_control = m;
   }
@@ -827,7 +827,7 @@ after:
     uint8 music = overworld_music[new_area];
     if ((music & 0xf0) == 0)
       sound_effect_ambient = 5;
-    if ((music & 0xf) != music_unk1)
+    if (!ZeldaIsPlayingMusicTrack(music & 0xf))
       music_control = 0xf1;
   }
   Overworld_LoadGFXAndScreenSize();
@@ -1055,7 +1055,7 @@ void Overworld_StartMosaicTransition() {  // 82ae5e
   switch (subsubmodule_index) {
   case 0:
     if (BYTE(overworld_screen_index) != 0x80) {
-      if ((overworld_music[BYTE(overworld_screen_index)] & 0xf) != music_unk1)
+      if (!ZeldaIsPlayingMusicTrack(overworld_music[BYTE(overworld_screen_index)] & 0xf))
         music_control = 0xf1;
     }
     ResetTransitionPropsAndAdvance_ResetInterface();
@@ -1202,7 +1202,7 @@ void Module09_FadeBackInFromMosaic() {  // 82b0d2
     if (BYTE(overworld_screen_index) != 0x80 && BYTE(overworld_screen_index) != 0x2a) {
       uint8 m = overworld_music[BYTE(overworld_screen_index)];
       sound_effect_ambient = (m >> 4) ? (m >> 4) : 5;
-      if ((m & 0xf) != music_unk1)
+      if (!ZeldaIsPlayingMusicTrack(m & 0xf))
         music_control = (m & 0xf);
     }
     submodule_index = 8;

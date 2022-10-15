@@ -1,12 +1,12 @@
 TARGET_EXEC:=zelda3
 ROM:=tables/zelda3.sfc
-SRCS:=$(wildcard *.c snes/*.c) third_party/gl_core/gl_core_3_1.c
+SRCS:=$(wildcard *.c snes/*.c) third_party/gl_core/gl_core_3_1.c third_party/opus-1.3.1-stripped/opus_decoder_amalgam.c
 OBJS:=$(SRCS:%.c=%.o)
 PYTHON:=/usr/bin/env python3
 CFLAGS:=$(if $(CFLAGS),$(CFLAGS),-O2 -Werror)
 
 CFLAGS:=${CFLAGS} $(shell sdl2-config --cflags) -DSYSTEM_VOLUME_MIXER_AVAILABLE=0
-LDFLAGS:=${LDFLAGS} $(shell sdl2-config --libs)
+LDFLAGS:=${LDFLAGS} $(shell sdl2-config --libs) -lm
 
 .PHONY: all clean clean_obj clean_gen
 

@@ -9,6 +9,7 @@
 #include "snes/dma.h"
 #include "spc_player.h"
 #include "util.h"
+#include "audio.h"
 
 ZeldaEnv g_zenv;
 uint8 g_ram[131072];
@@ -58,57 +59,6 @@ static const uint8 kMapModeHdma0[7] = {0xf0, AT_WORD(0xdd27), 0xf0, AT_WORD(0xde
 static const uint8 kMapModeHdma1[7] = {0xf0, AT_WORD(0xdee7), 0xf0, AT_WORD(0xdfc7), 0};
 static const uint8 kAttractIndirectHdmaTab[7] = {0xf0, AT_WORD(0x1b00), 0xf0, AT_WORD(0x1be0), 0};
 static const uint8 kHdmaTableForPrayingScene[7] = {0xf8, AT_WORD(0x1b00), 0xf8, AT_WORD(0x1bf0), 0};
-
-
-// Maintain a queue cause the snes and audio callback are not in sync.
-struct ApuWriteEnt {
-  uint8 ports[4];
-};
-static struct ApuWriteEnt g_apu_write_ents[16], g_apu_write;
-static uint8 g_apu_write_ent_pos, g_apu_write_count, g_apu_total_write;
-void zelda_apu_write(uint32_t adr, uint8_t val) {
-  g_apu_write.ports[adr & 0x3] = val;
-}
-
-void ZeldaPushApuState() {
-  g_apu_write_ents[g_apu_write_ent_pos++ & 0xf] = g_apu_write;
-  if (g_apu_write_count < 16)
-    g_apu_write_count++;
-  g_apu_total_write++;
-}
-
-void ZeldaPopApuState() {
-  if (g_apu_write_count != 0)
-    memcpy(g_zenv.player->input_ports, &g_apu_write_ents[(g_apu_write_ent_pos - g_apu_write_count--) & 0xf], 4);
-}
-
-void ZeldaDiscardUnusedAudioFrames() {
-  if (g_apu_write_count != 0 && memcmp(g_zenv.player->input_ports, &g_apu_write_ents[(g_apu_write_ent_pos - g_apu_write_count) & 0xf], 4) == 0) {
-    if (g_apu_total_write >= 16) {
-      g_apu_total_write = 14;
-      g_apu_write_count--;
-    }
-  } else {
-    g_apu_total_write = 0;
-  }
-}
-
-void ZeldaResetApuQueue() {
-  g_apu_write_ent_pos = g_apu_total_write = g_apu_write_count = 0;
-}
-
-
-uint8_t zelda_read_apui00() {
-  // This needs to be here because the ancilla code reads
-  // from the apu and we don't want to make the core code
-  // dependent on the apu timings, so relocated this value
-  // to 0x648.
-  return g_ram[kRam_APUI00];
-}
-
-uint8_t zelda_apu_read(uint32_t adr) {
-  return g_zenv.player->port_to_snes[adr & 0x3];
-}
 
 void zelda_ppu_write(uint32_t adr, uint8_t val) {
   assert(adr >= INIDISP && adr <= STAT78);
@@ -282,12 +232,9 @@ static void ZeldaInitializationCode() {
   zelda_snes_dummy_write(NMITIMEN, 0);
   zelda_snes_dummy_write(HDMAEN, 0);
   zelda_snes_dummy_write(MDMAEN, 0);
-  zelda_apu_write(APUI00, 0);
-  zelda_apu_write(APUI01, 0);
-  zelda_apu_write(APUI02, 0);
-  zelda_apu_write(APUI03, 0);
 
   Sound_LoadIntroSongBank();
+
   Startup_InitializeMemory();
 
   animated_tile_data_src = 0xa680;
@@ -372,7 +319,6 @@ static void EmuSyncMemoryRegion(void *ptr, size_t n) {
     memcpy(g_emu_memory_ptr + (data - g_ram), data, n);
 }
 
-
 static void Startup_InitializeMemory() {  // 8087c0
   memset(g_ram + 0x0, 0, 0x2000);
   main_palette_buffer[0] = 0;
@@ -431,45 +377,30 @@ void ZeldaReset(bool preserve_sram) {
   memset(g_zenv.ram, 0, 0x20000);
   if (!preserve_sram)
     memset(g_zenv.sram, 0, 0x2000);
-
-  SpcPlayer_Initialize(g_zenv.player);
+  ZeldaApuLock();
+  ZeldaRestoreMusicAfterLoad_Locked(true);
+  ZeldaApuUnlock();
   EmuSynchronizeWholeState();
-  ZeldaResetApuQueue();
-  ZeldaOpenMsuFile();
+
 }
 
 static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
   // Do the actual loading
+  ZeldaApuLock();
   InternalSaveLoad(func, ctx);
   memcpy(g_zenv.ram + 0x1DBA0, g_zenv.ram + 0x1b00, 224 * 2); // hdma table was moved
 
-  // Restore spc variables from the ram dump.
-  SpcPlayer_CopyVariablesFromRam(g_zenv.player);
-  // This is not stored in the snapshot
-  g_zenv.player->timer_cycles = 0;
-
-  // Restore input ports state
-  SpcPlayer *spc_player = g_zenv.player;
-  memcpy(spc_player->input_ports, &spc_player->ram[0x410], 4);
-  memcpy(g_apu_write.ports, spc_player->input_ports, 4);
-  
-  // Ensure emulator has the up-to-date state too
+  ZeldaRestoreMusicAfterLoad_Locked(false);
+  ZeldaApuUnlock();
   EmuSynchronizeWholeState();
-  ZeldaResetApuQueue();
-  ZeldaOpenMsuFile();
 }
 
 static void SaveSnesState(SaveLoadFunc *func, void *ctx) {
   memcpy(g_zenv.ram + 0x1b00, g_zenv.ram + 0x1DBA0, 224 * 2); // hdma table was moved
-  SpcPlayer_CopyVariablesToRam(g_zenv.player);
-
-  // SpcPlayer.input_ports is not saved to the SpcPlayer ram by SpcPlayer_CopyVariablesToRam,
-  // in any case, we want to save the most recently written data, and that might still
-  // be in the queue. 0x410 is a free memory location in the SPC ram, so store it there.
-  SpcPlayer *spc_player = g_zenv.player;
-  memcpy(&spc_player->ram[0x410], g_apu_write.ports, 4);
-
+  ZeldaApuLock();
+  ZeldaSaveMusicStateToRam_Locked();
   InternalSaveLoad(func, ctx);
+  ZeldaApuUnlock();
 }
 
 typedef struct StateRecorder {
@@ -909,136 +840,6 @@ void PatchCommand(char c) {
     StateRecoderMultiPatch_Patch(&mp, 0x37f, g_ram[0x37f] ^ 1);
   }
   StateRecoderMultiPatch_Commit(&mp);
-}
-
-
-
-void LoadSongBank(const uint8 *p) {  // 808888
-  SpcPlayer_Upload(g_zenv.player, p);
-}
-
-bool msu_enabled;
-static FILE *msu_file;
-static uint32 msu_loop_start;
-static uint32 msu_buffer_size, msu_buffer_pos;
-static uint8 msu_buffer[65536];
-
-static const uint8 kMsuTracksWithRepeat[48] = {
-  1,0,1,1,1,1,1,1,0,1,0,1,1,1,1,0,
-  1,1,1,0,1,1,1,1,1,1,1,1,1,0,1,1,
-  1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,
-};
-
-bool ZeldaIsMusicPlaying() {
-  if (msu_track) {
-    return msu_file != NULL;
-  } else {
-    return g_zenv.player->port_to_snes[0] != 0;
-  }
-}
-
-void ZeldaOpenMsuFile() {
-  if (msu_file) fclose(msu_file), msu_file = NULL;
-  if (msu_track == 0)
-    return;
-  char buf[40], hdr[8];
-  sprintf(buf, "msu/alttp_msu-%d.pcm", msu_track);
-  msu_file = fopen(buf, "rb");
-  if (msu_file == NULL || fread(hdr, 1, 8, msu_file) != 8 || *(uint32 *)(hdr + 0) != (('1' << 24) | ('U' << 16) | ('S' << 8) | 'M')) {
-    if (msu_file != NULL) fclose(msu_file), msu_file = NULL;
-    zelda_apu_write(APUI00, msu_track);
-    msu_track = 0;
-    return;
-  }
-  if (msu_curr_sample != 0)
-    fseek(msu_file, msu_curr_sample * 4 + 8, SEEK_SET);
-  printf("Loading MSU PCM file: %s\n", buf);
-  msu_loop_start = *(uint32 *)(hdr + 4);
-  msu_buffer_size = msu_buffer_pos = 0;
-}
-
-void ZeldaPlayMsuAudioTrack() {
-  if (!msu_enabled) normal_playback: {
-    msu_track = 0;
-    zelda_apu_write(APUI00, music_control);
-    return;
-  }
-  if ((music_control & 0xf0) != 0xf0) {
-    msu_track = music_control;
-    msu_volume = 255;
-    msu_curr_sample = 0;
-    ZeldaOpenMsuFile();
-  } else if (msu_file == NULL) {
-    goto normal_playback;
-  }
-  zelda_apu_write(APUI00, 0xf1);  // pause spc player
-}
-
-void MixinMsuAudioData(int16 *audio_buffer, int audio_samples) {
-  if (msu_file == NULL)
-    return;  // msu inactive
-  // handle volume fade
-  if (last_music_control >= 0xf1) {
-    if (last_music_control == 0xf1)
-      msu_volume = IntMax(msu_volume - 3, 0);
-    else if (last_music_control == 0xf2)
-      msu_volume = IntMax(msu_volume - 3, 0x40);
-    else if (last_music_control == 0xf3)
-      msu_volume = IntMin(msu_volume + 3, 0xff);
-  }
-  if (msu_volume == 0)
-    return;
-  int last_audio_samples = 0;
-  for (;;) {
-    if (msu_buffer_pos >= msu_buffer_size) {
-      msu_buffer_size = (int)fread(msu_buffer, 4, sizeof(msu_buffer) / 4, msu_file);
-      msu_buffer_pos = 0;
-    }
-    int nr = IntMin(audio_samples, msu_buffer_size - msu_buffer_pos);
-    uint8 *buf = msu_buffer + msu_buffer_pos * 4;
-    msu_buffer_pos += nr;
-    msu_curr_sample += nr;
-    int volume = msu_volume + 1;
-    if (volume == 256) {
-      for (int i = 0; i < nr; i++) {
-        audio_buffer[i * 2 + 0] += ((int16 *)buf)[i * 2 + 0];
-        audio_buffer[i * 2 + 1] += ((int16 *)buf)[i * 2 + 1];
-      }
-    } else {
-      for (int i = 0; i < nr; i++) {
-        audio_buffer[i * 2 + 0] += ((int16 *)buf)[i * 2 + 0] * volume >> 8;
-        audio_buffer[i * 2 + 1] += ((int16 *)buf)[i * 2 + 1] * volume >> 8;
-      }
-    }
-    audio_samples -= nr, audio_buffer += nr * 2;
-    if (audio_samples == 0)
-      break;
-    if (nr != 0)
-      continue;
-
-    if (last_audio_samples == audio_samples) {  // error?
-      zelda_apu_write(APUI00, msu_track);
-      fclose(msu_file), msu_file = NULL;
-      return;
-    }
-    last_audio_samples = audio_samples;
-
-    if (!kMsuTracksWithRepeat[msu_track]) {
-      fclose(msu_file), msu_file = NULL;
-      return;
-    }
-    fseek(msu_file, msu_loop_start * 4 + 8, SEEK_SET);
-    msu_curr_sample = msu_loop_start;
-  }
-}
-
-
-void ZeldaRenderAudio(int16 *audio_buffer, int samples, int channels) {
-  ZeldaPopApuState();
-  SpcPlayer_GenerateSamples(g_zenv.player);
-  dsp_getSamples(g_zenv.player->dsp, audio_buffer, samples, channels);
-  if (channels == 2)
-    MixinMsuAudioData(audio_buffer, samples);
 }
 
 

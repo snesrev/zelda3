@@ -2381,10 +2381,6 @@ uint16 Dungeon_GetTeleMsg(int room) {
   return kDungeonRoomTeleMsg[room];
 }
 
-uint8 GetEntranceMusicTrack(int entrance) {
-  return kEntranceData_musicTrack[entrance];
-}
-
 bool Dungeon_IsPitThatHurtsPlayer() {
   for (int i = kDungeonPitsHurtPlayer_SIZE / 2 - 1; i >= 0; i--) {
     if (kDungeonPitsHurtPlayer[i] == dungeon_room_index)
@@ -6917,7 +6913,7 @@ table:
 }
 
 void Module07_0E_01_HandleMusicAndResetProps() {  // 828c78
-  if ((dungeon_room_index == 7 || dungeon_room_index == 23 && music_unk1 != 17) && !(link_which_pendants & 1))
+  if ((dungeon_room_index == 7 || dungeon_room_index == 23 && !ZeldaIsPlayingMusicTrack(17)) && !(link_which_pendants & 1))
     music_control = 0xf1;
   staircase_var1 = (which_staircase_index & 4) ? 106 : 88;
   overworld_map_state = 0;
@@ -7351,7 +7347,7 @@ void Dungeon_SetBossMusicUnorthodox() {  // 829165
     x = 0x15;
     if (dungeon_room_index != 7) {
       x = 0x11;
-      if (dungeon_room_index != 23 || music_unk1 == 17)
+      if (dungeon_room_index != 23 || ZeldaIsPlayingMusicTrack(17))
         return;
     }
     if (music_unk1 != 0xf1 && (link_which_pendants & 1))
@@ -7467,8 +7463,8 @@ void Module07_0F_01_OperateSpotlight() {  // 829334
     TMW_copy = 0;
     TSW_copy = 0;
     subsubmodule_index = 0;
-    if (buffer_for_playing_songs != 0xff)
-      music_control = buffer_for_playing_songs;
+    if (queued_music_control != 0xff)
+      music_control = queued_music_control;
   }
 }
 
@@ -7824,7 +7820,7 @@ void Module11_DungeonFallingEntrance() {  // 829af9
     flag_skip_call_tag_routines++;
     Dungeon_PlayBlipAndCacheQuadrantVisits();
     ResetThenCacheRoomEntryProperties();
-    music_control = buffer_for_playing_songs;
+    music_control = queued_music_control;
     last_music_control = music_unk1;
     break;
   }
@@ -7877,10 +7873,10 @@ void Module11_02_LoadEntrance() {  // 829b1c
 }
 
 void Dungeon_LoadSongBankIfNeeded() {  // 829bd7
-  if (buffer_for_playing_songs == 0xff || buffer_for_playing_songs == 0xf2)
+  if (queued_music_control == 0xff || queued_music_control == 0xf2)
     return;
 
-  if (buffer_for_playing_songs == 3 || buffer_for_playing_songs == 7 || buffer_for_playing_songs == 14) {
+  if (queued_music_control == 3 || queued_music_control == 7 || queued_music_control == 14) {
     LoadOWMusicIfNeeded();
   } else {
     if (flag_which_music_type)
@@ -8368,9 +8364,9 @@ void Dungeon_LoadEntrance() {  // 82d8b3
     link_quadrant_x = kStartingPoint_quadrant2[i] >> 4;
     link_quadrant_y = kStartingPoint_quadrant2[i] & 0xf;
 
-    buffer_for_playing_songs = kStartingPoint_musicTrack[i];
+    queued_music_control = kStartingPoint_musicTrack[i];
     if (i == 0 && sram_progress_indicator == 0)
-      buffer_for_playing_songs = 0xff;
+      queued_music_control = 0xff;
     death_var4 = 0;
   } else {
     int i = which_entrance;
@@ -8405,9 +8401,9 @@ void Dungeon_LoadEntrance() {  // 82d8b3
 
     link_direction_facing = (i == 0 || i == 0x43) ? 2 : 0;
     main_tile_theme_index = kEntranceData_blockset[i];
-    buffer_for_playing_songs = kEntranceData_musicTrack[i];
-    if (buffer_for_playing_songs == 3 && sram_progress_indicator >= 2)
-      buffer_for_playing_songs = 18;
+    queued_music_control = ZeldaGetEntranceMusicTrack(i);
+    if (queued_music_control == 3 && sram_progress_indicator >= 2)
+      queued_music_control = 18;
 
     dung_cur_floor = kEntranceData_floor[i];
     BYTE(cur_palace_index_x2) = kEntranceData_palace[i];

@@ -25,8 +25,9 @@
 #include "assets.h"
 #include "load_gfx.h"
 #include "util.h"
+#include "audio.h"
 
-static bool g_run_without_emu = 1;
+static bool g_run_without_emu = 0;
 
 void ShaderInit();
 
@@ -312,7 +313,7 @@ int main(int argc, char** argv) {
                        g_config.enhanced_mode7 * kPpuRenderFlags_4x4Mode7 |
                        g_config.extend_y * kPpuRenderFlags_Height240 |
                        g_config.no_sprite_limits * kPpuRenderFlags_NoSpriteLimits;
-  msu_enabled = g_config.enable_msu;
+  ZeldaEnableMsu(g_config.enable_msu);
 
   if (g_config.fullscreen == 1)
     g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -585,6 +586,15 @@ static void HandleCommand(uint32 j, bool pressed) {
   HandleCommand_Locked(j, pressed);
   SDL_UnlockMutex(g_audio_mutex);
 }
+
+void ZeldaApuLock() {
+  SDL_LockMutex(g_audio_mutex);
+}
+
+void ZeldaApuUnlock() {
+  SDL_UnlockMutex(g_audio_mutex);
+}
+
 
 static void HandleCommand_Locked(uint32 j, bool pressed) {
   if (!pressed)

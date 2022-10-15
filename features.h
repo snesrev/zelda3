@@ -51,8 +51,9 @@ enum {
 #define hud_cur_item_x (*(uint8*)(g_ram+0x656))
 #define hud_inventory_order ((uint8*)(g_ram + 0x225)) // 4x6 bytes
 
+
+
 extern uint32 g_wanted_zelda_features;
-extern bool msu_enabled;
 
 
 #endif  // ZELDA3_FEATURES_H_

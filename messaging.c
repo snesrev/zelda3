@@ -920,7 +920,7 @@ void Death_Func15(bool count_as_death) {  // 89f50f
     if (follower_indicator != 1 && BYTE(cur_palace_index_x2) != 255) {
       death_var4 = 0;
     } else {
-      buffer_for_playing_songs = 0;
+      queued_music_control = 0;
       player_is_indoors = 0;
     outdoors:
       if (savegame_is_darkworld)
@@ -948,7 +948,7 @@ void Death_Func15(bool count_as_death) {  // 89f50f
     Death_Func31();
     death_var4 = 0;
     death_var5 = 0;
-    buffer_for_playing_songs = 0;
+    queued_music_control = 0;
     BG1HOFS_copy2 = 0;
     BG2HOFS_copy2 = 0;
     BG3HOFS_copy2 = 0;
@@ -1136,7 +1136,7 @@ void FluteMenu_LoadSelectedScreen() {  // 8ab8c5
   sound_effect_2 = 16;
   uint8 m = overworld_music[BYTE(overworld_screen_index)];
   sound_effect_ambient = m >> 4;
-  music_control = (m & 0xf) != music_unk1 ? (m & 0xf) : 0xf3;
+  music_control = ZeldaIsPlayingMusicTrack(m & 0xf) ? 0xf3 : m & 0xf;
 }
 
 void Overworld_LoadOverlayAndMap() {  // 8ab948

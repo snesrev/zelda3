@@ -5,6 +5,7 @@
 #include "snes/snes_regs.h"
 #include "snes/ppu.h"
 #include "assets.h"
+#include "audio.h"
 
 static const uint8 kNmiVramAddrs[] = {
   0, 0, 4, 8, 12, 8, 12, 0, 4, 0, 8, 4, 12, 4, 12, 0,
@@ -105,15 +106,15 @@ void WritePpuRegisters() {
   zelda_ppu_write(BG34NBA, 7);
 }
 
-void Interrupt_NMI(uint16 joypad_input) {  // 8080c9
+static void Interrupt_NMI_AudioParts_Locked() {
   if (music_control == 0) {
-    if (zelda_apu_read(APUI00) == last_music_control)
-      zelda_apu_write(APUI00, 0);
-  // Zelda causes unwanted music change when going in a portal. last_music_control doesn't hold the 
-  // song but the last applied effect
-  } else if (music_control != (enhanced_features0 & kFeatures0_MiscBugFixes ? music_unk1 : last_music_control)) {
+//    if (zelda_apu_read(APUI00) == last_music_control)
+//      zelda_apu_write(APUI00, 0);
+    // Zelda causes unwanted music change when going in a portal. last_music_control doesn't hold the 
+    // song but the last applied effect
+  } else if (!ZeldaIsPlayingMusicTrackWithBug(music_control)) {
     last_music_control = music_control;
-    ZeldaPlayMsuAudioTrack();
+    ZeldaPlayMsuAudioTrack(music_control);
     if (music_control < 0xf2)
       music_unk1 = music_control;
     music_control = 0;
@@ -131,6 +132,12 @@ void Interrupt_NMI(uint16 joypad_input) {  // 8080c9
   zelda_apu_write(APUI03, sound_effect_2);
   sound_effect_1 = 0;
   sound_effect_2 = 0;
+
+}
+
+void Interrupt_NMI(uint16 joypad_input) {  // 8080c9
+
+  Interrupt_NMI_AudioParts_Locked();
 
   if (!nmi_boolean) {
     nmi_boolean = true;

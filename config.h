@@ -61,14 +61,23 @@ typedef struct Config {
   bool extend_y;
   bool no_sprite_limits;
   bool display_perf_title;
-  bool enable_msu;
+  uint8 enable_msu;
+  bool resume_msu;
   bool disable_frame_delay;
   uint32 features0;
 
   const char *link_graphics;
   char *memory_buffer;
-  char *shader;
+  const char *shader;
+  const char *msu_path;
 } Config;
+
+enum {
+  kMsuEnabled_Msu = 1,
+  kMsuEnabled_MsuDeluxe = 2,
+  kMsuEnabled_Opuz = 4,
+};
+
 
 extern Config g_config;
 

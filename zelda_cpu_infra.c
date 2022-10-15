@@ -110,6 +110,8 @@ static void VerifySnapshotsEq(Snapshot *b, Snapshot *a, Snapshot *prev) {
   memcpy(a->ram + 0x1cc0, b->ram + 0x1cc0, 2);  // some leftover stuff in hdma table
   memcpy(a->ram + 0x1dd60, b->ram + 0x1dd60, 16 * 2);  // some leftover stuff in hdma table
 
+  memcpy(a->ram + 0x1db20, b->ram + 0x1db20, 64 * 2);  // msu
+
   if (memcmp(b->ram, a->ram, 0x20000)) {
     fprintf(stderr, "@%d: Memory compare failed (mine != theirs, prev):\n", frame_counter);
     int j = 0;

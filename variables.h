@@ -180,7 +180,7 @@
 #define sound_effect_2 (*(uint8*)(g_ram+0x12F))
 #define music_unk1 (*(uint8*)(g_ram+0x130))
 #define sound_effect_ambient_last (*(uint8*)(g_ram+0x131))
-#define buffer_for_playing_songs (*(uint8*)(g_ram+0x132))
+#define queued_music_control (*(uint8*)(g_ram+0x132))
 #define last_music_control (*(uint8*)(g_ram+0x133))
 #define animated_tile_vram_addr (*(uint16*)(g_ram+0x134))
 #define flag_which_music_type (*(uint8*)(g_ram+0x136))
@@ -1430,7 +1430,10 @@
 #define hdma_table_dynamic_orig_pos ((uint16*)(g_ram+0x1B00))
 #define hdma_table_dynamic ((uint16*)(g_ram+0x1DBA0))
 
+// Allocate 64 bytes that we can use for msu resume.
+#define msu_resume_info ((uint8*)(g_ram+0x1DB60))
 
+#define msu_resume_info_alt ((uint8*)(g_ram+0x1DB20))
 
 
 typedef struct MovableBlockData {
