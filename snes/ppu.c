@@ -474,8 +474,8 @@ static void PpuDrawBackground_2bpp(Ppu *ppu, uint y, bool sub, uint layer, PpuZb
 
 // Draw a whole line of a 4bpp background layer into bgBuffers, with mosaic applied
 static void PpuDrawBackground_4bpp_mosaic(Ppu *ppu, uint y, bool sub, uint layer, PpuZbufType zhi, PpuZbufType zlo) {
-#define GET_PIXEL(i) pixel = (bits) & 1 | (bits >> 7) & 2 | (bits >> 14) & 4 | (bits >> 21) & 8
-#define GET_PIXEL_HFLIP(i) pixel = (bits >> 7) & 1 | (bits >> 14) & 2 | (bits >> 21) & 4 | (bits >> 28) & 8
+#define GET_PIXEL() pixel = (bits) & 1 | (bits >> 7) & 2 | (bits >> 14) & 4 | (bits >> 21) & 8
+#define GET_PIXEL_HFLIP() pixel = (bits >> 7) & 1 | (bits >> 14) & 2 | (bits >> 21) & 4 | (bits >> 28) & 8
 #define READ_BITS(ta, tile) (addr = &ppu->vram[((ta) + (tile) * 16) & 0x7fff], addr[0] | addr[8] << 16)
   enum { kPaletteShift = 6 };
   if (!IS_SCREEN_ENABLED(ppu, sub, layer))
@@ -533,8 +533,8 @@ static void PpuDrawBackground_4bpp_mosaic(Ppu *ppu, uint y, bool sub, uint layer
 
 // Draw a whole line of a 2bpp background layer into bgBuffers, with mosaic applied
 static void PpuDrawBackground_2bpp_mosaic(Ppu *ppu, int y, bool sub, uint layer, PpuZbufType zhi, PpuZbufType zlo) {
-#define GET_PIXEL(i) pixel = (bits) & 1 | (bits >> 7) & 2
-#define GET_PIXEL_HFLIP(i) pixel = (bits >> 7) & 1 | (bits >> 14) & 2
+#define GET_PIXEL() pixel = (bits) & 1 | (bits >> 7) & 2
+#define GET_PIXEL_HFLIP() pixel = (bits >> 7) & 1 | (bits >> 14) & 2
 #define READ_BITS(ta, tile) (addr = &ppu->vram[((ta) + (tile) * 8) & 0x7fff], addr[0])
   enum { kPaletteShift = 8 };
   if (!IS_SCREEN_ENABLED(ppu, sub, layer))
@@ -570,7 +570,7 @@ static void PpuDrawBackground_2bpp_mosaic(Ppu *ppu, int y, bool sub, uint layer,
       int ta = (tile & 0x8000) ? tileadr1 : tileadr0;
       PpuZbufType z = (tile & 0x2000) ? zhi : zlo;
       uint32 bits = READ_BITS(ta, tile & 0x3ff);
-      if (tile & 0x4000) bits >>= x, GET_PIXEL(0); else bits <<= x, GET_PIXEL_HFLIP(0);
+      if (tile & 0x4000) bits >>= x, GET_PIXEL(); else bits <<= x, GET_PIXEL_HFLIP();
       if (pixel) {
         pixel += (tile & 0x1c00) >> kPaletteShift;
         uint i = 0;
