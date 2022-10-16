@@ -241,7 +241,7 @@ static void MixToBufferWithVolume(int16 *dst, const int16 *src, size_t n, float 
       dst[i * 2 + 1] += src[i * 2 + 1];
     }
   } else {
-    uint32 vol = 65536 * volume;
+    uint32 vol = (int32)(65536 * volume);
     for (size_t i = 0; i < n; i++) {
       dst[i * 2 + 0] += src[i * 2 + 0] * vol >> 16;
       dst[i * 2 + 1] += src[i * 2 + 1] * vol >> 16;
@@ -250,8 +250,8 @@ static void MixToBufferWithVolume(int16 *dst, const int16 *src, size_t n, float 
 }
 
 static void MixToBufferWithVolumeRamp(int16 *dst, const int16 *src, size_t n, float volume, float volume_step, float ideal_target) {
-  uint64 vol = volume * 281474976710656.0f;
-  uint64 step = volume_step * 281474976710656.0f;
+  int64 vol = volume * 281474976710656.0f;
+  int64 step = volume_step * 281474976710656.0f;
   for (size_t i = 0; i < n; i++) {
     uint32 v = (vol >> 32);
     dst[i * 2 + 0] += src[i * 2 + 0] * v >> 16;
@@ -480,7 +480,7 @@ void ZeldaRestoreMusicAfterLoad_Locked(bool is_reset) {
   MsuPlayer *mp = &g_msu_player;
   if (mp->enabled) {
     mp->volume = 0.0;
-    MsuPlayer_Open(mp, music_unk1, true);
+    MsuPlayer_Open(mp, (music_unk1 == 0xf1) ? mp->resume_info.orig_track : music_unk1, true);
 
     // If resuming in the middle of a transition, then override
     // the volume with that of the transition.
