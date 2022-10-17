@@ -128,9 +128,11 @@ uint8 ZeldaGetEntranceMusicTrack(int i) {
   return rv;
 }
 
-static const uint8 kVolumeTransitionTarget[3] = { 0, 64, 255};
-static const uint8 kVolumeTransitionStep[3] = { 7, 3, 3};
-static float kVolumeTransitionStepFloat;
+static const uint8 kVolumeTransitionTarget[4] = { 0, 64, 255, 255};
+static const uint8 kVolumeTransitionStep[4] = { 7, 3, 3, 24};
+// These are precomputed in the config parse
+static float kVolumeTransitionStepFloat[4];
+static float kVolumeTransitionTargetFloat[4];
 
 void ZeldaPlayMsuAudioTrack(uint8 music_ctrl) {
   MsuPlayer *mp = &g_msu_player;
@@ -143,8 +145,8 @@ void ZeldaPlayMsuAudioTrack(uint8 music_ctrl) {
   if ((music_ctrl & 0xf0) != 0xf0)
     MsuPlayer_Open(mp, music_ctrl, false);
   else if (music_ctrl >= 0xf1 && music_ctrl <= 0xf3) {
-    mp->volume_target = kVolumeTransitionTarget[music_ctrl - 0xf1] * (1.0f / 255);
-    mp->volume_step = kVolumeTransitionStepFloat * kVolumeTransitionStep[music_ctrl - 0xf1];
+    mp->volume_target = kVolumeTransitionTargetFloat[music_ctrl - 0xf1];
+    mp->volume_step = kVolumeTransitionStepFloat[music_ctrl - 0xf1];
   }
 
   if (mp->state == 0) {
@@ -183,8 +185,8 @@ static void MsuPlayer_Open(MsuPlayer *mp, int orig_track, bool resume_from_snaps
     memcpy(&resume, msu_resume_info, sizeof(mp->resume_info));
   }
 
-  mp->volume_target = 1.0f;
-  mp->volume_step = kVolumeTransitionStepFloat * 16;
+  mp->volume_target = kVolumeTransitionTargetFloat[3];
+  mp->volume_step = kVolumeTransitionStepFloat[3];
 
   mp->state = kMsuState_Idle;
   MsuPlayer_CloseFile(mp);
@@ -192,6 +194,7 @@ static void MsuPlayer_Open(MsuPlayer *mp, int orig_track, bool resume_from_snaps
     return;
   char fname[256], buf[8];
   snprintf(fname, sizeof(fname), "%s%d.%s", g_config.msu_path ? g_config.msu_path : "", actual_track, mp->enabled & kMsuEnabled_Opuz ? "opuz" : "pcm");
+  printf("Loading MSU %s\n", fname);
   mp->f = fopen(fname, "rb");
   if (mp->f == NULL)
     goto READ_ERROR;
@@ -480,16 +483,18 @@ void ZeldaRestoreMusicAfterLoad_Locked(bool is_reset) {
   MsuPlayer *mp = &g_msu_player;
   if (mp->enabled) {
     mp->volume = 0.0;
-    MsuPlayer_Open(mp, (music_unk1 == 0xf1) ? mp->resume_info.orig_track : music_unk1, true);
+    MsuPlayer_Open(mp, (music_unk1 == 0xf1) ? ((MsuPlayerResumeInfo*)msu_resume_info)->orig_track : 
+                   music_unk1, true);
 
     // If resuming in the middle of a transition, then override
     // the volume with that of the transition.
     if (last_music_control >= 0xf1 && last_music_control <= 0xf3) {
       uint8 target = kVolumeTransitionTarget[last_music_control - 0xf1];
       if (target != msu_volume) {
-        mp->volume = msu_volume * (1.0f / 255);
-        mp->volume_target = target * (1.0f / 255);
-        mp->volume_step = kVolumeTransitionStepFloat * kVolumeTransitionStep[last_music_control - 0xf1];
+        float f = kVolumeTransitionTargetFloat[3] * (1.0f / 255);
+        mp->volume = msu_volume * f;
+        mp->volume_target = target * f;
+        mp->volume_step = kVolumeTransitionStepFloat[last_music_control - 0xf1];
       }
     }
 
@@ -522,7 +527,12 @@ void ZeldaEnableMsu(uint8 enable) {
       fprintf(stderr, "Warning: MSU requires: AudioFreq = 44100\n");
   }
 
-  kVolumeTransitionStepFloat = (60 / 256.0f) / g_config.audio_freq;
+  float volscale = g_config.msuvolume * (1.0f / 255 / 100);
+  float stepscale = g_config.msuvolume * (60.0f / 256 / 100) / g_config.audio_freq;
+  for (size_t i = 0; i != countof(kVolumeTransitionStepFloat); i++) {
+    kVolumeTransitionStepFloat[i] = kVolumeTransitionStep[i] * stepscale;
+    kVolumeTransitionTargetFloat[i] = kVolumeTransitionTarget[i] * volscale;
+  }
 }
 
 void LoadSongBank(const uint8 *p) {  // 808888

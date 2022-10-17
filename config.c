@@ -273,6 +273,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "MSUPath")) {
       g_config.msu_path = value;
       return true;
+    } else if (StringEqualsNoCase(key, "MSUVolume")) {
+      g_config.msuvolume = atoi(value);
+      return true;
     } else if (StringEqualsNoCase(key, "ResumeMSU")) {
       return ParseBool(value, &g_config.resume_msu);
     }
@@ -382,6 +385,8 @@ static bool ParseOneConfigFile(const char *filename, int depth) {
 }
 
 void ParseConfigFile(const char *filename) {
+  g_config.msuvolume = 100;  // default msu volume, 100%
+
   if (filename != NULL || !ParseOneConfigFile("zelda3.user.ini", 0)) {
     if (filename == NULL)
       filename = "zelda3.ini";
