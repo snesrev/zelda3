@@ -1274,6 +1274,10 @@ void LinkState_Dashing() {  // 878f86
     LinkState_ExitingDash();
     return;
   }
+
+  if (link_speed_setting == 0 && (enhanced_features0 & kFeatures0_TurnWhileDashing))
+    link_speed_setting = 16;
+
   uint8 dir = force_move_any_direction & 0xf;
   if (dir == 0)
     dir = kDashTab2[link_direction_facing >> 1];
