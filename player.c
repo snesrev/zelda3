@@ -752,7 +752,7 @@ timer_running:
   if (BYTE(link_z_coord) == 0 || BYTE(link_z_coord) >= 0xe0) {
     Player_TileDetectNearby();
     if ((tiledetect_pit_tile & 0xf) == 0xf) {
-      link_player_handler_state = 1;
+      link_player_handler_state = kPlayerState_FallingIntoHole;
       link_speed_setting = 4;
     }
   }
@@ -803,6 +803,8 @@ void LinkHop_HoppingSouthOW() {  // 87894e
     if (link_z_coord >= 0xfff0) {
       link_z_coord = 0;
       Link_SplashUponLanding();
+      // This is the place that caused the water walking bug after bonk, 
+      // player_near_pit_state was not reset.
       if (player_near_pit_state)
         link_player_handler_state = kPlayerState_FallingIntoHole;
       if (link_player_handler_state != kPlayerState_Swimming &&
@@ -1388,6 +1390,11 @@ aux_state:
   }
   TileDetect_MainHandler(4);
   if (!(tiledetect_pit_tile & 1)) {
+    // Reset player_near_pit_state if we're no longer near a hole.
+    // This fixes a bug where you could walk on water
+    if (enhanced_features0 & kFeatures0_MiscBugFixes)
+      player_near_pit_state = 0;
+
     if (link_is_running) {
       LinkState_Dashing();
       return;
@@ -3953,7 +3960,7 @@ xy:   RunSlopeCollisionChecks_HorizontalFirst();
     if (st != 19 && st != 8 && st != 9 && st != 10 && st != 3) {
       Player_TileDetectNearby();
       if (tiledetect_pit_tile & 0xf) {
-        link_player_handler_state = 1;
+        link_player_handler_state = kPlayerState_FallingIntoHole;
         if (!link_is_running)
           link_speed_setting = 4;
       }
@@ -4233,7 +4240,7 @@ endif_19:
     byte_7E005C = 9;
     link_this_controls_sprite_oam = 0;
     player_near_pit_state = 1;
-    link_player_handler_state = 1;
+    link_player_handler_state = kPlayerState_FallingIntoHole;
     return;
   } // endif_23
 
@@ -4374,7 +4381,7 @@ void StartMovementCollisionChecks_Y_HandleOutdoors() {  // 87beaf
       byte_7E005C = 9;
       link_this_controls_sprite_oam = 0;
       player_near_pit_state = 1;
-      link_player_handler_state = 1;
+      link_player_handler_state = kPlayerState_FallingIntoHole;
     }
     return;
   }
@@ -4873,7 +4880,7 @@ endif_19:
     byte_7E005C = 9;
     link_this_controls_sprite_oam = 0;
     player_near_pit_state = 1;
-    link_player_handler_state = 1;
+    link_player_handler_state = kPlayerState_FallingIntoHole;
     return;
   } // endif_23
 
@@ -5013,7 +5020,7 @@ void StartMovementCollisionChecks_X_HandleOutdoors() {  // 87c8e9
       byte_7E005C = 9;
       link_this_controls_sprite_oam = 0;
       player_near_pit_state = 1;
-      link_player_handler_state = 1;
+      link_player_handler_state = kPlayerState_FallingIntoHole;
     }
     return;
   }
