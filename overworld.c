@@ -813,14 +813,14 @@ after:
   y >>= 1;
   Dungeon_ResetTorchBackgroundAndPlayerInner();
   map16_load_src_off &= kSwitchAreaTab0[y];
-  uint16 pushed = current_area_of_player + kSwitchAreaTab3[y];
-  map16_load_src_off += kSwitchAreaTab1[(y * 128 | pushed) >> 1];
+  int pushed = ((current_area_of_player + kSwitchAreaTab3[y]) >> 1) & 0x3f;
+  map16_load_src_off += kSwitchAreaTab1[y * 64 + pushed];
 
   uint8 old_screen = overworld_screen_index;
   if (old_screen == 0x2a)
     sound_effect_ambient = 0x80;
 
-  uint8 new_area = kOverworldAreaHeads[pushed >> 1] | savegame_is_darkworld;
+  uint8 new_area = kOverworldAreaHeads[pushed] | savegame_is_darkworld;
   BYTE(overworld_screen_index) = new_area;
   BYTE(overworld_area_index) = new_area;
   if (!savegame_is_darkworld || link_item_moon_pearl) {
