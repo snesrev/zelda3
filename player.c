@@ -13,6 +13,8 @@
 #include "player_oam.h"
 #include "sprite_main.h"
 
+static bool g_ApplyLinksMovementToCamera_called;
+
 static const uint8 kSpinAttackDelays[] = { 1, 0, 0, 0, 0, 3, 0, 0, 1, 0, 3, 3, 3, 3, 4, 4, 1, 5 };
 static const uint8 kFireBeamSounds[] = { 1, 2, 3, 4, 0, 9, 18, 27 };
 static const int8 kTagalongArr1[] = { -1, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
@@ -231,6 +233,8 @@ void HandleLink_From1D() {  // 878130
 }
 
 void PlayerHandler_00_Ground_3() {  // 8781a0
+  g_ApplyLinksMovementToCamera_called = false;
+
   link_z_coord = 0xffff;
   link_actual_vel_z = 0xff;
   link_recoilmode_timer = 0;
@@ -322,6 +326,13 @@ endif_3:
 
 getout_dostuff:
   fallhole_var1 = 0;
+
+  // HandleIndoorCameraAndDoors must not be called twice in the same frame,
+  // this might mess up camera positioning. For example when using spin attack
+  // in between bumpers.
+  if (g_ApplyLinksMovementToCamera_called && (enhanced_features0 & kFeatures0_MiscBugFixes))
+    return;
+
   HandleIndoorCameraAndDoors();
 }
 
@@ -6125,6 +6136,10 @@ void HandleDoorTransitions() {  // 87e901
 }
 
 void ApplyLinksMovementToCamera() {  // 87e9d3
+  // Sometimes, when using spin attack, this routine will end up getting
+  // called twice in the same frame, which messes up things.
+  g_ApplyLinksMovementToCamera_called = true;
+
   link_y_page_movement_delta = (link_y_coord >> 8) - link_y_coord_safe_return_hi;
   link_x_page_movement_delta = (link_x_coord >> 8) - link_x_coord_safe_return_hi;
 
