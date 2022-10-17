@@ -388,7 +388,7 @@
 #define link_force_hold_sword_up (*(uint8*)(g_ram+0x3EF))
 #define flute_countdown (*(uint8*)(g_ram+0x3F0))
 #define tiledetect_var4 (*(uint16*)(g_ram+0x3F1))
-#define byte_7E03F3 (*(uint8*)(g_ram+0x3F3))
+#define link_on_conveyor_belt (*(uint8*)(g_ram+0x3F3))
 #define dung_unk6 (*(uint8*)(g_ram+0x3F4))
 #define link_timer_tempbunny (*(uint16*)(g_ram+0x3F5))
 #define link_need_for_poof_for_transform (*(uint8*)(g_ram+0x3F7))

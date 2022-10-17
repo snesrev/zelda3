@@ -726,7 +726,7 @@ void Death_Func1() {  // 89f2a4
   music_control = 241;
   sound_effect_ambient = 5;
   overworld_map_state = 5;
-  byte_7E03F3 = 0;
+  link_on_conveyor_belt = 0;
   byte_7E0322 = 0;
   link_cape_mode = 0;
   mapbak_bg1_x_offset = palette_filter_countdown;

@@ -4071,7 +4071,7 @@ void StartMovementCollisionChecks_Y_HandleIndoors() {  // 87ba35
       } // endif_6
 
       is_standing_in_doorway = 1;
-      byte_7E03F3 = 0;
+      link_on_conveyor_belt = 0;
       if ((R14 & 0x70) != 0x70) {
         if (R14 & 5) { // if_7
           link_moving_against_diag_tile = 0;
@@ -4108,7 +4108,7 @@ endif_1b:
 label_3:
 
   if ((R14 & 7) == 0 && (R12 & 5) != 0) {
-    byte_7E03F3 = 0;
+    link_on_conveyor_belt = 0;
     FlagMovingIntoSlopes_Y();
     if ((link_moving_against_diag_tile & 0xf) != 0)
       return;
@@ -4151,12 +4151,12 @@ label_3:
   }  // endif_12_norupee
 
   if (tiledetect_var4 & 0x22) {
-    byte_7E03F3 = tiledetect_var4 & 0x20 ? 2 : 1;
+    link_on_conveyor_belt = tiledetect_var4 & 0x20 ? 2 : 1;
   } else if (tiledetect_var4 & 0x2200) {
-    byte_7E03F3 = tiledetect_var4 & 0x2000 ? 4 : 3;
+    link_on_conveyor_belt = tiledetect_var4 & 0x2000 ? 4 : 3;
   } else {
     if (!(bitfield_spike_cactus_tiles & 7) && !(R14 & 2))
-      byte_7E03F3 = 0;
+      link_on_conveyor_belt = 0;
   } // endif_15
 
   if ((tiledetect_vertical_ledge & 7) == 7 && RunLedgeHopTimer()) {
@@ -4757,7 +4757,7 @@ void StartMovementCollisionChecks_X_HandleIndoors() {  // 87c4ff
       } // endif_6
 
       is_standing_in_doorway = 2;
-      byte_7E03F3 = 0;
+      link_on_conveyor_belt = 0;
       if ((R14 & 0x70) != 0x70) {
         if (R14 & 7) { // if_7
           link_moving_against_diag_tile = 0;
@@ -4787,7 +4787,7 @@ else_7:
 label_3:
 
   if ((R14 & 2) == 0 && (R12 & 5) != 0) {
-    byte_7E03F3 = 0;
+    link_on_conveyor_belt = 0;
     FlagMovingIntoSlopes_X();
     if ((link_moving_against_diag_tile & 0xf) != 0)
       return;
@@ -4823,12 +4823,12 @@ label_3:
   }  // endif_12_norupee
 
   if (tiledetect_var4 & 0x22) {
-    byte_7E03F3 = tiledetect_var4 & 0x20 ? 2 : 1;
+    link_on_conveyor_belt = tiledetect_var4 & 0x20 ? 2 : 1;
   } else if (tiledetect_var4 & 0x2200) {
-    byte_7E03F3 = tiledetect_var4 & 0x2000 ? 4 : 3;
+    link_on_conveyor_belt = tiledetect_var4 & 0x2000 ? 4 : 3;
   } else {
     if (!(bitfield_spike_cactus_tiles & 7) && !(R14 & 2))
-      byte_7E03F3 = 0;
+      link_on_conveyor_belt = 0;
   } // endif_15
 
   if ((detection_of_ledge_tiles_horiz_uphoriz & 7) == 7 && RunLedgeHopTimer()) {
@@ -5879,14 +5879,14 @@ void Link_ApplyConveyor() {  // 87e5f0
   static const int8 kMovingBeltY[4] = { -8, 8, 0, 0 };
   static const int8 kMovingBeltX[4] = { 0, 0, -8, 8 };
 
-  if (!byte_7E03F3)
+  if (!link_on_conveyor_belt)
     return;
   if (BYTE(link_z_coord) != 0 && BYTE(link_z_coord) != 0xff)
     return;
   if (link_grabbing_wall & 1 || link_player_handler_state == kPlayerState_Hookshot || link_auxiliary_state)
     return;
 
-  int j = byte_7E03F3 - 1;
+  int j = link_on_conveyor_belt - 1;
   if (link_is_running && link_dash_ctr == 32 && (link_direction & kMovePosDirFlag[j]))
     return;
 
@@ -6234,6 +6234,9 @@ void Link_Initialize() {  // 87f13c
   if (enhanced_features0 & kFeatures0_MiscBugFixes) {
     about_to_jump_off_ledge = 0;
 
+    // If you use a mirror on a conveyor belt you still had momentum
+    link_on_conveyor_belt = 0;
+
     // These could be 1 if quitting while killing armos knight
     bg1_y_offset = bg1_x_offset = 0;
   }
@@ -6525,7 +6528,7 @@ void AncillaAdd_Hookshot(uint8 a, uint8 y) {  // 899b10
 void ResetSomeThingsAfterDeath(uint8 a) {  // 8bffbf
   link_is_in_deep_water = 0;
   link_speed_setting = a;
-  byte_7E03F3 = 0;
+  link_on_conveyor_belt = 0;
   byte_7E0322 = 0;
   flag_is_link_immobilized = 0;
   palette_swap_flag = 0;
