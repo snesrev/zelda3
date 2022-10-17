@@ -6,6 +6,11 @@
 #include <stdio.h>
 #include <assert.h>
 #include <string.h>
+#define STB_IMAGE_IMPLEMENTATION
+#define STBI_ONLY_PNG
+#define STBI_MAX_DIMENSIONS 4096
+#define STBI_NO_FAILURE_STRINGS
+#include "third_party/stb/stb_image.h"
 
 static GlslPass *ParseConfigKeyPass(GlslShader *gs, const char *key, const char *match) {
   char *endp;
@@ -367,8 +372,19 @@ GlslShader *GlslShader_CreateFromFile(const char *filename) {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, t->filter);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, t->mipmap ? 
                     (t->filter == GL_LINEAR ? GL_LINEAR_MIPMAP_LINEAR : GL_NEAREST_MIPMAP_NEAREST) : t->filter);
-    // code to load png mssing
-    fprintf(stderr, "PNG file reading not supported\n");
+    if (t->filename) {
+      char *new_filename = ReplaceFilenameWithNewPath(filename, t->filename);
+      int imw, imh, imn;
+      unsigned char *data = stbi_load(new_filename, &imw, &imh, &imn, 0);
+      if (!data) {
+        fprintf(stderr, "Unable to read PNG '%s'\n", new_filename);
+      } else {
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, imw, imh, 0, 
+                     (imn == 4) ? GL_RGBA : (imn == 3) ? GL_RGB : GL_LUMINANCE, GL_UNSIGNED_BYTE, data);
+      }
+      free(data);
+      free(new_filename);
+    }
     if (t->mipmap)
       glGenerateMipmap(GL_TEXTURE_2D);
   }
