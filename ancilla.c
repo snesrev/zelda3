@@ -5376,11 +5376,11 @@ void Ancilla3A_BigBombExplosion(int k) {  // 88f18d
     }
   }
   if (ancilla_item_to_link[k] == 3 && ancilla_arr3[k] == 1) {
+    // Changed so this is reset elsewhere. Some code depends on the value 13.
+    uint8 old = (enhanced_features0 & kFeatures0_MiscBugFixes) ? follower_indicator : 0;
+    follower_indicator = 13;
     Bomb_CheckForDestructibles(Ancilla_GetX(k), Ancilla_GetY(k), 0); // r14?
-
-    // Changed so this is reset elsewhere
-    if (!(enhanced_features0 & kFeatures0_MiscBugFixes))
-      follower_indicator = 0;
+    follower_indicator = old;
   }
 }
 
