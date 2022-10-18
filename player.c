@@ -241,23 +241,24 @@ void PlayerHandler_00_Ground_3() {  // 8781a0
 
   if (!Link_HandleToss()) {
     Link_HandleAPress();
-    if ((link_state_bits | link_grabbing_wall) == 0 && link_unk_master_sword == 0 && link_player_handler_state != 17) {
+    if ((link_state_bits | link_grabbing_wall) == 0 && link_unk_master_sword == 0 && link_player_handler_state != kPlayerState_StartDash) {
       Link_HandleYItem();
+      // Ensure we're not handling potions. Things further
+      // down don't assume this and change the module indexes randomly.
+      // This also fixes a bug where bombos, ether, quake get aborted if you use spin attack at the same time.
+      if ((enhanced_features0 & kFeatures0_MiscBugFixes) && (
+          main_module_index == 14 && submodule_index != 2 ||
+          link_player_handler_state == kPlayerState_Bombos ||
+          link_player_handler_state == kPlayerState_Ether ||
+          link_player_handler_state == kPlayerState_Quake))
+        goto getout_clear_vel;
       if (sram_progress_indicator != 0) {
         Link_HandleSwordCooldown();
+        if (link_player_handler_state == 3)
+          goto getout_clear_vel;
       }
     }
   }
-
-  // Ensure we're not handling potions. Things further
-  // down don't assume this and change the module indexes randomly.
-  // Also check for spin attack for some reason.
-  if ((enhanced_features0 & kFeatures0_MiscBugFixes) && main_module_index == 14 && submodule_index != 2 ||
-      link_player_handler_state == 3) {
-    link_x_vel = link_y_vel = 0;
-    goto getout_dostuff;
-  }
-
 
   Link_HandleCape_passive_LiftCheck();
   if (link_incapacitated_timer) {
@@ -321,10 +322,10 @@ endif_3:
   Link_HandleVelocity();
   Link_HandleCardinalCollision();
   Link_HandleMovingAnimation_FullLongEntry();
-  if (link_unk_master_sword)
+  if (link_unk_master_sword) getout_clear_vel: {
     link_y_vel = link_x_vel = 0;
+  }
 
-getout_dostuff:
   fallhole_var1 = 0;
 
   // HandleIndoorCameraAndDoors must not be called twice in the same frame,
