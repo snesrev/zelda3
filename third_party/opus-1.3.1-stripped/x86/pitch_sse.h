@@ -34,7 +34,7 @@
 #define PITCH_SSE_H
 
 #if defined(HAVE_CONFIG_H)
-#include "config.h"
+#include "../config.h"
 #endif
 
 #if defined(OPUS_X86_MAY_HAVE_SSE4_1) && defined(FIXED_POINT)
