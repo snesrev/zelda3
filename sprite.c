@@ -1427,8 +1427,14 @@ bool SpriteDraw_AbsorbableTransient(int k, bool transient) {  // 86d22f
     return false;
   if (sprite_delay_aux2[k] != 0)
     Oam_AllocateFromRegionC(12);
-  if (sprite_E[k] != 0)
+  if (sprite_E[k] != 0) {
+    // This code runs when an absorbable is hidden under say a rock.
+    // sprite_B holds the sprite that grabbed us with a hookshot.
+    // Cancel the grab if we're hidden.
+    if (enhanced_features0 & kFeatures0_MiscBugFixes)
+      sprite_B[k] = 0;
     return true;
+  }
   uint8 j = sprite_type[k];
   assert(j >= 0xd8 && j < 0xd8 + 19);
   uint8 a = kAbsorbable_Tab2[j - 0xd8];

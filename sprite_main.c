@@ -11806,13 +11806,8 @@ void Sprite_E3_Fairy(int k) {  // 86cf94
   if (!sprite_ai_state[k]) {
     if (!player_is_indoors)
       sprite_obj_prio[k] = 48;
-    if (SpriteDraw_AbsorbableTransient(k, true)) {
-      // sprite_B holds the sprite that grabbed us. 
-      // Cancel the grab if we're hidden under a rock.
-      if (enhanced_features0 & kFeatures0_MiscBugFixes)
-        sprite_B[k] = 0;
+    if (SpriteDraw_AbsorbableTransient(k, true))
       return;
-    }
   }
   Fairy_CheckIfTouchable(k);
   if (Sprite_ReturnIfInactive(k))
