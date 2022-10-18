@@ -89,6 +89,8 @@ void SetButtonState(int button, bool pressed) {
 
 
 void ChangeWindowScale(int scale_step) {
+  if ((SDL_GetWindowFlags(g_window) & (SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_MINIMIZED | SDL_WINDOW_MAXIMIZED)) != 0)
+    return;
   int screen = SDL_GetWindowDisplayIndex(g_window);
   if (screen < 0) screen = 0;
   int max_scale = kMaxWindowScale;
@@ -424,7 +426,7 @@ int main(int argc, char** argv) {
         HandleGamepadInput(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
         break;
       case SDL_MOUSEWHEEL:
-        if ((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 0 && (g_win_flags & SDL_WINDOW_FULLSCREEN) == 0 && event.wheel.y != 0 && SDL_GetModState() & KMOD_CTRL)
+        if (SDL_GetModState() & KMOD_CTRL && event.wheel.y != 0)
           ChangeWindowScale(event.wheel.y > 0 ? 1 : -1);
         break;
       case SDL_MOUSEBUTTONDOWN:
