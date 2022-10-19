@@ -63,8 +63,6 @@ void WorldMap_ExitMap();
 void WorldMap_SetUpHDMA();
 void WorldMap_FillTilemapWithEF();
 void WorldMap_HandleSprites();
-bool WorldMap_CalculateOamCoordinates(PointU8 *pt);
-void WorldMap_HandleSpriteBlink(int spr, uint8 r11_ext, uint8 r12_flags, uint8 r13_char, uint8 r14_x, uint8 r15_y);
 bool OverworldMap_CheckForPendant(int k);
 bool OverworldMap_CheckForCrystal(int k);
 void Module0E_03_DungeonMap();

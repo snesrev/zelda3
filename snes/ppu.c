@@ -714,9 +714,6 @@ static void PpuDrawMode7Upsampled(Ppu *ppu, uint y) {
   uint32 xCenter = ((int16_t)(ppu->m7matrix[4] << 3)) >> 3, yCenter = ((int16_t)(ppu->m7matrix[5] << 3)) >> 3;
   uint32 clippedH = (((int16_t)(ppu->m7matrix[6] << 3)) >> 3) - xCenter;
   uint32 clippedV = (((int16_t)(ppu->m7matrix[7] << 3)) >> 3) - yCenter;
-  uint32 m0 = ppu->m7matrix[0];  // xpos increment per horiz movement
-  uint32 m3 = ppu->m7matrix[3];  // ypos increment per vert movement
-  uint8 *dst_start = &ppu->renderBuffer[(y - 1) * 4 * ppu->renderPitch], *dst_end, *dst = dst_start + ppu->extraLeftRight * 4 * 4;
   int32 m0v[4];
   if (*(uint32*)&ppu->mode7PerspectiveLow == 0) {
     m0v[0] = m0v[1] = m0v[2] = m0v[3] = ppu->m7matrix[0] << 12;
@@ -725,11 +722,15 @@ static void PpuDrawMode7Upsampled(Ppu *ppu, uint y) {
     for (int i = 0; i < 4; i++)
       m0v[i] = 4096.0f / FloatInterpolate((int)y + kInterpolateOffsets[i], 0, 223, ppu->mode7PerspectiveLow, ppu->mode7PerspectiveHigh);
   }
-
+  size_t pitch = ppu->renderPitch;
+  uint8 *render_buffer_ptr = &ppu->renderBuffer[(y - 1) * 4 * pitch];
+  uint8 *dst_start = render_buffer_ptr + (ppu->extraLeftRight - ppu->extraLeftCur) * 16;
+  size_t draw_width = 256 + ppu->extraLeftCur + ppu->extraRightCur;
+  uint8 *dst_curline = dst_start;
+  uint32 m1 = ppu->m7matrix[1] << 12;  // xpos increment per vert movement
+  uint32 m2 = ppu->m7matrix[2] << 12;  // ypos increment per horiz movement
   for (int j = 0; j < 4; j++) {
-    m0 = m3 = m0v[j];
-    uint32 m1 = ppu->m7matrix[1] << 12;  // xpos increment per vert movement
-    uint32 m2 = ppu->m7matrix[2] << 12;  // ypos increment per horiz movement
+    uint32 m0 = m0v[j], m3 = m0;
     uint32 xpos = m0 * clippedH + m1 * (clippedV + y) + (xCenter << 20), xcur;
     uint32 ypos = m2 * clippedH + m3 * (clippedV + y) + (yCenter << 20), ycur;
 
@@ -738,11 +739,17 @@ static void PpuDrawMode7Upsampled(Ppu *ppu, uint y) {
     ypos -= (m2 + m3) >> 1;
     xcur = (xpos << 2) + j * m1;
     ycur = (ypos << 2) + j * m3;
-    dst_end = dst + 4096;
+
+    xcur -= ppu->extraLeftCur * 4 * m0;
+    ycur -= ppu->extraLeftCur * 4 * m2;
+
+    uint8 *dst = dst_curline;
+    uint8 *dst_end = dst_curline + draw_width * 16;
 
 #define DRAW_PIXEL(mode) \
     tile = ppu->vram[(ycur >> 25 & 0x7f) * 128 + (xcur >> 25 & 0x7f)] & 0xff;  \
     pixel = ppu->vram[tile * 64 + (ycur >> 22 & 7) * 8 + (xcur >> 22 & 7)] >> 8; \
+    pixel = (xcur & 0x80000000) ? 0 : pixel; \
     *(uint32*)dst = (mode ? (ppu->colorMapRgb[pixel] & 0xfefefe) >> 1 : ppu->colorMapRgb[pixel]); \
     xcur += m0, ycur += m2, dst += 4;
 
@@ -760,18 +767,17 @@ static void PpuDrawMode7Upsampled(Ppu *ppu, uint y) {
         DRAW_PIXEL(1);
         DRAW_PIXEL(1);
       } while (dst != dst_end);
-
     }
 #undef DRAW_PIXEL
-    dst += (ppu->renderPitch - 4096);
+
+    dst_curline += pitch;
   }
 
   if (ppu->lineHasSprites) {
-    PpuZbufType *pixels = ppu->objBuffer.data;
-    size_t pitch = ppu->renderPitch;
-    uint8 *dst = dst_start + ppu->extraLeftRight * 16;
-    for (size_t i = 0; i < 256; i++, dst += 16) {
-      uint32 pixel = pixels[i + kPpuExtraLeftRight] & 0xff;
+    uint8 *dst = dst_start;
+    PpuZbufType *pixels = ppu->objBuffer.data + (kPpuExtraLeftRight - ppu->extraLeftCur);
+    for (size_t i = 0; i < draw_width; i++, dst += 16) {
+      uint32 pixel = pixels[i] & 0xff;
       if (pixel) {
         uint32 color = ppu->colorMapRgb[pixel];
         ((uint32 *)dst)[3] = ((uint32 *)dst)[2] = ((uint32 *)dst)[1] = ((uint32 *)dst)[0] = color;
@@ -784,15 +790,13 @@ static void PpuDrawMode7Upsampled(Ppu *ppu, uint y) {
 
   if (ppu->extraLeftRight - ppu->extraLeftCur != 0) {
     size_t n = 4 * sizeof(uint32) * (ppu->extraLeftRight - ppu->extraLeftCur);
-    size_t pitch = ppu->renderPitch;
     for(int i = 0; i < 4; i++)
-      memset(dst_start + pitch * i, 0, n);
+      memset(render_buffer_ptr + pitch * i, 0, n);
   }
   if (ppu->extraLeftRight - ppu->extraRightCur != 0) {
     size_t n = 4 * sizeof(uint32) * (ppu->extraLeftRight - ppu->extraRightCur);
-    size_t pitch = ppu->renderPitch;
     for (int i = 0; i < 4; i++)
-      memset(dst_start + pitch * i + (256 + ppu->extraLeftRight * 2 - (ppu->extraLeftRight - ppu->extraRightCur)) * 4 * sizeof(uint32), 0, n);
+      memset(render_buffer_ptr + pitch * i + (256 + ppu->extraLeftRight * 2 - (ppu->extraLeftRight - ppu->extraRightCur)) * 4 * sizeof(uint32), 0, n);
   }
 #undef DRAW_PIXEL
 }

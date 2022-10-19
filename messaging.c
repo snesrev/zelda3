@@ -17,6 +17,8 @@
 #include "nmi.h"
 #include "assets.h"
 
+static void WorldMap_AddSprite(int spr, uint8 big, uint8 flags, uint8 ch, uint16 x, uint16 y);
+static bool WorldMap_CalculateOamCoordinates(Point16U *pt);
 
 static const int8 kDungMap_Tab0[14] = {-1, -1, -1, -1, -1, 2, 0, 10, 4, 8, -1, 6, 12, 14};
 static const uint16 kDungMap_Tab1[8] = {0x2108, 0x2109, 0x2109, 0x210a, 0x210b, 0x210c, 0x210d, 0x211d};
@@ -1068,7 +1070,7 @@ void Module0E_0A_FluteMenu() {  // 8ab730
 }
 
 void FluteMenu_HandleSelection() {  // 8ab78b
-  PointU8 pt;
+  Point16U pt;
 
   if (some_menu_ctr == 0) {
     if ((joypad1L_last | joypad1H_last) & 0xc0) {
@@ -1092,7 +1094,7 @@ void FluteMenu_HandleSelection() {  // 8ab78b
   }
   birdtravel_var1[0] = birdtravel_var1[0] & 7;
   if (frame_counter & 0x10 && WorldMap_CalculateOamCoordinates(&pt))
-    WorldMap_HandleSpriteBlink(16, 2, 0x3e, 0, pt.x - 4, pt.y - 4);
+    WorldMap_AddSprite(16, 2, 0x3e, 0, pt.x - 4, pt.y - 4);
 
   uint16 ybak = link_y_coord_spexit;
   uint16 xbak = link_x_coord_spexit;
@@ -1106,7 +1108,7 @@ void FluteMenu_HandleSelection() {  // 8ab78b
     link_y_coord_spexit = kBirdTravel_y_hi[i] << 8 | kBirdTravel_y_lo[i];
 
     if (WorldMap_CalculateOamCoordinates(&pt))
-      WorldMap_HandleSpriteBlink(i, 0, (i == birdtravel_var1[0]) ? 0x30 + (frame_counter & 6) : 0x32, kBirdTravel_tab1[i], pt.x, pt.y);
+      WorldMap_AddSprite(i, 0, (i == birdtravel_var1[0]) ? 0x30 + (frame_counter & 6) : 0x32, kBirdTravel_tab1[i], pt.x, pt.y);
   }
   link_x_coord_spexit = xbak;
   link_y_coord_spexit = ybak;
@@ -1396,10 +1398,10 @@ void WorldMap_FillTilemapWithEF() {  // 8abda5
 }
 
 void WorldMap_HandleSprites() {  // 8abf66
-  PointU8 pt;
+  Point16U pt;
 
   if (frame_counter & 0x10 && WorldMap_CalculateOamCoordinates(&pt))
-    WorldMap_HandleSpriteBlink(0, 2, 0x3e, 0, pt.x - 4, pt.y - 4);
+    WorldMap_AddSprite(0, 2, 0x3e, 0, pt.x - 4, pt.y - 4);
 
   uint16 ybak = link_y_coord_spexit;
   uint16 xbak = link_x_coord_spexit;
@@ -1411,7 +1413,7 @@ void WorldMap_HandleSprites() {  // 8abf66
     link_x_coord_spexit = bird_travel_x_hi[k] << 8 | bird_travel_x_lo[k];
     link_y_coord_spexit = bird_travel_y_hi[k] << 8 | bird_travel_y_lo[k];
     if (WorldMap_CalculateOamCoordinates(&pt))
-      WorldMap_HandleSpriteBlink(15, 2, kOverworldMap_Table4[frame_counter >> 1 & 3], 0x6a, pt.x, pt.y);
+      WorldMap_AddSprite(15, 2, kOverworldMap_Table4[frame_counter >> 1 & 3], 0x6a, pt.x, pt.y);
   }
 
   if (save_ow_event_info[0x5b] & 0x20 || (((savegame_map_icons_indicator >= 6) ^ is_in_dark_world) & 1))
@@ -1433,7 +1435,7 @@ void WorldMap_HandleSprites() {  // 8abf66
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(14, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      WorldMap_AddSprite(14, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal0:;
   }
@@ -1452,7 +1454,7 @@ void WorldMap_HandleSprites() {  // 8abf66
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(13, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      WorldMap_AddSprite(13, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal1:;
   }
@@ -1471,7 +1473,7 @@ void WorldMap_HandleSprites() {  // 8abf66
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(12, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      WorldMap_AddSprite(12, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal2:;
   }
@@ -1490,7 +1492,7 @@ void WorldMap_HandleSprites() {  // 8abf66
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(11, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      WorldMap_AddSprite(11, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal3:;
   }
@@ -1509,7 +1511,7 @@ void WorldMap_HandleSprites() {  // 8abf66
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(10, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      WorldMap_AddSprite(10, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal4:;
   }
@@ -1528,7 +1530,7 @@ void WorldMap_HandleSprites() {  // 8abf66
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(9, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      WorldMap_AddSprite(9, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal5:;
   }
@@ -1547,7 +1549,7 @@ void WorldMap_HandleSprites() {  // 8abf66
       uint8 ext = 2;
       if (!(info >> 8))
         info = kOwMap_tab2[frame_counter >> 3 & 3] << 8 | 0x32, ext = 0;
-      WorldMap_HandleSpriteBlink(8, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
+      WorldMap_AddSprite(8, ext, (uint8)info, (uint8)(info >> 8), pt.x, pt.y);
     }
   endif_crystal6:;
   }
@@ -1557,25 +1559,23 @@ out:
   link_y_coord_spexit = ybak;
 }
 
-bool WorldMap_CalculateOamCoordinates(PointU8 *pt) {  // 8ac39f
-  uint8 r14, r15;
-
+static bool WorldMap_CalculateOamCoordinates(Point16U *pt) {  // 8ac39f
   if (overworld_map_flags == 0) {
     int j = -(link_y_coord_spexit >> 4) + M7Y_copy + (link_y_coord_spexit >> 3 & 1) - 0xc0;
     uint8 t0 = kOverworldMap_tab1[j];
-    r15 = 13 * t0 >> 4;
+    uint8 yval = 13 * t0 >> 4;
 
     uint8 at = link_x_coord_spexit >> 4;
     bool below = at < 0x80;
     at -= 0x80;
     if (sign8(at)) at = ~at;
 
-    uint8 t1 = ((r15 < 224 ? r15 : 0) * 0x54 >> 8) + 0xb2;
+    uint8 t1 = ((yval < 224 ? yval : 0) * 0x54 >> 8) + 0xb2;
     uint8 t2 = at * t1 >> 8;
     uint8 t3 = (below) ? 0x80 - t2 : t2 + 0x80;
 
     pt->x = t3 - BG1HOFS_copy2 + 0x80;
-    pt->y = r15 + 12;
+    pt->y = yval + 12;
     return true;
   } else {
     uint16 t0 = -(link_y_coord_spexit >> 4) + M7Y_copy - 0x80;
@@ -1584,13 +1584,13 @@ bool WorldMap_CalculateOamCoordinates(PointU8 *pt) {  // 8ac39f
     uint16 t1 = t0 * 37 >> 4;
     if (t1 >= 333)
       return false;
-    r15 = kOverworldMap_tab1[t1];
+    uint8 yval = kOverworldMap_tab1[t1];
     uint16 t2 = link_x_coord_spexit;
     bool below = t2 < 0x7F8;
     t2 -= 0x7f8;
     if (sign16(t2))
       t2 = -t2;
-    uint8 t3 = r15 < 226 ? r15 : 0;
+    uint8 t3 = yval < 226 ? yval : 0;
     uint8 t4 = (t3 * 84 >> 8) + 178;  // r0
     uint8 t5 = (uint8)t2 * t4 >> 8; // r1
     uint16 t6 = (uint8)(t2 >> 8) * t4 + t5;
@@ -1601,27 +1601,29 @@ bool WorldMap_CalculateOamCoordinates(PointU8 *pt) {  // 8ac39f
     uint8 t9 = (uint8)t8 * 45 >> 8;
     uint16 t10 = ((t8 >> 8) * 45) + t9;
     uint16 t11 = below2 ? 0x80 - t10 : t10 + 0x80;
-    r14 = t11 - BG1HOFS_copy2;
-    uint16 t12 = t11 - 0xFF80 - BG1HOFS_copy2;
-    if (t12 >= 0x100)
+    uint16 xval = t11 - BG1HOFS_copy2;
+    int xt = enhanced_features0 & kFeatures0_ExtendScreen64 ? 0x48 : 0;
+    if ((uint16)(xval + 0x80 + xt) >= (0x100 + xt * 2))
       return false;
-    pt->x = r14 + 0x81;
-    pt->y = r15 + 16;
+    pt->x = xval + 0x81;
+    pt->y = yval + 16;
     return true;
   }
 }
 
-void WorldMap_HandleSpriteBlink(int spr, uint8 r11_ext, uint8 r12_flags, uint8 r13_char, uint8 r14_x, uint8 r15_y) {  // 8ac51c
-  if (!(frame_counter & 0x10) && r13_char == 100) {
+static void WorldMap_AddSprite(int spr, uint8 big, uint8 flags, uint8 ch, uint16 x, uint16 y) {  // 8ac51c
+  if (!(frame_counter & 0x10) && ch == 100) {
     assert(spr >= 8);
-    r13_char = kOverworldMapData[spr - 8];
-    r12_flags = 0x32;
-    r11_ext = 0;
+    ch = kOverworldMapData[spr - 8];
+    flags = 0x32;
+    big = 0;
   } else {
-    r14_x -= 4;
-    r15_y -= 4;
+    x -= 4;
+    y -= 4;
   }
-  SetOamPlain(&oam_buf[spr], r14_x, r15_y, r13_char, r12_flags, r11_ext);
+  if (enhanced_features0 & kFeatures0_ExtendScreen64)
+    big |= (x >> 8 & 1);
+  SetOamPlain(&oam_buf[spr], x, y, ch, flags, big);
 }
 
 bool OverworldMap_CheckForPendant(int k) {  // 8ac5a9

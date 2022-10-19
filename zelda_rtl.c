@@ -145,10 +145,16 @@ static void ConfigurePpuSideSpace() {
   if (mod == 14)
     mod = saved_module_for_menu;
   if (mod == 9) {
-    // outdoors
-    extra_left = BG2HOFS_copy2 - ow_scroll_vars0.xstart;
-    extra_right = ow_scroll_vars0.xend - BG2HOFS_copy2;
-    extra_bottom = ow_scroll_vars0.yend - BG2VOFS_copy2;
+    if (main_module_index == 14 && submodule_index == 7 && overworld_map_state >= 4) {
+      // World map
+      extra_left = kPpuExtraLeftRight, extra_right = kPpuExtraLeftRight;
+      extra_bottom = 16;
+    } else {
+      // outdoors
+      extra_left = BG2HOFS_copy2 - ow_scroll_vars0.xstart;
+      extra_right = ow_scroll_vars0.xend - BG2HOFS_copy2;
+      extra_bottom = ow_scroll_vars0.yend - BG2VOFS_copy2;
+    }
   } else if (mod == 7) {
     // indoors, except when the light cone is in use
     if (!(hdr_dungeon_dark_with_lantern && TS_copy != 0)) {
