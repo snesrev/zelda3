@@ -346,7 +346,7 @@ int Ancilla_AllocHigh() {
 
 static void Ancilla_SetOam(OamEnt *oam, uint16 x, uint16 y, uint8 charnum, uint8 flags, uint8 big) {
   uint8 yval = 0xf0;
-  int xt = enhanced_features0 ? 0x40 : 0;
+  int xt = enhanced_features0 & kFeatures0_ExtendScreen64 ? 0x40 : 0;
   if ((uint16)(x + xt) < 256 + xt * 2 && y < 256) {
     big |= (x >> 8) & 1;
     oam->x = x;
@@ -362,7 +362,8 @@ static void Ancilla_SetOam(OamEnt *oam, uint16 x, uint16 y, uint8 charnum, uint8
 static void Ancilla_SetOam_Safe(OamEnt *oam, uint16 x, uint16 y, uint8 charnum, uint8 flags, uint8 big) {
   uint8 yval = 0xf0;
   oam->x = x;
-  if ((uint16)(x + 0x80) < 0x180) {
+  int xt = enhanced_features0 & kFeatures0_ExtendScreen64 ? 0x48 : 0;
+  if ((uint16)(x + 0x80) < (0x180 + xt)) {
     big |= (x >> 8) & 1;
     if ((uint16)(y + 0x10) < 0x100)
       yval = y;
