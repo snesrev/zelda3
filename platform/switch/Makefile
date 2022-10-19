@@ -51,7 +51,7 @@ APP_VERSION :=  $(shell git rev-parse --short HEAD) $(shell git rev-parse --abbr
 #---------------------------------------------------------------------------------
 ARCH	:=	-march=armv8-a+crc+crypto -mtune=cortex-a57 -mtp=soft -fPIE
 
-CFLAGS	:=	-g -Wall -O2 -ffunction-sections \
+CFLAGS	:=	-g -Wall -O2 -ffunction-sections -Wno-parentheses \
 			$(ARCH) $(DEFINES)
 
 CFLAGS	+=	-D__SWITCH__ $(INCLUDE) -DSTBI_NO_THREAD_LOCALS `sdl2-config --cflags`

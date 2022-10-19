@@ -5165,7 +5165,7 @@ void Ancilla2E_SomariaBlockFission(int k) {  // 88eb3e
   }
   Point16U pt;
   Ancilla_PrepAdjustedOamCoord(k, &pt);
-  OamEnt *oam = GetOamCurPtr(), *oam_org = oam;
+  OamEnt *oam = GetOamCurPtr();
 
   int8 z = ancilla_z[k] + (ancilla_K[k] == 3 && BYTE(link_z_coord) != 0xff ? BYTE(link_z_coord) : 0);
   int j = ancilla_item_to_link[k] * 8;
@@ -5923,7 +5923,6 @@ void AncillaAdd_TossedPondItem(uint8 a, uint8 xin, uint8 yin) {  // 898a32
     ancilla_z[k] = 0;
     ancilla_timer[k] = 16;
     ancilla_item_to_link[k] = link_receiveitem_index;
-    int j = link_receiveitem_index;
     Ancilla_SetXY(k,
       link_x_coord + kWishPondItem_X[link_receiveitem_index],
       link_y_coord + kWishPondItem_Y[link_receiveitem_index]);
@@ -6368,8 +6367,6 @@ void AncillaAdd_SwordSwingSparkle(uint8 a, uint8 y) {  // 8993c2
 }
 
 void AncillaAdd_DashTremor(uint8 a, uint8 y) {  // 8993f3
-  static const uint8 kAddDashingDust_X[4] = {4, 4, 6, 0};
-  static const uint8 kAddDashingDust_Y[4] = {20, 4, 16, 16};
   static const uint8 kAddDashTremor_Dir[4] = {2, 2, 0, 0};
   static const uint8 kAddDashTremor_Tab[2] = {0x80, 0x78};
   if (AncillaAdd_CheckForPresence(a))

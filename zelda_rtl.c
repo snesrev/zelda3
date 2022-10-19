@@ -499,7 +499,6 @@ void StateRecorder_Load(StateRecorder *sr, FILE *f, bool replay_mode) {
 
   sr->replay_next_cmd_at = 0;
 
-  bool is_reset = false;
   sr->replay_mode = replay_mode;
   if (replay_mode) {
     sr->frames_since_last = 0;
@@ -514,7 +513,6 @@ void StateRecorder_Load(StateRecorder *sr, FILE *f, bool replay_mode) {
       assert(state.p == state.pend);
     } else {
       ZeldaReset(false);
-      is_reset = true;
     }
   } else {
     // Resume replay from the saved position?

@@ -18,9 +18,6 @@
 #include "tracing.h"
 #include "snes_regs.h"
 
-static const double apuCyclesPerMaster = (32040 * 32) / (1364 * 262 * 60.0);
-
-static void snes_runCpu(Snes* snes);
 static void snes_catchupApu(Snes* snes);
 static uint8_t snes_readReg(Snes* snes, uint16_t adr);
 static void snes_writeReg(Snes* snes, uint16_t adr, uint8_t val);
@@ -104,8 +101,6 @@ void snes_reset(Snes* snes, bool hard) {
   snes->openBus = 0;
 }
 
-static uint8_t g_last_module;
-
 void snes_printCpuLine(Snes *snes) {
   if (snes->debug_cycles) {
     static FILE *fout;
@@ -119,21 +114,6 @@ void snes_printCpuLine(Snes *snes) {
     fputs("\n", fout);
     fflush(fout);
   }
-}
-
-static void snes_runCpu(Snes* snes) {
-  if(snes->cpuCyclesLeft == 0) {
-    snes->cpuMemOps = 0;
-    uint32_t pc = snes->cpu->pc | snes->cpu->k << 16;
-    if (snes->debug_cycles) {
-      char line[80];
-      getProcessorStateCpu(snes, line);
-      puts(line);
-    }
-    int cycles = cpu_runOpcode(snes->cpu);
-    snes->cpuCyclesLeft += (cycles - snes->cpuMemOps) * 6;
-  }
-  snes->cpuCyclesLeft -= 2;
 }
 
 static void snes_catchupApu(Snes* snes) {

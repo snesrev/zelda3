@@ -3971,7 +3971,6 @@ void SpriteDraw_BNCFlail(int k, PrepOamCoordsRet *info) {  // 85b468
   uint8 r12 = kFlailTrooperWeapon_Tab1[sprite_D[k]];
   uint8 r13 = kFlailTrooperWeapon_Tab2[sprite_D[k]];
 
-  uint16 r10 = (r0 & 0x1ff) >> 6;
   uint16 r2 = (r0 + 0x80) & 0x1ff;
 
   uint8 r14 = ChainBallMult(kSinusLookupTable[r0 & 0xff], qq);
@@ -9700,8 +9699,6 @@ void Sprite_28_DarkWorldHintNPC(int k) {  // 86ad6f
   Sprite_BehaveAsBarrier(k);
   if (!sprite_delay_main[k])
     sprite_graphics[k] = frame_counter >> 4 & 1;
-
-  int type = sprite_subtype2[k];
 
   switch(sprite_subtype2[k]) {
   case 0:
@@ -18036,7 +18033,6 @@ void SpriteDraw_Moldorm_Eyeballs(int k, PrepOamCoordsRet *info) {  // 9ddb9e
   static const uint8 kGiantMoldorm_Eye_Char[16] = {0xaa, 0xaa, 0xa8, 0xa8, 0x8a, 0x8a, 0xa8, 0xa8, 0xaa, 0xaa, 0xa8, 0xa8, 0x8a, 0x8a, 0xa8, 0xa8};
   static const uint8 kGiantMoldorm_Eye_Flags[16] = {0, 0, 0, 0, 0x80, 0x80, 0x40, 0x40, 0x40, 0x40, 0xc0, 0xc0, 0, 0, 0x80, 0x80};
   OamEnt *oam = GetOamCurPtr();
-  uint8 yoff = kBadPullSwitch_Tab5[kBadPullSwitch_Tab4[sprite_graphics[k]]];
   int r7 = sprite_F[k] ? frame_counter : 0;
   int r6 = sprite_D[k] - 1;
   for (int i = 1; i >= 0; i--, oam++, r6 += 2) {
@@ -20945,7 +20941,7 @@ void Sprite_9A_Kyameron(int k) {  // 9e9e7b
     }
     if (sign8(--sprite_subtype2[k])) {
       sprite_subtype2[k] = 5;
-      sprite_graphics[k] = (++sprite_graphics[k] & 3) + 8;
+      sprite_graphics[k] = (sprite_graphics[k] + 1 & 3) + 8;
     }
     break;
   case 2: {  // coagulate

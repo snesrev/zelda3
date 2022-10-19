@@ -34,7 +34,6 @@ void ShaderInit();
 // Forwards
 static bool LoadRom(const char *filename);
 static void LoadLinkGraphics();
-static void PlayAudio(SDL_AudioDeviceID device, int channels, int16 *audioBuffer);
 static void RenderNumber(uint8 *dst, size_t pitch, int n, bool big);
 static void HandleInput(int keyCode, int modCode, bool pressed);
 static void HandleCommand(uint32 j, bool pressed);
@@ -269,10 +268,10 @@ static void SdlRenderer_BeginDraw(int width, int height, uint8 **pixels, int *pi
 
 static void SdlRenderer_EndDraw() {
 
-  uint64 before = SDL_GetPerformanceCounter();
+//  uint64 before = SDL_GetPerformanceCounter();
   SDL_UnlockTexture(g_texture);
-  uint64 after = SDL_GetPerformanceCounter();
-  float v = (double)(after - before) / SDL_GetPerformanceFrequency();
+//  uint64 after = SDL_GetPerformanceCounter();
+//  float v = (double)(after - before) / SDL_GetPerformanceFrequency();
 //  printf("%f ms\n", v * 1000);
   SDL_RenderClear(g_renderer);
   SDL_RenderCopy(g_renderer, g_texture, &g_sdl_renderer_rect, NULL);
@@ -365,7 +364,7 @@ int main(int argc, char** argv) {
   if (!g_renderer_funcs.Initialize(window))
     return 1;
 
-  SDL_AudioDeviceID device;
+  SDL_AudioDeviceID device = 0;
   SDL_AudioSpec want = { 0 }, have;
   g_audio_mutex = SDL_CreateMutex();
   if (!g_audio_mutex) Die("No mutex");
@@ -451,7 +450,8 @@ int main(int argc, char** argv) {
 
     if (g_paused != audiopaused) {
       audiopaused = g_paused;
-      SDL_PauseAudioDevice(device, audiopaused);
+      if (device)
+        SDL_PauseAudioDevice(device, audiopaused);
     }
 
     if (g_paused) {

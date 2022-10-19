@@ -220,7 +220,6 @@ static void PpuWindows_Calc(PpuWindows *win, Ppu *ppu, uint layer) {
   int window_right = 256 + (layer != 2 ? ppu->extraRightCur : 0);
   win->edges[0] = - (layer != 2 ? ppu->extraLeftCur : 0);
   win->edges[1] = window_right;
-  uint8 window_bits = 0;
   uint i, j;
   int t;
   bool w1_ena = (winflags & kWindow1Enabled) && ppu->window1left <= ppu->window1right;

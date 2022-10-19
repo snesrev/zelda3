@@ -63,7 +63,6 @@ static const uint16 kDungMap_Tab23[744] = {
   0x13a4, 0xb00, 0x138e, 0xb00, 0xb00, 0x5393, 0xb00, 0x574e, 0x4b7d, 0xb00, 0x8b7d, 0x139f, 0x97aa, 0x13a4, 0x13a9, 0x53a9, 0x13a5, 0x13a6, 0x93a5, 0xd3a5, 0xd38e, 0x938e, 0x13a4, 0x13aa, 0xb00, 0x13a6, 0xb00, 0x8b5f, 0x139b, 0x13a6, 0x139c, 0x53a2,
   0xb00, 0xb00, 0x138c, 0xb00, 0x9394, 0x139e, 0xb00, 0xb00,
 };
-static const uint16 kDungMap_Ptrs27[14] = {0xfc00, 0xfc08, 0xfc15, 0xfc21, 0xfc2b, 0xfc32, 0xfc3f, 0xfc4d, 0xfc5f, 0xfc68, 0xfc7d, 0xfc83, 0xfc8f, 0xfca0};
 static const uint16 kDungMap_Tab21[3] = {137, 167, 79};
 static const uint16 kDungMap_Tab22[3] = {169, 119, 190};
 static const uint16 kDungMap_Tab24[2] = {0x1f, 0x7f};
@@ -1717,7 +1716,6 @@ void Module0E_03_01_02_DrawFloorsBackdrop() {  // 8ae1f3
 
 void DungeonMap_BuildFloorListBoxes(uint8 t5, uint16 r14) {  // 8ae2f5
   int n = (t5 & 0xf) + (t5 >> 4);
-  uint8 r12 = dung_cur_floor + (t5 & 0xf);
   r14 -= 0x40 - 2;
   r14 += (t5 & 0xf) * 0x40;
   int offs = vram_upload_offset >> 1;
@@ -1971,7 +1969,6 @@ void DungeonMap_HandleMovementInput() {  // 8ae979
 void DungeonMap_HandleFloorSelect() {  // 8ae986
   uint8 r2 = (kDungMap_Tab5[cur_palace_index_x2 >> 1] >> 4 & 0xf);
   uint8 r3 = (kDungMap_Tab5[cur_palace_index_x2 >> 1] & 0xf);
-  uint8 yv = 7;
   if (r2 + r3 < 3 || dungmap_var2 || !(joypad1H_last & 0xc))
     return;
   dungmap_cur_floor &= 0xff;

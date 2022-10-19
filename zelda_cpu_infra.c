@@ -168,7 +168,7 @@ static void VerifySnapshotsEq(Snapshot *b, Snapshot *a, Snapshot *prev) {
   }
 }
 
-static uint8_t *RomByte(Cart *cart, uint32_t addr) {
+uint8_t *RomByte(Cart *cart, uint32_t addr) {
   return &cart->rom[(((addr >> 16) << 15) | (addr & 0x7fff)) & (cart->romSize - 1)];
 }
 
