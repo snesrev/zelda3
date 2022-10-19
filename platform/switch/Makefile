@@ -40,7 +40,10 @@ include $(DEVKITPRO)/libnx/switch_rules
 SRC_DIR     := ../..
 TARGET		:=	zelda3
 BUILD		:=	bin
-SOURCES		:=  $(SRC_DIR) $(SRC_DIR)/snes
+SOURCES		:=  $(SRC_DIR) $(SRC_DIR)/snes $(SRC_DIR)/third_party/gl_core $(SRC_DIR)/third_party/opus-1.3.1-stripped
+
+CFILES := $(wildcard $(SRC_DIR)/*.c $(SRC_DIR)/snes/*.c) $(SRC_DIR)/third_party/gl_core/gl_core_3_1.c $(SRC_DIR)/third_party/opus-1.3.1-stripped/opus_decoder_amalgam.c
+
 INCLUDES	:=	include
 APP_TITLE   :=  The Legend of Zelda: A Link to the Past
 APP_AUTHOR  :=  snesrev & Lywx
@@ -81,13 +84,15 @@ export OUTPUT	:=	$(CURDIR)/$(TARGET)
 export TOPDIR	:=	$(CURDIR)
 
 export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
-			$(foreach dir,$(DATA),$(CURDIR)/$(dir))
+			$(foreach dir,$(DATA),$(CURDIR)/$(dir)) \
+
 
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
-CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
-SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
+#CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+#CFILES    :=  $(wildcard ../../*.c ../../snes/*.c) ../../third_party/gl_core/gl_core_3_1.c ../../third_party/opus-1.3.1-stripped/opus_decoder_amalgam.c
+#CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
+#SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 BINFILES	:=	$(foreach dir,$(DATA),$(notdir $(wildcard $(dir)/*.*)))
 
 #---------------------------------------------------------------------------------
@@ -97,7 +102,7 @@ export LD	:=	$(CXX)
 #---------------------------------------------------------------------------------
 
 export OFILES_BIN	:=	$(addsuffix .o,$(BINFILES))
-export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(CFILES:.c=.o) $(SFILES:.s=.o)
+export OFILES_SRC	:=	$(CPPFILES:.cpp=.o) $(notdir $(CFILES:.c=.o)) $(SFILES:.s=.o)
 export OFILES 		:=	$(OFILES_BIN) $(OFILES_SRC)
 export HFILES_BIN	:=	$(addsuffix .h,$(subst .,_,$(BINFILES)))
 
@@ -157,6 +162,7 @@ endif
 all: $(BUILD)
 
 $(BUILD):
+	@echo $(CFILES) ...
 	@[ -d $@ ] || mkdir -p $@
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
