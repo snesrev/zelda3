@@ -114,7 +114,6 @@ static void GlslShader_InitializePasses(GlslShader *gs, int passes) {
 }
 
 static bool GlslShader_ReadPresetFile(GlslShader *gs, const char *filename) {
-  bool return_value = false;
   char *data = (char *)ReadWholeFile(filename, NULL), *data_org = data, *line;
   GlslPass *pass;
   if (data == NULL)

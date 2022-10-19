@@ -37,7 +37,7 @@ static void GL_APIENTRY MessageCallback(GLenum source,
 static bool OpenGLRenderer_Init(SDL_Window *window) {
   g_window = window;
   SDL_GLContext context = SDL_GL_CreateContext(window);
-  const char *error = SDL_GetError();
+  (void)context;
 
   SDL_GL_SetSwapInterval(1);
   ogl_LoadFunctions();

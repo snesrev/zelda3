@@ -288,7 +288,7 @@ void NMI_UploadBG3Text() {  // 808ce4
 }
 
 void NMI_UpdateOWScroll() {  // 808d13
-  uint8 *src = (uint8 *)uvram.data, *src_org = src;
+  uint8 *src = (uint8 *)uvram.data;
   int f = WORD(src[0]);
   int step = (f & 0x8000) ? 32 : 1;
   int len = f & 0x3fff;
@@ -391,7 +391,6 @@ void NMI_RunTileMapUpdateDMA(int dst) {  // 808fc9
 }
 
 void NMI_UploadDarkWorldMap() {  // 808ff3
-  static const uint16 kLightWorldTileMapSrcs[4] = { 0, 0x20, 0x1000, 0x1020 };
   const uint8 *src = g_ram + 0x1000;
   int t = 0x810;
   for (int i = 0x20; i; i--) {

@@ -1506,14 +1506,16 @@ void Module09_2A_00_ScrollToLand() {  // 82b532
   uint16 x = link_x_coord, xd = 0;
   if (x != link_x_coord_cached) {
     int16 d = (x > link_x_coord_cached) ? -1 : 1;
-    ((x += d) != link_x_coord_cached) && (x += d);
+    if ((x += d) != link_x_coord_cached)
+      x += d;
     xd = x - link_x_coord;
     link_x_coord = x;
   }
   uint16 y = link_y_coord, yd = 0;
   if (y != link_y_coord_cached) {
     int16 d = (y > link_y_coord_cached) ? -1 : 1;
-    ((y += d) != link_y_coord_cached) && (y += d);
+    if ((y += d) != link_y_coord_cached)
+      y += d;
     yd = y - link_y_coord;
     link_y_coord = y;
   }
@@ -2456,14 +2458,11 @@ static const uint8 *GetOverworldLobytes(int i) {
 
 
 void Overworld_DecompressAndDrawOneQuadrant(uint16 *dst, int screen) {  // 82f595
-  int rv;
-
-
-  rv = Decompress_bank02(&g_ram[0x14400], GetOverworldHibytes(screen));
+  Decompress_bank02(&g_ram[0x14400], GetOverworldHibytes(screen));
   for (int i = 0; i < 256; i++)
     g_ram[0x14001 + i * 2] = g_ram[0x14400 + i];
 
-  rv = Decompress_bank02(&g_ram[0x14400], GetOverworldLobytes(screen));
+  Decompress_bank02(&g_ram[0x14400], GetOverworldLobytes(screen));
   for (int i = 0; i < 256; i++)
     g_ram[0x14000 + i * 2] = g_ram[0x14400 + i];
 

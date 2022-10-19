@@ -780,7 +780,7 @@ static void PlayNote(SpcPlayer *p, Channel *c, uint8 note) {
   if (note >= 0xc8 || p->is_chan_on & p->cur_chan_bit)
     return;
 
-  static const char *const kNoteNames[] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
+  //static const char *const kNoteNames[] = { "C-", "C#", "D-", "D#", "E-", "F-", "F#", "G-", "G#", "A-", "A#", "B-" };
   //if (c->index==0)
   //  printf("%s%d\n", kNoteNames[(note & 0x7f) % 12], (note & 0x7f) / 12 + 1);
 
@@ -1119,8 +1119,6 @@ static void ReadPortFromSnes(SpcPlayer *p, int port) {
 }
 
 static void Spc_Loop_Part1(SpcPlayer *p) {
-  static const uint8 kRegAddrs0[10] = {EVOLL, EVOLR, EFB, EON, FLG, KON, KOF, NON, PMON, KOF};
-
   Dsp_Write(p, KOF, p->key_OFF);
   Dsp_Write(p, PMON, p->reg_PMON);
   Dsp_Write(p, NON, p->reg_NON);

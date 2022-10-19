@@ -922,7 +922,6 @@ continue_after_set:
   BYTE(index_of_interacting_tile) = rt;
 
   int dir = link_direction_facing >> 1;
-  int scratch_1_var = dir * 14;
 
   int r2 = kPlayerOamOtherOffs[dir * 40 + yt] + rt;
   int r4loc = kPlayerOamSpriteLocs[r2];
@@ -1251,7 +1250,6 @@ void LinkOam_DrawFootObject(int r4loc, uint8 oam_x, uint8 oam_y) {  // 8daed1
   oam_y += kOffsToShadowGivenDir_Y[i];
 
   int oam_pos = (kShadow_oam_indexes_1[r4loc] + sort_sprites_offset_into_oam_buffer)>>2;
-  uint8 animst = secondary_water_grass_timer;
 
   uint8 yv;
   if (draw_water_ripples_or_grass == 2) {
