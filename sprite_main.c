@@ -13825,7 +13825,7 @@ void BottleMerchant_BuyBee(int k) {  // 9afe88
   SpriteSfx_QueueSfx3WithPan(k, 0x13);
   tmp_counter = 4;
   do {
-    int j = Sprite_SpawnDynamically(k, 0xd8, &info);
+    int j = Sprite_SpawnDynamically(k, 0xdb, &info);
     if (j >= 0) {
       Sprite_SetSpawnedCoordinates(j, &info);
       sprite_x_lo[j] = info.r0_x + 4;
