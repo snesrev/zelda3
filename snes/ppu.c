@@ -174,10 +174,7 @@ void ppu_runLine(Ppu *ppu, int line) {
 
     // outside of visible range?
     if (line >= 225 + ppu->extraBottomCur) {
-      uint8 *dst = &ppu->renderBuffer[(line - 1) * 2 * ppu->renderPitch];
-      size_t n = sizeof(uint32) * 2 * (256 + ppu->extraLeftRight * 2);
-      memset(dst, 0, n);
-      memset(dst + ppu->renderPitch, 0, n);
+      memset(&ppu->renderBuffer[(line - 1) * ppu->renderPitch], 0, sizeof(uint32) * (256 + ppu->extraLeftRight * 2));
       return;
     }
 
