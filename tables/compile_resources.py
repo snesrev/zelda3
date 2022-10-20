@@ -147,8 +147,10 @@ def print_misc():
 
   add_asset_uint16('kPalette_DungBgMain', ROM.get_words(0x9BD734, 1800))
   add_asset_uint16('kPalette_MainSpr', ROM.get_words(0x9BD218, 120))
-
-  add_asset_uint16('kPalette_ArmorAndGloves', ROM.get_words(0x9BD308, 75))
+  
+  override_armor_palette = None
+  #override_armor_palette = extra_armor_palette()
+  add_asset_uint16('kPalette_ArmorAndGloves', overide_armor_palette or ROM.get_words(0x9BD308, 75))
   add_asset_uint16('kPalette_Sword', ROM.get_words(0x9BD630, 12))
   add_asset_uint16('kPalette_Shield', ROM.get_words(0x9BD648, 12))
 
