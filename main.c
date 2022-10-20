@@ -37,6 +37,7 @@ static void LoadLinkGraphics();
 static void RenderNumber(uint8 *dst, size_t pitch, int n, bool big);
 static void HandleInput(int keyCode, int modCode, bool pressed);
 static void HandleCommand(uint32 j, bool pressed);
+static int RemapSdlButton(int button);
 static void HandleGamepadInput(int button, bool pressed);
 static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
@@ -68,6 +69,8 @@ static int g_ppu_render_flags = 0;
 static int g_snes_width, g_snes_height;
 static int g_sdl_audio_mixer_volume = SDL_MIX_MAXVOLUME;
 static struct RendererFuncs g_renderer_funcs;
+static uint32 g_gamepad_modifiers;
+static uint16 g_gamepad_last_cmd[kGamepadBtn_Count];
 
 void NORETURN Die(const char *error) {
 #if defined(NDEBUG) && defined(_WIN32)
@@ -76,16 +79,6 @@ void NORETURN Die(const char *error) {
   fprintf(stderr, "Error: %s\n", error);
   exit(1);
 }
-
-void SetButtonState(int button, bool pressed) {
-  // set key in constroller
-  if (pressed) {
-    g_input1_state |= 1 << button;
-  } else {
-    g_input1_state &= ~(1 << button);
-  }
-}
-
 
 void ChangeWindowScale(int scale_step) {
   if ((SDL_GetWindowFlags(g_window) & (SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_FULLSCREEN | SDL_WINDOW_MINIMIZED | SDL_WINDOW_MAXIMIZED)) != 0)
@@ -419,11 +412,12 @@ int main(int argc, char** argv) {
         HandleGamepadAxisInput(event.caxis.which, event.caxis.axis, event.caxis.value);
         break;
       case SDL_CONTROLLERBUTTONDOWN:
-        HandleGamepadInput(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
+      case SDL_CONTROLLERBUTTONUP: {
+        int b = RemapSdlButton(event.cbutton.button);
+        if (b >= 0)
+          HandleGamepadInput(b, event.type == SDL_CONTROLLERBUTTONDOWN);
         break;
-      case SDL_CONTROLLERBUTTONUP:
-        HandleGamepadInput(event.cbutton.button, event.cbutton.state == SDL_PRESSED);
-        break;
+      }
       case SDL_MOUSEWHEEL:
         if (SDL_GetModState() & KMOD_CTRL && event.wheel.y != 0)
           ChangeWindowScale(event.wheel.y > 0 ? 1 : -1);
@@ -572,8 +566,11 @@ static void HandleCommand_Locked(uint32 j, bool pressed);
 
 static void HandleCommand(uint32 j, bool pressed) {
   if (j <= kKeys_Controls_Last) {
-    static const uint8 kKbdRemap[12] = { 4, 5, 6, 7, 2, 3, 8, 0, 9, 1, 10, 11 };
-    SetButtonState(kKbdRemap[j], pressed);
+    static const uint8 kKbdRemap[] = { 0, 4, 5, 6, 7, 2, 3, 8, 0, 9, 1, 10, 11 };
+    if (pressed)
+      g_input1_state |= 1 << kKbdRemap[j];
+    else
+      g_input1_state &= ~(1 << kKbdRemap[j]);
     return;
   }
 
@@ -656,7 +653,7 @@ static void HandleCommand_Locked(uint32 j, bool pressed) {
 
 static void HandleInput(int keyCode, int keyMod, bool pressed) {
   int j = FindCmdForSdlKey(keyCode, keyMod);
-  if (j >= 0)
+  if (j != 0)
     HandleCommand(j, pressed);
 }
 
@@ -668,21 +665,35 @@ static void OpenOneGamepad(int i) {
   }
 }
 
-static void HandleGamepadInput(int button, bool pressed) {
+static int RemapSdlButton(int button) {
   switch (button) {
-  case SDL_CONTROLLER_BUTTON_A: SetButtonState(0, pressed); break;
-  case SDL_CONTROLLER_BUTTON_X: SetButtonState(1, pressed); break;
-  case SDL_CONTROLLER_BUTTON_BACK: SetButtonState(2, pressed); break;
-  case SDL_CONTROLLER_BUTTON_START: SetButtonState(3, pressed); break;
-  case SDL_CONTROLLER_BUTTON_DPAD_UP: SetButtonState(4, pressed); break;
-  case SDL_CONTROLLER_BUTTON_DPAD_DOWN: SetButtonState(5, pressed); break;
-  case SDL_CONTROLLER_BUTTON_DPAD_LEFT: SetButtonState(6, pressed); break;
-  case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: SetButtonState(7, pressed); break;
-  case SDL_CONTROLLER_BUTTON_B: SetButtonState(8, pressed); break;
-  case SDL_CONTROLLER_BUTTON_Y: SetButtonState(9, pressed); break;
-  case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: SetButtonState(10, pressed); break;
-  case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: SetButtonState(11, pressed); break;
+  case SDL_CONTROLLER_BUTTON_A: return kGamepadBtn_A;
+  case SDL_CONTROLLER_BUTTON_B: return kGamepadBtn_B;
+  case SDL_CONTROLLER_BUTTON_X: return kGamepadBtn_X;
+  case SDL_CONTROLLER_BUTTON_Y: return kGamepadBtn_Y;
+  case SDL_CONTROLLER_BUTTON_BACK: return kGamepadBtn_Back;
+  case SDL_CONTROLLER_BUTTON_GUIDE: return kGamepadBtn_Guide;
+  case SDL_CONTROLLER_BUTTON_START: return kGamepadBtn_Start;
+  case SDL_CONTROLLER_BUTTON_LEFTSTICK: return kGamepadBtn_L3;
+  case SDL_CONTROLLER_BUTTON_RIGHTSTICK: return kGamepadBtn_R3;
+  case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: return kGamepadBtn_L1;
+  case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: return kGamepadBtn_R1;
+  case SDL_CONTROLLER_BUTTON_DPAD_UP: return kGamepadBtn_DpadUp;
+  case SDL_CONTROLLER_BUTTON_DPAD_DOWN: return kGamepadBtn_DpadDown;
+  case SDL_CONTROLLER_BUTTON_DPAD_LEFT: return kGamepadBtn_DpadLeft;
+  case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: return kGamepadBtn_DpadRight;
+  default: return -1;
   }
+}
+
+static void HandleGamepadInput(int button, bool pressed) {
+  if (!!(g_gamepad_modifiers & (1 << button)) == pressed)
+    return;
+  g_gamepad_modifiers ^= 1 << button;
+  if (pressed)
+    g_gamepad_last_cmd[button] = FindCmdForGamepadButton(button, g_gamepad_modifiers);
+  if (g_gamepad_last_cmd[button] != 0)
+    HandleCommand(g_gamepad_last_cmd[button], pressed);
 }
 
 static void HandleVolumeAdjustment(int volume_adjustment) {
@@ -748,6 +759,9 @@ static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
       buttons = kSegmentToButtons[(uint8)(angle + 16 + 64) >> 5];
     }
     g_gamepad_buttons = buttons;
+  } else if ((axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT || axis == SDL_CONTROLLER_AXIS_TRIGGERRIGHT)) {
+    if (value < 12000 || value >= 16000)  // hysteresis
+      HandleGamepadInput(axis == SDL_CONTROLLER_AXIS_TRIGGERLEFT ? kGamepadBtn_L2 : kGamepadBtn_R2, value >= 12000);
   }
 }
 

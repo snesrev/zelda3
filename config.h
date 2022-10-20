@@ -3,7 +3,8 @@
 #include <SDL_keycode.h>
 
 enum {
-  kKeys_Controls = 0,
+  kKeys_Null,
+  kKeys_Controls,
   kKeys_Controls_Last = kKeys_Controls + 11,
   kKeys_Load,
   kKeys_Load_Last = kKeys_Load + 19,
@@ -78,9 +79,30 @@ enum {
   kMsuEnabled_MsuDeluxe = 2,
   kMsuEnabled_Opuz = 4,
 };
-
+enum {
+  kGamepadBtn_Invalid = -1,
+  kGamepadBtn_A,
+  kGamepadBtn_B,
+  kGamepadBtn_X,
+  kGamepadBtn_Y,
+  kGamepadBtn_Back,
+  kGamepadBtn_Guide,
+  kGamepadBtn_Start,
+  kGamepadBtn_L3,
+  kGamepadBtn_R3,
+  kGamepadBtn_L1,
+  kGamepadBtn_R1,
+  kGamepadBtn_DpadUp,
+  kGamepadBtn_DpadDown,
+  kGamepadBtn_DpadLeft,
+  kGamepadBtn_DpadRight,
+  kGamepadBtn_L2,
+  kGamepadBtn_R2,
+  kGamepadBtn_Count,
+};
 
 extern Config g_config;
 
 void ParseConfigFile(const char *filename);
 int FindCmdForSdlKey(SDL_Keycode code, SDL_Keymod mod);
+int FindCmdForGamepadButton(int button, uint32 modifiers);

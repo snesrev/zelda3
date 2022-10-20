@@ -28,13 +28,13 @@ bool StringEqualsNoCase(const char *a, const char *b) {
   }
 }
 
-bool StringStartsWithNoCase(const char *a, const char *b) {
-  for (;;) {
-    int aa = ToLower(*a++), bb = ToLower(*b++);
+const char *StringStartsWithNoCase(const char *a, const char *b) {
+  for (;; a++, b++) {
+    int aa = ToLower(*a), bb = ToLower(*b);
     if (bb == 0)
-      return true;
+      return a;
     if (aa != bb)
-      return false;
+      return NULL;
   }
 }
 

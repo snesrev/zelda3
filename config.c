@@ -22,6 +22,7 @@ Config g_config;
 #define C(x) REMAP_SDL_KEYCODE(x) | kKeyMod_Ctrl
 #define N 0
 static const uint16 kDefaultKbdControls[kKeys_Total] = {
+  0,
   // Controls
   _(SDLK_UP), _(SDLK_DOWN), _(SDLK_LEFT), _(SDLK_RIGHT), _(SDLK_RSHIFT), _(SDLK_RETURN), _(SDLK_x), _(SDLK_z), _(SDLK_s), _(SDLK_a), _(SDLK_c), _(SDLK_v),
   // LoadState
@@ -53,6 +54,7 @@ typedef struct KeyNameId {
 #define M(n) {#n, kKeys_##n, kKeys_##n##_Last - kKeys_##n + 1}
 #define S(n) {#n, kKeys_##n, 1}
 static const KeyNameId kKeyNameId[] = {
+  {"Null", kKeys_Null, 65535},
   M(Controls), M(Load), M(Save), M(Replay), M(LoadRef), M(ReplayRef),
   S(CheatLife), S(CheatKeys), S(CheatEquipment), S(CheatWalkThroughWalls),
   S(ClearKeyLog), S(StopReplay), S(Fullscreen), S(Reset),
@@ -69,7 +71,7 @@ static KeyMapHashEnt *keymap_hash;
 static int keymap_hash_size;
 static bool has_keynameid[countof(kKeyNameId)];
 
-bool KeyMapHash_Add(uint16 key, uint16 cmd) {
+static bool KeyMapHash_Add(uint16 key, uint16 cmd) {
   if ((keymap_hash_size & 0xff) == 0) {
     if (keymap_hash_size > 10000)
       Die("Too many keys");
@@ -101,12 +103,12 @@ static int KeyMapHash_Find(uint16 key) {
       return ent->cmd;
     i = ent->next;
   }
-  return -1;
+  return 0;
 }
 
 int FindCmdForSdlKey(SDL_Keycode code, SDL_Keymod mod) {
   if (code & ~(SDLK_SCANCODE_MASK | 0x1ff))
-    return -1;
+    return 0;
   int key = mod & KMOD_ALT ? kKeyMod_Alt : 0;
   key |= mod & KMOD_CTRL ? kKeyMod_Ctrl : 0;
   key |= mod & KMOD_SHIFT ? kKeyMod_Shift : 0;
@@ -117,7 +119,7 @@ int FindCmdForSdlKey(SDL_Keycode code, SDL_Keymod mod) {
 static void ParseKeyArray(char *value, int cmd, int size) {
   char *s;
   int i = 0;
-  for (; i < size && (s = NextDelim(&value, ',')) != NULL; i++, cmd++) {
+  for (; i < size && (s = NextDelim(&value, ',')) != NULL; i++, cmd += (cmd != 0)) {
     if (*s == 0)
       continue;
     int key_with_mod = 0;
@@ -142,13 +144,119 @@ static void ParseKeyArray(char *value, int cmd, int size) {
   }
 }
 
+typedef struct GamepadMapEnt {
+  uint32 modifiers;
+  uint16 cmd, next;
+} GamepadMapEnt;
+
+static uint16 joymap_first[kGamepadBtn_Count];
+static GamepadMapEnt *joymap_ents;
+static int joymap_size;
+static bool has_joypad_controls;
+
+static int CountBits32(uint32 n) {
+  int count = 0;
+  for (; n != 0; count++)
+    n &= (n - 1);
+  return count;
+}
+
+static void GamepadMap_Add(int button, uint32 modifiers, uint16 cmd) {
+  if ((joymap_size & 0xff) == 0) {
+    if (joymap_size > 1000)
+      Die("Too many joypad keys");
+    joymap_ents = realloc(joymap_ents, sizeof(GamepadMapEnt) * (joymap_size + 64));
+    if (!joymap_ents) Die("realloc failure");
+  }
+  uint16 *p = &joymap_first[button];
+  // Insert it as early as possible but before after any entry with more modifiers.
+  int cb = CountBits32(modifiers);
+  while (*p && cb < CountBits32(joymap_ents[*p - 1].modifiers))
+    p = &joymap_ents[*p - 1].next;
+  int i = joymap_size++;
+  GamepadMapEnt *ent = &joymap_ents[i];
+  ent->modifiers = modifiers;
+  ent->cmd = cmd;
+  ent->next = *p;
+  *p = i + 1;
+}
+
+int FindCmdForGamepadButton(int button, uint32 modifiers) {
+  GamepadMapEnt *ent;
+  for(int e = joymap_first[button]; e != 0; e = ent->next) {
+    ent = &joymap_ents[e - 1];
+    if ((modifiers & ent->modifiers) == ent->modifiers)
+      return ent->cmd;
+  }
+  return 0;
+}
+
+static int ParseGamepadButtonName(const char **value) {
+  const char *s = *value;
+  // Longest substring first
+  static const char *const kGamepadKeyNames[] = {
+    "Back", "Guide", "Start", "L3", "R3",
+    "L1", "R1", "DpadUp", "DpadDown", "DpadLeft", "DpadRight", "L2", "R2",
+    "Lb", "Rb", "A", "B", "X", "Y"
+  };
+  static const uint8 kGamepadKeyIds[] = {
+    kGamepadBtn_Back, kGamepadBtn_Guide, kGamepadBtn_Start, kGamepadBtn_L3, kGamepadBtn_R3,
+    kGamepadBtn_L1, kGamepadBtn_R1, kGamepadBtn_DpadUp, kGamepadBtn_DpadDown, kGamepadBtn_DpadLeft, kGamepadBtn_DpadRight, kGamepadBtn_L2, kGamepadBtn_R2,
+    kGamepadBtn_L1, kGamepadBtn_R1, kGamepadBtn_A, kGamepadBtn_B, kGamepadBtn_X, kGamepadBtn_Y,
+  };
+  for (size_t i = 0; i != countof(kGamepadKeyNames); i++) {
+    const char *r = StringStartsWithNoCase(s, kGamepadKeyNames[i]);
+    if (r) {
+      *value = r;
+      return kGamepadKeyIds[i];
+    }
+  }
+  return kGamepadBtn_Invalid;
+}
+
+static const uint8 kDefaultGamepadCmds[] = {
+  kGamepadBtn_DpadUp, kGamepadBtn_DpadDown, kGamepadBtn_DpadLeft, kGamepadBtn_DpadRight, kGamepadBtn_Back, kGamepadBtn_Start,
+  kGamepadBtn_B, kGamepadBtn_A, kGamepadBtn_Y, kGamepadBtn_X, kGamepadBtn_L1, kGamepadBtn_R1,
+};
+
+static void ParseGamepadArray(char *value, int cmd, int size) {
+  char *s;
+  int i = 0;
+  for (; i < size && (s = NextDelim(&value, ',')) != NULL; i++, cmd += (cmd != 0)) {
+    if (*s == 0)
+      continue;
+    uint32 modifiers = 0;
+    const char *ss = s;
+    for (;;) {
+      int button = ParseGamepadButtonName(&ss);
+      if (button == kGamepadBtn_Invalid) BAD: {
+        fprintf(stderr, "Unknown gamepad button: '%s'\n", s);
+        break;
+      }
+      while (*ss == ' ' || *ss == '\t') ss++;
+      if (*ss == '+') {
+        ss++;
+        modifiers |= 1 << button;
+      } else if (*ss == 0) {
+        GamepadMap_Add(button, modifiers, cmd);
+        break;
+      } else
+        goto BAD;
+    }
+  }
+}
+
 static void RegisterDefaultKeys() {
-  for (int i = 0; i < countof(kKeyNameId); i++) {
+  for (int i = 1; i < countof(kKeyNameId); i++) {
     if (!has_keynameid[i]) {
       int size = kKeyNameId[i].size, k = kKeyNameId[i].id;
       for (int j = 0; j < size; j++, k++)
         KeyMapHash_Add(kDefaultKbdControls[k], k);
     }
+  }
+  if (!has_joypad_controls) {
+    for (int i = 0; i < countof(kDefaultGamepadCmds); i++)
+      GamepadMap_Add(kDefaultGamepadCmds[i], 0, kKeys_Controls + i);
   }
 }
 
@@ -163,6 +271,8 @@ static int GetIniSection(const char *s) {
     return 3;
   if (StringEqualsNoCase(s, "[Features]"))
     return 4;
+  if (StringEqualsNoCase(s, "[GamepadMap]"))
+    return 5;
   return -1;
 }
 
@@ -202,6 +312,15 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       if (StringEqualsNoCase(key, kKeyNameId[i].name)) {
         has_keynameid[i] = true;
         ParseKeyArray(value, kKeyNameId[i].id, kKeyNameId[i].size);
+        return true;
+      }
+    }
+  } else if (section == 5) {
+    for (int i = 0; i < countof(kKeyNameId); i++) {
+      if (StringEqualsNoCase(key, kKeyNameId[i].name)) {
+        if (i == 1)
+          has_joypad_controls = true;
+        ParseGamepadArray(value, kKeyNameId[i].id, kKeyNameId[i].size);
         return true;
       }
     }

@@ -29,7 +29,7 @@ char *NextLineStripComments(char **s);
 char *NextPossiblyQuotedString(char **s);
 char *SplitKeyValue(char *p);
 bool StringEqualsNoCase(const char *a, const char *b);
-bool StringStartsWithNoCase(const char *a, const char *b);
+const char *StringStartsWithNoCase(const char *a, const char *b);
 bool ParseBool(const char *value, bool *result);
 const char *SkipPrefix(const char *big, const char *little);
 void StrSet(char **rv, const char *s);
