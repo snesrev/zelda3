@@ -46,8 +46,8 @@ Switching current item with L/R keys.
 5. Extract resources by typing `python extract_resources.py` and hit enter
 6. Compile the extracted resources by typing `python compile_resources.py` and hit enter
 7. Close the command prompt
-8. Download [TCC](https://download.savannah.gnu.org/releases/tinycc/tcc-0.9.27-win64-bin.zip) and extract to the "\third_party" subfolder
-9. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.24.0/SDL2-devel-2.24.0-VC.zip) and extract to the "\third_party" subfolder
+8. Download [TCC](https://github.com/FitzRoyX/tinycc/releases/download/tcc_20221020/tcc_20221020.zip) and extract to the "\third_party" subfolder
+9. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.24.1/SDL2-devel-2.24.1-VC.zip) and extract to the "\third_party" subfolder
 10. Double-click `run_with_tcc.bat` in the main dir to create `zelda3.exe` in that same dir
 11. Configure with `zelda3.ini` in the main dir
 
