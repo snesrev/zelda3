@@ -294,7 +294,7 @@ void PlayerHandler_00_Ground_3() {  // 8781a0
     if ((dir = (force_move_any_direction & 0xf)) == 0) {
       if (link_grabbing_wall & 2)
         goto endif_3;
-      if ((dir = (joypad1H_last & 0xf)) == 0) {
+      if ((dir = (joypad1H_last & kJoypadH_AnyDir)) == 0) {
         link_x_vel = 0;
         link_y_vel = 0;
         link_direction = 0;
@@ -444,7 +444,7 @@ void Link_TempBunny_Func2() {  // 8783fa
   ResetAllAcceleration();
   Link_HandleYItem();
   uint8 dir;
-  if (!(dir = force_move_any_direction & 0xf) && !(dir = joypad1H_last & 0xf)) {
+  if (!(dir = force_move_any_direction & 0xf) && !(dir = joypad1H_last & kJoypadH_AnyDir)) {
     link_x_vel = link_y_vel = 0;
     link_direction = link_direction_last = 0;
     link_animation_steps = 0;
@@ -522,7 +522,7 @@ void LinkState_HoldingBigRock() {  // 878481
   }
 
   Link_HandleAPress();
-  if (!(joypad1H_last & 0xf)) {
+  if (!(joypad1H_last & kJoypadH_AnyDir)) {
     link_y_vel = 0;
     link_x_vel = 0;
     link_direction = 0;
@@ -532,7 +532,7 @@ void LinkState_HoldingBigRock() {  // 878481
     link_timer_push_get_tired = 32;
     link_timer_jump_ledge = 19;
   } else {
-    link_direction = joypad1H_last & 0xf;
+    link_direction = joypad1H_last & kJoypadH_AnyDir;
     if (link_direction != link_direction_last) {
       link_direction_last = link_direction;
       link_subpixel_x = 0;
@@ -1192,7 +1192,7 @@ void LinkState_Dashing() {  // 878f86
       follower_indicator = kTagalongArr2[follower_indicator];
   } else {
     index_of_dashing_sfx = 0;
-    if (!(joypad1L_last & 0x80)) {
+    if (!(joypad1L_last & kJoypadL_A)) {
       link_animation_steps = 0;
       link_countdown_for_dash = 0;
       link_speed_setting = 0;
@@ -1207,7 +1207,7 @@ void LinkState_Dashing() {  // 878f86
     link_dash_ctr = 64;
     link_speed_setting = 16;
     uint8 dir;
-    if (button_mask_b_y & 0x80 || is_standing_in_doorway || (dir = joypad1H_last & 0xf) == 0)
+    if (button_mask_b_y & 0x80 || is_standing_in_doorway || (dir = joypad1H_last & kJoypadH_AnyDir) == 0)
       dir = kDashTab2[link_direction_facing >> 1];
     link_some_direction_bits = link_direction = link_direction_last = dir;
     link_moving_against_diag_tile = 0;
@@ -1251,12 +1251,12 @@ void LinkState_Dashing() {  // 878f86
   bool want_stop_dash = false;
 
   if (enhanced_features0 & kFeatures0_TurnWhileDashing) {
-    if (!(joypad1L_last & 0x80)) {
+    if (!(joypad1L_last & kJoypadL_A)) {
       link_countdown_for_dash = 0x11;
       want_stop_dash = true;
     } else {
       static const uint8 kDashCtrlsToDir[16] = { 0, 1, 2, 0, 4, 4, 4, 0, 8, 8, 8, 0, 0, 0, 0, 0 };
-      uint8 t = kDashCtrlsToDir[joypad1H_last & 0xf];
+      uint8 t = kDashCtrlsToDir[joypad1H_last & kJoypadH_AnyDir];
       if (t != 0 && t != link_direction_last) {
         link_direction = link_direction_last = t;
         link_some_direction_bits = t;
@@ -1264,7 +1264,7 @@ void LinkState_Dashing() {  // 878f86
       }
     }
   } else {
-    want_stop_dash = (joypad1H_last & 0xf) && (joypad1H_last & 0xf) != kDashTab2[link_direction_facing >> 1];
+    want_stop_dash = (joypad1H_last & kJoypadH_AnyDir) && (joypad1H_last & kJoypadH_AnyDir) != kDashTab2[link_direction_facing >> 1];
   }
 
   if (want_stop_dash) {
@@ -1293,7 +1293,7 @@ void LinkState_Dashing() {  // 878f86
 
 void LinkState_ExitingDash() {  // 87915e
   CacheCameraPropertiesIfOutdoors();
-  if (joypad1H_last & 0xf || link_countdown_for_dash >= 16) {
+  if (joypad1H_last & kJoypadH_AnyDir || link_countdown_for_dash >= 16) {
     link_countdown_for_dash = 0;
     link_speed_setting = 0;
     link_player_handler_state = kPlayerState_Ground;
@@ -1393,15 +1393,15 @@ void LinkState_Pits() {  // 8792d3
     // can levitate across chasms.
     // Fix this by ensuring that the dash button is held down before proceeding to the dash state.
     if (link_countdown_for_dash &&
-        (!(enhanced_features0 & kFeatures0_MiscBugFixes) || (joypad1L_last & 0x80))) {
+        (!(enhanced_features0 & kFeatures0_MiscBugFixes) || (joypad1L_last & kJoypadL_A))) {
       LinkState_Dashing();
       return;
     }
-    if (joypad1H_last & 0xf && !(joypad1H_last & 0xf & link_direction)) {
+    if (joypad1H_last & kJoypadH_AnyDir && !(joypad1H_last & kJoypadH_AnyDir & link_direction)) {
       Link_CancelDash();
 aux_state:
       if (link_auxiliary_state != 1)
-        link_direction = joypad1H_last & 0xF;
+        link_direction = joypad1H_last & kJoypadH_AnyDir;
     }
   }
   TileDetect_MainHandler(4);
@@ -1674,7 +1674,7 @@ void PlayerHandler_04_Swimming() {  // 87963b
 
   if (!link_swim_hard_stroke) {
     uint8 t;
-    if (!(swimcoll_var7[0] | swimcoll_var7[1]) || (t = ((filtered_joypad_L & 0x80) | filtered_joypad_H) & 0xc0) == 0) {
+    if (!(swimcoll_var7[0] | swimcoll_var7[1]) || (t = ((filtered_joypad_L & kJoypadL_A) | filtered_joypad_H) & 0xc0) == 0) {
       Link_HandleSwimMovements();
       return;
     }
@@ -1698,7 +1698,7 @@ void PlayerHandler_04_Swimming() {  // 87963b
 void Link_HandleSwimMovements() {  // 879715
   uint8 t;
 
-  if (!(t = force_move_any_direction & 0xf) && !(t = joypad1H_last & 0xf)) {
+  if (!(t = force_move_any_direction & 0xf) && !(t = joypad1H_last & kJoypadH_AnyDir)) {
     link_y_vel = link_x_vel = 0;
     Link_FlagMaxAccels();
     if (link_flag_moving) {
@@ -1755,7 +1755,7 @@ void Link_SetIceMaxAccel() {  // 8797a6
 }
 
 void Link_SetMomentum() {  // 8797c7
-  uint8 joy = joypad1H_last & 0xf;
+  uint8 joy = joypad1H_last & kJoypadH_AnyDir;
   uint8 mask = 12, bit = 8;
   for (int i = 0; i < 2; i++, mask >>= 2, bit >>= 2) {
     if (joy & mask) {
@@ -1987,14 +1987,14 @@ void Link_HandleYItem() {  // 879b0e
   uint8 old_down = joypad1H_last, old_pressed = filtered_joypad_H, old_bottle = link_item_bottle_index;
   if ((link_item_in_hand | link_position_mode) == 0) {
     // Is X held down?
-    if (joypad1L_last & 0x40 && !(old_down & 0x40) && hud_cur_item_x != 0) {
+    if (joypad1L_last & kJoypadL_X && !(old_down & kJoypadH_Y) && hud_cur_item_x != 0) {
       
       if (hud_cur_item_x >= kHudItem_Bottle1)
         link_item_bottle_index = hud_cur_item_x - kHudItem_Bottle1 + 1;
       item = Hud_LookupInventoryItem(hud_cur_item_x);
       // Pretend it's actually Y that's down
-      joypad1H_last = old_down | 0x40;
-      filtered_joypad_H = old_pressed | filtered_joypad_L & 0x40;
+      joypad1H_last = old_down | kJoypadH_Y;
+      filtered_joypad_H = old_pressed | ((filtered_joypad_L & kJoypadL_X) ? kJoypadH_Y : 0);
     }
   }
 
@@ -2165,7 +2165,7 @@ void Link_CheckForSwordSwing() {  // 879cd9
     link_animation_steps = 0;
   }
 
-  if (!(joypad1H_last & 0x80))
+  if (!(joypad1H_last & kJoypadH_B))
     button_mask_b_y |= 1;
   HaltLinkWhenUsingItems();
   link_direction &= ~0xf;
@@ -2180,7 +2180,7 @@ void Link_CheckForSwordSwing() {  // 879cd9
         AncillaAdd_SwordSwingSparkle(0x26, 4);
       if (link_sword_type != 0 && link_sword_type != 0xff)
         TileDetect_MainHandler(link_sword_type == 1 ? 1 : 6);
-    } else if (button_b_frames >= 4 && (button_mask_b_y & 1) && (joypad1H_last & 0x80)) {
+    } else if (button_b_frames >= 4 && (button_mask_b_y & 1) && (joypad1H_last & kJoypadH_B)) {
       button_mask_b_y &= ~1;
       HandleSwordSfxAndBeam();
       return;
@@ -2190,7 +2190,7 @@ void Link_CheckForSwordSwing() {  // 879cd9
 }
 
 void HandleSwordControls() {  // 879d72
-  if (joypad1H_last & 0x80) {
+  if (joypad1H_last & kJoypadH_B) {
     Player_Sword_SpinAttackJerks_HoldDown();
   } else {
     if (link_spin_attack_step_counter < 48) {
@@ -2306,7 +2306,7 @@ void LinkItem_Hammer() {  // 879f7b
   if (link_item_in_hand & 0x10)
     return;
   if (!(button_mask_b_y & 0x40)) {
-    if (is_standing_in_doorway || !(filtered_joypad_H & 0x40))
+    if (is_standing_in_doorway || !(filtered_joypad_H & kJoypadH_Y))
       return;
     button_mask_b_y |= 0x40;
     link_delay_timer_spin_attack = kHammerAnimDelays[0];
@@ -2402,7 +2402,7 @@ void LinkItem_Boomerang() {  // 87a0bb
     }
 
     if (!s0) {
-      link_direction_last = joypad1H_last & 0xf;
+      link_direction_last = joypad1H_last & kJoypadH_AnyDir;
     } else {
       link_cant_change_direction |= 1;
     }
@@ -2890,7 +2890,7 @@ void LinkState_SpinAttack() {  // 87a804
     state_for_spin_attack = 0;
     step_counter_for_spin_attack = 0;
     if (link_player_handler_state != kPlayerState_SpinAttackMotion) {
-      button_mask_b_y = (button_b_frames) ? (joypad1H_last & 0x80) : 0; // wtf, it's zero,
+      button_mask_b_y = (button_b_frames) ? (joypad1H_last & kJoypadH_B) : 0; // wtf, it's zero,
     }
     link_player_handler_state = kPlayerState_Ground;
   } else {
@@ -3247,7 +3247,7 @@ void LinkItem_Cape() {  // 87adc1
     }
     if (sign8(--link_bunny_transform_timer)) {
       link_bunny_transform_timer = 0;
-      if (filtered_joypad_H & 0x40)
+      if (filtered_joypad_H & kJoypadH_Y)
         Link_ForceUnequipCape();
     }
   }
@@ -3435,7 +3435,7 @@ void LinkItem_Net() {  // 87aff8
 }
 
 bool CheckYButtonPress() {  // 87b073
-  if (button_mask_b_y & 0x40 || link_incapacitated_timer || !(filtered_joypad_H & 0x40))
+  if (button_mask_b_y & 0x40 || link_incapacitated_timer || !(filtered_joypad_H & kJoypadH_Y))
     return false;
   button_mask_b_y |= 0x40;
   return true;
@@ -3500,7 +3500,7 @@ void Link_PerformThrow() {  // 87b11c
 
       flag_is_sprite_to_pick_up = 1;
       Sprite_SpawnThrowableTerrain(i, pt.x, pt.y);
-      filtered_joypad_L &= ~0x80;
+      filtered_joypad_L &= ~kJoypadL_A;
       player_handler_timer = 0;
     }
   } else {
@@ -3563,7 +3563,7 @@ void Link_APress_LiftCarryThrow() {  // 87b1ca
           link_player_handler_state = 24;
           flag_is_sprite_to_pick_up = 1;
           Sprite_SpawnThrowableTerrain((what & 0xf) + 1, pt.x, pt.y);
-          filtered_joypad_L &= ~0x80;
+          filtered_joypad_L &= ~kJoypadL_A;
         }
         return;
       }
@@ -3632,7 +3632,7 @@ set:
     some_animation_timer = kGrabWall_AnimTimer[link_var30d];
   }
 
-  if (!(joypad1L_last & 0x80)) {
+  if (!(joypad1L_last & kJoypadL_A)) {
     link_var30d = 0;
     some_animation_timer_steps = 0;
     link_grabbing_wall = 0;
@@ -3667,7 +3667,7 @@ void Link_APress_StatueDrag() {  // 87b389
   some_animation_timer_steps = kGrabWall_AnimSteps[link_var30d];
   some_animation_timer = kGrabWall_AnimTimer[link_var30d];
 skip_set:
-  if (!(joypad1L_last & 0x80)) {
+  if (!(joypad1L_last & kJoypadL_A)) {
     link_speed_setting = 0;
     link_is_near_moveable_statue = 0;
     link_var30d = 0;
@@ -3704,7 +3704,7 @@ void LinkState_TreePull() {  // 87b416
 
   if (link_grabbing_wall) {
     if (!button_mask_b_y) {
-      if (!(joypad1L_last & 0x80)) {
+      if (!(joypad1L_last & kJoypadL_A)) {
         link_grabbing_wall = 0;
         link_var30d = 0;
         some_animation_timer = 2;
@@ -3714,7 +3714,7 @@ void LinkState_TreePull() {  // 87b416
         LinkState_Default();
         return;
       }
-      if (!(joypad1H_last & 4))
+      if (!(joypad1H_last & kJoypadH_Down))
         goto out;
       button_mask_b_y = 4;
       Ancilla_Sfx2_Near(0x22);
@@ -3745,7 +3745,7 @@ reset_to_normal:
     return;
   }
   if (link_var30d == 9) {
-    if (!(filtered_joypad_H & 0xf))
+    if (!(filtered_joypad_H & kJoypadH_AnyDir))
       goto out2;
     link_player_handler_state = kPlayerState_Ground;
     LinkState_Default();
@@ -3807,14 +3807,14 @@ void Link_PerformOpenChest() {  // 87b574
 }
 
 bool Link_CheckNewAPress() {  // 87b5c0
-  if (bitfield_for_a_button & 0x80 || link_incapacitated_timer || !(filtered_joypad_L & 0x80))
+  if (bitfield_for_a_button & 0x80 || link_incapacitated_timer || !(filtered_joypad_L & kJoypadL_A))
     return false;
   bitfield_for_a_button |= 0x80;
   return true;
 }
 
 bool Link_HandleToss() {  // 87b5d6
-  if (!(bitfield_for_a_button & 0x80) || !(filtered_joypad_L & 0x80) || (link_picking_throw_state & 1))
+  if (!(bitfield_for_a_button & 0x80) || !(filtered_joypad_L & kJoypadL_A) || (link_picking_throw_state & 1))
     return false;
   link_var30d = 0;
   link_var30e = 0;
@@ -5967,7 +5967,7 @@ void Link_HandleMovingAnimation_StartWithDash() {  // 87e704
   if (link_speed_setting == 6) {
     x += 4;
   } else if (link_flag_moving) {
-    if (!(joypad1H_last & 0xf)) {
+    if (!(joypad1H_last & kJoypadH_AnyDir)) {
       link_animation_steps = 0;
       return;
     }
@@ -6360,7 +6360,7 @@ void SomariaBlock_HandlePlayerInteraction(int k) {  // 88e7e6
   if (!ancilla_H[k]) {
     if (link_auxiliary_state || (link_state_bits & 1) || ancilla_z[k] != 0 && ancilla_z[k] != 0xff || ancilla_K[k] || ancilla_L[k])
       return;
-    if (!(joypad1H_last & 0xf)) {
+    if (!(joypad1H_last & kJoypadH_AnyDir)) {
       ancilla_arr3[k] = 0;
       bitmask_of_dragstate = 0;
       ancilla_A[k] = 255;
@@ -6368,11 +6368,11 @@ void SomariaBlock_HandlePlayerInteraction(int k) {  // 88e7e6
         link_speed_setting = 0;
         return;
       }
-    } else if ((joypad1H_last & 0xf) == ancilla_arr3[k]) {
+    } else if ((joypad1H_last & kJoypadH_AnyDir) == ancilla_arr3[k]) {
       if (link_speed_setting == 18)
         bitmask_of_dragstate |= 0x81;
     } else {
-      ancilla_arr3[k] = (joypad1H_last & 0xf);
+      ancilla_arr3[k] = (joypad1H_last & kJoypadH_AnyDir);
       link_speed_setting = 0;
     }
 
@@ -6384,7 +6384,7 @@ void SomariaBlock_HandlePlayerInteraction(int k) {  // 88e7e6
       uint8 t;
       ancilla_x_vel[k] = 0;
       ancilla_y_vel[k] = 0;
-      ancilla_arr3[k] = t = joypad1H_last & 15;
+      ancilla_arr3[k] = t = joypad1H_last & kJoypadH_AnyDir;
       if (t & 3) {
         ancilla_x_vel[k] = t & 1 ? 16 : -16;
         ancilla_dir[k] = t & 1 ? 3 : 2;

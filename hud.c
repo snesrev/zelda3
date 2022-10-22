@@ -599,41 +599,41 @@ void Hud_NormalMenu() {  // 8ddf15
   if (!BYTE(joypad1H_last))
     BYTE(hud_tmp1) = 0;
 
-  if (filtered_joypad_H & 0x10) {  // start
+  if (filtered_joypad_H & kJoypadH_Start) {
     overworld_map_state = 5;
     sound_effect_2 = 18;
     return;
   }
 
   // Allow select to open the save/exit thing
-  if (joypad1H_last & 0x20 && sram_progress_indicator) {  // select
+  if (joypad1H_last & kJoypadH_Select && sram_progress_indicator) {
     BG3VOFS_copy2 = -8;
     Hud_CloseMenu();
     DisplaySelectMenu();
     return;
   }
 
-  if (joypad1H_last & 0x40 && !(joypad1L_last & 0x40) && (enhanced_features0 & kFeatures0_SwitchLR)) {
-    if (filtered_joypad_H & 8) {
+  if (joypad1H_last & kJoypadH_Y && !(joypad1L_last & kJoypadL_X) && (enhanced_features0 & kFeatures0_SwitchLR)) {
+    if (filtered_joypad_H & kJoypadH_Up) {
       Hud_ReorderItem(kNewStyleInventory ? -6 : -5);
-    } else if (filtered_joypad_H & 4) {
+    } else if (filtered_joypad_H & kJoypadH_Down) {
       Hud_ReorderItem(kNewStyleInventory ? 6 : 5);
-    } else if (filtered_joypad_H & 2) {
+    } else if (filtered_joypad_H & kJoypadH_Left) {
       Hud_ReorderItem(-1);
-    } else if (filtered_joypad_H & 1) {
+    } else if (filtered_joypad_H & kJoypadH_Right) {
       Hud_ReorderItem(1);
     }
   } else if (!BYTE(hud_tmp1)) {
     // If the x button is down, then move the blue circle
-    uint8 *item_p = (joypad1L_last & 0x40 && (enhanced_features0 & kFeatures0_SwitchLR)) ? &hud_cur_item_x : &hud_cur_item;
+    uint8 *item_p = (joypad1L_last & kJoypadL_X && (enhanced_features0 & kFeatures0_SwitchLR)) ? &hud_cur_item_x : &hud_cur_item;
     uint16 old_item = *item_p;
-    if (filtered_joypad_H & 8) {
+    if (filtered_joypad_H & kJoypadH_Up) {
       Hud_EquipItemAbove(item_p);
-    } else if (filtered_joypad_H & 4) {
+    } else if (filtered_joypad_H & kJoypadH_Down) {
       Hud_EquipItemBelow(item_p);
-    } else if (filtered_joypad_H & 2) {
+    } else if (filtered_joypad_H & kJoypadH_Left) {
       Hud_EquipPrevItem(item_p);
-    } else if (filtered_joypad_H & 1) {
+    } else if (filtered_joypad_H & kJoypadH_Right) {
       Hud_EquipNextItem(item_p);
     }
     BYTE(hud_tmp1) = filtered_joypad_H;
@@ -742,11 +742,11 @@ void Hud_ExpandBottleMenu() {  // 8de08c
 
 void Hud_BottleMenu() {  // 8de0df
   timer_for_flashing_circle++;
-  if (filtered_joypad_H & 0x10) {
+  if (filtered_joypad_H & kJoypadH_Start) {
     sound_effect_2 = 18;
     overworld_map_state = 5;
-  } else if (filtered_joypad_H & 3) {
-    if (filtered_joypad_H & 2) {
+  } else if (filtered_joypad_H & (kJoypadH_Left | kJoypadH_Right)) {
+    if (filtered_joypad_H & kJoypadH_Left) {
       Hud_EquipPrevItem(&hud_cur_item);
     } else {
       Hud_EquipNextItem(&hud_cur_item);
@@ -760,10 +760,10 @@ void Hud_BottleMenu() {  // 8de0df
     return;
   }
   Hud_DrawBottleMenu_Update();
-  if (filtered_joypad_H & 12) {
+  if (filtered_joypad_H & (kJoypadH_Down | kJoypadH_Up)) {
     uint8 old_val = link_item_bottle_index - 1, val = old_val;
 
-    if (filtered_joypad_H & 8) {
+    if (filtered_joypad_H & kJoypadH_Up) {
       do {
         val = (val - 1) & 3;
       } while (!link_bottle_info[val]);
@@ -916,7 +916,7 @@ void Hud_DrawYButtonItems() {  // 8de3d9
   uint16 *dst = uvram_screen.row[0].col;
   int x = kNewStyleInventory ? 0 : 1;
 
-  bool is_x = (joypad1L_last & 0x40 && (enhanced_features0 & kFeatures0_SwitchLR));
+  bool is_x = (joypad1L_last & kJoypadL_X && (enhanced_features0 & kFeatures0_SwitchLR));
   uint8 palette = is_x ? 3 : 7;
   Hud_DrawBox(dst, x, 5, 20 - x, 19, palette);
 
@@ -1129,7 +1129,7 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
   uint16 *dst_org = uvram_screen.row[0].col;
   uint16 *dst_box = dst_org + (kNewStyleInventory ? 1 : 0);
 
-  bool is_x = (joypad1L_last & 0x40 && (enhanced_features0 & kFeatures0_SwitchLR));
+  bool is_x = (joypad1L_last & kJoypadL_X && (enhanced_features0 & kFeatures0_SwitchLR));
   uint8 palette = is_x ? 3 : 7;
   Hud_DrawBox(dst_box, 21, 5, 21 + 9, 10, palette);
 
@@ -1434,14 +1434,14 @@ const uint16 *Hud_GetItemBoxPtr(int item) {
 void Hud_HandleItemSwitchInputs() {
   if (!(enhanced_features0 & kFeatures0_SwitchLR))
     return;
-  if (filtered_joypad_L & (0x20 | 0x10)) {  // left/right shoulder
+  if (filtered_joypad_L & (kJoypadL_L | kJoypadL_R)) {
     int old_item = hud_cur_item;
     for (int i = 0; ; i++) {
       if (i >= kHudItemCount) {
         hud_cur_item = 0;
         break;
       }
-      if (filtered_joypad_L & 0x20)
+      if (filtered_joypad_L & kJoypadL_L)
         Hud_GotoPrevItem(&hud_cur_item, 1);
       else
         Hud_GotoNextItem(&hud_cur_item, 1);
