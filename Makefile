@@ -9,9 +9,9 @@ CFLAGS:=${CFLAGS} $(shell sdl2-config --cflags) -DSYSTEM_VOLUME_MIXER_AVAILABLE=
 ifeq (${OS},Windows_NT)
     WINDRES:=windres
     RES:=zelda3.res
-    SDLFAGS:=${LDFLAGS} -Wl,-Bstatic $(shell sdl2-config --static-libs) -lm
+    SDLFLAGS:=-Wl,-Bstatic $(shell sdl2-config --static-libs)
 else
-    SDLFLAGS:=${LDFLAGS} $(shell sdl2-config --libs) -lm
+    SDLFLAGS:=$(shell sdl2-config --libs) -lm
 endif
 
 .PHONY: all clean clean_obj clean_gen
