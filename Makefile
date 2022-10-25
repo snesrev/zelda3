@@ -9,16 +9,16 @@ CFLAGS:=${CFLAGS} $(shell sdl2-config --cflags) -DSYSTEM_VOLUME_MIXER_AVAILABLE=
 ifeq (${OS},Windows_NT)
     WINDRES:=windres
     RES:=zelda3.res
-    LDFLAGS:=${LDFLAGS} -Wl,-Bstatic $(shell sdl2-config --static-libs) -lm
+    SDLFAGS:=${LDFLAGS} -Wl,-Bstatic $(shell sdl2-config --static-libs) -lm
 else
-    LDFLAGS:=${LDFLAGS} $(shell sdl2-config --libs) -lm
+    SDLFLAGS:=${LDFLAGS} $(shell sdl2-config --libs) -lm
 endif
 
 .PHONY: all clean clean_obj clean_gen
 
 all: $(TARGET_EXEC) tables/zelda3_assets.dat
 $(TARGET_EXEC): $(OBJS) $(RES)
-	$(CC) $^ -o $@ $(LDFLAGS)
+	$(CC) $^ -o $@ $(LDFLAGS) $(SDLFLAGS)
 %.o : %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
