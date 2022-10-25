@@ -4,25 +4,38 @@ SRCS:=$(wildcard *.c snes/*.c) third_party/gl_core/gl_core_3_1.c third_party/opu
 OBJS:=$(SRCS:%.c=%.o)
 PYTHON:=/usr/bin/env python3
 CFLAGS:=$(if $(CFLAGS),$(CFLAGS),-O2 -Werror)
-
 CFLAGS:=${CFLAGS} $(shell sdl2-config --cflags) -DSYSTEM_VOLUME_MIXER_AVAILABLE=0
-LDFLAGS:=${LDFLAGS} $(shell sdl2-config --libs) -lm
+
+ifeq (${OS},Windows_NT)
+    WINDRES:=windres
+    RES:=zelda3.res
+    LDFLAGS:=${LDFLAGS} -Wl,-Bstatic $(shell sdl2-config --static-libs) -lm
+else
+    LDFLAGS:=${LDFLAGS} $(shell sdl2-config --libs) -lm
+endif
 
 .PHONY: all clean clean_obj clean_gen
 
 all: $(TARGET_EXEC) tables/zelda3_assets.dat
-$(TARGET_EXEC): $(OBJS)
-	$(CC) $(OBJS) -o $@ $(LDFLAGS)
+$(TARGET_EXEC): $(OBJS) $(RES)
+	$(CC) $^ -o $@ $(LDFLAGS)
 %.o : %.c
 	$(CC) -c $(CFLAGS) $< -o $@
 
+$(RES): platform/win32/zelda3.rc
+	@echo "Generating Windows resources"
+	@$(WINDRES) $< -O coff -o $@
+
 tables/zelda3_assets.dat: tables/dialogue.txt
-	cd tables; $(PYTHON) compile_resources.py ../$(ROM)
+	@echo "Compiling game resources"
+	@cd tables; $(PYTHON) compile_resources.py ../$(ROM)
 tables/dialogue.txt:
-	cd tables; $(PYTHON) extract_resources.py ../$(ROM)
+	@echo "Extracting game resources"
+	@cd tables; $(PYTHON) extract_resources.py ../$(ROM)
 
 clean: clean_obj clean_gen
 clean_obj:
-	$(RM) $(OBJS) $(TARGET_EXEC)
+	@$(RM) $(OBJS) $(TARGET_EXEC)
 clean_gen:
-	$(RM) tables/zelda3_assets.dat
+	@$(RM) $(RES) tables/zelda3_assets.dat tables/*.txt tables/*.png tables/sprites/*.png tables/*.yaml
+	@rm -rf tables/__pycache__ tables/dungeon tables/img tables/overworld tables/sound
