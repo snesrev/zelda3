@@ -40,9 +40,12 @@ POSSIBILITY OF SUCH DAMAGE.
 #if (defined(_M_IX86) || defined(_M_X64)) && !COMPILER_TCC
 
 /* Can always compile SSE intrinsics (no special compiler flags necessary) */
+/* (at least on windows)... */
+#if defined(_MSC_VER)
 #define OPUS_X86_MAY_HAVE_SSE
 #define OPUS_X86_MAY_HAVE_SSE2
 #define OPUS_X86_MAY_HAVE_SSE4_1
+#endif
 
 /* Presume SSE functions, if compiled to use SSE/SSE2/AVX (note that AMD64 implies SSE2, and AVX
    implies SSE4.1) */
