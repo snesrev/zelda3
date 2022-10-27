@@ -1998,19 +1998,23 @@ void Link_HandleYItem() {  // 879b0e
     return;
   }
 
-  uint8 old_down = joypad1H_last, old_pressed = filtered_joypad_H, old_bottle = link_item_bottle_index;
-  if ((link_item_in_hand | link_position_mode) == 0) {
-    // Is X held down?
-    if (joypad1L_last & kJoypadL_X && !(old_down & kJoypadH_Y) && hud_cur_item_x != 0) {
-      
-      if (hud_cur_item_x >= kHudItem_Bottle1)
-        link_item_bottle_index = hud_cur_item_x - kHudItem_Bottle1 + 1;
-      item = Hud_LookupInventoryItem(hud_cur_item_x);
-      // Pretend it's actually Y that's down
-      joypad1H_last = old_down | kJoypadH_Y;
-      filtered_joypad_H = old_pressed | ((filtered_joypad_L & kJoypadL_X) ? kJoypadH_Y : 0);
+ uint8 old_down = joypad1H_last, old_pressed = filtered_joypad_H, old_bottle = link_item_bottle_index;
+  if ((link_item_in_hand | link_position_mode) == 0 && !(old_down & kJoypadH_Y)) {
+    // Is any special key held down?
+    int btn_index = GetCurrentItemButtonIndex();
+    if (btn_index != 0) {
+      uint8 *cur_item_ptr = GetCurrentItemButtonPtr(btn_index);
+      if (*cur_item_ptr) {
+        if (*cur_item_ptr >= kHudItem_Bottle1)
+          link_item_bottle_index = *cur_item_ptr - kHudItem_Bottle1 + 1;
+        item = Hud_LookupInventoryItem(*cur_item_ptr);
+        // Pretend it's actually Y that's down
+        joypad1H_last = old_down | kJoypadH_Y;
+        static const uint8 kButtonIndexKeys[4] = { 0, kJoypadL_X, kJoypadL_L, kJoypadL_R };
+        filtered_joypad_H = old_pressed | ((filtered_joypad_L & kButtonIndexKeys[btn_index]) ? kJoypadH_Y : 0);
+      }
     }
-  }
+  } 
 
   if (item != current_item_active) {
     if (current_item_active == 8 && (link_item_flute & 2))
