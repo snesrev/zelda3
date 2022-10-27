@@ -1221,7 +1221,7 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
     uint16 *p = dst_org + kHudItemInVramPtr[Hud_GetItemPosition(item)];
     Hud_Copy2x2(dst_box + HUDXY(25, 6), p);
     if (timer_for_flashing_circle & 0x10)
-      Hud_DrawFlashingCircle(p, palette);
+      Hud_DrawFlashingCircle(p, kSwitchLR_palettes[GetCurrentItemButtonIndex()]);
   }
 
   const uint16 *src_p;
