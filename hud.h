@@ -58,6 +58,5 @@ void Hud_Rebuild();
 const uint16 *Hud_GetItemBoxPtr(int item);
 int GetCurrentItemButtonIndex();
 uint8 *GetCurrentItemButtonPtr(int i);
-void Hud_HandleItemSwitchInputs();
 
 void Hud_HandleItemSwitchInputs();
