@@ -985,7 +985,7 @@ static void CopyTilesForSwitchLR(int switch_lr) {
 #undef PV
 }
 
-static const uint8 kSwitchLR_palettes[] = { 7, 3, 4,4 }
+static const uint8 kSwitchLR_palettes[] = { 7, 3, 4,4 };
 
 void Hud_DrawYButtonItems() {  // 8de3d9
   uint16 *dst = uvram_screen.row[0].col;
@@ -995,11 +995,11 @@ void Hud_DrawYButtonItems() {  // 8de3d9
   CopyTilesForSwitchLR(btn_index);
   Hud_DrawBox(dst, x, 5, 20 - x, 19,  kSwitchLR_palettes[btn_index]);
   static const uint16 kEquipmentLetterTiles[4][2] = {
-      {0x3CF0, 0x3CF1}, // Y
-      {0x2CF0, 0x2CF0 | 0x8000}, // X
-      {0x200E | 4 << 10, 0x200F | 4 << 10}, //L
-      {0x200C | 4 << 10, 0x200D | 4 << 10}  //R
-    };
+    {0x3CF0, 0x3CF1}, // Y
+    {0x2CF0, 0x2CF0 | 0x8000}, // X
+    {0x200E | 4 << 10, 0x200F | 4 << 10}, //L
+    {0x200C | 4 << 10, 0x200D | 4 << 10}  //R
+   };
 
   if (!kNewStyleInventory) {
     dst[HUDXY(2, 6)] = kEquipmentLetterTiles[btn_index][0];
@@ -1205,8 +1205,8 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
   uint16 *dst_org = uvram_screen.row[0].col;
   uint16 *dst_box = dst_org + (kNewStyleInventory ? 1 : 0);
   
-  int  btn_index = GetCurrentItemButtonIndex();//
-  int item = *GetCurrentItemButtonPtr(btn_index)
+  int  btn_index = GetCurrentItemButtonIndex();
+  int item = *GetCurrentItemButtonPtr(btn_index);
   Hud_DrawBox(dst_box, 21, 5, 21 + 9, 10, kSwitchLR_palettes[btn_index]);
 
   // Display either the current item or the item assigned
