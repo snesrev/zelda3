@@ -1128,20 +1128,18 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
 
   uint16 *dst_org = uvram_screen.row[0].col;
   uint16 *dst_box = dst_org + (kNewStyleInventory ? 1 : 0);
-
-  bool is_x = (joypad1L_last & kJoypadL_X && (enhanced_features0 & kFeatures0_SwitchLR));
-  uint8 palette = is_x ? 3 : 7;
-  Hud_DrawBox(dst_box, 21, 5, 21 + 9, 10, palette);
+  
+  Hud_DrawBox(dst_box, 21, 5, 21 + 9, 10, kSwitchLR_palettes[GetCurrentItemButtonIndex()]);
 
   // Display either the current item or the item assigned
-  // to the x key.
-  int item = is_x ? hud_cur_item_x : hud_cur_item;
+  // to the x, l, or r key.
+  int item = *GetCurrentItemButtonPtr();
 
   if (item != 0) {
     uint16 *p = dst_org + kHudItemInVramPtr[Hud_GetItemPosition(item)];
     Hud_Copy2x2(dst_box + HUDXY(25, 6), p);
     if (timer_for_flashing_circle & 0x10)
-      Hud_DrawFlashingCircle(p, palette);
+      Hud_DrawFlashingCircle(p, kSwitchLR_palettes[GetCurrentItemButtonIndex()]);
   }
 
   const uint16 *src_p;
@@ -1160,7 +1158,7 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
   } else if (item == kHudItem_Shovel) {
     src_p = &kHudItemText[(13 - 1) * 16];
   } else if (item == 0) {
-    src_p = is_x ? kNotAssignedItemText : &kHudItemText[(20 - 1) * 16];
+    src_p = GetCurrentItemButtonIndex()? kNotAssignedItemText : &kHudItemText[(20 - 1) * 16];
   } else {
     src_p = &kHudItemText[(item - 1) * 16];
   }
