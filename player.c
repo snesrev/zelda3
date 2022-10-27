@@ -1976,8 +1976,7 @@ static int GetCurrentItemButtonIndex() {
   return 0;
 }
 
-static uint8* GetCurrentItemButtonPtr() {
-  int i = GetCurrentItemButtonIndex();
+static uint8* GetCurrentItemButtonPtr(int i) {
   return (i == 0) ? &hud_cur_item : (i == 1) ? &hud_cur_item_x : (i == 2) ? &hud_cur_item_l : &hud_cur_item_r;
 }
 
