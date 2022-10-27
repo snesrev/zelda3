@@ -1967,6 +1967,20 @@ void Link_HandleSwordCooldown() {  // 879ac2
 
 }
 
+static int GetCurrentItemButtonIndex() {
+  if (enhanced_features0 & kFeatures0_SwitchLR) {
+    return (joypad1L_last & kJoypadL_X) ? 1 :
+      (joypad1L_last & kJoypadL_L)  ? 2 :
+      (joypad1L_last & kJoypadL_R )? 3 : 0;
+  }
+  return 0;
+}
+
+static uint8* GetCurrentItemButtonPtr() {
+  int i = GetCurrentItemButtonIndex();
+  return (i == 0) ? &hud_cur_item : (i == 1) ? &hud_cur_item_x : (i == 2) ? &hud_cur_item_l : &hud_cur_item_r;
+}
+
 void Link_HandleYItem() {  // 879b0e
   if (button_b_frames && button_b_frames < 9)
     return;
