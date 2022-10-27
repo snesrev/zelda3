@@ -50,6 +50,9 @@ enum {
 #define msu_track (*(uint8*)(g_ram+0x655))
 #define hud_cur_item_x (*(uint8*)(g_ram+0x656))
 #define hud_inventory_order ((uint8*)(g_ram + 0x225)) // 4x6 bytes
+#define hud_cur_item_l (*(uint8*)(g_ram+0x657))
+#define hud_cur_item_r (*(uint8*)(g_ram+0x658))
+
 
 
 
