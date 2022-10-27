@@ -594,6 +594,21 @@ static void Hud_EquipItemBelow(uint8 *item) {  // 8ddf00
   } while (!Hud_DoWeHaveThisItem(*item));
 }
 
+int GetCurrentItemButtonIndex() {
+  if (enhanced_features0 & kFeatures0_SwitchLR) {
+    return (joypad1L_last & kJoypadL_X) ? 1 :
+           (joypad1L_last & kJoypadL_L) ? 2 :
+           (joypad1L_last & kJoypadL_R) ? 3 : 0;
+  }
+  return 0;
+}
+
+uint8 *GetCurrentItemButtonPtr(int i) {
+  return (i == 0) ? &hud_cur_item : 
+         (i == 1) ? &hud_cur_item_x : 
+         (i == 2) ? &hud_cur_item_l : &hud_cur_item_r;
+}
+
 void Hud_NormalMenu() {  // 8ddf15
   timer_for_flashing_circle++;
   if (!BYTE(joypad1H_last))
@@ -624,8 +639,9 @@ void Hud_NormalMenu() {  // 8ddf15
       Hud_ReorderItem(1);
     }
   } else if (!BYTE(hud_tmp1)) {
-    // If the x button is down, then move the blue circle
-    uint8 *item_p = (joypad1L_last & kJoypadL_X && (enhanced_features0 & kFeatures0_SwitchLR)) ? &hud_cur_item_x : &hud_cur_item;
+    // If Special Key button is down, then move their circle
+    int  btn_index = GetCurrentItemButtonIndex();
+    uint8 *item_p = GetCurrentItemButtonPtr(btn_index);
     uint16 old_item = *item_p;
     if (filtered_joypad_H & kJoypadH_Up) {
       Hud_EquipItemAbove(item_p);
@@ -912,22 +928,82 @@ static const ItemBoxGfx *Hud_GetIconForItem(int i) {
   return &kHudItemBoxGfxPtrs[i - 1][item_val];
 }
 
+static void CopyTilesForSwitchLR(int switch_lr) {
+#define PV(a0,a1,a2,a3,a4,a5,a6,a7)  ((a0 & 1) << 7 | (a0 >> 1 & 1) << 15 | (a1 & 1) << 6 | (a1 >> 1 & 1) << 14 | (a2 & 1) <<5 | (a2 >> 1&1) <<13 | (a3 & 1) << 4 | (a3>> 1 & 1) << 12 | (a4 & 1) << 3 | (a4 >> 1 & 1) << 11 | (a5 & 1) << 2 | (a5 >> 1 & 1) << 10 | (a6 & 1) << 1 | (a6 >> 1 & 1) << 9 | (a7 & 1) << 0 | (a7 >> 1 & 1) << 8) 
+    
+  if (switch_lr == 3) {
+    static const uint16 kBytesForNewTile0xC_TopOfR[8] = {
+      PV(1,1,1,1,1,1,3,3),
+      PV(1,1,1,1,1,1,1,3),
+      PV(1,1,1,1,1,1,1,1),
+      PV(1,1,1,3,3,1,1,1),
+      PV(1,1,1,3,3,1,1,1),
+      PV(1,1,1,3,3,1,1,1),
+      PV(1,1,1,3,3,1,1,1),
+      PV(1,1,1,1,1,1,1,3)
+    };
+    memcpy(&g_zenv.vram[0x7000 + 0xc * 8], kBytesForNewTile0xC_TopOfR, sizeof(kBytesForNewTile0xC_TopOfR));
+
+    static const uint16 kBytesForNewTile0xD_BottomofR[8] = {
+      PV(1,1,1,1,1,1,3,3),
+      PV(1,1,1,3,1,1,1,3),
+      PV(1,1,1,3,3,1,1,1),
+      PV(1,1,1,3,3,1,1,1),
+      PV(1,1,1,3,3,1,1,1),
+      PV(1,1,1,3,3,1,1,1),
+      PV(1,1,1,3,3,1,1,1),
+      PV(1,1,1,3,3,1,1,1)
+    };
+    memcpy(&g_zenv.vram[0x7000 + 0xd * 8], kBytesForNewTile0xD_BottomofR, sizeof(kBytesForNewTile0xD_BottomofR));;
+  }
+
+  else if (switch_lr == 2) {
+    static const uint16 kBytesForNewTile0xE_TopOfL[8] = {
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3)
+    };
+    memcpy(&g_zenv.vram[0x7000 + 0xe * 8], kBytesForNewTile0xE_TopOfL, sizeof(kBytesForNewTile0xE_TopOfL));
+
+    static const uint16 kBytesForNewTile0xF_BottomofL[8] = {
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,3,3,3,3,3),
+      PV(1,1,1,1,1,1,1,1),
+      PV(1,1,1,1,1,1,1,1),
+      PV(1,1,1,1,1,1,1,1)
+    };
+    memcpy(&g_zenv.vram[0x7000 + 0xf * 8], kBytesForNewTile0xF_BottomofL, sizeof(kBytesForNewTile0xF_BottomofL));
+  }
+#undef PV
+}
+
+static const uint8 kSwitchLR_palettes[] = { 7, 3, 4,4 }
+
 void Hud_DrawYButtonItems() {  // 8de3d9
   uint16 *dst = uvram_screen.row[0].col;
   int x = kNewStyleInventory ? 0 : 1;
 
-  bool is_x = (joypad1L_last & kJoypadL_X && (enhanced_features0 & kFeatures0_SwitchLR));
-  uint8 palette = is_x ? 3 : 7;
-  Hud_DrawBox(dst, x, 5, 20 - x, 19, palette);
+  int btn_index = GetCurrentItemButtonIndex();
+  CopyTilesForSwitchLR(btn_index);
+  Hud_DrawBox(dst, x, 5, 20 - x, 19,  kSwitchLR_palettes[btn_index]);
+  static const uint16 kEquipmentLetterTiles[4][2] = {
+      {0x3CF0, 0x3CF1}, // Y
+      {0x2CF0, 0x2CF0 | 0x8000}, // X
+      {0x200E | 4 << 10, 0x200F | 4 << 10}, //L
+      {0x200C | 4 << 10, 0x200D | 4 << 10}  //R
+    };
 
   if (!kNewStyleInventory) {
-    if (palette == 3) {
-      dst[HUDXY(2, 6)] = 0x2CF0;
-      dst[HUDXY(2, 7)] = 0x2CF0 | 0x8000;
-    } else {
-      dst[HUDXY(2, 6)] = 0x3CF0;
-      dst[HUDXY(2, 7)] = 0x3CF1;
-    }
+    dst[HUDXY(2, 6)] = kEquipmentLetterTiles[btn_index][0];
+    dst[HUDXY(2, 7)] = kEquipmentLetterTiles[btn_index][1]; 
   }
   dst[HUDXY(x + 2, 5)] = 0x246E;
   dst[HUDXY(x + 3, 5)] = 0x246F;
@@ -1129,17 +1205,17 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
   uint16 *dst_org = uvram_screen.row[0].col;
   uint16 *dst_box = dst_org + (kNewStyleInventory ? 1 : 0);
   
-  Hud_DrawBox(dst_box, 21, 5, 21 + 9, 10, kSwitchLR_palettes[GetCurrentItemButtonIndex()]);
+  int  btn_index = GetCurrentItemButtonIndex();//
+  int item = *GetCurrentItemButtonPtr(btn_index)
+  Hud_DrawBox(dst_box, 21, 5, 21 + 9, 10, kSwitchLR_palettes[btn_index]);
 
   // Display either the current item or the item assigned
   // to the x, l, or r key.
-  int item = *GetCurrentItemButtonPtr();
-
   if (item != 0) {
     uint16 *p = dst_org + kHudItemInVramPtr[Hud_GetItemPosition(item)];
     Hud_Copy2x2(dst_box + HUDXY(25, 6), p);
     if (timer_for_flashing_circle & 0x10)
-      Hud_DrawFlashingCircle(p, kSwitchLR_palettes[GetCurrentItemButtonIndex()]);
+      Hud_DrawFlashingCircle(p, kSwitchLR_palettes[btn_index]);
   }
 
   const uint16 *src_p;
@@ -1158,7 +1234,7 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
   } else if (item == kHudItem_Shovel) {
     src_p = &kHudItemText[(13 - 1) * 16];
   } else if (item == 0) {
-    src_p = GetCurrentItemButtonIndex()? kNotAssignedItemText : &kHudItemText[(20 - 1) * 16];
+    src_p = btn_index? kNotAssignedItemText : &kHudItemText[(20 - 1) * 16];
   } else {
     src_p = &kHudItemText[(item - 1) * 16];
   }
@@ -1432,25 +1508,28 @@ const uint16 *Hud_GetItemBoxPtr(int item) {
 void Hud_HandleItemSwitchInputs() {
   if (!(enhanced_features0 & kFeatures0_SwitchLR))
     return;
-  if (filtered_joypad_L & (kJoypadL_L | kJoypadL_R)) {
-    int old_item = hud_cur_item;
-    for (int i = 0; ; i++) {
-      if (i >= kHudItemCount) {
-        hud_cur_item = 0;
-        break;
+  if (filtered_joypad_L & kJoypadL_L && (hud_cur_item_l == 0))
+    direction = false;
+  else if (filtered_joypad_L & kJoypadL_R && (hud_cur_item_r == 0))
+    direction = true;
+  else
+    return;
+
+  uint8 item = hud_cur_item;
+  for (int i = 0; i < kHudItemCount; i++) {
+    if (!direction)
+      Hud_GotoPrevItem(&item, 1);
+    else
+      Hud_GotoNextItem(&item, 1);
+    if (Hud_DoWeHaveThisItem(item) && Hud_GetItemPosition(item) <= 4) {
+      if (item != hud_cur_item) {
+        hud_cur_item = item;
+        sound_effect_2 = 32;
+        Hud_UpdateEquippedItem();
+        Hud_UpdateItemBox();
+        flag_update_hud_in_nmi++;
       }
-      if (filtered_joypad_L & kJoypadL_L)
-        Hud_GotoPrevItem(&hud_cur_item, 1);
-      else
-        Hud_GotoNextItem(&hud_cur_item, 1);
-      if (Hud_DoWeHaveThisItem(hud_cur_item))
-        break;
-    }
-    if (hud_cur_item != old_item) {
-      sound_effect_2 = 32;
-      Hud_UpdateEquippedItem();
-      Hud_UpdateItemBox();
-      flag_update_hud_in_nmi++;
+      break;
     }
   }
 }
