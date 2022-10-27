@@ -1508,6 +1508,9 @@ const uint16 *Hud_GetItemBoxPtr(int item) {
 void Hud_HandleItemSwitchInputs() {
   if (!(enhanced_features0 & kFeatures0_SwitchLR))
     return;
+  
+  bool direction;
+  
   if (filtered_joypad_L & kJoypadL_L && (hud_cur_item_l == 0))
     direction = false;
   else if (filtered_joypad_L & kJoypadL_R && (hud_cur_item_r == 0))
