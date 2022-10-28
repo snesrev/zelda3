@@ -640,7 +640,7 @@ void Hud_NormalMenu() {  // 8ddf15
     }
   } else if (!BYTE(hud_tmp1)) {
     // If Special Key button is down, then move their circle
-    int  btn_index = GetCurrentItemButtonIndex();
+    int btn_index = GetCurrentItemButtonIndex();
     uint8 *item_p = GetCurrentItemButtonPtr(btn_index);
     uint16 old_item = *item_p;
     if (filtered_joypad_H & kJoypadH_Up) {
@@ -955,9 +955,7 @@ static void CopyTilesForSwitchLR(int switch_lr) {
       PV(1,1,1,3,3,1,1,1)
     };
     memcpy(&g_zenv.vram[0x7000 + 0xd * 8], kBytesForNewTile0xD_BottomofR, sizeof(kBytesForNewTile0xD_BottomofR));;
-  }
-
-  else if (switch_lr == 2) {
+  }else if (switch_lr == 2) {
     static const uint16 kBytesForNewTile0xE_TopOfL[8] = {
       PV(1,1,1,3,3,3,3,3),
       PV(1,1,1,3,3,3,3,3),
@@ -985,7 +983,7 @@ static void CopyTilesForSwitchLR(int switch_lr) {
 #undef PV
 }
 
-static const uint8 kSwitchLR_palettes[] = { 7, 3, 4,4 };
+static const uint8 kSwitchLR_palettes[] = { 7, 3, 4, 4 };
 
 void Hud_DrawYButtonItems() {  // 8de3d9
   uint16 *dst = uvram_screen.row[0].col;
@@ -993,12 +991,12 @@ void Hud_DrawYButtonItems() {  // 8de3d9
 
   int btn_index = GetCurrentItemButtonIndex();
   CopyTilesForSwitchLR(btn_index);
-  Hud_DrawBox(dst, x, 5, 20 - x, 19,  kSwitchLR_palettes[btn_index]);
+  Hud_DrawBox(dst, x, 5, 20 - x, 19, kSwitchLR_palettes[btn_index]);
   static const uint16 kEquipmentLetterTiles[4][2] = {
-    {0x3CF0, 0x3CF1}, // Y
-    {0x2CF0, 0x2CF0 | 0x8000}, // X
-    {0x200E | 4 << 10, 0x200F | 4 << 10}, //L
-    {0x200C | 4 << 10, 0x200D | 4 << 10}  //R
+    {0x3CF0, 0x3CF1},  // Y
+    {0x2CF0, 0x2CF0 | 0x8000},  // X
+    {0x200E | 4 << 10, 0x200F | 4 << 10},  // L
+    {0x200C | 4 << 10, 0x200D | 4 << 10}   // R
    };
 
   if (!kNewStyleInventory) {
@@ -1205,7 +1203,7 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
   uint16 *dst_org = uvram_screen.row[0].col;
   uint16 *dst_box = dst_org + (kNewStyleInventory ? 1 : 0);
   
-  int  btn_index = GetCurrentItemButtonIndex();
+  int btn_index = GetCurrentItemButtonIndex();
   int item = *GetCurrentItemButtonPtr(btn_index);
   Hud_DrawBox(dst_box, 21, 5, 21 + 9, 10, kSwitchLR_palettes[btn_index]);
 
@@ -1234,7 +1232,7 @@ void Hud_DrawSelectedYButtonItem() {  // 8deb3a
   } else if (item == kHudItem_Shovel) {
     src_p = &kHudItemText[(13 - 1) * 16];
   } else if (item == 0) {
-    src_p = btn_index? kNotAssignedItemText : &kHudItemText[(20 - 1) * 16];
+    src_p = btn_index ? kNotAssignedItemText : &kHudItemText[(20 - 1) * 16];
   } else {
     src_p = &kHudItemText[(item - 1) * 16];
   }
@@ -1524,7 +1522,7 @@ void Hud_HandleItemSwitchInputs() {
       Hud_GotoPrevItem(&item, 1);
     else
       Hud_GotoNextItem(&item, 1);
-    if (Hud_DoWeHaveThisItem(item) && Hud_GetItemPosition(item) <= 4) {
+    if (Hud_DoWeHaveThisItem(item)) {
       if (item != hud_cur_item) {
         hud_cur_item = item;
         sound_effect_2 = 32;
