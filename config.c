@@ -438,6 +438,8 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
   } else if (section == 4) {
     if (StringEqualsNoCase(key, "ItemSwitchLR")) {
       return ParseBoolBit(value, &g_config.features0, kFeatures0_SwitchLR);
+    } else if (StringEqualsNoCase(key, "ItemSwitchLRLimit")) {
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_SwitchLRLimit);
     } else if (StringEqualsNoCase(key, "TurnWhileDashing")) {
       return ParseBoolBit(value, &g_config.features0, kFeatures0_TurnWhileDashing);
     } else if (StringEqualsNoCase(key, "MirrorToDarkworld")) {
