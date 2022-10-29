@@ -954,8 +954,8 @@ static void CopyTilesForSwitchLR(int switch_lr) {
       PV(1,1,1,3,3,1,1,1),
       PV(1,1,1,3,3,1,1,1)
     };
-    memcpy(&g_zenv.vram[0x7000 + 0xd * 8], kBytesForNewTile0xD_BottomofR, sizeof(kBytesForNewTile0xD_BottomofR));;
-  }else if (switch_lr == 2) {
+    memcpy(&g_zenv.vram[0x7000 + 0xd * 8], kBytesForNewTile0xD_BottomofR, sizeof(kBytesForNewTile0xD_BottomofR));
+  } else if (switch_lr == 2) {
     static const uint16 kBytesForNewTile0xE_TopOfL[8] = {
       PV(1,1,1,3,3,3,3,3),
       PV(1,1,1,3,3,3,3,3),
@@ -1510,7 +1510,7 @@ void Hud_HandleItemSwitchInputs() {
   bool direction;
   
   if (filtered_joypad_L & kJoypadL_L && (hud_cur_item_l == 0))
-    direction = false;
+    direction = (hud_cur_item_r != 0);
   else if (filtered_joypad_L & kJoypadL_R && (hud_cur_item_r == 0))
     direction = true;
   else
@@ -1522,7 +1522,7 @@ void Hud_HandleItemSwitchInputs() {
       Hud_GotoPrevItem(&item, 1);
     else
       Hud_GotoNextItem(&item, 1);
-    if (Hud_DoWeHaveThisItem(item)) {
+    if (Hud_DoWeHaveThisItem(item) && (!(enhanced_features0 & kFeatures0_SwitchLRLimit) || Hud_GetItemPosition(item) <= 3)) {
       if (item != hud_cur_item) {
         hud_cur_item = item;
         sound_effect_2 = 32;
