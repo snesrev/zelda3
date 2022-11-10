@@ -6254,14 +6254,17 @@ void Link_Initialize() {  // 87f13c
   player_on_somaria_platform = 0;
   link_spin_attack_step_counter = 0;
 
-  // This fixes the jump ledge exploration glitch
   if (enhanced_features0 & kFeatures0_MiscBugFixes) {
+    // If you quit while jumping from a ledge and get hit on a platform you can go under solid layers
     about_to_jump_off_ledge = 0;
+ 
+    // If you use the mirror near a moveable statue you can pull thin air and glitch the camera
+    link_is_near_moveable_statue = 0;
 
-    // If you use a mirror on a conveyor belt you still had momentum
+    // If you use the mirror on a conveyor belt you will retain momentum and clip into the entrance wall
     link_on_conveyor_belt = 0;
 
-    // These could be 1 if quitting while killing armos knight
+    // If you quit in the middle of red armos knight stomp the lumberjack tree will fall on its own
     bg1_y_offset = bg1_x_offset = 0;
   }
 }
