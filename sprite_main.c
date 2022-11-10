@@ -11820,6 +11820,10 @@ void Sprite_E3_Fairy(int k) {  // 86cf94
         return;
       }
     }
+    // Avoid calling Sprite_HandleAbsorptionByPlayer twice, it's called
+    // also from within Sprite_HandleDraggingByAncilla
+    if (sprite_state[k] == 0 && (enhanced_features0 & kFeatures0_MiscBugFixes))
+      return;
     if (Sprite_HandleDraggingByAncilla(k))
       return;
     Faerie_HandleMovement(k);
