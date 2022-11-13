@@ -1588,6 +1588,11 @@ void HandleDungeonLandingFromPit() {  // 879520
     if (tiledetect_which_y_pos[0] >= link_y_coord)
       return;
   }
+  //exploration glitch could also be armed without quitting
+  //by jumping off a dungeon ledge into an access pit
+  if (enhanced_features0 & kFeatures0_MiscBugFixes) {
+    about_to_jump_off_ledge = 0;
+  }
   link_y_coord = tiledetect_which_y_pos[0];
   link_animation_steps = 0;
   link_speed_modifier = 0;
