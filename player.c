@@ -730,7 +730,12 @@ lbl_jump_into_middle:
         link_item_in_hand = 0;
         link_position_mode = 0;
         player_handler_timer = 0;
-        link_disable_sprite_damage = 0;
+        //link can die and revive over deep water without flippers or as a bunny
+        if ((enhanced_features0 & kFeatures0_MiscBugFixes) && (!link_item_flippers || link_is_bunny || link_is_bunny_mirror)) {
+          link_disable_sprite_damage = 1;
+        } else {
+          link_disable_sprite_damage = 0;
+        }
         link_electrocute_on_touch = 0;
         link_actual_vel_x = 0;
         link_actual_vel_y = 0;
