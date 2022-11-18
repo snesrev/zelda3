@@ -6260,6 +6260,9 @@ void Link_Initialize() {  // 87f13c
 
     // If you use a mirror on a conveyor belt you still had momentum
     link_on_conveyor_belt = 0;
+    
+    // bugfix: you use the mirror on ice, you retain momentum
+    link_flag_moving = 0;
 
     // These could be 1 if quitting while killing armos knight
     bg1_y_offset = bg1_x_offset = 0;
