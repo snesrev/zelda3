@@ -5487,6 +5487,9 @@ void RevivalFairy_MonitorHP() {  // 88f430
     } else if (link_is_bunny) {
       link_player_handler_state = kPlayerState_PermaBunny;
       link_is_bunny_mirror = 1;
+      //bugfix: dying as permabunny doesn't restore link palette during death animation
+      if (enhanced_features0 & kFeatures0_MiscBugFixes)
+        LoadGearPalettes_bunny();
     } else {
       link_player_handler_state = kPlayerState_Ground;
     }
