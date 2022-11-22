@@ -109,6 +109,28 @@ make # Add -j$(nproc) to build using all cores ( Optional )
 nxlink -s zelda3.nro
 ```
 
+## Building using Docker
+In case you have Docker/Podman intalled you can build a docker image using the `Dockerfile` instead of using the above methods.
+
+### Build the Docker Image
+
+This only needs to be done one time unless the `Dockerfile` has been updated/changed
+
+Clone this repo first
+
+Make sure you are in the root path of this repo
+```sh
+docker build . -t zelda3
+```
+
+### Build the game
+Ensure the rom named zelda3.sfc is in the `tables` directory
+
+#### Build for Linux
+```sh
+docker run --rm --mount type=bind,source="$(pwd)",destination=/zelda3 zelda3 make
+```
+
 ## More Compilation Help
 
 Look at the wiki at https://github.com/snesrev/zelda3/wiki for more help.
