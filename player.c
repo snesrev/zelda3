@@ -6266,6 +6266,7 @@ void Link_Initialize() {  // 87f13c
       //bugfix: if you die in a dungeon as a permabunny and continue, you revert back to link
       if (!link_item_moon_pearl && savegame_is_darkworld) {
         link_player_handler_state = kPlayerState_PermaBunny;
+        link_is_bunny = 1;
         link_is_bunny_mirror = 1;
         LoadGearPalettes_bunny();
       }
