@@ -1486,11 +1486,14 @@ endif_1:
 
   // Initiate fall down
   if (player_near_pit_state != 2) {
-    if (link_item_moon_pearl) {
+    //bugfix: falling as bunny does not restore link for falling animation, part 1 of 2
+    if (link_item_moon_pearl || (enhanced_features0 & kFeatures0_MiscBugFixes && (link_is_bunny || link_is_bunny_mirror))) {
       link_need_for_poof_for_transform = 0;
       link_is_bunny = 0;
       link_is_bunny_mirror = 0;
       link_timer_tempbunny = 0;
+      if (enhanced_features0 & kFeatures0_MiscBugFixes)
+        LoadActualGearPalettes();
     }
     link_direction = 0;
     player_near_pit_state = 2;
@@ -1630,8 +1633,20 @@ void HandleDungeonLandingFromPit() {  // 879520
     link_grabbing_wall = 0;
     link_speed_setting = 0;
   } else {
-    link_player_handler_state = (tiledetect_pit_tile & 0xf) ? kPlayerState_FallingIntoHole : kPlayerState_Ground;
-  }
+    //bugfix: falling from a hole or wallmaster as permabunny restores abilities
+      if (enhanced_features0 & kFeatures0_MiscBugFixes && (!link_item_moon_pearl && savegame_is_darkworld)) {
+        if (tiledetect_pit_tile & 0xf) {
+          link_player_handler_state = kPlayerState_FallingIntoHole;
+        } else {
+          link_player_handler_state = kPlayerState_PermaBunny;
+          link_is_bunny = 1;
+          link_is_bunny_mirror = 1;
+          LoadGearPalettes_bunny();
+        }
+      } else {
+        link_player_handler_state = (tiledetect_pit_tile & 0xf) ? kPlayerState_FallingIntoHole : kPlayerState_Ground;
+      }
+    }
 }
 
 void PlayerHandler_04_Swimming() {  // 87963b
@@ -1781,8 +1796,15 @@ void Link_ResetSwimmingState() {  // 87983a
 
 void Link_ResetStateAfterDamagingPit() {  // 87984b
   Link_ResetSwimmingState();
-  link_player_handler_state = link_is_bunny && !link_item_moon_pearl ?
-    kPlayerState_PermaBunny : kPlayerState_Ground;
+  //bugfix: falling as bunny has no falling animation, part 2 of 2
+  if (enhanced_features0 & kFeatures0_MiscBugFixes && (!link_item_moon_pearl && savegame_is_darkworld)) {
+    link_player_handler_state = kPlayerState_PermaBunny;
+    link_is_bunny = 1;
+    link_is_bunny_mirror = 1;
+    LoadGearPalettes_bunny();
+  } else {
+    link_player_handler_state = link_is_bunny && !link_item_moon_pearl ? kPlayerState_PermaBunny : kPlayerState_Ground;
+  }
   link_direction_last = link_some_direction_bits;
   link_is_in_deep_water = 0;
   link_disable_sprite_damage = 0;
@@ -6274,8 +6296,11 @@ void Link_ResetProperties_A() {  // 87f1a3
   link_is_transforming = 0;
   countdown_for_blink = 0;
   ancilla_arr24[0] = 0;
-  link_is_bunny = 0;
-  link_is_bunny_mirror = 0;
+  //bugfix: bunny flags were getting cleared without checking permabunny state
+  if (enhanced_features0 & kFeatures0_MiscBugFixes && (!link_item_moon_pearl && savegame_is_darkworld)) {
+    link_is_bunny = 0;
+    link_is_bunny_mirror = 0;
+  }
   BYTE(link_timer_tempbunny) = 0;
   link_need_for_poof_for_transform = 0;
   is_archer_or_shovel_game = 0;
@@ -6565,7 +6590,8 @@ void ResetSomeThingsAfterDeath(uint8 a) {  // 8bffbf
   draw_water_ripples_or_grass = 0;
   byte_7E0316 = 0;
   countdown_for_blink = 0;
-  link_player_handler_state = 0;
+  //bugfix: player state was getting reset after death even as permabunny
+  link_player_handler_state = (enhanced_features0 & kFeatures0_MiscBugFixes && (!link_item_moon_pearl && savegame_is_darkworld)) ? 23 : 0;
   link_visibility_status = 0;
   Ancilla_TerminateSelectInteractives(0);
   Link_ResetProperties_A();
