@@ -1634,19 +1634,17 @@ void HandleDungeonLandingFromPit() {  // 879520
     link_speed_setting = 0;
   } else {
     //bugfix: falling from a hole or wallmaster as permabunny restores abilities
-      if (enhanced_features0 & kFeatures0_MiscBugFixes && (!link_item_moon_pearl && savegame_is_darkworld)) {
-        if (tiledetect_pit_tile & 0xf) {
-          link_player_handler_state = kPlayerState_FallingIntoHole;
+      if (tiledetect_pit_tile & 0xf) {
+        link_player_handler_state = kPlayerState_FallingIntoHole;
+      } else if ((enhanced_features0 & kFeatures0_MiscBugFixes) && (!link_item_moon_pearl && savegame_is_darkworld)) {
+        link_player_handler_state = kPlayerState_PermaBunny;
+        link_is_bunny = 1;
+        link_is_bunny_mirror = 1;
+        LoadGearPalettes_bunny();
         } else {
-          link_player_handler_state = kPlayerState_PermaBunny;
-          link_is_bunny = 1;
-          link_is_bunny_mirror = 1;
-          LoadGearPalettes_bunny();
+        link_player_handler_state = kPlayerState_Ground;
         }
-      } else {
-        link_player_handler_state = (tiledetect_pit_tile & 0xf) ? kPlayerState_FallingIntoHole : kPlayerState_Ground;
-      }
-    }
+  }
 }
 
 void PlayerHandler_04_Swimming() {  // 87963b
@@ -6297,7 +6295,7 @@ void Link_ResetProperties_A() {  // 87f1a3
   countdown_for_blink = 0;
   ancilla_arr24[0] = 0;
   //bugfix: bunny flags were getting cleared without checking permabunny state
-  if (enhanced_features0 & kFeatures0_MiscBugFixes && (!link_item_moon_pearl && savegame_is_darkworld)) {
+  if (!(enhanced_features0 & kFeatures0_MiscBugFixes)) {
     link_is_bunny = 0;
     link_is_bunny_mirror = 0;
   }
