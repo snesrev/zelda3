@@ -41,6 +41,7 @@ enum {
   kOutputMethod_SDL,
   kOutputMethod_SDLSoftware,
   kOutputMethod_OpenGL,
+  kOutputMethod_OpenGL_ES,
 };
 
 typedef struct Config {

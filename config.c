@@ -354,7 +354,9 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       return true;
     } else if (StringEqualsNoCase(key, "OutputMethod")) {
       g_config.output_method = StringEqualsNoCase(value, "SDL-Software") ? kOutputMethod_SDLSoftware :
-                               StringEqualsNoCase(value, "OpenGL") ? kOutputMethod_OpenGL : kOutputMethod_SDL;
+                               StringEqualsNoCase(value, "OpenGL") ? kOutputMethod_OpenGL : 
+                               StringEqualsNoCase(value, "OpenGL ES") ? kOutputMethod_OpenGL_ES :
+                                                                        kOutputMethod_SDL;
       return true;
     } else if (StringEqualsNoCase(key, "LinearFiltering")) {
       return ParseBool(value, &g_config.linear_filtering);

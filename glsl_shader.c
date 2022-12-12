@@ -212,9 +212,11 @@ void GlslShader_ReadShaderFile(GlslShader *gs, const char *filename, ByteArray *
   free(data_org);
 }
 
-static bool GlslPass_Compile(GlslPass *p, uint type, const uint8 *data, size_t size) {
+static bool GlslPass_Compile(GlslPass *p, uint type, const uint8 *data, size_t size, bool use_opengl_es) {
   static const char kVertexPrefix[] =   "#define VERTEX\n#define PARAMETER_UNIFORM\n";
-  static const char kFragmentPrefix[] = "#define FRAGMENT\n#define PARAMETER_UNIFORM\n";
+  static const char kFragmentPrefixCore[] = "#define FRAGMENT\n#define PARAMETER_UNIFORM\n";
+  static const char kFragmentPrefixEs[] = "#define FRAGMENT\n#define PARAMETER_UNIFORM\n" \
+					"precision mediump float;";
   const GLchar *strings[3];
   GLint lengths[3];
   char buffer[256];
@@ -222,15 +224,25 @@ static bool GlslPass_Compile(GlslPass *p, uint type, const uint8 *data, size_t s
   size_t skip = 0;
 
   if (size < 8 || memcmp(data, "#version", 8) != 0) {
-    strings[0] = "#version 330\n";
-    lengths[0] = sizeof("#version 330\n") - 1;
+    if (!use_opengl_es) {
+      strings[0] = "#version 330\n";
+      lengths[0] = sizeof("#version 330\n") - 1;
+    } else {
+      strings[0] = "#version 300 es\n";
+      lengths[0] = sizeof("#version 300 es\n") - 1;
+    }
   } else {
     while (skip < size && data[skip++] != '\n') {}
     strings[0] = (char*)data;
     lengths[0] = (int)skip;
   }
-  strings[1] = (type == GL_VERTEX_SHADER) ? (char*)kVertexPrefix : kFragmentPrefix;
-  lengths[1] = (type == GL_VERTEX_SHADER) ? sizeof(kVertexPrefix) - 1 : sizeof(kFragmentPrefix) - 1;
+  if (type == GL_VERTEX_SHADER) {
+    strings[1] = (char *)kVertexPrefix;
+    lengths[1] = sizeof(kVertexPrefix) - 1;
+  } else {
+    strings[1] = (use_opengl_es) ? (char *)kFragmentPrefixEs : kFragmentPrefixCore;
+    lengths[1] = (use_opengl_es) ? sizeof(kFragmentPrefixEs) - 1 : sizeof(kFragmentPrefixCore) - 1;
+  }
   strings[2] = (GLchar *)data + skip;
   lengths[2] = (int)(size - skip);
   uint shader = glCreateShader(type);
@@ -311,7 +323,7 @@ static bool IsGlslFilename(const char *filename) {
   return len >= 5 && memcmp(filename + len - 5, ".glsl", 5) == 0;
 }
 
-GlslShader *GlslShader_CreateFromFile(const char *filename) {
+GlslShader *GlslShader_CreateFromFile(const char *filename, bool opengl_es) {
   char buffer[256];
   GLint link_status;
   ByteArray shader_code = { 0 };
@@ -348,8 +360,8 @@ GlslShader *GlslShader_CreateFromFile(const char *filename) {
       goto FAIL;
     }
     p->gl_program = glCreateProgram();
-    if (!GlslPass_Compile(p, GL_VERTEX_SHADER, shader_code.data, shader_code.size) ||
-        !GlslPass_Compile(p, GL_FRAGMENT_SHADER, shader_code.data, shader_code.size)) {
+    if (!GlslPass_Compile(p, GL_VERTEX_SHADER, shader_code.data, shader_code.size, opengl_es) ||
+        !GlslPass_Compile(p, GL_FRAGMENT_SHADER, shader_code.data, shader_code.size, opengl_es)) {
       goto FAIL;
     }
     glLinkProgram(p->gl_program);
