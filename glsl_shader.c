@@ -214,7 +214,12 @@ void GlslShader_ReadShaderFile(GlslShader *gs, const char *filename, ByteArray *
 
 static bool GlslPass_Compile(GlslPass *p, uint type, const uint8 *data, size_t size) {
   static const char kVertexPrefix[] =   "#define VERTEX\n#define PARAMETER_UNIFORM\n";
+#ifndef USE_GLES
   static const char kFragmentPrefix[] = "#define FRAGMENT\n#define PARAMETER_UNIFORM\n";
+#else
+  static const char kFragmentPrefix[] = "#define FRAGMENT\n#define PARAMETER_UNIFORM\n" \
+					"precision mediump float;";
+#endif
   const GLchar *strings[3];
   GLint lengths[3];
   char buffer[256];
@@ -222,8 +227,13 @@ static bool GlslPass_Compile(GlslPass *p, uint type, const uint8 *data, size_t s
   size_t skip = 0;
 
   if (size < 8 || memcmp(data, "#version", 8) != 0) {
+#ifndef USE_GLES
     strings[0] = "#version 330\n";
     lengths[0] = sizeof("#version 330\n") - 1;
+#else
+    strings[0] = "#version 300 es\n";
+    lengths[0] = sizeof("#version 300 es\n") - 1;
+#endif
   } else {
     while (skip < size && data[skip++] != '\n') {}
     strings[0] = (char*)data;
