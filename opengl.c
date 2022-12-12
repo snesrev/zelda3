@@ -38,12 +38,21 @@ static bool OpenGLRenderer_Init(SDL_Window *window) {
   g_window = window;
   SDL_GLContext context = SDL_GL_CreateContext(window);
   (void)context;
+  int majorVersion, minorVersion;
 
   SDL_GL_SetSwapInterval(1);
   ogl_LoadFunctions();
 
-  if (!ogl_IsVersionGEQ(3, 3))
+  SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &majorVersion);
+  SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minorVersion);
+
+#ifndef USE_GLES  
+  if (majorVersion < 3 || minorVersion < 3)
     Die("You need OpenGL 3.3");
+#else
+  if (majorVersion < 3)
+    Die("You need OpenGL ES 3.0");
+#endif
 
   if (kDebugFlag) {
     glEnable(GL_DEBUG_OUTPUT);
@@ -80,7 +89,11 @@ static bool OpenGLRenderer_Init(SDL_Window *window) {
   glEnableVertexAttribArray(1);
 
   // vertex shader
+#ifndef USE_GLES
   const GLchar *vs_code = "#version 330 core\n" CODE(
+#else
+  const GLchar *vs_code = "#version 300 es\n" CODE(
+#endif
   layout(location = 0) in vec3 aPos;
   layout(location = 1) in vec2 aTexCoord;
   out vec2 TexCoord;
@@ -103,7 +116,12 @@ static bool OpenGLRenderer_Init(SDL_Window *window) {
   }
 
   // fragment shader
+#ifndef USE_GLES
   const GLchar *fs_code = "#version 330 core\n" CODE(
+#else
+  const GLchar *fs_code = "#version 300 es\n" CODE(
+  precision mediump float;
+#endif
   out vec4 FragColor;
   in vec2 TexCoord;
   // texture samplers
@@ -178,11 +196,19 @@ static void OpenGLRenderer_EndDraw() {
 
   glBindTexture(GL_TEXTURE_2D, g_texture.gl_texture);
   if (g_draw_width == g_texture.width && g_draw_height == g_texture.height) {
+#ifndef USE_GLES
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, g_draw_width, g_draw_height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, g_screen_buffer);
+#else
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, g_draw_width, g_draw_height, GL_BGRA, GL_UNSIGNED_BYTE, g_screen_buffer);
+#endif
   } else {
     g_texture.width = g_draw_width;
     g_texture.height = g_draw_height;
+#ifndef USE_GLES
     glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, g_draw_width, g_draw_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, g_screen_buffer);
+#else
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, g_draw_width, g_draw_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, g_screen_buffer);
+#endif
   }
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
@@ -212,9 +238,15 @@ static const struct RendererFuncs kOpenGLRendererFuncs = {
 };
 
 void OpenGLRenderer_Create(struct RendererFuncs *funcs) {
+#ifndef USE_GLES
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
   SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+#else
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_ES);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+  SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 0);
+#endif
   *funcs = kOpenGLRendererFuncs;
 }
 
