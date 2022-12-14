@@ -230,8 +230,12 @@ static bool SdlRenderer_Init(SDL_Window *window) {
     printf("\n");
   }
   g_renderer = renderer;
-  if (!g_config.ignore_aspect_ratio)
-    SDL_RenderSetLogicalSize(renderer, g_snes_width, g_snes_height);
+  if (!g_config.ignore_aspect_ratio) {
+    if(!g_config.tv_aspect_ratio)
+      SDL_RenderSetLogicalSize(renderer, g_snes_width, g_snes_height);
+    else
+      SDL_RenderSetLogicalSize(renderer, 4, 3);
+  }
   if (g_config.linear_filtering)
     SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "best");
 
