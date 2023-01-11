@@ -209,7 +209,15 @@ $(OUTPUT).elf	:	$(OFILES)
 
 $(OFILES_SRC)	: $(HFILES_BIN)
 
+#---------------------------------------------------------------------------------
+# devkitPro's rules are expecting the .o and .c files to be in the same directory,
+# but this Makefile will be run from within a build directory. This rule will run
+# instead of the built-in one and compile the .c files that are in the source
+# directory and put the resulting .o and .d files in the platform/switch/bin
+# directory.
+# --------------------------------------------------------------------------------
 %.o : $(SRC_DIR)/%.c
+#---------------------------------------------------------------------------------
 	$(SILENTMSG) $(notdir $<)
 	$(SILENTCMD)$(CC) -MMD -MP -MF $(DEPSDIR)/$*.d $(CFLAGS) -c $< -o $@ $(ERROR_FILTER)
 
