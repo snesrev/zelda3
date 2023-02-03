@@ -163,8 +163,8 @@ Additionally, the following commands are available:
 | Alt+Enter | Toggle Fullscreen     |
 | Shift+F1-F10 | Save snapshot |
 | Ctrl+F1-F10 | Replay the snapshot |
-| 1-9 | run a dungeons playthrough snapshots |
-| Ctrl+1-9 | run a dungeons playthrough in turbo mode |
+| 1-9 | Run a dungeons playthrough snapshots |
+| Ctrl+1-9 | Run a dungeons playthrough in turbo mode |
 
 
 ## License
