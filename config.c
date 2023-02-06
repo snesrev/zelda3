@@ -366,6 +366,8 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
     } else if (StringEqualsNoCase(key, "Shader")) {
       g_config.shader = *value ? value : NULL;
       return true;
+	} else if (StringEqualsNoCase(key, "DimFlashes")) {
+      return ParseBool(value, &g_config.dim_flashes);
     }
   } else if (section == 2) {
     if (StringEqualsNoCase(key, "EnableAudio")) {

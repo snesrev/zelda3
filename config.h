@@ -53,6 +53,7 @@ typedef struct Config {
   uint8 window_scale;
   bool enable_audio;
   bool linear_filtering;
+  bool dim_flashes;
   uint8 output_method;
   uint16 audio_freq;
   uint8 audio_channels;

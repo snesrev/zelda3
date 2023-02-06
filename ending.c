@@ -14,6 +14,7 @@
 #include "ancilla.h"
 #include "hud.h"
 #include "assets.h"
+#include "config.h"
 
 static const uint16 kPolyhedralPalette[8] = { 0, 0x14d, 0x1b0, 0x1f3, 0x256, 0x279, 0x2fd, 0x35f };
 
@@ -1211,7 +1212,11 @@ void Intro_PeriodicSwordAndIntroFlash() {  // 8cfe56
   SetBackdropcolorBlack();
   if (intro_times_pal_flash) {
     if ((intro_times_pal_flash & 3) != 0) {
-      (&COLDATA_copy0)[intro_sword_24] |= 0x1f;
+	  if (!g_config.dim_flashes){
+        (&COLDATA_copy0)[intro_sword_24] |= 0x1f;
+      } else {
+        (&COLDATA_copy0)[intro_sword_24] |= 0x05;
+	  }
       intro_sword_24 = (intro_sword_24 == 2) ? 0 : intro_sword_24 + 1;
     }
     intro_times_pal_flash--;
