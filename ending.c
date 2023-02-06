@@ -1215,7 +1215,7 @@ void Intro_PeriodicSwordAndIntroFlash() {  // 8cfe56
 	  if (!g_config.dim_flashes){
         (&COLDATA_copy0)[intro_sword_24] |= 0x1f;
       } else {
-        (&COLDATA_copy0)[intro_sword_24] |= 0x05;
+        (&COLDATA_copy0)[intro_sword_24] |= 0x05; // dull all 3 colors
 	  }
       intro_sword_24 = (intro_sword_24 == 2) ? 0 : intro_sword_24 + 1;
     }

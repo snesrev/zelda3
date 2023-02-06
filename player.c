@@ -12,6 +12,7 @@
 #include "misc.h"
 #include "player_oam.h"
 #include "sprite_main.h"
+#include "config.h"
 
 static bool g_ApplyLinksMovementToCamera_called;
 
@@ -76,10 +77,13 @@ static PlayerHandlerFunc *const kPlayerHandlers[31] = {
 static const uint8 kLinkItem_MagicCosts[] = { 16, 8, 4, 32, 16, 8, 8, 4, 2, 8, 4, 2, 8, 4, 2, 16, 8, 4, 4, 2, 2, 8, 4, 2, 16, 8, 4 };
 static const uint8 kBombosAnimDelays[] = { 5, 5, 5, 5, 5, 5, 5, 5, 3, 3, 3, 3, 3, 7, 1, 1, 1, 1, 1, 13 };
 static const uint8 kBombosAnimStates[] = { 0, 1, 2, 3, 0, 1, 2, 3, 8, 9, 10, 11, 12, 10, 8, 13, 14, 15, 16, 17 };
-static const uint8 kEtherAnimDelays[] = { 5, 5, 5, 5, 5, 5, 5, 5, 7, 7, 3, 3 };
+static       uint8 kEtherAnimDelays[] = { 5, 5, 5, 5, 5, 5, 5, 5, 7, 7, 3, 3 };
 static const uint8 kEtherAnimStates[] = { 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 7 };
 static const uint8 kQuakeAnimDelays[] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 19 };
 static const uint8 kQuakeAnimStates[] = { 0, 1, 2, 3, 0, 1, 2, 3, 18, 19, 20, 22 };
+
+
+
 static inline uint8 BitSum4(uint8 t);
 static inline uint8 BitSum4(uint8 t) {
   return (t & 1) + ((t >> 1) & 1) + ((t >> 2) & 1) + ((t >> 3) & 1);
@@ -2673,6 +2677,12 @@ void LinkItem_Ether() {  // 87a494
 }
 
 void LinkState_UsingEther() {  // 87a50f
+  if (g_config.dim_flashes){
+    // extend the last 2 frames of the ether medallion animation
+    kEtherAnimDelays[10] = 24;
+    kEtherAnimDelays[11] = 24;
+  }
+
   flag_unk1++;
   if (!sign8(--link_delay_timer_spin_attack))
     return;
