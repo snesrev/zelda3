@@ -835,6 +835,14 @@ static void LoadAssets() {
     g_asset_ptrs[i] = data + offset;
     offset += size;
   }
+  
+  // there might be a better place for this code? unsure.
+  
+  if (g_config.dim_flashes){ // patch dungeon floor palettes
+    memset((kPalette_DungBgMain+1156),0x70,1);
+    memset((kPalette_DungBgMain+1157),0x95,1);
+    memset((kPalette_DungBgMain+1158),0x57,1);
+  }
 }
 
 // Go some steps up and find zelda3.ini
