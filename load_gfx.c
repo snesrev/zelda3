@@ -1922,11 +1922,12 @@ void Filter_Majorly_Whiten_Bg() {  // 8ed757
 }
 
 uint16 Filter_Majorly_Whiten_Color(uint16 c) {  // 8ed7fe
-  int r = (c & 0x1f) + 14;
+  int amt = (enhanced_features0 & kFeatures0_DimFlashes) ? 3 : 14;
+  int r = (c & 0x1f) + amt;
+  int g = (c & 0x3e0) + (amt << 5);
+  int b = (c & 0x7c00) + (amt << 10);
   if (r > 0x1f) r = 0x1f;
-  int g = (c & 0x3e0) + 0x1c0;
   if (g > 0x3e0) g = 0x3e0;
-  int b = (c & 0x7c00) + 0x3800;
   if (b > 0x7c00) b = 0x7c00;
   return r | g | b;
 }

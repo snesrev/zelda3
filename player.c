@@ -77,6 +77,7 @@ static const uint8 kLinkItem_MagicCosts[] = { 16, 8, 4, 32, 16, 8, 8, 4, 2, 8, 4
 static const uint8 kBombosAnimDelays[] = { 5, 5, 5, 5, 5, 5, 5, 5, 3, 3, 3, 3, 3, 7, 1, 1, 1, 1, 1, 13 };
 static const uint8 kBombosAnimStates[] = { 0, 1, 2, 3, 0, 1, 2, 3, 8, 9, 10, 11, 12, 10, 8, 13, 14, 15, 16, 17 };
 static const uint8 kEtherAnimDelays[] = { 5, 5, 5, 5, 5, 5, 5, 5, 7, 7, 3, 3 };
+static const uint8 kEtherAnimDelaysNoFlash[] = { 5, 5, 5, 5, 5, 5, 5, 5, 7, 7, 24, 24 };
 static const uint8 kEtherAnimStates[] = { 0, 1, 2, 3, 0, 1, 2, 3, 4, 5, 6, 7 };
 static const uint8 kQuakeAnimDelays[] = { 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 19 };
 static const uint8 kQuakeAnimStates[] = { 0, 1, 2, 3, 0, 1, 2, 3, 18, 19, 20, 22 };
@@ -2685,7 +2686,8 @@ void LinkState_UsingEther() {  // 87a50f
   } else if (step_counter_for_spin_attack == 12) {
     step_counter_for_spin_attack = 10;
   }
-  link_delay_timer_spin_attack = kEtherAnimDelays[step_counter_for_spin_attack];
+  const uint8 *table = (enhanced_features0 & kFeatures0_DimFlashes) ? kEtherAnimDelaysNoFlash : kEtherAnimDelays;
+  link_delay_timer_spin_attack = table[step_counter_for_spin_attack];
   state_for_spin_attack = kEtherAnimStates[step_counter_for_spin_attack];
   if (!byte_7E0324 && step_counter_for_spin_attack == 10) {
     byte_7E0324 = 1;
