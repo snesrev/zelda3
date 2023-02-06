@@ -6,6 +6,7 @@
 #include "player.h"
 #include "sprite.h"
 #include "assets.h"
+#include "config.h"
 
 // Allow this to be overwritten
 uint16 kGlovesColor[2] = {0x52f6, 0x376};
@@ -1922,11 +1923,21 @@ void Filter_Majorly_Whiten_Bg() {  // 8ed757
 }
 
 uint16 Filter_Majorly_Whiten_Color(uint16 c) {  // 8ed7fe
-  int r = (c & 0x1f) + 14;
+  int r = (c & 0x1f);
+  int g = (c & 0x3e0);
+  int b = (c & 0x7c00);
+  if (!g_config.dim_flashes){
+	r += 0x0e;
+	g += 0x01c0;
+	b += 0x3800;
+  } else { // dim flashing effect
+	r += 0x02;
+	g += 0x40;
+	b += 0x0800;
+  }
+  
   if (r > 0x1f) r = 0x1f;
-  int g = (c & 0x3e0) + 0x1c0;
   if (g > 0x3e0) g = 0x3e0;
-  int b = (c & 0x7c00) + 0x3800;
   if (b > 0x7c00) b = 0x7c00;
   return r | g | b;
 }
