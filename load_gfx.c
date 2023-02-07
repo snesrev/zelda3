@@ -1927,13 +1927,13 @@ uint16 Filter_Majorly_Whiten_Color(uint16 c) {  // 8ed7fe
   int g = (c & 0x3e0);
   int b = (c & 0x7c00);
   if (!g_config.dim_flashes){
-	r += 0x0e;
-	g += 0x01c0;
-	b += 0x3800;
+    r += 0x0e;
+    g += 0x01c0;
+    b += 0x3800;
   } else { // dim flashing effect
-	r += 0x02;
-	g += 0x40;
-	b += 0x0800;
+    r += 0x02;
+    g += 0x40;
+    b += 0x0800;
   }
   
   if (r > 0x1f) r = 0x1f;
