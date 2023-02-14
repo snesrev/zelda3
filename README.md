@@ -32,6 +32,14 @@ Secondary item slot on button X (Hold X in inventory to select).
 
 Switching current item with L/R keys.
 
+How to Play:
+
+Option 1: Launcher by RadzPrower https://github.com/ajohns6/Zelda-3-Launcher
+
+Option 2: Building it yourself
+
+Visit Wiki for more info on building the project: https://github.com/snesrev/zelda3/wiki
+
 ## Installing Python & libraries on Windows (required for asset extraction steps)
 1. Download [Python](https://www.python.org/ftp/python/3.10.7/python-3.10.7-amd64.exe) installer and install
 2. Open the command prompt
