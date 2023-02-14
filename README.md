@@ -34,7 +34,7 @@ Switching current item with L/R keys.
 
 ## How to Play:
 
-Option 1: Launcher by RadzPrower https://github.com/ajohns6/Zelda-3-Launcher
+Option 1: Launcher by RadzPrower (windows only) https://github.com/ajohns6/Zelda-3-Launcher
 
 Option 2: Building it yourself
 
