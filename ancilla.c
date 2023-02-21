@@ -2475,7 +2475,9 @@ void EtherSpell_HandleRadialSpin(int k) {  // 88abef
   step_counter_for_spin_attack = 0;
   link_cant_change_direction = 0;
   flag_unk1 = 0;
-
+  //bugfix: save menu lockout when dying immediately after medallion cast
+  if (enhanced_features0 & kFeatures0_MiscBugFixes)
+    flag_custom_spell_anim_active = 0;
   if (BYTE(overworld_screen_index) == 0x70 && !(save_ow_event_info[0x70] & 0x20) && Ancilla_CheckForEntranceTrigger(2)) {
     trigger_special_entrance = 3;
     subsubmodule_index = 0;
@@ -2784,6 +2786,9 @@ void BombosSpell_ControlBlasting(int kk) {  // 88b40d
   step_counter_for_spin_attack = 0;
   link_cant_change_direction = 0;
   flag_unk1 = 0;
+  //bugfix: save menu lockout when dying immediately after medallion cast
+  if (enhanced_features0 & kFeatures0_MiscBugFixes)
+    flag_custom_spell_anim_active = 0;
   if (link_player_handler_state != kPlayerState_ReceivingBombos) {
     link_player_handler_state = kPlayerState_Ground;
     link_delay_timer_spin_attack = 0;
@@ -2861,6 +2866,9 @@ void Ancilla1C_QuakeSpell(int k) {  // 88b66a
   flag_unk1 = 0;
   bg1_x_offset = 0;
   bg1_y_offset = 0;
+  //bugfix: save menu lockout when dying immediately after medallion cast
+  if (enhanced_features0 & kFeatures0_MiscBugFixes)
+    flag_custom_spell_anim_active = 0;
   if (BYTE(overworld_screen_index) == 0x47 && !(save_ow_event_info[0x47] & 0x20) && Ancilla_CheckForEntranceTrigger(3)) {
     trigger_special_entrance = 4;
     subsubmodule_index = 0;
