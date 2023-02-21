@@ -109,9 +109,13 @@ static int KeyMapHash_Find(uint16 key) {
 int FindCmdForSdlKey(SDL_Keycode code, SDL_Keymod mod) {
   if (code & ~(SDLK_SCANCODE_MASK | 0x1ff))
     return 0;
-  int key = mod & KMOD_ALT ? kKeyMod_Alt : 0;
-  key |= mod & KMOD_CTRL ? kKeyMod_Ctrl : 0;
-  key |= mod & KMOD_SHIFT ? kKeyMod_Shift : 0;
+  int key = 0;
+  if (code != SDLK_LALT && code != SDLK_RALT)
+    key |=  mod & KMOD_ALT ? kKeyMod_Alt : 0;
+  if (code != SDLK_LCTRL && code != SDLK_RCTRL)
+    key |= mod & KMOD_CTRL ? kKeyMod_Ctrl : 0;
+  if (code != SDLK_LSHIFT && code != SDLK_RSHIFT)
+    key |= mod & KMOD_SHIFT ? kKeyMod_Shift : 0;
   key |= REMAP_SDL_KEYCODE(code);
   return KeyMapHash_Find(key);
 }
