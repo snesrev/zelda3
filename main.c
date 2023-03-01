@@ -598,6 +598,13 @@ void ZeldaApuUnlock() {
 static void HandleCommand_Locked(uint32 j, bool pressed) {
   if (!pressed)
     return;
+
+  if(!g_config.debug_keys){
+	if (! (j == kKeys_Fullscreen || j == kKeys_WindowBigger || j == kKeys_WindowSmaller || j == kKeys_VolumeUp || j == kKeys_VolumeDown)){
+      return;
+	}
+  }
+
   if (j <= kKeys_Load_Last) {
     SaveLoadSlot(kSaveLoad_Load, j - kKeys_Load);
   } else if (j <= kKeys_Save_Last) {
