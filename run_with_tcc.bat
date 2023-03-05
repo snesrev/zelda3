@@ -1,6 +1,6 @@
 @echo off
 
-set SDL2=third_party\SDL2-2.24.1
+set SDL2=third_party\SDL2-2.26.3
 
 IF NOT EXIST "third_party\tcc\tcc.exe" (
   ECHO:
@@ -17,7 +17,7 @@ IF NOT EXIST "third_party\tcc\tcc.exe" (
 IF NOT EXIST "%SDL2%\lib\x64\SDL2.dll" (
   ECHO:
   ECHO ERROR: SDL is not unzipped properly into %SDL2%
-  ECHO   Download it from https://github.com/libsdl-org/SDL/releases/download/release-2.24.1/SDL2-devel-2.24.1-VC.zip
+  ECHO   Download it from https://github.com/libsdl-org/SDL/releases/download/release-2.26.3/SDL2-devel-2.26.3-VC.zip
   ECHO:
   PAUSE
   EXIT /B 1

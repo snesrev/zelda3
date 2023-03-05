@@ -41,9 +41,9 @@ Option 2: Building it yourself
 Visit Wiki for more info on building the project: https://github.com/snesrev/zelda3/wiki
 
 ## Installing Python & libraries on Windows (required for asset extraction steps)
-1. Download [Python](https://www.python.org/ftp/python/3.10.7/python-3.10.7-amd64.exe) installer and install
+1. Download [Python](https://www.python.org/ftp/python/3.11.1/python-3.11.1-amd64.exe) installer and install with "Add to PATH" checkbox checked
 2. Open the command prompt
-3. Upgrade pip & install `pillow` and `pyyaml` by typing `python -m pip install --upgrade pip pillow pyyaml` and hit enter
+3. Type `python -m pip install --upgrade pip pillow pyyaml` and hit enter
 4. Close the command prompt
 
 ## Compiling on Windows with TCC (1mb Tiny C Compiler)
@@ -51,11 +51,11 @@ Visit Wiki for more info on building the project: https://github.com/snesrev/zel
 2. Extract the ZIP to your hard drive
 3. Place the USA rom named `zelda3.sfc` in the "\tables" subfolder
 4. Open the command prompt and navigate to that folder
-5. Extract resources by typing `python extract_resources.py` and hit enter
-6. Compile the extracted resources by typing `python compile_resources.py` and hit enter
+5. Type `python extract_resources.py` and hit enter
+6. Type `python compile_resources.py` and hit enter
 7. Close the command prompt
 8. Download [TCC](https://github.com/FitzRoyX/tinycc/releases/download/tcc_20221020/tcc_20221020.zip) and extract to the "\third_party" subfolder
-9. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.24.1/SDL2-devel-2.24.1-VC.zip) and extract to the "\third_party" subfolder
+9. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.26.3/SDL2-devel-2.26.3-VC.zip) and extract to the "\third_party" subfolder
 10. Double-click `run_with_tcc.bat` in the main dir to create `zelda3.exe` in that same dir
 11. Configure with `zelda3.ini` in the main dir
 
