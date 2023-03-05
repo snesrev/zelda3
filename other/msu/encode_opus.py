@@ -1,9 +1,9 @@
+#!/usr/bin/env python3
+import concurrent.futures
 import opuslib
 import struct
 import samplerate # pip install samplerate
-import sys
 import numpy as np
-import argparse
 
 # File format
 # 4 byte: OPUZ
@@ -15,8 +15,6 @@ import argparse
 # }
 
 def encode_to_msu_opus(msu_infile, bitrate = 128000):
-  loop_point = 0x4c514
-
   raw_msu1 = bytearray(open(msu_infile, 'rb').read())
 
   if raw_msu1[:4] != b'MSU1':
@@ -27,11 +25,11 @@ def encode_to_msu_opus(msu_infile, bitrate = 128000):
   np_audio = np.reshape(np_audio, (-1, 2)).astype(np.float32) * (1.0/32768.0)
   assert np_audio.shape[1] == 2
 
-  print('Song has %d samples in 44.1khz: %s' % (np_audio.shape[0], np_audio.dtype))
+  #print('Song has %d samples in 44.1khz: %s' % (np_audio.shape[0], np_audio.dtype))
   np_audio = samplerate.resample(np_audio, 48000 / 44100, 'sinc_best')
   source_samples = np_audio.shape[0]
   msu_repeat_pos = msu_repeat_pos * 48000 // 44100
-  print('Song has %d samples in 48khz: %s' % (np_audio.shape[0], np_audio.dtype))
+  #print('Song has %d samples in 48khz: %s' % (np_audio.shape[0], np_audio.dtype))
 
   audio = bytearray(np_audio.tobytes())
 
@@ -78,7 +76,6 @@ def convert_to_opuz(filename, repeat):
 
   # lookup what sample to seek to based on a sample nr
   def lookup_sample(framelist, sample_nr):
-    print(sample_nr)
     last = None
     for sample, fileoffs in framelist:
       if sample_nr < sample:
@@ -120,5 +117,12 @@ kMsuTracksWithRepeat = [
   1,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,
 ]
 
-for i in range(48, 115):
-  convert_to_opuz(r'../../msu/ALttP-msu-Deluxe-%d.pcm' % i, i >= 48 or kMsuTracksWithRepeat[i])
+def task(i):
+  convert_to_opuz(r"../../msu/ALttP-msu-Deluxe-%d.pcm" % i, i >= 48 or kMsuTracksWithRepeat[i])
+
+with concurrent.futures.ThreadPoolExecutor() as executor:
+  results = [executor.submit(task, i) for i in range(1, 115)]
+
+  for future in concurrent.futures.as_completed(results):
+    result = future.result()
+
