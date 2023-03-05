@@ -84,7 +84,7 @@ python3 -m pip install -r requirements.txt
 ```
 5. Install SDL2
 * Ubuntu/Debian `sudo apt install libsdl2-dev`
-* Fedora Linux `sudo dnf in sdl2-devel`
+* Fedora Linux `sudo dnf install SDL2-devel`
 * Arch Linux `sudo pacman -S sdl2`
 * macOS: `brew install sdl2` (you can get homebrew [here](https://brew.sh/))
 
