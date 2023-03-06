@@ -3008,6 +3008,9 @@ void Death_PrepFaint() {  // 8ffa6f
   if (link_item_moon_pearl)
     link_is_bunny = 0;
   link_timer_tempbunny = 0;
+  //bugfix: dying as permabunny doesn't restore link palette during death animation
+  if (enhanced_features0 & kFeatures0_MiscBugFixes)
+    LoadActualGearPalettes();
   sound_effect_1 = 0x27 | Link_CalculateSfxPan();
   for (int i = 0; i != 4; i++) {
     if (link_bottle_info[i] == 6)
