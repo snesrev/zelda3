@@ -5985,7 +5985,8 @@ void Link_HandleMovingAnimation_StartWithDash() {  // 87e704
   static const uint8 tab2[16] = { 4, 4, 4, 4, 1, 1, 1, 1, 2, 2, 2, 2, 8, 8, 8, 8 };
   static const uint8 tab3[24] = { 1, 2, 3, 2, 2, 2, 3, 2, 1, 1, 2, 1, 1, 1, 2, 1, 2, 2, 3, 2, 2, 2, 3, 2 };
 
-  if (link_player_handler_state == 23) {  // kPlayerState_PermaBunny
+//bugfix: tempbunny animation steps are wrong due to missing check
+  if (link_player_handler_state == 23 || (enhanced_features0 & kFeatures0_MiscBugFixes && link_player_handler_state == 28)) {  // bunny states
     if (link_animation_steps < 4 && player_on_somaria_platform != 2) {
       if (++link_counter_var1 >= tab2[x]) {
         link_counter_var1 = 0;
