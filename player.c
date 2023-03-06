@@ -3556,8 +3556,7 @@ void Link_APress_LiftCarryThrow() {  // 87b1ca
   } else {
     static const uint8 kLiftTab0[10] = { 8, 24, 8, 24, 8, 32, 6, 8, 13, 13 };
     static const uint8 kLiftTab1[10] = { 0, 1, 0, 1, 0, 1, 0, 1, 2, 3 };
-    static const uint8 kLiftTab2[] = { 6, 7, 7, 5, 10, 0, 23, 0, 18, 0, 18, 0, 8, 0, 8, 0, 254, 255, 17, 0,
-      0x54, 0x52, 0x50, 0xFF, 0x51, 0x53, 0x55, 0x56, 0x57};
+    static const uint8 kLiftTab2[] = { 6, 7, 7, 5 };
 
     if (player_handler_timer != 0) {
       if (player_handler_timer + 1 != 9) {
@@ -3576,8 +3575,9 @@ void Link_APress_LiftCarryThrow() {  // 87b1ca
         return;
       }
     } else {
-
-      // todo: This is an OOB read triggered when lifting for too long
+      // fix OOB read triggered when lifting for too long
+      if (some_animation_timer_steps >= 3)
+        return;
       some_animation_timer = kLiftTab2[++some_animation_timer_steps];
       assert(some_animation_timer_steps < arraysize(kLiftTab2));
       if (some_animation_timer_steps != 3)

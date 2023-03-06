@@ -735,10 +735,16 @@ static void cpu_trb(Cpu* cpu, uint32_t low, uint32_t high) {
 void HookedFunctionRts(int is_long);
 
 static void cpu_doOpcode(Cpu* cpu, uint8_t opcode) {
+RESTART:
   switch(opcode) {
     case 0x00: { // brk imp
       uint32_t addr = (cpu->k << 16) | cpu->pc;
       switch (addr - 1) {
+      case 0x7B269:  // Link_APress_LiftCarryThrow reads OOB
+        if ((cpu->x & 0xff) >= 3)
+          cpu->pc = 0xB280; // RTS
+        opcode = 0xE8;
+        goto RESTART;
 
         // Uncle_AtHome case 3 will read random memory. 
       case 0x5DEC7:

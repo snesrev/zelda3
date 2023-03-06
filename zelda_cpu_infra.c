@@ -517,6 +517,8 @@ static void PatchRom(uint8_t *rom) {
 
   PatchRomBP(rom, 0x1DCDEB); // y is destroyed earlier, restore it..
 
+  PatchRomBP(rom, 0x7B269);  // Link_APress_LiftCarryThrow oob
+
   // Smithy_Frog doesn't save X
   memmove(rom + 0x332b8, rom + 0x332b7, 4); rom[0x332b7] = 0xfa;
 
