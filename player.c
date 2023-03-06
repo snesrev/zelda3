@@ -6274,6 +6274,13 @@ void Link_Initialize() {  // 87f13c
 
     // If you quit in the middle of red armos knight stomp the lumberjack tree will fall on its own
     bg1_y_offset = bg1_x_offset = 0;
+      //bugfix: if you die in a dungeon as a permabunny and continue, you revert back to link
+      if (!link_item_moon_pearl && savegame_is_darkworld) {
+        link_player_handler_state = kPlayerState_PermaBunny;
+        link_is_bunny = 1;
+        link_is_bunny_mirror = 1;
+        LoadGearPalettes_bunny();
+      }
   }
 }
 
