@@ -212,6 +212,33 @@ void GlslShader_ReadShaderFile(GlslShader *gs, const char *filename, ByteArray *
   free(data_org);
 }
 
+size_t LengthOfInitialComments(const uint8 *data, size_t size) {
+  const uint8 *data_org = data, *data_end = data + size;
+  while (data != data_end) {
+    uint8 c = *data++;
+    if (c == ' ' || c == '\t' || c == '\r' || c == '\n')
+      continue;
+    if (c != '/' || data == data_end) {
+      data--;
+      break;
+    }
+    c = *data++;
+    if (c == '/') {
+      while (data != data_end && *data++ != '\n') {}
+    } else if (c == '*') {
+      do {
+        if (data_end - data < 2)
+          return 0;
+      } while (*data++ != '*' || data[0] != '/');
+      data++;
+    } else {
+      data--;
+      break;
+    }
+  }
+  return data - data_org;
+}
+
 static bool GlslPass_Compile(GlslPass *p, uint type, const uint8 *data, size_t size, bool use_opengl_es) {
   static const char kVertexPrefix[] =   "#define VERTEX\n#define PARAMETER_UNIFORM\n";
   static const char kFragmentPrefixCore[] = "#define FRAGMENT\n#define PARAMETER_UNIFORM\n";
@@ -222,6 +249,9 @@ static bool GlslPass_Compile(GlslPass *p, uint type, const uint8 *data, size_t s
   char buffer[256];
   GLint compile_status = 0;
   size_t skip = 0;
+
+  size_t commsize = LengthOfInitialComments(data, size);
+  data += commsize, size -= commsize;
 
   if (size < 8 || memcmp(data, "#version", 8) != 0) {
     if (!use_opengl_es) {
