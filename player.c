@@ -2130,10 +2130,6 @@ void Link_APress_PerformBasic(uint8 action_x2) {  // 879c5f
   default:
     assert(0);
   }
-
-  // Zelda vanilla bug: Disallow dragging while in cape mode, it uses no magic.
-  if (link_cape_mode && enhanced_features0 & kFeatures0_MiscBugFixes)
-    link_grabbing_wall = 0;
 }
 
 void HandleSwordSfxAndBeam() {  // 879c66
@@ -3291,7 +3287,8 @@ void HaltLinkWhenUsingItems() {  // 87ae65
 }
 
 void Link_HandleCape_passive_LiftCheck() {  // 87ae88
-  if (link_state_bits & 0x80)
+  //bugfix: grabbing or pulling while wearing cape didn't drain magic
+  if (link_state_bits & 0x80 || (enhanced_features0 & kFeatures0_MiscBugFixes && link_grabbing_wall))
     Player_CheckHandleCapeStuff();
 }
 
