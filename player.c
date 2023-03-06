@@ -6306,6 +6306,11 @@ void Link_ResetProperties_B() {  // 87f1e6
 }
 
 void Link_ResetProperties_C() {  // 87f1fa
+  if (enhanced_features0 & kFeatures0_MiscBugFixes) {
+    // Fix save menu lockout when dying after medallion cast (#126)
+    flag_custom_spell_anim_active = 0;
+  }
+
   tile_action_index = 0;
   state_for_spin_attack = 0;
   step_counter_for_spin_attack = 0;
