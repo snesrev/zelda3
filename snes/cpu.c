@@ -741,7 +741,7 @@ RESTART:
       uint32_t addr = (cpu->k << 16) | cpu->pc;
       switch (addr - 1) {
       case 0x7B269:  // Link_APress_LiftCarryThrow reads OOB
-        if ((cpu->x & 0xff) >= 3)
+        if ((cpu->x & 0xff) >= 28)
           cpu->pc = 0xB280; // RTS
         opcode = 0xE8;
         goto RESTART;
