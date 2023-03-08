@@ -13210,7 +13210,6 @@ void BugNetKid_Draw(int k) {  // 8dd47b
     {-8, 14, 0x840a, 2},
     { 8, 14, 0xc40a, 2},
   };
-  sprite_graphics[k] = 0;
   Sprite_DrawMultiplePlayerDeferred(k, &kBugNetKid_Dmd[sprite_graphics[k] * 6], 6, NULL);
 }
 
