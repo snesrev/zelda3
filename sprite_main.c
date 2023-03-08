@@ -1058,8 +1058,8 @@ void FortuneTeller_LightOrDarkWorld(int k, bool dark_world) {
     if (!dark_world)
       sprite_graphics[k] = 0;
     j = kFortuneTeller_Prices[sprite_A[k]>>1];
-    byte_7E1CF2[0] = (j / 10) | (j % 10)<< 4 ;
-    byte_7E1CF2[1] = 0;
+    dialogue_number[0] = (j / 10) | (j % 10)<< 4 ;
+    dialogue_number[1] = 0;
     Sprite_ShowMessageUnconditional(0xf4);
     sprite_ai_state[k]++;
     break;
@@ -11396,7 +11396,7 @@ void Sprite_HappinessPond(int k) {  // 86c44c
     if (choice_in_multiselect_box == 0) {
       int i = (link_bomb_upgrades | link_arrow_upgrades) != 0;
       sprite_graphics[k] = i * 2;
-      WORD(byte_7E1CF2[0]) = WORD(kHappinessPondCostHex[i * 2]);
+      WORD(dialogue_number[0]) = WORD(kHappinessPondCostHex[i * 2]);
       Sprite_ShowMessageUnconditional(0x14e);
       sprite_ai_state[k] = 2;
       flag_is_link_immobilized = 1;
@@ -11409,7 +11409,7 @@ show_later_msg:
     break;
   case 2: {
     int i = sprite_graphics[k] + choice_in_multiselect_box;
-    byte_7E1CF2[1] = kHappinessPondCostHex[i];
+    dialogue_number[1] = kHappinessPondCostHex[i];
     if (link_rupees_goal < kHappinessPondCost[i]) {
       goto show_later_msg;
     } else {
@@ -11430,7 +11430,7 @@ show_later_msg:
       sprite_ai_state[k] = 5;
       return;
     }
-    byte_7E1CF2[0] = (link_rupees_in_pond / 10) * 16 + (link_rupees_in_pond % 10);
+    dialogue_number[0] = (link_rupees_in_pond / 10) * 16 + (link_rupees_in_pond % 10);
     sprite_ai_state[k] = 4;
     break;
   }
@@ -11481,7 +11481,7 @@ show_later_msg:
     int i = link_bomb_upgrades + 1;
     if (i != 8) {
       link_bomb_upgrades = i;
-      byte_7E1CF2[0] = link_bomb_filler = kMaxBombsForLevelHex[i];
+      dialogue_number[0] = link_bomb_filler = kMaxBombsForLevelHex[i];
       Sprite_ShowMessageUnconditional(0x96);
     } else {
       link_rupees_goal += 100;
@@ -11518,7 +11518,7 @@ show_later_msg:
     int i = link_arrow_upgrades + 1;
     if (i != 8) {
       link_arrow_upgrades = i;
-      byte_7E1CF2[0] = link_arrow_filler = kMaxArrowsForLevelHex[i];
+      dialogue_number[0] = link_arrow_filler = kMaxArrowsForLevelHex[i];
       Sprite_ShowMessageUnconditional(0x97);
     } else {
       link_rupees_goal += 100;
@@ -12947,8 +12947,8 @@ void Sprite_MazeGameGuy(int k) {  // 8dcbf2
     t %= 60;
     int c = t / 10;
     t %= 10;
-    byte_7E1CF2[0] = t | c << 4;
-    byte_7E1CF2[1] = b | a << 4;
+    dialogue_number[0] = t | c << 4;
+    dialogue_number[1] = b | a << 4;
     t = Sprite_ShowMessageOnContact(k, 0xcb);
     if (t & 0x100) {
       sprite_D[k] = sprite_head_dir[k] = (uint8)t;

@@ -92,6 +92,12 @@ typedef struct OamEnt {
   uint8 x, y, charnum, flags;
 } OamEnt;
 
+typedef struct MemBlk {
+  const uint8 *ptr;
+  size_t size;
+} MemBlk;
+MemBlk FindIndexInMemblk(MemBlk data, size_t i);
+
 void NORETURN Die(const char *error);
 
 #endif  // ZELDA3_TYPES_H_

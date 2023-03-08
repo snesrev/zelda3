@@ -73,6 +73,7 @@ typedef struct Config {
   char *memory_buffer;
   const char *shader;
   const char *msu_path;
+  const char *language;
 } Config;
 
 enum {

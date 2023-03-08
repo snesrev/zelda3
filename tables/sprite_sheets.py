@@ -4,6 +4,8 @@ import util
 from util import get_bytes, get_words, get_byte, cache
 import array
 import tables
+import sys
+
 override_armor_palette = None
 #override_armor_palette = [0x7fff, 0x237e, 0x11b7, 0x369e, 0x14a5,  0x1ff, 0x1078, 0x599d, 0x3647, 0x3b68, 0xa4a, 0x12ef, 0x2a5c, 0x1571, 0x7a18,
 #                          0x7fff, 0x237e, 0x11b7, 0x369e, 0x14a5,  0x1ff, 0x1078, 0x599d, 0x6980, 0x7691, 0x26b8, 0x437f, 0x2a5c, 0x1199, 0x7a18,
@@ -25,21 +27,20 @@ def save_as_24bpp_png(dimensions, data, fname):
   img.save(fname)
 
 @cache
-def decode_2bit_tileset(tileset):
+def decode_2bit_tileset(tileset, height = 32, base = 0):
   data = util.decomp(tables.kCompSpritePtrs[tileset], get_byte, False)
-  assert len(data) == 0x400
-  height = 32
+  assert len(data) == 0x400 * height // 32
   dst = bytearray(128*height)
-  def decode_2bit(offs, toffs):
+  def decode_2bit(offs, toffs, base):
     for y in range(8):
       d0, d1 = data[offs + y * 2], data[offs + y * 2 + 1]
       for x in range(8):
         t = ((d0 >> x) & 1) * 1 + ((d1 >> x) & 1) * 2
-        dst[toffs + y * 128 + (7 - x)] = t * 255 // 3
+        dst[toffs + y * 128 + (7 - x)] = t + base
   for i in range(16*height//8):
     x = i % 16
     y = i // 16
-    decode_2bit(i * 16, x * 8 + y * 8 * 128)
+    decode_2bit(i * 16, x * 8 + y * 8 * 128, base[i] if isinstance(base, tuple) else base)
   return dst
 
 def is_high_3bit_tileset(tileset):
@@ -108,6 +109,94 @@ def convert_snes_palette_to_int(v):
 def decode_link_sprites():
   kLinkPalette = [0, 0x7fff, 0x237e, 0x11b7, 0x369e, 0x14a5,  0x1ff, 0x1078, 0x599d, 0x3647, 0x3b68,  0xa4a, 0x12ef, 0x2a5c, 0x1571, 0x7a18]
   save_as_png((128, 448), decode_4bit_tileset_link(), 'linksprite.png', convert_snes_palette(kLinkPalette))
+
+def get_hud_snes_palette():
+  hud_palette  = get_words(0x9BD660, 64)
+  palette = [(31 << 10 | 31) for i in range(256)]
+  for i in range(16):
+    for j in range(1, 4):
+      palette[i * 16 + j] = hud_palette[i * 4 + j]
+  return palette
+
+def decode_hud_icons():
+  class PaletteUsage:
+    def __init__(self):
+      self.data = open('palette_usage.bin', 'rb').read()
+    def get(self, icon):
+      usage = self.data[icon]
+      for j in range(8):
+        if usage & (1 << j):
+          return j 
+      return 0
+  pu = PaletteUsage()
+  dst = bytearray()
+  for slot, image_set in enumerate([106, 107, 105]):
+    tbase = tuple([pu.get(slot * 128 + i) * 16 for i in range(128)])
+    dst += decode_2bit_tileset(image_set, height = 64, base = tbase)
+
+  save_as_png((128, 64 * 3), dst, 'hud_icons.png', convert_snes_palette(get_hud_snes_palette()[:128]))
+
+kFontTypes = {
+  'us' : (0xe8000, 256, 'font.png', (0x8ECADF, 99)),
+  'de' : (0xCC6E8, 256, 'font_de.png', (0x8CDECF, 112)),
+}
+def decode_font():
+  lang = util.ROM.language
+  def decomp_one_spr_2bit(data, offs, target, toffs, pitch, palette_base):
+    for y in range(8):
+      d0, d1 = data[offs + y * 2], data[offs + y * 2 + 1]
+      for x in range(8):
+        t = ((d0 >> x) & 1) * 1 + ((d1 >> x) & 1) * 2
+        target[toffs + y * pitch + (7 - x)] = t + palette_base
+  ft = kFontTypes[lang]
+  W = get_bytes(*ft[3])
+  w = 128 + 15
+  hi = ft[1] // 32
+  h = hi * 17
+  data = get_bytes(ft[0], ft[1] * 16)
+  dst = bytearray(w * h)
+  for i in range(ft[1]):
+    x, y = i % 16, i // 16
+    pal_base = 6 * 16
+    base_offs = x * 9 + (y * 8 + (y >> 1)) * w
+    decomp_one_spr_2bit(data, i * 16, dst, base_offs + w, w, pal_base)
+    if (y & 1) == 0:
+      j = (y >> 1) * 16 + x
+      if j < len(W):
+        dst[base_offs + W[j] - 1] = 255
+  pal = convert_snes_palette(get_hud_snes_palette()[:128])
+  pal.extend([0] * 384)
+  pal[0], pal[1], pal[2] = 192, 192, 192
+  pal[255*3+0], pal[255*3+1], pal[255*3+2] = 128, 128, 128
+  save_as_png((w, h), dst, ft[2], pal)
+  assert (data, W) == encode_font_from_png(lang)
+
+def encode_font_from_png(lang):
+  font_data = Image.open(kFontTypes[lang][2]).tobytes()
+  def encode_one_spr_2bit(data, offs, target, toffs, pitch):
+    for y in range(8):
+      d0, d1 = 0, 0
+      for x in range(8):
+        pixel = data[offs + y * pitch + 7 - x]
+        d0 |= (pixel & 1) << x
+        d1 |= ((pixel >> 1) & 1) << x
+      target[toffs + y * 2 + 0], target[toffs + y * 2 + 1] = d0, d1
+  w = 128 + 15
+  dst = bytearray(256 * 16)
+  def get_width(base_offs):
+    for i in range(8):
+      if font_data[base_offs + i] == 255:
+        break
+    return i + 1
+  W = bytearray()
+  for i in range(256):
+    x, y = i % 16, i // 16
+    base_offs = x * 9 + (y * 8 + (y >> 1)) * w
+    if (y & 1) == 0:
+      W.append(get_width(base_offs))
+    encode_one_spr_2bit(font_data, base_offs + w, dst, i * 16, w)
+  chars_per_lang = kFontTypes[lang][3][1]
+  return dst, W[:chars_per_lang]
 
 # Returns the dungeon palette for the specified palette index
 # 0 = lightworld, 1 = darkworld, 2 = dungeon
@@ -425,7 +514,6 @@ class MasterTilesheets:
         encode_into((y * 16 + x) * 24, y * 8 * 128 + x * 8)
     return result
 
-
 def decode_sprite_sheets():
   master_tilesheets = MasterTilesheets()
 
@@ -516,3 +604,10 @@ def load_sprite_sheets():
             if not is_empty(src_pos):
               master_tilesheets.add_verify_8x8(tileset, pal_lut, img_data, pitch, dst_pos, src_pos)
   return master_tilesheets
+
+#if __name__ == "__main__":
+#  ROM = util.load_rom(sys.argv[1] if len(sys.argv) >= 2 else None, True)
+#  decode_font()
+  
+
+

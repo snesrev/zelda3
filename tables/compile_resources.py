@@ -9,13 +9,7 @@ import array, hashlib, struct
 from util import cache
 import sprite_sheets
 import argparse
-
-parser = argparse.ArgumentParser(description='Compile resources.')
-parser.add_argument('rom', nargs='?', help='the rom file')
-parser.add_argument('--sprites-from-png', action='store_true', help='Use the sprite images from the .PNG files')
-args = parser.parse_args()
-
-ROM = util.LoadedRom(args.rom)
+import os
 
 def flatten(xss):
     return [x for xs in xss for x in xs]
@@ -40,6 +34,10 @@ def add_asset_int8(name, data):
 def add_asset_int16(name, data):
   assert name not in assets
   assets[name] = ('int16', bytes(array.array('h', data)))
+
+def add_asset_packed(name, data):
+  assert name not in assets
+  assets[name] = ('packed', pack_arrays(data))
 
 def print_map32_to_map16():
   tab = {}
@@ -68,20 +66,12 @@ def print_map32_to_map16():
   add_asset_uint8('kMap32ToMap16_2', res[2])
   add_asset_uint8('kMap32ToMap16_3', res[3])
 
-  
-def print_dialogue():
-  new_r = []
-  offs = []
-  for line in open('dialogue.txt'):
-    line = line.strip('\n')
+def compress_dialogue(fname, lang):
+  lines = []
+  for line in open(fname, encoding='utf8').read().splitlines():
     a, b = line.split(': ', 1)
-    index = int(a)
-    offs.append(len(new_r))
-    r = text_compression.compress_string(b)
-    new_r.extend(r)
-
-  add_asset_uint16('kDialogueOffs', offs)
-  add_asset_uint8('kDialogueText', new_r)
+    lines.append(b)
+  return text_compression.compress_strings(lines, lang)
 
 def compress_store(r):
   rr = []
@@ -95,14 +85,20 @@ def compress_store(r):
   rr.append(0xff)
   return rr
   
-def pack_u32_arrays(arr):
-  all_offs, offs = [], len(arr) * 4
-  for i in range(len(arr)):
-    all_offs.append(offs)
+# Pack arrays and determine automatically the index size
+def pack_arrays(arr):
+  if len(arr) == 0:
+    return b''
+  all_offs, offs = [], 0
+  for i in range(len(arr) - 1):
     offs += len(arr[i])
-  return b''.join([struct.pack('I', i) for i in all_offs] + arr)
+    all_offs.append(offs)
+  if offs < 65536 and len(arr) <= 8192:
+    return b''.join([struct.pack('H', i) for i in all_offs] + arr + [struct.pack('H', len(arr) - 1)])
+  else:
+    return b''.join([struct.pack('I', i) for i in all_offs] + arr + [struct.pack('H', 8192 + len(arr) - 1)])
 
-def print_images():
+def print_images(args):
   sprsheet = sprite_sheets.load_sprite_sheets() if args.sprites_from_png else None
 
   all = []
@@ -114,24 +110,44 @@ def print_images():
     else:
       decomp, comp_len = util.decomp(tables.kCompSpritePtrs[i], ROM.get_byte, False, True)
       all.append(bytes(ROM.get_bytes(tables.kCompSpritePtrs[i], comp_len)))
-  add_asset_uint8('kSprGfx', pack_u32_arrays(all))
+  add_asset_packed('kSprGfx', all)
 
   all = []
   for i in range(len(tables.kCompBgPtrs)):
     decomp, comp_len = util.decomp(tables.kCompBgPtrs[i], ROM.get_byte, False, True)
     all.append(bytes(ROM.get_bytes(tables.kCompBgPtrs[i], comp_len)))
-  add_asset_uint8('kBgGfx', pack_u32_arrays(all))
+  add_asset_packed('kBgGfx', all)
 
+def print_dialogue(args):
+  from text_compression import kDialogueFilenames
 
+  languages = ['us']
+  if args.languages:
+    for a in args.languages.split(','):
+      if a in languages or a not in kDialogueFilenames:
+        raise Exception(f'Language {a} is not valid')
+      if not os.path.exists(kDialogueFilenames[a]):
+        raise Exception(f'{kDialogueFilenames[a]} not found. You need to extract it with --extract-dialogue using the ROM of that language.')
+      languages.append(a)
 
-def print_misc():
+  all_langs, all_fonts, mappings = [], [], []
+  for i, lang in enumerate(languages):
+    dict_packed = pack_arrays(text_compression.encode_dictionary(lang))
+    dialogue_packed = pack_arrays(compress_dialogue(kDialogueFilenames[lang], lang))
+    all_langs.append(pack_arrays([dict_packed, dialogue_packed]))
+    font_data, font_width = sprite_sheets.encode_font_from_png(lang)
+    all_fonts.append(pack_arrays([font_data, font_width]))
+    mappings.append(pack_arrays([lang.encode('utf8'), bytearray([i, i, i != 0])]))
+  add_asset_packed('kDialogue', all_langs)
+  add_asset_packed('kDialogueFont', all_fonts)
+  add_asset_packed('kDialogueMap', mappings)
+
+def print_misc(args):
   add_asset_uint8('kOverworldMapGfx', ROM.get_bytes(0x18c000, 0x4000))
   add_asset_uint8('kLightOverworldTilemap', ROM.get_bytes(0xac727, 4096))
   add_asset_uint8('kDarkOverworldTilemap', ROM.get_bytes(0xaD727, 1024))
 
   add_asset_uint16('kPredefinedTileData', ROM.get_words(0x9B52, 6438))
-
-  add_asset_uint16('kFontData', ROM.get_words(0xe8000, 2048))
 
   add_asset_uint16('kMap16ToMap8', ROM.get_words(0x8f8000, 3752 * 4))
 
@@ -175,14 +191,14 @@ def print_overworld():
     addr = ROM.get_24(0x82F94D + i * 3)
     decomp, comp_len = util.decomp(addr, ROM.get_byte, True, True)
     r.append(bytes(ROM.get_bytes(addr, comp_len)))
-  add_asset_uint8('kOverworld_Hibytes_Comp', pack_u32_arrays(r))
+  add_asset_packed('kOverworld_Hibytes_Comp', r)
 
   r = []
   for i in range(160):
     addr = ROM.get_24(0x82FB2D + i * 3)
     decomp, comp_len = util.decomp(addr, ROM.get_byte, True, True)
     r.append(bytes(ROM.get_bytes(addr, comp_len)))
-  add_asset_uint8('kOverworld_Lobytes_Comp', pack_u32_arrays(r))
+  add_asset_packed('kOverworld_Lobytes_Comp', r)
 
 def is_area_head(i):
   return i >= 128 or ROM.get_byte(0x82A5EC + (i & 63)) == (i & 63)
@@ -430,8 +446,8 @@ def print_dungeon_map():
     b = ROM.get_bytes(addr, nonzero_bytes)
     r2.append(bytes(b))
     
-  add_asset_uint8('kDungMap_FloorLayout', pack_u32_arrays(r))
-  add_asset_uint8('kDungMap_Tiles', pack_u32_arrays(r2))
+  add_asset_packed('kDungMap_FloorLayout', r)
+  add_asset_packed('kDungMap_Tiles', r2)
 
 
 @cache
@@ -691,8 +707,6 @@ def print_dungeon_rooms():
   add_asset_uint16('kMovableBlockDataInit', ROM.get_words(0x84f1de, 198))
   add_asset_uint16('kTorchDataInit', ROM.get_words(0x84F36A, 144))
   add_asset_uint16('kTorchDataJunk', ROM.get_words(0x84F48a, 48))
-
-
  
 def print_enemy_damage_data():
   decomp, comp_len = util.decomp(0x83e800, ROM.get_byte, True, True)
@@ -736,23 +750,20 @@ def print_sound_banks():
     name, data = compile_music.print_song(song)
     add_asset_uint8(name, data)
 
-def print_all():
+def print_all(args):
   print_sound_banks()
   print_dungeon_rooms()
   print_enemy_damage_data()
   print_link_graphics()
   print_dungeon_sprites()
   print_map32_to_map16()
-  print_dialogue()
-  print_images()
-  print_misc()
+  print_images(args)
+  print_misc(args)
+  print_dialogue(args)
   print_dungeon_map()
   print_tilemaps()
   print_overworld()
   print_overworld_tables()
-
-print_all()
-
 
 def write_assets_to_file(print_header = False):
   key_sig = b''
@@ -765,12 +776,17 @@ enum {
   kNumberOfAssets = %d
 };
 extern const uint8 *g_asset_ptrs[kNumberOfAssets];
-extern uint32 g_asset_sizes[kNumberOfAssets];''' % len(assets))
+extern uint32 g_asset_sizes[kNumberOfAssets];
+extern MemBlk FindInAssetArray(int asset, int idx);
+''' % len(assets))
 
   for i, (k, (tp, data)) in enumerate(assets.items()):
     if print_header:
-      print('#define %s ((%s*)g_asset_ptrs[%d])' % (k, tp, i))
-      print('#define %s_SIZE (g_asset_sizes[%d])' % (k, i))
+      if tp == 'packed':
+        print('#define %s(idx) FindInAssetArray(%d, idx)' % (k, i))
+      else:
+        print('#define %s ((%s*)g_asset_ptrs[%d])' % (k, tp, i))
+        print('#define %s_SIZE (g_asset_sizes[%d])' % (k, i))
     key_sig += k.encode('utf8') + b'\0'
     all_data.append(data)
 
@@ -792,6 +808,17 @@ extern uint32 g_asset_sizes[kNumberOfAssets];''' % len(assets))
 
   open('zelda3_assets.dat', 'wb').write(file_data)
 
-write_assets_to_file(False)
+def main(args):
+  print_all(args)
+  write_assets_to_file(args.print_assets_header)
 
+if __name__ == "__main__":
+  ROM = util.load_rom(sys.argv[1] if len(sys.argv) >= 2 else None)
+  class DefaultArgs:
+    sprites_from_png = False
+    languages = None
+    print_assets_header = False
+  main(DefaultArgs())
+else:
+  ROM = util.ROM
 

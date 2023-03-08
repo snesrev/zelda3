@@ -101,108 +101,6 @@ static PlayerHandlerFunc *const kDungMapSubmodules[] = {
 };
 static const uint16 kText_Positions[2] = {0x6125, 0x6244};
 static const uint16 kSrmOffsets[4] = {0, 0x500, 0xa00, 0xf00};
-static const uint8 kTextDictionary[] = {
-  0x59, 0x59, 0x59, 0x59,
-  0x59, 0x59, 0x59,
-  0x59, 0x59,
-  0x51, 0x2c, 0x59,
-  0x1a, 0x27, 0x1d, 0x59,
-  0x1a, 0x2b, 0x1e, 0x59,
-  0x1a, 0x25, 0x25, 0x59,
-  0x1a, 0x22, 0x27,
-  0x1a, 0x27, 0x1d,
-  0x1a, 0x2d, 0x59,
-  0x1a, 0x2c, 0x2d,
-  0x1a, 0x27,
-  0x1a, 0x2d,
-  0x1b, 0x25, 0x1e,
-  0x1b, 0x1a,
-  0x1b, 0x1e,
-  0x1b, 0x28,
-  0x1c, 0x1a, 0x27, 0x59,
-  0x1c, 0x21, 0x1e,
-  0x1c, 0x28, 0x26,
-  0x1c, 0x24,
-  0x1d, 0x1e, 0x2c,
-  0x1d, 0x22,
-  0x1d, 0x28,
-  0x1e, 0x27, 0x59,
-  0x1e, 0x2b, 0x59,
-  0x1e, 0x1a, 0x2b,
-  0x1e, 0x27, 0x2d,
-  0x1e, 0x1d, 0x59,
-  0x1e, 0x27,
-  0x1e, 0x2b,
-  0x1e, 0x2f,
-  0x1f, 0x28, 0x2b,
-  0x1f, 0x2b, 0x28,
-  0x20, 0x22, 0x2f, 0x1e, 0x59,
-  0x20, 0x1e, 0x2d,
-  0x20, 0x28,
-  0x21, 0x1a, 0x2f, 0x1e,
-  0x21, 0x1a, 0x2c,
-  0x21, 0x1e, 0x2b,
-  0x21, 0x22,
-  0x21, 0x1a,
-  0x22, 0x20, 0x21, 0x2d, 0x59,
-  0x22, 0x27, 0x20, 0x59,
-  0x22, 0x27,
-  0x22, 0x2c,
-  0x22, 0x2d,
-  0x23, 0x2e, 0x2c, 0x2d,
-  0x24, 0x27, 0x28, 0x30,
-  0x25, 0x32, 0x59,
-  0x25, 0x1a,
-  0x25, 0x28,
-  0x26, 0x1a, 0x27,
-  0x26, 0x1a,
-  0x26, 0x1e,
-  0x26, 0x2e,
-  0x27, 0x51, 0x2d, 0x59,
-  0x27, 0x28, 0x27,
-  0x27, 0x28, 0x2d,
-  0x28, 0x29, 0x1e, 0x27,
-  0x28, 0x2e, 0x27, 0x1d,
-  0x28, 0x2e, 0x2d, 0x59,
-  0x28, 0x1f,
-  0x28, 0x27,
-  0x28, 0x2b,
-  0x29, 0x1e, 0x2b,
-  0x29, 0x25, 0x1e,
-  0x29, 0x28, 0x30,
-  0x29, 0x2b, 0x28,
-  0x2b, 0x1e, 0x59,
-  0x2b, 0x1e,
-  0x2c, 0x28, 0x26, 0x1e,
-  0x2c, 0x1e,
-  0x2c, 0x21,
-  0x2c, 0x28,
-  0x2c, 0x2d,
-  0x2d, 0x1e, 0x2b, 0x59,
-  0x2d, 0x21, 0x22, 0x27,
-  0x2d, 0x1e, 0x2b,
-  0x2d, 0x21, 0x1a,
-  0x2d, 0x21, 0x1e,
-  0x2d, 0x21, 0x22,
-  0x2d, 0x28,
-  0x2d, 0x2b,
-  0x2e, 0x29,
-  0x2f, 0x1e, 0x2b,
-  0x30, 0x22, 0x2d, 0x21,
-  0x30, 0x1a,
-  0x30, 0x1e,
-  0x30, 0x21,
-  0x30, 0x22,
-  0x32, 0x28, 0x2e,
-  0x7, 0x1e, 0x2b,
-  0x13, 0x21, 0x1a,
-  0x13, 0x21, 0x1e,
-  0x13, 0x21, 0x22,
-  0x18, 0x28, 0x2e,
-};
-static const uint16 kTextDictionary_Idx[] = {
-  0, 4, 7, 9, 12, 16, 20, 24, 27, 30, 33, 36, 38, 40, 43, 45, 47, 49, 53, 56, 59, 61, 64, 66, 68, 71, 74, 77, 80, 83, 85, 87, 89, 92, 95, 100, 103, 105, 109, 112, 115, 117, 119, 124, 128, 130, 132, 134, 138, 142, 145, 147, 149, 152, 154, 156, 158, 162, 165, 168, 172, 176, 180, 182, 184, 186, 189, 192, 195, 198, 201, 203, 207, 209, 211, 213, 215, 219, 223, 226, 229, 232, 235, 237, 239, 241, 244, 248, 250, 252, 254, 256, 259, 262, 265, 268, 271, 274
-};
 static const int8 kText_InitializationData[32] = {0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0x39, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0x1c, 4, 0, 0, 0, 0, 0};
 static const uint16 kText_BorderTiles[9] = {0x28f3, 0x28f4, 0x68f3, 0x28c8, 0x387f, 0x68c8, 0xa8f3, 0xa8f4, 0xe8f3};
 static const uint8 kText_CommandLengths[25] = {
@@ -212,16 +110,7 @@ static const uint8 kText_CommandLengths[25] = {
 static const uint8 kVWF_RenderCharacter_setMasks[8] = {0x80, 0x40, 0x20, 0x10, 8, 4, 2, 1};
 static const uint16 kVWF_RenderCharacter_renderPos[3] = {0, 0x2a0, 0x540};
 static const uint16 kVWF_RenderCharacter_linePositions[3] = {0, 0x40, 0x80};
-static const uint8 kVWF_RenderCharacter_widths[99] = {
-  6, 6, 6, 6, 6, 6, 6, 6, 3, 6, 6, 6, 7, 6, 6, 6, 6, 6, 6, 7, 6, 7, 7, 7, 7, 6, 6, 6, 6, 6, 6, 6,
-  6, 6, 3, 5, 6, 3, 7, 6, 6, 6, 6, 5, 6, 6, 6, 7, 7, 7, 7, 6, 6, 4, 6, 6, 6, 6, 6, 6, 6, 6, 3, 7,
-  6, 4, 4, 6, 8, 6, 6, 6, 6, 6, 8, 8, 8, 7, 7, 7, 7, 4, 8, 8, 8, 8, 8, 8, 8, 4, 8, 8, 8, 8, 8, 8,
-  8, 8, 4,
-};
 static const uint16 kVWF_RowPositions[3] = {0, 2, 4};
-static const uint16 kVWF_LinePositions[3] = {0, 40, 80};
-static const uint16 kVWF_Command7B[4] = {0x24b8, 0x24ba, 0x24bc, 0x24be};
-static const uint16 kVWF_Command7C[8] = {0x24b8, 0x24ba, 0x24bc, 0x24be, 0x24b8, 0x24ba, 0x24bc, 0x24be};
 static const uint16 kText_WaitDurations[16] = {31, 63, 94, 125, 156, 188, 219, 250, 281, 313, 344, 375, 406, 438, 469, 500};
 static PlayerHandlerFunc *const kText_Render[] = {
   &RenderText_Draw_Border,
@@ -336,11 +225,11 @@ static PlayerHandlerFunc *const kModule_Death[16] = {
 static const uint8 kLocationMenuStartPos[3] = {0, 1, 6};
 static void RunInterface();
 const uint8 *GetDungmapFloorLayout() {
-  return kDungMap_FloorLayout + *(uint32 *)(kDungMap_FloorLayout + (cur_palace_index_x2 >> 1) * 4);
+  return kDungMap_FloorLayout(cur_palace_index_x2 >> 1).ptr;
 }
 
 uint8 GetOtherDungmapInfo(int count) {
-  const uint8 *p = kDungMap_Tiles + *(uint32 *)(kDungMap_Tiles + (cur_palace_index_x2 >> 1) * 4);
+  const uint8 *p = kDungMap_Tiles(cur_palace_index_x2 >> 1).ptr;
   return p[count];
 }
 
@@ -349,10 +238,6 @@ void DungMap_4() {
   dungmap_var5 -= dungmap_var4;
   if (!--bottle_menu_expand_row)
     overworld_map_state--;
-}
-
-const uint8 *GetCurrentTextPtr() {
-  return kDialogueText + kDialogueOffs[dialogue_message_index];
 }
 
 void Module_Messaging_6() {
@@ -2259,8 +2144,7 @@ void Text_Initialize_initModuleStateLoop() {  // 8ec493
   RenderText_SetDefaultWindowPosition();
   text_tilemap_cur = 0x3980;
   Text_LoadCharacterBuffer();
-  RenderText_Draw_EmptyBuffer();
-  dialogue_msg_dst_offs = 0;
+  memset(messaging_buf, 0, 0x7e0);
   nmi_subroutine_index = 2;
   nmi_disable_core_updates = 2;
 }
@@ -2272,56 +2156,157 @@ void Text_InitVwfState() {  // 8ec4c9
   vwf_line_ptr = 0;
 }
 
-void Text_LoadCharacterBuffer() {  // 8ec4e2
-  const uint8 *src = GetCurrentTextPtr(), *src_org = src;
-  uint8 *dst = messaging_text_buffer;
-  dst[0] = dst[1] = 0x7f;
-  dialogue_msg_dst_offs = 0;
-  dialogue_msg_src_offs = 0;
-  for (;;) {
-    uint8 c = *src++;
-    if (!(c & 0x80)) {
-      switch (c) {
-      case 0x67 + 3: dst = Text_WritePlayerName(dst); break;
-      case 0x67 + 4:  // RenderText_ExtendedCommand_SetWindowType
-        text_render_state = *src++;
-        break;
-      case 0x67 + 5: {  // Text_WritePreloadedNumber
-        uint8 t = *src++;
-        uint8 v = byte_7E1CF2[t >> 1];
-        *dst++ = 0x34 + ((t & 1) ? v >> 4 : v & 0xf);
-        break;
-      }
-      case 0x67 + 6:
-        text_msgbox_topleft = kText_Positions[*src++];
-        break;
-      case 0x67 + 16:
-        text_tilemap_cur = ((0x387F & 0xe300) | 0x180) | (*src++ << 10) & 0x3c00;
-        break;
-      case 0x67 + 7:
-      case 0x67 + 17:
-      case 0x67 + 18:
-      case 0x67 + 19:
-        *dst++ = c;
-        *dst++ = *src++;
-        break;
-      case 0x7f:
-        dialogue_msg_dst_offs = dst - messaging_text_buffer;
-        dialogue_msg_src_offs = src - src_org - 1;
-        *dst = 0x7f;
-        return; // done
-      default:
-        *dst++ = c;
-        break;
-      }
-    } else {
-      // dictionary
-      c -= 0x88;
-      int idx = kTextDictionary_Idx[c], num = kTextDictionary_Idx[c + 1] - idx;
-      memcpy(dst, &kTextDictionary[idx], num);
-      dst += num;
+enum {
+  kTextCommandStart_US = 0x67,
+  kTextDictBase = 0x88,
+
+  kTextCmd_NextPic = 0,
+  kTextCmd_Choose = 1,
+  kTextCmd_Item = 2,
+  kTextCmd_Name = 3,
+  kTextCmd_Window = 4,  // Only used with 2
+  kTextCmd_Number = 5,
+  kTextCmd_Position = 6,
+  kTextCmd_ScrollSpd = 7,
+  kTextCmd_Selchg = 8,
+  kTextCmd_Choose3 = 10,
+  kTextCmd_Choose2 = 11,
+  kTextCmd_Scroll = 12,
+  kTextCmd_1 = 13,
+  kTextCmd_2 = 14,
+  kTextCmd_3 = 15,
+  kTextCmd_Color = 16,
+  kTextCmd_Wait = 17,
+  kTextCmd_Sound = 18,
+  kTextCmd_Speed = 19,
+  kTextCmd_Mark = 20,     // Unused
+  kTextCmd_Mark2 = 21,    // Unused
+  kTextCmd_Clear = 22,    // Unused
+  kTextCmd_Waitkey = 23,
+  kTextCmd_EndMessage = 24,
+
+  kTextCmd_IsLetter = 25, // Pseudo cmd
+};
+
+enum {
+  kTextCmd_EU_Scroll = 0x80,  // frequency 875
+  kTextCmd_EU_Waitkey = 0x81, // frequency 362
+  kTextCmd_EU_1 = 0x82,       // frequency 25
+  kTextCmd_EU_2 = 0x83,       // frequency 496
+  kTextCmd_EU_3 = 0x84,       // frequency 347
+  kTextCmd_EU_Name = 0x85,    // frequency 64
+  kTextCmd_EU_Rest = 0x87,    
+};
+
+#define TEXTCMD_MULTIBYTE(a) ((a) & 1)
+#define TEXTCMD_CMD(a) (((a) >> 1) & 0x1f)
+#define TEXTCMD_PARAM(a) ((a) >> 6)
+#define TEXTCMD_MK(c, x, m) ((c) << 6 | (x) << 1 | (m))
+
+uint32 Text_DecodeCmd(uint8 a, const uint8 *src) {
+  if ((g_zenv.dialogue_flags & 1) == 0) {
+    // US encoding
+    if (a < kTextCommandStart_US)
+      return TEXTCMD_MK(a, kTextCmd_IsLetter, 0);
+    if (a >= 0x80)
+      return TEXTCMD_MK(26, kTextCmd_IsLetter, 0); // could happen when loading snapshots
+    assert(a < 0x80);
+    static const uint8 kText_CommandLengths_US[] = { 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0 };
+    if (kText_CommandLengths_US[a - kTextCommandStart_US])
+      return TEXTCMD_MK(*src, a - kTextCommandStart_US, 1);
+    else
+      return TEXTCMD_MK(0, a - kTextCommandStart_US, 0);
+  } else {
+    // EU encoding
+    if (a < 0x7f)
+      return TEXTCMD_MK(a, kTextCmd_IsLetter, 0);
+    static const uint8 kSoundLut[1] = {45};
+    static const uint8 kReturns_Simple[] = {
+      TEXTCMD_MK(0, kTextCmd_EndMessage, 0),
+      TEXTCMD_MK(0, kTextCmd_Scroll, 0),
+      TEXTCMD_MK(0, kTextCmd_Waitkey, 0),
+      TEXTCMD_MK(0, kTextCmd_1, 0),
+      TEXTCMD_MK(0, kTextCmd_2, 0),
+      TEXTCMD_MK(0, kTextCmd_3, 0),
+      TEXTCMD_MK(0, kTextCmd_Name, 0),
+      TEXTCMD_MK(0, kTextCmd_Name, 0), // Unused
+    };
+    if (a < kTextCmd_EU_Rest)
+      return kReturns_Simple[a - 0x7f];
+    a = *src;
+    switch (a >> 4) {
+    case 0: return TEXTCMD_MK(a & 0xF, kTextCmd_Wait, 1);
+    case 1: return TEXTCMD_MK(a & 0xF, kTextCmd_Color, 1);
+    case 2: return TEXTCMD_MK(a & 0xF, kTextCmd_Number, 1);
+    case 3: return TEXTCMD_MK(a & 0xF, kTextCmd_Speed, 1);
+    case 4: return TEXTCMD_MK(kSoundLut[a & 0xF], kTextCmd_Sound, 1);
+    case 8: {
+      static const uint8 kReturns_Ext[] = {
+        TEXTCMD_MK(0, kTextCmd_Choose, 1),
+        TEXTCMD_MK(0, kTextCmd_Choose2, 1),
+        TEXTCMD_MK(0, kTextCmd_Choose3, 1),
+        TEXTCMD_MK(0, kTextCmd_Selchg, 1),
+        TEXTCMD_MK(0, kTextCmd_Item, 1),
+        TEXTCMD_MK(0, kTextCmd_NextPic, 1),
+        TEXTCMD_MK(2, kTextCmd_Window, 1),
+        TEXTCMD_MK(0, kTextCmd_Position, 1),
+        TEXTCMD_MK(1, kTextCmd_Position, 1),
+      };
+      return kReturns_Ext[a - 0x80];
+    }
+    default:
+      assert(0);
+      return TEXTCMD_MK(26, kTextCmd_IsLetter, 0);
     }
   }
+}
+
+// Perform initial parsing of the string, expanding words, processing some commands, etc.
+void Text_LoadCharacterBuffer() {  // 8ec4e2
+  MemBlk dictionary = FindIndexInMemblk(g_zenv.dialogue_blk, 0);
+  MemBlk dialogue = FindIndexInMemblk(g_zenv.dialogue_blk, 1);
+  MemBlk text_str = FindIndexInMemblk(dialogue, dialogue_message_index);
+  const uint8 *src = text_str.ptr, *src_end = src + text_str.size, *src_org = src;
+  uint8 *dst = messaging_text_buffer;
+  while (src < src_end) {
+    uint8 c = *src++;
+    if (c >= kTextDictBase) {
+      MemBlk blk = FindIndexInMemblk(dictionary, c - kTextDictBase);
+      memcpy(dst, blk.ptr, blk.size);
+      dst += blk.size;
+      continue;
+    }
+    // Decode the next byte or multibyte character (in case we support that in the future)
+    // This is dependent on the current language cause US / PAL encode commands differently
+    uint32 cmd = Text_DecodeCmd(c, src);
+    switch (TEXTCMD_CMD(cmd)) {
+    case kTextCmd_Name: dst = Text_WritePlayerName(dst); break;
+    case kTextCmd_Window:  // RenderText_ExtendedCommand_SetWindowType
+      text_render_state = TEXTCMD_PARAM(cmd);
+      break;
+    case kTextCmd_Number: {  // Text_WritePreloadedNumber
+      uint8 t = TEXTCMD_PARAM(cmd);
+      uint8 v = dialogue_number[t >> 1];
+      *dst++ = 0x34 + ((t & 1) ? v >> 4 : v & 0xf);
+      break;
+    }
+    case kTextCmd_Position:
+      text_msgbox_topleft = kText_Positions[TEXTCMD_PARAM(cmd)];
+      break;
+    case kTextCmd_Color:
+      text_tilemap_cur = ((0x387F & 0xe300) | 0x180) | (TEXTCMD_PARAM(cmd) << 10) & 0x3c00;
+      break;
+    default:
+      // This combination is handled when rendering instead of here
+      *dst++ = c;
+      if (TEXTCMD_MULTIBYTE(cmd))
+        *dst++ = *src;
+      break;
+    }
+    src += TEXTCMD_MULTIBYTE(cmd);
+  }
+  *dst = 0x7f;
+  dialogue_msg_read_pos = 0;
 }
 
 uint8 *Text_WritePlayerName(uint8 *p) {  // 8ec5b3
@@ -2396,133 +2381,103 @@ void RenderText_Draw_CharacterTilemap() {  // 8ec97d
 }
 
 void RenderText_Draw_MessageCharacters() {  // 8ec984
-restart:
-  if (dialogue_msg_src_offs >= 99) {
-    dialogue_msg_src_offs = 0;
-    text_next_position = 0;
-  } else if (dialogue_msg_src_offs >= 59 && dialogue_msg_src_offs < 80) {
-    dialogue_msg_src_offs = 0x50;
-    text_next_position = 0;
-  } else if (dialogue_msg_src_offs >= 19 && dialogue_msg_src_offs < 40) {
-    dialogue_msg_src_offs = 0x28;
-    text_next_position = 0;
-  }
-  if ((dialogue_msg_src_offs == 18 || dialogue_msg_src_offs == 58 || dialogue_msg_src_offs == 98) && (text_next_position & 7) >= 6) {
-    dialogue_msg_src_offs++;
-    goto restart;
-  }
-  int t = (messaging_text_buffer[dialogue_msg_dst_offs] & 0x7f) - 0x66;
-  if (t < 0)
-    t = 0;
-  switch (t) {
-  case 0:  // RenderText_Draw_RenderCharacter
-    switch (vwf_line_mode < 2 ? vwf_line_mode : 2) {
-    case 0:  // RenderText_Draw_RenderCharacter_All
-      RenderText_Draw_RenderCharacter_All();
-      break;
-    case 1:  // VWF_RenderSingle
-      VWF_RenderSingle();
-      break;
-    default:
-      vwf_line_mode--;
+RESTART:;
+  uint32 cmd = Text_DecodeCmd(messaging_text_buffer[dialogue_msg_read_pos],
+      &messaging_text_buffer[dialogue_msg_read_pos + 1]);
+
+  switch (TEXTCMD_CMD(cmd)) {
+  case kTextCmd_IsLetter:
+    if (vwf_line_speed_cur >= 2) {
+      vwf_line_speed_cur--;
       break;
     }
+    VWF_RenderSingle(TEXTCMD_PARAM(cmd));
+    dialogue_msg_read_pos += 1 + TEXTCMD_MULTIBYTE(cmd);
+    if (vwf_line_speed_cur == 0)
+      goto RESTART;
     break;
-  case 1:  // RenderText_Draw_NextImage
+  case kTextCmd_NextPic:  // RenderText_Draw_NextImage
     if (main_module_index == 20) {
       PaletteFilterHistory();
       if (!BYTE(palette_filter_countdown))
-        dialogue_msg_dst_offs++;
+        goto COMMAND_DONE;
     } else {
-      dialogue_msg_dst_offs++;
+      goto COMMAND_DONE;
     }
     break;
-  case 2:  // RenderText_Draw_Choose2LowOr3
+  case kTextCmd_Choose:  // RenderText_Draw_Choose2LowOr3
     RenderText_Draw_Choose2LowOr3();
     break;
-  case 3:  // RenderText_Draw_ChooseItem
+  case kTextCmd_Item:  // RenderText_Draw_ChooseItem
     RenderText_Draw_ChooseItem();
     break;
-  case 4:  //
-  case 5:  //
-  case 6:  //
-  case 7:  //
-  case 8:  // RenderText_Draw_Ignore
-    byte_7E1CEA = messaging_text_buffer[dialogue_msg_dst_offs + 1];
-    dialogue_msg_dst_offs += 2;
-    break;
-  case 9:   // RenderText_Draw_Choose2HiOr3
-    RenderText_Draw_Choose2HiOr3();
-    break;
-  case 10:  //
+  case kTextCmd_Name:
+  case kTextCmd_Window:
+  case kTextCmd_Number:
+  case kTextCmd_Position:
+  case kTextCmd_Color:
+    // These get handled in Text_LoadCharacterBuffer
     assert(0);
     break;
-  case 11:  // RenderText_Draw_Choose3
+  // These are unused
+  case kTextCmd_Mark:
+  case kTextCmd_Mark2:
+  case kTextCmd_Clear:
+    assert(0);
+    break;
+  case kTextCmd_ScrollSpd:
+    dialogue_scroll_speed = TEXTCMD_PARAM(cmd);
+    goto COMMAND_DONE;
+  case kTextCmd_Selchg:   // RenderText_Draw_Choose2HiOr3
+    RenderText_Draw_Choose2HiOr3();
+    break;
+  case kTextCmd_Choose3:  // RenderText_Draw_Choose3
     RenderText_Draw_Choose3();
     break;
-  case 12:  // RenderText_Draw_Choose1Or2
+  case kTextCmd_Choose2:  // RenderText_Draw_Choose1Or2
     RenderText_Draw_Choose1Or2();
     break;
-  case 13:  // RenderText_Draw_Scroll
-    RenderText_Draw_Scroll();
+  case kTextCmd_Scroll:  // RenderText_Draw_Scroll
+    if (RenderText_Draw_Scroll())
+      goto COMMAND_DONE;
     break;
-  case 14:  //
-  case 15:  //
-  case 16:  // VWF_SetLine
-    dialogue_msg_src_offs = kVWF_LinePositions[(t + 2) & 3];
-    vwf_curline = kVWF_RowPositions[(t + 2) & 3];
+  case kTextCmd_1:  //
+  case kTextCmd_2:  //
+  case kTextCmd_3:  // VWF_SetLine
+    vwf_curline = kVWF_RowPositions[TEXTCMD_CMD(cmd) - kTextCmd_1];
     vwf_flag_next_line = 1;
-    dialogue_msg_dst_offs++;
-    text_next_position = 0;
-    break;
-  case 17:  // RenderText_Draw_SetColor
-    byte_7E1CDC &= ~0x1c;
-    byte_7E1CDC |= (messaging_text_buffer[dialogue_msg_dst_offs + 1] & 7) << 2;
-    dialogue_msg_dst_offs += 2;
-    break;
-  case 18:  // RenderText_Draw_Wait
-    switch (joypad1L_last & 0x80 ? 1 : text_wait_countdown >= 2 ? 2 : text_wait_countdown) {
+    goto COMMAND_DONE;
+  case kTextCmd_Wait:  // RenderText_Draw_Wait
+    switch (joypad1L_last & 0x80 ? 1 : text_wait_countdown) {
     case 0:
-      text_wait_countdown = kText_WaitDurations[messaging_text_buffer[dialogue_msg_dst_offs + 1] & 0xf] - 1;
+      text_wait_countdown = kText_WaitDurations[TEXTCMD_PARAM(cmd)] - 1;
       break;
     case 1:
-      dialogue_msg_dst_offs += 2;
       BYTE(text_wait_countdown) = 0;
-      break;
-    case 2:
+      goto COMMAND_DONE;
+    default:
       text_wait_countdown--;
       break;
     }
     break;
-  case 19:  // RenderText_Draw_PlaySfx
-    sound_effect_2 = messaging_text_buffer[dialogue_msg_dst_offs + 1];
-    dialogue_msg_dst_offs += 2;
-    break;
-  case 20:  // RenderText_Draw_SetSpeed
-    vwf_line_speed = vwf_line_mode = messaging_text_buffer[dialogue_msg_dst_offs + 1];
-    dialogue_msg_dst_offs += 2;
-    break;
-  case 21:  // RenderText_Draw_Command7B
-    RenderText_Draw_Command7B();
-    break;
-  case 22:  // RenderText_Draw_ABunchOfSpaces
-    RenderText_Draw_ABunchOfSpaces();
-    break;
-  case 23:  // RenderText_Draw_EmptyBuffer
-    RenderText_Draw_EmptyBuffer();
-    break;
-  case 24:  // RenderText_Draw_PauseForInput
+  case kTextCmd_Sound:  // RenderText_Draw_PlaySfx
+    sound_effect_2 = TEXTCMD_PARAM(cmd);
+    goto COMMAND_DONE;
+  case kTextCmd_Speed:  // RenderText_Draw_SetSpeed
+    vwf_line_speed = vwf_line_speed_cur = TEXTCMD_PARAM(cmd);
+    goto COMMAND_DONE;
+  case kTextCmd_Waitkey:  // RenderText_Draw_PauseForInput
     if (text_wait_countdown2 != 0) {
       if (--text_wait_countdown2 == 1)
         sound_effect_2 = 36;
     } else {
       if ((filtered_joypad_H | filtered_joypad_L) & 0xc0) {
-        dialogue_msg_dst_offs++;
         text_wait_countdown2 = 28;
+        goto COMMAND_DONE;
       }
     }
     break;
-  case 25:  // RenderText_Draw_Terminate
+  case kTextCmd_EndMessage:  // RenderText_Draw_Terminate
     if (text_wait_countdown2 != 0) {
       if (--text_wait_countdown2 == 1)
         sound_effect_2 = 36;
@@ -2533,6 +2488,9 @@ restart:
       }
     }
     break;
+  }
+  if (0) COMMAND_DONE: {
+    dialogue_msg_read_pos += 1 + TEXTCMD_MULTIBYTE(cmd);
   }
   nmi_subroutine_index = 2;
   nmi_disable_core_updates = 2;
@@ -2551,35 +2509,26 @@ void RenderText_Draw_Finish() {  // 8eca35
   main_module_index = saved_module_for_menu;
 }
 
-void RenderText_Draw_RenderCharacter_All() {  // 8eca99
-  VWF_RenderSingle();
-  if (dialogue_msg_src_offs != 19 && dialogue_msg_src_offs != 59 && dialogue_msg_src_offs != 99)
-    RenderText_Draw_MessageCharacters();
-}
-
-void VWF_RenderSingle() {  // 8ecab8
-  uint8 t = messaging_text_buffer[dialogue_msg_dst_offs];
-  if (t != 0x59)
+void VWF_RenderSingle(int c) {  // 8ecab8
+  if (c != 0x59)
     sound_effect_2 = 12;
-  VWF_RenderCharacter();
-  vwf_line_mode = vwf_line_speed;
-}
+  vwf_line_speed_cur = vwf_line_speed;
 
-void VWF_RenderCharacter() {  // 8ecb5e
   if (vwf_flag_next_line) {
     vwf_line_ptr = kVWF_RenderCharacter_renderPos[vwf_curline>>1];
     vwf_var1 = kVWF_RenderCharacter_linePositions[vwf_curline>>1];
     vwf_flag_next_line = 0;
   }
-  uint8 c = messaging_text_buffer[dialogue_msg_dst_offs];
-  uint8 width = kVWF_RenderCharacter_widths[c];
+  
+  const uint8 *kFontData = FindIndexInMemblk(g_zenv.dialogue_font_blk, 0).ptr;
+  uint8 width = FindIndexInMemblk(g_zenv.dialogue_font_blk, 1).ptr[c];
+
   int i = vwf_var1++;
   uint8 arrval = vwf_arr[i];
   vwf_arr[i + 1] = arrval + width;
   uint16 r10 = (c & 0x70) * 2 + (c & 0xf);
   uint16 r0 = arrval * 2;
-  const uint16 *const kTextBits = kFontData;
-  const uint16 *src2 = kTextBits + r10 * 8;
+  const uint16 *src2 = (uint16*)(kFontData + r10 * 16);
   uint8 *mbuf = (uint8 *)messaging_buf;
   for (int i = 0; i != 16; i += 2) {
     uint16 r4 = *src2++;
@@ -2604,7 +2553,7 @@ void VWF_RenderCharacter() {  // 8ecb5e
       WORD(mbuf[x + 0]) = r4;
   }
   uint16 r8 = vwf_line_ptr + 0x150;
-  const uint16 *src3 = kTextBits + (r10 + 16) * 8;
+  const uint16 *src3 = (uint16*)(kFontData + (r10 + 16) * 16);
   for (int i = 0; i != 16; i += 2) {
     uint16 r4 = *src3++;
     int y = r8 + r0;
@@ -2627,7 +2576,6 @@ void VWF_RenderCharacter() {  // 8ecb5e
     if (r4 != 0)
       WORD(mbuf[x + 0]) = r4;
   }
-  dialogue_msg_dst_offs++;
 }
 
 void RenderText_Draw_Choose2LowOr3() {  // 8ecd1a
@@ -2645,8 +2593,6 @@ void RenderText_Draw_Choose2LowOr3() {  // 8ecd1a
     sound_effect_2 = 32;
     dialogue_message_index = t + 1;
     Text_LoadCharacterBuffer();
-    text_next_position = 0;
-    dialogue_msg_dst_offs = 0;
     Text_InitVwfState();
   }
 }
@@ -2719,8 +2665,6 @@ void RenderText_Draw_Choose2HiOr3() {  // 8ece83
     sound_effect_2 = 32;
     dialogue_message_index = t + 11;
     Text_LoadCharacterBuffer();
-    text_next_position = 0;
-    dialogue_msg_dst_offs = 0;
     Text_InitVwfState();
   }
 }
@@ -2743,8 +2687,6 @@ void RenderText_Draw_Choose3() {  // 8ecef7
     sound_effect_2 = 32;
     dialogue_message_index = choice + 6;
     Text_LoadCharacterBuffer();
-    text_next_position = 0;
-    dialogue_msg_dst_offs = 0;
     Text_InitVwfState();
   }
 }
@@ -2765,14 +2707,12 @@ void RenderText_Draw_Choose1Or2() {  // 8ecf72
     sound_effect_2 = 32;
     dialogue_message_index = t + 9;
     Text_LoadCharacterBuffer();
-    text_next_position = 0;
-    dialogue_msg_dst_offs = 0;
     Text_InitVwfState();
   }
 }
 
-void RenderText_Draw_Scroll() {  // 8ecfe2
-  uint8 r2 = byte_7E1CEA;
+bool RenderText_Draw_Scroll() {  // 8ecfe2
+  uint8 r2 = dialogue_scroll_speed;
   do {
     for (int i = 0; i < 0x7e0; i += 16) {
       uint16 *p = (uint16 *)((uint8 *)messaging_buf + i);
@@ -2790,43 +2730,12 @@ void RenderText_Draw_Scroll() {  // 8ecfe2
       p[i] = 0;
 
     if ((++byte_7E1CDF & 0xf) == 0) {
-      dialogue_msg_dst_offs++;
-      dialogue_msg_src_offs = 80;
       vwf_curline = 4;
       vwf_flag_next_line = 1;
-      text_next_position = 0;
-      break;
+      return true;
     }
   } while (r2--);
-}
-
-void RenderText_Draw_Command7B() {  // 8ed18d
-  int i = (messaging_text_buffer[dialogue_msg_dst_offs + 1] & 0x7f);
-  int j = dialogue_msg_src_offs;
-  WORD(g_ram[0x2D8 + j]) = kVWF_Command7B[i * 2 + 0];
-  WORD(g_ram[0x300 + j]) = kVWF_Command7B[i * 2 + 1];
-  dialogue_msg_src_offs = j + 2;
-  dialogue_msg_dst_offs += 2;
-  RenderText_Draw_MessageCharacters();
-}
-
-void RenderText_Draw_ABunchOfSpaces() {  // 8ed1bd
-  int i = (messaging_text_buffer[dialogue_msg_dst_offs + 1] & 0x7f);
-  int j = dialogue_msg_src_offs;
-  WORD(g_ram[0x2D8 + j]) = kVWF_Command7C[i * 4 + 0];
-  WORD(g_ram[0x300 + j]) = kVWF_Command7C[i * 4 + 1];
-  WORD(g_ram[0x2DA + j]) = kVWF_Command7C[i * 4 + 2];
-  WORD(g_ram[0x302 + j]) = kVWF_Command7C[i * 4 + 3];
-  dialogue_msg_src_offs = j + 4;
-  dialogue_msg_dst_offs += 2;
-  RenderText_Draw_MessageCharacters();
-}
-
-void RenderText_Draw_EmptyBuffer() {  // 8ed1f9
-  memset(messaging_buf, 0, 0x7e0);
-  dialogue_msg_src_offs = 0;
-  dialogue_msg_dst_offs++;
-  text_next_position = 0;
+  return false;
 }
 
 void RenderText_SetDefaultWindowPosition() {  // 8ed280
@@ -2875,28 +2784,19 @@ void RenderText_Refresh() {  // 8ed307
   nmi_load_bg_from_vram = 1;
 }
 
+
 void Text_GenerateMessagePointers() {  // 8ed3eb
-  const uint8 *src = kDialogueText;
+  // This is not actually used. Only for ram compat.
+  MemBlk dialogue = FindIndexInMemblk(g_zenv.dialogue_blk, 1);
   uint32 p = 0x1c8000;
   uint8 *dst = kTextDialoguePointers;
-  for (int i = 0;; i++) {
+  for (int i = 0; i < 398; i++) {
     if (i == 359)
       p = 0xedf40;
     WORD(dst[0]) = p;
     dst[2] = p >> 16;
     dst += 3;
-
-    if (i == 397)
-      break;
-
-    for (;;) {
-      int j = *src;
-      int len = (j >= 0x67 && j < 0x80) ? kText_CommandLengths[j - 0x67] : 1;
-      src += len;
-      p += len;
-      if (j == 0x7f)
-        break;
-    }
+    p += (uint32)FindIndexInMemblk(dialogue, i).size + 1;
   }
 }
 

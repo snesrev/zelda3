@@ -240,7 +240,7 @@ def print_all_overworld_areas():
       print_overworld_area(i)
 
 def print_dialogue():
-  text_compression.print_strings(open('dialogue.txt', 'w'), get_byte)
+  text_compression.print_strings(util.ROM, file = open(text_compression.kDialogueFilenames[util.ROM.language], 'w', encoding='utf8'))
 
 def decode_room_objects(p):
   objs = []
@@ -529,11 +529,13 @@ def print_all_text_stuff():
 def main():
   make_directories()
   print_all_text_stuff()
-  extract_music.extract_sound_data(ROM)
+  extract_music.extract_sound_data(util.ROM)
   sprite_sheets.decode_link_sprites()
   sprite_sheets.decode_sprite_sheets()
-  
-ROM = util.load_rom(sys.argv[1] if len(sys.argv) >= 2 else None)
+  sprite_sheets.decode_hud_icons()
+  sprite_sheets.decode_font()
+ 
+if __name__ == "__main__":
+  util.load_rom(sys.argv[1] if len(sys.argv) >= 2 else None)
+  main()
 
-main()
-#sprite_sheets.decode_sprite_sheets()

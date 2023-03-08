@@ -113,6 +113,8 @@ static void VerifySnapshotsEq(Snapshot *b, Snapshot *a, Snapshot *prev) {
   memcpy(a->ram + 0x1db20, b->ram + 0x1db20, 64 * 2);  // msu
   a->ram[0x654] = b->ram[0x654];  // msu_volume
 
+  memcpy(a->ram + 0x1CDD, b->ram + 0x1CDD, 2);  // dialogue_msg_src_offs
+  
   if (memcmp(b->ram, a->ram, 0x20000)) {
     fprintf(stderr, "@%d: Memory compare failed (mine != theirs, prev):\n", frame_counter);
     int j = 0;

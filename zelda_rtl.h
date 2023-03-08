@@ -21,6 +21,10 @@ typedef struct ZeldaEnv {
   struct Ppu *ppu;
   struct SpcPlayer *player;
   struct Dma *dma;
+  
+  MemBlk dialogue_blk;
+  MemBlk dialogue_font_blk;
+  uint8 dialogue_flags;
 } ZeldaEnv;
 extern ZeldaEnv g_zenv;
 extern int frame_ctr_dbg;
@@ -50,7 +54,7 @@ void ZeldaApuLock();
 void ZeldaApuUnlock();
 bool ZeldaIsPlayingMusicTrack(uint8 track);
 uint8 ZeldaGetEntranceMusicTrack(int track);
-
+void ZeldaSetLanguage(const char *language);
 void PatchCommand(char cmd);
 
 // Things for state management

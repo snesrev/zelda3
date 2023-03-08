@@ -170,3 +170,26 @@ void ByteArray_AppendByte(ByteArray *arr, uint8 v) {
   ByteArray_Resize(arr, arr->size + 1);
   arr->data[arr->size - 1] = v;
 }
+
+// Automatically selects between 16 or 32 bit indexes. Can hold up to 8192 elements in 16-bit mode.
+MemBlk FindIndexInMemblk(MemBlk data, size_t i) {
+  if (data.size < 2)
+    return (MemBlk) { 0, 0 };
+  size_t end = data.size - 2, left_off, right_off;
+  size_t mx = *(uint16 *)(data.ptr + end);
+  if (mx < 8192) {
+    if (i > mx || mx * 2 > end)
+      return (MemBlk) { 0, 0 };
+    left_off = ((i == 0) ? mx * 2 : mx * 2 + *(uint16 *)(data.ptr + i * 2 - 2));
+    right_off = (i == mx) ? end : mx * 2 + *(uint16 *)(data.ptr + i * 2);
+  } else {
+    mx -= 8192;
+    if (i > mx || mx * 4 > end)
+      return (MemBlk) { 0, 0 };
+    left_off = ((i == 0) ? mx * 4 : mx * 4 + *(uint32 *)(data.ptr + i * 4 - 4));
+    right_off = (i == mx) ? end : mx * 4 + *(uint32 *)(data.ptr + i * 4);
+  }
+  if (left_off > right_off || right_off > end)
+    return (MemBlk) { 0, 0 };
+  return (MemBlk) { data.ptr + left_off, right_off - left_off };
+}

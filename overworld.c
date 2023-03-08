@@ -2449,11 +2449,11 @@ void Overworld_DecompressAndDrawAllQuadrants() {  // 82f54a
 }
 
 static const uint8 *GetOverworldHibytes(int i) {
-  return kOverworld_Hibytes_Comp + *(uint32 *)(kOverworld_Hibytes_Comp + i * 4);
+  return kOverworld_Hibytes_Comp(i).ptr;
 }
 
 static const uint8 *GetOverworldLobytes(int i) {
-  return kOverworld_Lobytes_Comp + *(uint32 *)(kOverworld_Lobytes_Comp + i * 4);
+  return kOverworld_Lobytes_Comp(i).ptr;
 }
 
 

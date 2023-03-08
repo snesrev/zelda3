@@ -304,6 +304,7 @@ int main(int argc, char** argv) {
                        g_config.extend_y * kPpuRenderFlags_Height240 |
                        g_config.no_sprite_limits * kPpuRenderFlags_NoSpriteLimits;
   ZeldaEnableMsu(g_config.enable_msu);
+  ZeldaSetLanguage(g_config.language);
 
   if (g_config.fullscreen == 1)
     g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -864,4 +865,8 @@ static void SwitchDirectory() {
     while (pos != 0 && buf[pos] != '/' && buf[pos] != '\\')
       pos--;
   }
+}
+
+MemBlk FindInAssetArray(int asset, int idx) {
+  return FindIndexInMemblk((MemBlk) { g_asset_ptrs[asset], g_asset_sizes[asset] }, idx);
 }

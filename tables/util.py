@@ -11,11 +11,16 @@ def cache(user_function):
 # Both are common SNES rom extensions. For Zelda3 (NA), they are equivalent files.
 COMMON_ROM_NAMES = ['zelda3.sfc', 'zelda3.smc']
 DEFAULT_ROM_DIRECTORY = os.path.dirname(__file__)
-ZELDA3_SHA256 = '66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb'
 
-def load_rom(filename):
+ZELDA3_SHA256_US = '66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb'
+ZELDA3_SHA256 = {
+  '030ff80d0087bca440094cd914c03da0aa199dc6edb9adfb43f1267e99fde45f' : 'de',
+   ZELDA3_SHA256_US : 'us',
+}
+
+def load_rom(filename, support_multilanguage = False):
   global ROM
-  ROM = LoadedRom(filename)
+  ROM = LoadedRom(filename, support_multilanguage)
   return ROM
 
 def get_byte(addr):
@@ -44,12 +49,18 @@ def get_word(addr):
 
 
 class LoadedRom:
-  def __init__(self, path = None):
+  def __init__(self, path = None, support_multilanguage = False):
     rom_path = self.__get_rom_path(path)
     self.ROM = open(rom_path, 'rb').read()
-    hash = hashlib.sha256(self.ROM).hexdigest() 
-    if hash != ZELDA3_SHA256:
-      raise Exception(f"ROM with hash {hash} not supported. Expected {ZELDA3_SHA256}. Please verify your ROM is the NA 1.0 version.");
+    hash = hashlib.sha256(self.ROM).hexdigest()
+    self.language = ZELDA3_SHA256.get(hash)
+
+    if support_multilanguage:
+      if self.language == None:
+        raise Exception(f"ROM with hash {hash} not supported.");
+    else:
+      if self.language != 'us':
+        raise Exception(f"ROM with hash {hash} not supported. Expected {ZELDA3_SHA256_US}. Please verify your ROM is the NA 1.0 version.");
 
   def get_byte(self, ea):
     assert (ea & 0x8000)

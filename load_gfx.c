@@ -325,7 +325,7 @@ static const int8 kGraphicsLoadSp6[20] = {
 static const uint8 kMirrorWarp_LoadNext_NmiLoad[15] = {0, 14, 15, 16, 17, 0, 0, 0, 0, 0, 0, 18, 19, 20, 0};
 
 static const uint8 *GetCompSpritePtr(int i) {
-  return kSprGfx + *(uint32 *)(kSprGfx + i * 4);
+  return kSprGfx(i).ptr;
 }
 
 void ApplyPaletteFilter_bounce() {
@@ -932,7 +932,7 @@ void Graphics_LoadChrHalfSlot() {  // 80e3fa
 }
 
 void TransferFontToVRAM() {  // 80e556
-  memcpy(&g_zenv.vram[0x7000], kFontData, 0x800 * sizeof(uint16));
+  memcpy(&g_zenv.vram[0x7000], FindIndexInMemblk(kDialogueFont(0), 0).ptr, 0x800 * sizeof(uint16));
 }
 
 void Do3To4High(uint16 *vram_ptr, const uint8 *decomp_addr) {  // 80e5af
@@ -991,17 +991,17 @@ void LoadCommonSprites() {  // 80e6b7
 int Decomp_spr(uint8 *dst, int gfx) {  // 80e772
   if (gfx < 12)
     gfx = 12; // ensure it wont decode bad sheets.
+  MemBlk blk = kSprGfx(gfx);
   const uint8 *sprite_data = GetCompSpritePtr(gfx);
   // If the size is not 0x600 then it's compressed
-  if (gfx >= 103 || (((uint32 *)kSprGfx)[gfx + 1] - ((uint32 *)kSprGfx)[gfx]) != 0x600)
-    return Decompress(dst, sprite_data);
-  memcpy(dst, sprite_data, 0x600);
+  if (gfx >= 103 || blk.size != 0x600)
+    return Decompress(dst, blk.ptr);
+  memcpy(dst, blk.ptr, 0x600);
   return 0x600;
 }
 
 int Decomp_bg(uint8 *dst, int gfx) {  // 80e78f
-  const uint8 *p = kBgGfx + *(uint32 *)(kBgGfx + gfx * 4);
-  return Decompress(dst, p);
+  return Decompress(dst, kBgGfx(gfx).ptr);
 }
 
 int Decompress(uint8 *dst, const uint8 *src) {  // 80e79e

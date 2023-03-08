@@ -10,7 +10,7 @@
 #include "spc_player.h"
 #include "util.h"
 #include "audio.h"
-
+#include "assets.h"
 ZeldaEnv g_zenv;
 uint8 g_ram[131072];
 
@@ -739,7 +739,7 @@ bool ZeldaRunFrame(int inputs) {
     EmuSyncMemoryRegion(&g_ram[kRam_CrystalRotateCounter], 1);
   }
 
-  if (g_emu_runframe == NULL || enhanced_features0 != 0) {
+  if (g_emu_runframe == NULL || enhanced_features0 != 0 || g_zenv.dialogue_flags) {
     // can't compare against real impl when running with extra features.
     ZeldaRunFrameInternal(inputs, run_what);
   } else {
@@ -751,7 +751,28 @@ bool ZeldaRunFrame(int inputs) {
   return is_replay;
 }
 
-
+void ZeldaSetLanguage(const char *language) {
+  static const uint8 kDefaultConf[3] = { 0, 0, 0 };
+  MemBlk found = { kDefaultConf, 3 };
+  if (language) {
+    size_t n = strlen(language);
+    for (int i = 0; ; i++) {
+      MemBlk mb = kDialogueMap(i);
+      if (mb.ptr == 0) {
+        fprintf(stderr, "Unable to find language '%s'\n", language);
+        break;
+      }
+      MemBlk name = FindIndexInMemblk(mb, 0);
+      if (name.size == n && !memcmp(name.ptr, language, n)) {
+        found = FindIndexInMemblk(mb, 1);
+        break;
+      }
+    }
+  }
+  g_zenv.dialogue_blk = kDialogue(found.ptr[0]);
+  g_zenv.dialogue_font_blk = kDialogueFont(found.ptr[1]);
+  g_zenv.dialogue_flags = found.ptr[2];
+}
 
 
 static const char *const kReferenceSaves[] = {

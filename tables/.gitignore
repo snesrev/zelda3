@@ -1,5 +1,5 @@
 zelda3.sfc
-dialogue.txt
+dialogue*.txt
 generated_*.h
 linksprite.png
 map32_to_map16.txt
@@ -9,3 +9,6 @@ sfx.txt
 sound_ending.txt
 sound_indoor.txt
 sound_intro.txt
+/hud_icons.png
+/font*.png
+
