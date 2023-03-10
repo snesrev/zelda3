@@ -17,26 +17,39 @@ kTextAlphabet_US = [
   "[4HeartL]", "[4HeartR]", " ", "<", "[A]", "[B]", "[X]", "[Y]",
 ]
 
-kTextAlphabet_EU = [
+kTextAlphabet_DE = [
   "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", # 0 - 15
   "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", # 16 - 31
   "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", # 32 - 47
   "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?", # 48 - 63
-  
-
   # 64 - 79
   "-", ".", ",",  "[...]", ">", "(", ")",
   "[Ankh]", "[Waves]", "[Snake]", "[LinkL]", "[LinkR]",
   "\"", "[UpL]", "[UpR]", "[LeftL]",
-
-
   # 80 - 95
   "[LeftR]", "'", "[1HeartL]", "[1HeartR]", "[2HeartL]", "[3HeartL]", "[3HeartR]",
   "[4HeartL]", "[4HeartR]", " ", "ö", "[A]", "[B]", "[X]", "[Y]", "ü",
-
   # 96-111
-  "ß", ":", "[DownL]", "[DownR]", "[RightL]", "[RightR]", "è", "é", "ê", "à", "ù", "ç", "Ä", "Ö", "Ü", "ä"
-  
+  "ß", ":", "[DownL]", "[DownR]", "[RightL]", "[RightR]",
+  "è", "é", "ê", "à", "ù", "ç", "Ä", "Ö", "Ü", "ä"
+  # 112-
+]
+
+kTextAlphabet_FR = [
+  "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", # 0 - 15
+  "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", # 16 - 31
+  "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", # 32 - 47
+  "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?", # 48 - 63
+  # 64 - 79
+  "-", ".", ",",  "[...]", ">", "(", ")",
+  "[Ankh]", "[Waves]", "[Snake]", "[LinkL]", "[LinkR]",
+  "\"", "[UpL]", "[UpR]", "[LeftL]",
+  # 80 - 95
+  "[LeftR]", "'", "[1HeartL]", "[1HeartR]", "[2HeartL]", "[3HeartL]", "[3HeartR]",
+  "[4HeartL]", "[4HeartR]", " ", "ö", "[A]", "[B]", "[X]", "[Y]", "ü",
+  # 96-111
+  "ô", ":", "[DownL]", "[DownR]", "[RightL]", "[RightR]",
+  "è", "é", "ê", "à", "ù", "ç", "â", "û", "î", "ä"
   # 112-
 ]
 
@@ -107,6 +120,30 @@ kTextDictionary_DE = [
 'Weisen', 'Zelda', 
 ]
 
+kTextDictionary_FR = [
+'                                          ', ' de ', ' la ', ' le ', ' ! ', 
+' d', ' p', ' t', ' !', ", c'est moi, Sahasrahla", 
+', ', 'ais ', 'as ', 'an', 'ai', 
+'a ', 'che', 'ce', 'ch', 'dans ', 
+'des ', 'de ', 'de', 'est ', 'ent', 
+'en ', 'er ', 'es ', 'en', 'es', 
+'et', 'eu', 'e,', 'e ', 'ique', 
+'ien', 'is ', 'ie', 'in', 'ir', 
+'is', 'i ', 'les ', 'la ', 'le ', 
+'le', 'll', 'maintenant', 'magique', 'ment', 
+'mon', 'mai', 'me', 'ne ', 'onne', 
+'oir', 'our', 'ouv', 'oi', 'on', 
+'ou', 'or', 'pouvoir', 'pour', 'peux', 
+'pas', 'que ', 'qu', 'rubis', 're ', 
+'ra', 're', 'r ', 'sorcier', 's l', 
+'s d', 'se', 'so', 's ', 'tro', 
+'te ', 'tu ', 'te', 't ', 'un', 
+'ur', 'u ', 'ver', 'Ah ! Ah ! Ah !', "C'est", 
+'Ganon', 'Maintenant', 'Merci', 'Monde', 'Perle de Lune', 
+'Tu as trouvé ', 'Ténèbres', 'Tu peux', 'Tu ',
+]
+
+
 class LangUS:
   alphabet = kTextAlphabet_US
   dictionary = kTextDictionary_US
@@ -123,12 +160,9 @@ class LangUS:
       return [cmd_index + self.COMMAND_START]
     return [cmd_index + self.COMMAND_START, int(param)]
 
-class LangDE:
-  alphabet = kTextAlphabet_EU
-  dictionary = kTextDictionary_DE
+class LangEU:
   command_lengths = kText_CommandLengths_EU
   command_names = kText_CommandNames_EU
-  rom_addrs = [0x9c8000, 0x8CEB00]
   COMMAND_START = 0x70
   SWITCH_BANK = 0x88
   FINISH = 0x8f
@@ -168,14 +202,29 @@ class LangDE:
       r = info[1][param]
       return (info[0], r) if r != None else ()
 
+
+class LangDE(LangEU):
+  alphabet = kTextAlphabet_DE
+  dictionary = kTextDictionary_DE
+  rom_addrs = [0x9c8000, 0x8CEB00]
+
+class LangFR(LangEU):
+  alphabet = kTextAlphabet_FR
+  dictionary = kTextDictionary_FR
+  rom_addrs = [0x9c8000, 0x8CE800]
+
+
+
 kLanguages = {
   'us' : LangUS(),
   'de' : LangDE(),
+  'fr' : LangFR(),
 }
 
 kDialogueFilenames = {
   'us' : 'dialogue.txt',
   'de' : 'dialogue_de.txt',
+  'fr' : 'dialogue_fr.txt',
 }
 
 dict_expansion = []

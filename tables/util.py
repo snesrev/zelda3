@@ -15,6 +15,7 @@ DEFAULT_ROM_DIRECTORY = os.path.dirname(__file__)
 ZELDA3_SHA256_US = '66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb'
 ZELDA3_SHA256 = {
   '030ff80d0087bca440094cd914c03da0aa199dc6edb9adfb43f1267e99fde45f' : 'de',
+  '29a0d5812ccbb4b11bdb55d8f751a2a797b4110bf402ca8ba15eb2bf85db7b39' : 'fr',
    ZELDA3_SHA256_US : 'us',
 }
 

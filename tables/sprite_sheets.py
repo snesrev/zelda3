@@ -139,6 +139,7 @@ def decode_hud_icons():
 kFontTypes = {
   'us' : (0xe8000, 256, 'font.png', (0x8ECADF, 99)),
   'de' : (0xCC6E8, 256, 'font_de.png', (0x8CDECF, 112)),
+  'fr' : (0xCC6E8, 256, 'font_fr.png', (0x8CDEAF, 112)),
 }
 def decode_font():
   lang = util.ROM.language
