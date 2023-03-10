@@ -8,7 +8,7 @@ parser.add_argument('--extract-from-rom', '-e', action='store_true', help='Extra
 
 optional = parser.add_argument_group('Language settings')
 optional.add_argument('--extract-dialogue', action='store_true', help = 'Extract dialogue from the german ROM')
-optional.add_argument('--languages', action='store', metavar='L1,L2', help = 'Comma separated list of additional languages to build (de,fr,fr-c,en).')
+optional.add_argument('--languages', action='store', metavar='L1,L2', help = 'Comma separated list of additional languages to build (de,fr,fr-c,en,es,pl,pt,redux,nl,sv).')
 
 optional = parser.add_argument_group('Debug things')
 optional.add_argument('--no-build', action='store_true', help="Don't actually build zelda3_assets.dat")
@@ -23,8 +23,8 @@ args = parser.parse_args()
 if args.extract_dialogue:
   ROM = util.load_rom(args.rom, True)
   import extract_resources, sprite_sheets
-  extract_resources.print_dialogue()
   sprite_sheets.decode_font()
+  extract_resources.print_dialogue()
   sys.exit(0)
 
 ROM = util.load_rom(args.rom)

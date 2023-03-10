@@ -19,6 +19,12 @@ ZELDA3_SHA256 = {
   '170d4963a3f5854b2ab3b8203a75ee93034e8f2fff8ff587d9c1bdef9bd04984' : 'fr-c', # French Canadian
    ZELDA3_SHA256_US : 'us',
    'b7640393ff2cb47ec7c4c061b78f9f34df14663f1d52e171697661a542d01d0d' : 'en',  # English PAL ROM
+   '0793101a75f493453f9412b700dc1076a31fc8079665c7af28257f975002d5dd' : 'es',  # Spanish rom https://www.romhacking.net/translations/2195/
+   '773856c208a83b0d2c653675e33436040073915d2087f3803e25eb1506f27512' : 'pl',  # Polish https://www.romhacking.net/translations/5760/
+   'e414324d8c2e2dcdbbf033b3e028897554df0d13affe5ee4484439a3e8d79b18' : 'pt',  # Portuguese https://www.romhacking.net/translations/6530/
+   '813bf9e5460a74aff2b2fdc5bc6ab14821ff0212c7546885e678737de969e5e2' : 'redux',  # English Redux - https://www.romhacking.net/translations/6657/
+   '28275ab10572e93717e8a77a65baae33577cd04ef95f7268d21028b16deb376c' : 'nl', # Netherlands/Dutch - https://www.romhacking.net/translations/1124/
+   'cf86ba00690cc6290ed3a229aa2bb460274b822de39eef694cda3576518184e3' : 'sv', # Sweden/Swedish - https://www.romhacking.net/translations/982/
 }
 
 def load_rom(filename, support_multilanguage = False):
@@ -58,7 +64,7 @@ class LoadedRom:
     hash = hashlib.sha256(self.ROM).hexdigest()
     self.language = ZELDA3_SHA256.get(hash)
 
-    if  len(self.ROM) == 1049088:
+    if  len(self.ROM) == 1049088 or self.language in ('sv',):
       self.ROM = self.ROM[0x200:]
 
     if support_multilanguage:
