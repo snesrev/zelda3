@@ -160,6 +160,11 @@ class LangUS:
       return [cmd_index + self.COMMAND_START]
     return [cmd_index + self.COMMAND_START, int(param)]
 
+class LangEN(LangUS):
+  alphabet = kTextAlphabet_DE
+  dictionary = kTextDictionary_US
+  rom_addrs = [0x9c8000, 0x8edf60]
+
 class LangEU:
   command_lengths = kText_CommandLengths_EU
   command_names = kText_CommandNames_EU
@@ -202,7 +207,6 @@ class LangEU:
       r = info[1][param]
       return (info[0], r) if r != None else ()
 
-
 class LangDE(LangEU):
   alphabet = kTextAlphabet_DE
   dictionary = kTextDictionary_DE
@@ -213,18 +217,27 @@ class LangFR(LangEU):
   dictionary = kTextDictionary_FR
   rom_addrs = [0x9c8000, 0x8CE800]
 
+class LangFR_C(LangEU):
+  alphabet = kTextAlphabet_FR
+  dictionary = kTextDictionary_FR
+  rom_addrs = [0x9c8000, 0x8CF150]
+
 
 
 kLanguages = {
   'us' : LangUS(),
   'de' : LangDE(),
   'fr' : LangFR(),
+  'fr-c' : LangFR_C(),
+  'en' : LangEN(),
 }
 
 kDialogueFilenames = {
   'us' : 'dialogue.txt',
   'de' : 'dialogue_de.txt',
   'fr' : 'dialogue_fr.txt',
+  'fr-c' : 'dialogue_fr_c.txt',
+  'en' : 'dialogue_en.txt',
 }
 
 dict_expansion = []
@@ -261,7 +274,6 @@ def decode_strings_generic(get_byte, lang):
       else:
         s += info.dictionary[c - info.DICT_BASE_DEC]
         dict_expansion.append(len(info.dictionary[c - info.DICT_BASE_DEC]))
-
     result.append((s, srcdata))
 
   

@@ -14,9 +14,11 @@ DEFAULT_ROM_DIRECTORY = os.path.dirname(__file__)
 
 ZELDA3_SHA256_US = '66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb'
 ZELDA3_SHA256 = {
-  '030ff80d0087bca440094cd914c03da0aa199dc6edb9adfb43f1267e99fde45f' : 'de',
-  '29a0d5812ccbb4b11bdb55d8f751a2a797b4110bf402ca8ba15eb2bf85db7b39' : 'fr',
+  '030ff80d0087bca440094cd914c03da0aa199dc6edb9adfb43f1267e99fde45f' : 'de',   # German
+  '29a0d5812ccbb4b11bdb55d8f751a2a797b4110bf402ca8ba15eb2bf85db7b39' : 'fr',   # French
+  '170d4963a3f5854b2ab3b8203a75ee93034e8f2fff8ff587d9c1bdef9bd04984' : 'fr-c', # French Canadian
    ZELDA3_SHA256_US : 'us',
+   'b7640393ff2cb47ec7c4c061b78f9f34df14663f1d52e171697661a542d01d0d' : 'en',  # English PAL ROM
 }
 
 def load_rom(filename, support_multilanguage = False):
@@ -55,6 +57,9 @@ class LoadedRom:
     self.ROM = open(rom_path, 'rb').read()
     hash = hashlib.sha256(self.ROM).hexdigest()
     self.language = ZELDA3_SHA256.get(hash)
+
+    if  len(self.ROM) == 1049088:
+      self.ROM = self.ROM[0x200:]
 
     if support_multilanguage:
       if self.language == None:

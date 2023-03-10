@@ -137,9 +137,11 @@ def decode_hud_icons():
   save_as_png((128, 64 * 3), dst, 'hud_icons.png', convert_snes_palette(get_hud_snes_palette()[:128]))
 
 kFontTypes = {
-  'us' : (0xe8000, 256, 'font.png', (0x8ECADF, 99)),
-  'de' : (0xCC6E8, 256, 'font_de.png', (0x8CDECF, 112)),
-  'fr' : (0xCC6E8, 256, 'font_fr.png', (0x8CDEAF, 112)),
+  'us'   : (0xe8000, 256, 'font.png', (0x8ECADF, 99)),
+  'de'   : (0xCC6E8, 256, 'font_de.png', (0x8CDECF, 112)),
+  'fr'   : (0xCC6E8, 256, 'font_fr.png', (0x8CDEAF, 112)),
+  'fr-c' : (0xCD078, 256, 'font_fr_c.png', (0x8CE83F, 112)),
+  'en'   : (0x8E8000, 256, 'font_en.png', (0x8ECAFF, 102)),
 }
 def decode_font():
   lang = util.ROM.language
