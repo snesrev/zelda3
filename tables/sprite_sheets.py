@@ -136,13 +136,29 @@ def decode_hud_icons():
 
   save_as_png((128, 64 * 3), dst, 'hud_icons.png', convert_snes_palette(get_hud_snes_palette()[:128]))
 
+def get_pt_remapper():
+  b = util.ROM.get_bytes(0x8EFC09, 121 * 3)
+  d = {}
+  for i in range(121):
+    ch = (i & 0xf) | (i << 1) & 0xe0
+    d[ch] = b[i*3+0]
+    d[ch|0x10] = b[i*3+1]
+  return d
+
 kFontTypes = {
-  'us'   : (0xe8000, 256, 'font.png', (0x8ECADF, 99)),
+  'us'   : (0x8e8000, 256, 'font.png', (0x8ECADF, 99)),
   'de'   : (0xCC6E8, 256, 'font_de.png', (0x8CDECF, 112)),
   'fr'   : (0xCC6E8, 256, 'font_fr.png', (0x8CDEAF, 112)),
   'fr-c' : (0xCD078, 256, 'font_fr_c.png', (0x8CE83F, 112)),
   'en'   : (0x8E8000, 256, 'font_en.png', (0x8ECAFF, 102)),
+  'es'   : (0x8e8000, 256, 'font_es.png', (0x8ECADF, 99)),
+  'pl'   : (0x8e8000, 256, 'font_pl.png', (0x8ECADF, 99)),
+  'pt'   : (0x8e8000, 256, 'font_pt.png', (0x8ECADF, 121)),
+  'redux': (0x8e8000, 256, 'font_redux.png', (0x8ECADF, 99)),
+  'nl': (0x8e8000, 256, 'font_nl.png', (0x8ECADF, 99)),
+  'sv': (0x8e8000, 256, 'font_sv.png', (0x8ECADF, 99)),
 }
+
 def decode_font():
   lang = util.ROM.language
   def decomp_one_spr_2bit(data, offs, target, toffs, pitch, palette_base):
@@ -152,17 +168,24 @@ def decode_font():
         t = ((d0 >> x) & 1) * 1 + ((d1 >> x) & 1) * 2
         target[toffs + y * pitch + (7 - x)] = t + palette_base
   ft = kFontTypes[lang]
-  W = get_bytes(*ft[3])
+  if lang == 'pt':
+    W = util.ROM.get_bytes(0x8EFC09, 121 * 3)
+    W = [W[i*3+2] for i in range(121)]
+    remapper = get_pt_remapper()
+  else:
+    W = get_bytes(*ft[3])
+    remapper = {}
   w = 128 + 15
   hi = ft[1] // 32
   h = hi * 17
   data = get_bytes(ft[0], ft[1] * 16)
   dst = bytearray(w * h)
+  
   for i in range(ft[1]):
     x, y = i % 16, i // 16
     pal_base = 6 * 16
     base_offs = x * 9 + (y * 8 + (y >> 1)) * w
-    decomp_one_spr_2bit(data, i * 16, dst, base_offs + w, w, pal_base)
+    decomp_one_spr_2bit(data, remapper.get(i, i) * 16, dst, base_offs + w, w, pal_base)
     if (y & 1) == 0:
       j = (y >> 1) * 16 + x
       if j < len(W):
@@ -172,7 +195,8 @@ def decode_font():
   pal[0], pal[1], pal[2] = 192, 192, 192
   pal[255*3+0], pal[255*3+1], pal[255*3+2] = 128, 128, 128
   save_as_png((w, h), dst, ft[2], pal)
-  assert (data, W) == encode_font_from_png(lang)
+  if lang != 'pt':
+    assert (data, W) == encode_font_from_png(lang)
 
 def encode_font_from_png(lang):
   font_data = Image.open(kFontTypes[lang][2]).tobytes()

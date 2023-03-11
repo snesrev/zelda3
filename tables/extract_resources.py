@@ -240,7 +240,7 @@ def print_all_overworld_areas():
       print_overworld_area(i)
 
 def print_dialogue():
-  text_compression.print_strings(util.ROM, file = open(text_compression.kDialogueFilenames[util.ROM.language], 'w', encoding='utf8'))
+  text_compression.print_strings(util.ROM, file = open(text_compression.dialogue_filename(util.ROM.language), 'w', encoding='utf8'))
 
 def decode_room_objects(p):
   objs = []

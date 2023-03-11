@@ -6,12 +6,10 @@ kTextAlphabet_US = [
   "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", # 32 - 47
   "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?", # 48 - 63
   "-", ".", ",", 
-
   # 64 - 79
   "[...]", ">", "(", ")",
   "[Ankh]", "[Waves]", "[Snake]", "[LinkL]", "[LinkR]",
   "\"", "[Up]", "[Down]", "[Left]",
-
   # 80 - 95
   "[Right]", "'", "[1HeartL]", "[1HeartR]", "[2HeartL]", "[3HeartL]", "[3HeartR]",
   "[4HeartL]", "[4HeartR]", " ", "<", "[A]", "[B]", "[X]", "[Y]",
@@ -144,6 +142,58 @@ kTextDictionary_FR = [
 ]
 
 
+# Uses the original format
+def org_encoder(cmd, param):
+    if cmd not in kText_CommandNames_US:
+      raise Exception(f'Invalid cmd {cmd}')
+    cmd_index = kText_CommandNames_US.index(cmd)
+    if kText_CommandLengths_US[cmd_index] != (1 if param == None else 2):
+      raise Exception(f'Invalid cmd params {cmd} {param}')
+    if param == None:
+      return [cmd_index + 0x67]
+    return [cmd_index + 0x67, int(param)]
+
+kCmdInfo = {
+  "Scroll" : (0x80, ),
+  "Waitkey" : (0x81, ),
+  "1" : (0x82, ),
+  "2" : (0x83, ),
+  "3" : (0x84, ),
+  "Name" : (0x85, ),
+  "Wait" : (0x87, {i:i+0x00 for i in range(16)}),
+  "Color" : (0x87, {i:i+0x10 for i in range(16)}),
+  "Number" : (0x87, {i:i+0x20 for i in range(16)}),
+  "Speed" : (0x87, {i:i+0x30 for i in range(16)}),
+  "Sound" : (0x87, {45 : 0x40, 64 : None}), # pt uses 64 for some reason
+  "Choose" : (0x87, 0x80),
+  "Choose2" : (0x87, 0x81),
+  "Choose3" : (0x87, 0x82),
+  "Selchg" : (0x87, 0x83),
+  "Item" : (0x87, 0x84),
+  "NextPic" : (0x87, 0x85),
+  "Window" : (0x87, {0 : None, 2 : 0x86}),
+  "Position" : (0x87, {0: 0x87, 1: 0x88}),
+  "ScrollSpd" : (0, {0 : None}),
+}
+
+# Uses another format where there's more bytes left for characters
+def new_encoder(cmd, param):
+  if cmd not in kCmdInfo:
+    raise Exception(f'Invalid cmd {cmd}')
+  info = kCmdInfo[cmd]
+  if len(info) <= 1 or isinstance(info[1], int):
+    if param != None:
+      raise Exception(f'Invalid cmd params {cmd} {param}')
+    return info
+  else:
+    if param == None or param not in info[1]:
+      raise Exception(f'Invalid cmd params {cmd} {param}')
+    r = info[1][param]
+    return (info[0], r) if r != None else ()
+
+kEncoders = {'org' : org_encoder, 'new' : new_encoder}
+
+
 class LangUS:
   alphabet = kTextAlphabet_US
   dictionary = kTextDictionary_US
@@ -154,16 +204,164 @@ class LangUS:
   SWITCH_BANK = 0x80
   FINISH = 0xff
   DICT_BASE_ENC, DICT_BASE_DEC = 0x88, 0x88
-  def encode_command(self, cmd_index, param):
-    name = self.command_names[cmd_index]
-    if param == None:
-      return [cmd_index + self.COMMAND_START]
-    return [cmd_index + self.COMMAND_START, int(param)]
+  ESCAPE_CHARACTER = None
+  encoder = 'org'
 
 class LangEN(LangUS):
   alphabet = kTextAlphabet_DE
   dictionary = kTextDictionary_US
   rom_addrs = [0x9c8000, 0x8edf60]
+
+class LangES(LangUS):
+  alphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", # 0 - 15
+    "Q", "R", "S", "T", "U", "V", "W", "é", "Y", "Z", "a", "b", "c", "d", "e", "f", # 16 - 31
+    "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", # 32 - 47
+    "ó", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?", # 48 - 63
+    "[Waves]", ".", ",", 
+    # 64 - 79
+    "[...]", ">", "(", ")",
+    "ñ", "ú", "á", "[LinkL]", "[LinkR]", "\"", "[Up]", "[Down]", "[Left]",
+    # 80 - 95
+    "[Right]", "í", "[1HeartL]", "[1HeartR]", "[2HeartL]", "[3HeartL]", "[3HeartR]",
+    "[Ankh]", "[4HeartR]", " ", "[Snake]", "[A]", "[B]", "[X]", "[Y]", "[I]",
+    "¡", "¿", "Ñ"
+  ]
+  # "[Ankh]", "[Waves]", "[Snake]"
+
+  dictionary = [
+    '    ', '   ', '  ', ' en', ' la ', ' el ', ' de ', 'ien', 'tra', ' de', 
+    'te ', 'ar', 'a ', 'ada', 'es', 'as', 'o ', ' con', 'ero', 'ado', 
+    'e ', 'que', 'en', 'al', 'os ', 'ora', 'nte', ' al', 'lo ', 'or', 
+    'os', 'er', 'aci', 'res', ' que ', ' es', 'el', 'los ', 'tar', ' se', 
+    ', ', 'ro', ' de l', ' est', 're', 'on', 'an', 'pued', ' del', 'ás ', 
+    'la', 'ti', 'la ', 'Es', 'to', 'ta', 'para', 'uer', 'ier', ' un ', 
+    ' por', 'oder', 'da', 'in', 'cu', ' ha', 'per', 'ano', ' ve', 'cer', 
+    'lo', ' no ', 'ic', 'ra', 'ab', 'ir', ' una', 'undo', 'es ', 'as ', 
+    'con', 'a, ', 'te', ' m', 'gu', ' tu', 'ando', ' p', 'de', 'le', 
+    'ol', 'o, ', 'ten', 'lle', ' a ', 'aba', 'com', 
+  ]
+  rom_addrs = [0x9c8000, 0x8edf40]
+
+
+class LangNL(LangUS):
+  alphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", # 0 - 15
+    "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", # 16 - 31
+    "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", # 32 - 47
+    "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?", # 48 - 63
+    "-", ".", ",", "[...]", ">", "(", ")", "[Ankh]",
+    "[Waves]", "[Snake]", "[LinkL]", "[LinkR]", "\"", "[Up]", "[Down]", "[Left]",
+    # 80 - 95
+    "[Right]", "'", "[1HeartL]", "[1HeartR]", "[2HeartL]", "[3HeartL]", "[3HeartR]",
+    "[4HeartL]", "[4HeartR]", " ", "<", "[A]", "[B]", "[X]", "[Y]",
+  ]
+
+  dictionary = [
+    '    ', '   ', '  ', "'s ", 'and ', 'are ', 'all ', 'ain', 'and', 'at ', 
+    'ast', 'an', 'at', 'ble', 'ba', 'be', 'bo', 'can ', 'che', 'com', 
+    'ck', 'des', 'di', 'do', 'en ', 'er ', 'ear', 'ent', 'ed ', 'en', 
+    'er', 'ev', 'for', 'fro', 'give ', 'get', 'go', 'have', 'has', 'her', 
+    'hi', 'ha', 'ight ', 'ing ', 'in', 'is', 'it', 'just', 'know', 'ly ', 
+    'la', 'lo', 'man', 'ma', 'me', 'mu', "n't ", 'non', 'not', 'open', 
+    'ound', 'out ', 'of', 'on', 'or', 'per', 'ple', 'pow', 'pro', 're ', 
+    're', 'some', 'se', 'sh', 'so', 'st', 'ter ', 'thin', 'ter', 'tha', 
+    'the', 'thi', 'to', 'tr', 'up', 'ver', 'with', 'wa', 'we', 'wh', 
+    'wi', 'you', 'Her', 'Tha', 'The', 'Thi', 'You', 
+  ]
+  rom_addrs = [0x9c8000, 0x8edf40]
+
+
+
+class LangSV(LangUS):
+  alphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "Ö", "P", # 0 - 15
+    "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", # 16 - 31
+    "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", # 32 - 47
+    "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?", # 48 - 63
+    "å", ".", ",", "ä", ">", "(", ")","ö",
+    "Å", "Ä", "[LinkL]", "[LinkR]", "\"", "[Up]", "[Down]", "[Left]",
+    # 80 - 95
+    "[Right]", "'", "[1HeartL]", "[1HeartR]", "[2HeartL]", "[3HeartL]", "[3HeartR]",
+    "[4HeartL]", "[4HeartR]", " ", "<", "[Ankh]", "[Waves]", "[Snake]", "-", "[I]",
+    "[i]", "…", " ",
+  ]
+
+  dictionary = [
+    '    ', '   ', '  ', 'Du ', 'till', 'vill', 'bara', 'det', 'den', 'och', 
+    'en ', 'r ', 'n ', 'ett', 'en', ' d', 'a ', 'Hjäl', 'har', 'ter', 
+    't ', 'var', ' s', 'de', 'kan', 'med', 'som', 'för', 'att', 'ar', 
+    ' h', 'er', 'jag', 'dig', 'öppna', 'mig', 'är', 'inte', 'hit', 'på ', 
+    'an', 'e ', 'rupie', '0kej', ' m', 'et', ', ', 'gång', 'måst', 'ten', 
+    ' f', 'u ', 'men', 'te', 'tt', 'ka', 'vara', 'ken', '0m ', 'från', 
+    'myck', 'någo', 'in', ' k', ' i', 'vil', 'bar', 'ond', 'För', 'Jag', 
+    'ra', 'tack', 'll', 'g ', 'ta', 'om', 'anna', 'alla', 'en,', 'ber', 
+    'hem', 'han', 'st', 'ig', ' t', 'tro', 'kraf', 'ör', ' v', 'ag', 
+    '… ', 'får', 'sin', 'mme', 'mma', 'en ', 'tat',
+  ]
+  rom_addrs = [0x9c8000, 0x8edf40]
+
+
+class LangPL(LangUS):
+  alphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", # 0 - 15
+    "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", # 16 - 31
+    "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", # 32 - 47
+    "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?", # 48 - 63
+    "-", ".", ",", "ć", "[Right]", "(", ")", "[Ankh]", 
+    "[Waves]", "[Snake]", "[LinkL]", "[LinkR]","\"", "[Up]", "[Down]", "ę",
+
+    "ł", "ń", "[1HeartL]", "[1HeartR]", "[2HeartL]", "[3HeartL]", "[3HeartR]",
+    "ą", "[4HeartR]", " ", "[Left]", "ó", "ś", "ż", "ź", "Ł",
+    "Ś", "Ż", "Ź",
+  ] # 
+  dictionary = ['Trój', '...', 'ść', 'Nie', ' nie', ' się', 'może', ' że', 'and', 'at ', 
+    ' ty', 'an', 'at', 'kus', 'ba', 'be', 'bo', 'chce', 'che', 'ki ', 
+    'za', 'des', 'di', 'do', 'en ', 'er ', 'sz ', 'ent', 'ed ', 'en', 
+    'er', ' w', 'moc', 'zię', 'przez', 'ale', 'go', 'dzie', 'has', 'rze', 
+    'hi', 'ha', 'który', 'aby ', 'in', 'is', 'it', 'twoj', 'Może', 'łeś', 
+    'la', 'lo', 'czn', 'ma', 'me', 'mu', 'szcz', 'ska', 'śli', 'przy', 
+    'znaj', 'iecz', 'of', 'on', 'or', '   ', 'ple', 'pow', 'pro', 're ', 
+    're', 'mnie', 'se', ' z', 'so', 'st', 'któr', ' jak', 'ksz', 'sze', 
+    'coś', ' je', 'to', 'tr', 'up', 'kie', 'praw', 'wa', 'we', 'mi', 
+    'wi', 'szy', 'chc', 'pra', 'cie', ' i ', 'esz',
+  ]
+
+  rom_addrs = [0x9c8000, 0x8edf40]
+
+class LangPT(LangUS):
+  alphabet = [
+    "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", # 0 - 15
+    "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", # 16 - 31
+    "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", # 32 - 47
+    "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?", # 48 - 63
+    "-", ".", ",", "[...]", ">", "(", ")", "[Ankh]",
+    "[Waves]", "[Snake]", "[LinkL]", "[LinkR]", "\"", "[Up]", "[Down]", "[Left]",
+    # 80 - 95
+    "[Right]", "'", "[1HeartL]", "[1HeartR]", "[2HeartL]", "[3HeartL]", "[3HeartR]",
+    "[4HeartL]", "[4HeartR]", " ", "<", "[A]", "[B]", "[X]", "[Y]", "[I]",
+
+    "¡", "[!]", "Á", "À", "Â", "Ã", "É", "Ê", "Í", "Ó", "Ô", "Õ", "Ú", "á", "à", "â", 
+    "ã", "é", "ê", "í", "ó", "ô", "õ", "ú", "ç", 
+  ]
+  dictionary = [
+    '     ', '    ', '   ', '                                          ', 'o ', 'a ', 'e ', '..', 'de', 'ar', 
+    's ', 'ra', ' d', 'es', 'ocê ', 'do', ' a', ' p', 'er', ' e', 
+    'que', 'r ', 'os', 'te', ', ', 'as', 'or', 'm ', 'en', ' o', 
+    'nt', 're', ' s', 'co', 'da', 'se', 'st', ' c', ' m', 'em', 
+    'ma', 'ta', ' n', 'ad', 'on', 'al', 'ro', 'an', 'u ', 'nd', 
+    ' um', 'pa', 'ca', 'el', ' f', 'to', 'in', ' t', 'ou', 'ei', 
+    'ss', 'ir', 'no', 'ri', 'tr', 'me', 'la', 'ia', 'le', 've', 
+    'is', 'sa', 'eu', 'pe', 'a.', 'na', 'so', 'mo', 'ga', 'o.', 
+    'á ', 'lo', 'ha', 'pr', 'ua', ' l', '! ', 'ui', 'am', 'ti', 
+    'io', 'gu', 'i ', 'di', 'nh', ' i', 'id', 
+  ]
+  ESCAPE_CHARACTER = 0x62
+  rom_addrs = [0x9c8000, 0x8edf40]
+  encoder = 'new'
+
+  def __init__(self):
+    assert len(self.alphabet) == 121
 
 class LangEU:
   command_lengths = kText_CommandLengths_EU
@@ -172,40 +370,8 @@ class LangEU:
   SWITCH_BANK = 0x88
   FINISH = 0x8f
   DICT_BASE_ENC, DICT_BASE_DEC = 0x88, 0x90
-  US = False
-
-  kCmdInfo = {
-    "Scroll" : (0x80, ),
-    "Waitkey" : (0x81, ),
-    "1" : (0x82, ),
-    "2" : (0x83, ),
-    "3" : (0x84, ),
-    "Name" : (0x85, ),
-    "Wait" : (0x87, {i:i+0x00 for i in range(16)}),
-    "Color" : (0x87, {i:i+0x10 for i in range(16)}),
-    "Number" : (0x87, {i:i+0x20 for i in range(16)}),
-    "Speed" : (0x87, {i:i+0x30 for i in range(16)}),
-    "Sound" : (0x87, {45 : 0x40}),
-    "Choose" : (0x87, 0x80),
-    "Choose2" : (0x87, 0x81),
-    "Choose3" : (0x87, 0x82),
-    "Selchg" : (0x87, 0x83),
-    "Item" : (0x87, 0x84),
-    "NextPic" : (0x87, 0x85),
-    "Window" : (0x87, {0 : None, 2 : 0x86}),
-    "Position" : (0x87, {0: 0x87, 1: 0x88}),
-    "ScrollSpd" : (0, {0 : None}),
-  }
-
-  def encode_command(self, cmd_index, param):
-    info = self.kCmdInfo[self.command_names[cmd_index]]
-    if len(info) <= 1 or isinstance(info[1], int):
-      assert param == None
-      return info
-    else:
-      assert param != None
-      r = info[1][param]
-      return (info[0], r) if r != None else ()
+  ESCAPE_CHARACTER = None
+  encoder = 'new'
 
 class LangDE(LangEU):
   alphabet = kTextAlphabet_DE
@@ -222,23 +388,26 @@ class LangFR_C(LangEU):
   dictionary = kTextDictionary_FR
   rom_addrs = [0x9c8000, 0x8CF150]
 
-
-
 kLanguages = {
   'us' : LangUS(),
   'de' : LangDE(),
   'fr' : LangFR(),
   'fr-c' : LangFR_C(),
   'en' : LangEN(),
+  'es' : LangES(),
+  'pl' : LangPL(),
+  'pt' : LangPT(),
+  'redux' : LangUS(),
+  'nl' : LangNL(),
+  'sv' : LangSV(),
 }
 
-kDialogueFilenames = {
-  'us' : 'dialogue.txt',
-  'de' : 'dialogue_de.txt',
-  'fr' : 'dialogue_fr.txt',
-  'fr-c' : 'dialogue_fr_c.txt',
-  'en' : 'dialogue_en.txt',
-}
+def dialogue_filename(s):
+  if s == 'us': return 'dialogue.txt'
+  return f"dialogue_{s.replace('-', '_')}.txt"
+
+def uses_new_format(lang): 
+  return kLanguages[lang].encoder == 'new'
 
 dict_expansion = []
 
@@ -257,6 +426,9 @@ def decode_strings_generic(get_byte, lang):
       if c == 0x7f: # EndMessage
         break
       if c < info.COMMAND_START:
+        if c == info.ESCAPE_CHARACTER:
+          c = get_byte(p); p += 1
+          srcdata.append(c)
         s += info.alphabet[c]
       elif c < info.SWITCH_BANK:
         if l == 2:
@@ -270,11 +442,19 @@ def decode_strings_generic(get_byte, lang):
         p = info.rom_addrs[rom_idx]; rom_idx += 1
         s, srcdata = '', []
       elif c < info.SWITCH_BANK + 8:
-        assert 0
+        if lang != 'pt':
+          assert 0
       else:
         s += info.dictionary[c - info.DICT_BASE_DEC]
         dict_expansion.append(len(info.dictionary[c - info.DICT_BASE_DEC]))
-    result.append((s, srcdata))
+    result.append((s, srcdata)) 
+    if len(result) >= 397 and lang == 'pt':
+      return result
+#    print(len(result), s)   
+#    if len(result) == 89:
+#      print(s)
+#      sys.exit(0)
+
 
   
 def print_strings(rom, file = None):
@@ -302,12 +482,7 @@ def encode_greedy_from_dict(s, i, rev, a2i, info):
     if ' ' in cmd:
       cmd, param = cmd.split(' ', 1)
       param = int(param)
-    if cmd not in info.command_names:
-      raise Exception(f'Invalid cmd {cmd}')
-    i = info.command_names.index(cmd)
-    if info.command_lengths[i] != (1 if param == None else 2):
-      raise Exception(f'Invalid cmd params {cmd} {param}')
-    return info.encode_command(i, param), cmdlen + 2
+    return kEncoders[info.encoder](cmd, param), cmdlen + 2
   else:
     return [a2i[a[0]]], 1
 

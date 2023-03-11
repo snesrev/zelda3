@@ -2220,7 +2220,7 @@ uint32 Text_DecodeCmd(uint8 a, const uint8 *src) {
     // EU encoding
     if (a < 0x7f)
       return TEXTCMD_MK(a, kTextCmd_IsLetter, 0);
-    static const uint8 kSoundLut[1] = {45};
+    static const uint8 kSoundLut[] = {45};
     static const uint8 kReturns_Simple[] = {
       TEXTCMD_MK(0, kTextCmd_EndMessage, 0),
       TEXTCMD_MK(0, kTextCmd_Scroll, 0),
@@ -2522,6 +2522,7 @@ void VWF_RenderSingle(int c) {  // 8ecab8
   
   const uint8 *kFontData = FindIndexInMemblk(g_zenv.dialogue_font_blk, 0).ptr;
   uint8 width = FindIndexInMemblk(g_zenv.dialogue_font_blk, 1).ptr[c];
+  assert(width <= 8);
 
   int i = vwf_var1++;
   uint8 arrval = vwf_arr[i];

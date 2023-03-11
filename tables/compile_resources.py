@@ -119,25 +119,28 @@ def print_images(args):
   add_asset_packed('kBgGfx', all)
 
 def print_dialogue(args):
-  from text_compression import kDialogueFilenames
+  from text_compression import dialogue_filename, kLanguages
 
   languages = ['us']
   if args.languages:
     for a in args.languages.split(','):
-      if a in languages or a not in kDialogueFilenames:
+      if a in languages or a not in kLanguages:
         raise Exception(f'Language {a} is not valid')
-      if not os.path.exists(kDialogueFilenames[a]):
-        raise Exception(f'{kDialogueFilenames[a]} not found. You need to extract it with --extract-dialogue using the ROM of that language.')
+      name = dialogue_filename(a)
+      if not os.path.exists(name):
+        raise Exception(f'{name} not found. You need to extract it with --extract-dialogue using the ROM of that language.')
       languages.append(a)
 
   all_langs, all_fonts, mappings = [], [], []
   for i, lang in enumerate(languages):
     dict_packed = pack_arrays(text_compression.encode_dictionary(lang))
-    dialogue_packed = pack_arrays(compress_dialogue(kDialogueFilenames[lang], lang))
+    dialogue_packed = pack_arrays(compress_dialogue(dialogue_filename(lang), lang))
     all_langs.append(pack_arrays([dict_packed, dialogue_packed]))
     font_data, font_width = sprite_sheets.encode_font_from_png(lang)
     all_fonts.append(pack_arrays([font_data, font_width]))
-    mappings.append(pack_arrays([lang.encode('utf8'), bytearray([i, i, i != 0])]))
+    flags = text_compression.uses_new_format(lang)
+    if i != 0: flags |= 2 # no us rom match?
+    mappings.append(pack_arrays([lang.encode('utf8'), bytearray([i, i, flags])]))
   add_asset_packed('kDialogue', all_langs)
   add_asset_packed('kDialogueFont', all_fonts)
   add_asset_packed('kDialogueMap', mappings)
