@@ -51,13 +51,12 @@ Visit Wiki for more info on building the project: https://github.com/snesrev/zel
 2. Extract the ZIP to your hard drive
 3. Place the USA rom named `zelda3.sfc` in the "\tables" subfolder
 4. Open the command prompt and navigate to that folder
-5. Type `python extract_resources.py` and hit enter
-6. Type `python compile_resources.py` and hit enter
-7. Close the command prompt
-8. Download [TCC](https://github.com/FitzRoyX/tinycc/releases/download/tcc_20221020/tcc_20221020.zip) and extract to the "\third_party" subfolder
-9. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.26.3/SDL2-devel-2.26.3-VC.zip) and extract to the "\third_party" subfolder
-10. Double-click `run_with_tcc.bat` in the main dir to create `zelda3.exe` in that same dir
-11. Configure with `zelda3.ini` in the main dir
+5. Type `python restool.py --extract-from-rom` and hit enter
+6. Close the command prompt
+7. Download [TCC](https://github.com/FitzRoyX/tinycc/releases/download/tcc_20221020/tcc_20221020.zip) and extract to the "\third_party" subfolder
+8. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.26.3/SDL2-devel-2.26.3-VC.zip) and extract to the "\third_party" subfolder
+9. Double-click `run_with_tcc.bat` in the main dir to create `zelda3.exe` in that same dir
+10. Configure with `zelda3.ini` in the main dir
 
 ## Compiling on Windows with Visual Studio (4.5gb IDE and compiler)
 Same Steps 1-7 above<br/>

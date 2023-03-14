@@ -26,12 +26,9 @@ $(RES): platform/win32/zelda3.rc
 	@echo "Generating Windows resources"
 	@$(WINDRES) $< -O coff -o $@
 
-tables/zelda3_assets.dat: tables/dialogue.txt
-	@echo "Compiling game resources"
-	@cd tables; $(PYTHON) compile_resources.py ../$(ROM)
-tables/dialogue.txt:
+tables/zelda3_assets.dat:
 	@echo "Extracting game resources"
-	@cd tables; $(PYTHON) extract_resources.py ../$(ROM)
+	@cd tables; $(PYTHON) restool.py --extract-from-rom -r ../$(ROM)
 
 clean: clean_obj clean_gen
 clean_obj:
