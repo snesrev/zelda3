@@ -202,9 +202,15 @@ static void OpenGLRenderer_EndDraw() {
 
   if (!g_config.ignore_aspect_ratio) {
     if (viewport_width * g_draw_height < viewport_height * g_draw_width)
-      viewport_height = viewport_width * g_draw_height / g_draw_width;  // limit height
+      if (!g_config.tv_aspect_ratio)
+        viewport_height = viewport_width * g_draw_height / g_draw_width;  // limit height
+      else
+        viewport_height = viewport_width * 3 / 4;                         // limit height
     else
-      viewport_width = viewport_height * g_draw_width / g_draw_height;  // limit width
+      if (!g_config.tv_aspect_ratio)
+        viewport_width = viewport_height * g_draw_width / g_draw_height;  // limit width
+      else
+        viewport_width = viewport_height * 4 / 3;                         // limit width
   }
 
   int viewport_x = (drawable_width - viewport_width) >> 1;

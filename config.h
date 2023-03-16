@@ -50,6 +50,7 @@ typedef struct Config {
   bool enhanced_mode7;
   bool new_renderer;
   bool ignore_aspect_ratio;
+  bool tv_aspect_ratio;
   uint8 fullscreen;
   uint8 window_scale;
   bool enable_audio;
