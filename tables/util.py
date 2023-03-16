@@ -24,7 +24,7 @@ ZELDA3_SHA1 = {
   'D0D09ED41F9C373FE6AFDCCAFBF0DA8C88D3D90D' : ('pt',  'Portuguese - https://www.romhacking.net/translations/6530/'),
   'B2A07A59E64C498BC1B2F28728F9BF4014C8D582' : ('redux', 'English Redux - https://www.romhacking.net/translations/6657/'),
   '9325C22EB0A2A1F0017157C8B620BC3A605CEDE1' : ('redux', 'English Redux - https://www.romhacking.net/hacks/2594/'),
-  'BFB1AEC11786581332D6E323921E231306D0AAA6' : ('nl', 'Dutch - https://www.romhacking.net/translations/1124/'),
+  'FA8ADFDBA2697C9A54D583A1284A22AC764C7637' : ('nl', 'Dutch - https://www.romhacking.net/translations/1124/'),
   '43CD3438469B2C3FE879EA2F410B3EF3CB3F1CA4' : ('sv', 'Swedish - https://www.romhacking.net/translations/982/'),
 }
 
