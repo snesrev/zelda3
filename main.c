@@ -414,6 +414,12 @@ int main(int argc, char** argv) {
         int b = RemapSdlButton(event.cbutton.button);
         if (b >= 0)
           HandleGamepadInput(b, event.type == SDL_CONTROLLERBUTTONDOWN);
+          
+          // Check for start and select buttons pressed and if so exit game
+        SDL_GameController* controller = SDL_GameControllerFromInstanceID(event.cbutton.which);
+        if (SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_START) && SDL_GameControllerGetButton(controller, SDL_CONTROLLER_BUTTON_BACK)) {
+            running = false;
+        }
         break;
       }
       case SDL_MOUSEWHEEL:
