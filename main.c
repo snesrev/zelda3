@@ -428,6 +428,12 @@ int main(int argc, char** argv) {
           }
         }
         break;
+      case SDL_MOUSEMOTION:
+        if ((g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP) == 1 || (g_win_flags & SDL_WINDOW_FULLSCREEN) == 1) {
+			    g_cursor = !g_cursor;
+      	  SDL_ShowCursor(g_cursor);
+        }
+        break;
       case SDL_KEYDOWN:
         HandleInput(event.key.keysym.sym, event.key.keysym.mod, true);
         break;
@@ -617,8 +623,6 @@ static void HandleCommand_Locked(uint32 j, bool pressed) {
     case kKeys_Fullscreen:
       g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
       SDL_SetWindowFullscreen(g_window, g_win_flags & SDL_WINDOW_FULLSCREEN_DESKTOP);
-      g_cursor = !g_cursor;
-      SDL_ShowCursor(g_cursor);
       break;
     case kKeys_Reset:
       ZeldaReset(true);
