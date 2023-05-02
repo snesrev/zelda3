@@ -1,0 +1,31 @@
+#!/bin/bash
+
+SCRIPT_PATH=`dirname $(realpath $0)`/usr
+export LD_LIBRARY_PATH=${SCRIPT_PATH}/lib
+export LC_NUMERIC=en_US.UTF-8
+
+
+if [ ! -e zelda3_assets.dat ]; then
+	if [ ! -e zelda3.sfc ]; then
+        "${SCRIPT_PATH}"/bin/notify-send -i "${SCRIPT_PATH}"/../zelda3.png "Missing ROM file"
+        exit
+	else
+		export ASSETDIR="$(mktemp -d /tmp/assets-XXXXX)"
+		cp -r "${SCRIPT_PATH}"/assets/* "$ASSETDIR"
+		ln -s "$PWD"/zelda3.sfc "$ASSETDIR"/tables/zelda3.sfc
+		cd "$ASSETDIR"/tables
+		"${SCRIPT_PATH}"/bin/notify-send -i "${SCRIPT_PATH}"/../zelda3.png "Extracting Assets"
+		"${SCRIPT_PATH}"/bin/python3 restool.py --extract-from-rom -r zelda3.sfc 
+		cd -
+		cp "$ASSETDIR"/tables/zelda3_assets.dat .
+		rm -r "$ASSETDIR"
+	fi
+fi
+
+if [ ! -e zelda3.ini ]; then
+	cp "${SCRIPT_PATH}"/assets/zelda3.ini .
+fi
+
+"${SCRIPT_PATH}"/bin/zelda3 $@
+
+exit
