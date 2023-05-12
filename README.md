@@ -174,9 +174,13 @@ Additionally, the following commands are available:
 | 1-9 | Load a dungeons playthrough snapshot |
 | Ctrl+1-9 | Run a dungeons playthrough in turbo mode |
 
-## Screenshots
+## Screenshots
 
-![screen1](other/screenshots/screen1.png)
+[screen1](other/screenshots/screen1.png)
+[screen2](other/screenshots/screen2.png)
+[screen3](other/screenshots/screen3.png)
+[screen4](other/screenshots/screen4.png)
+[screen5](other/screenshots/screen5.png)
 
 ## License
 
