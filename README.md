@@ -176,11 +176,15 @@ Additionally, the following commands are available:
 
 ## Screenshots
 
-[screen1](other/screenshots/screen1.png)
-[screen2](other/screenshots/screen2.png)
-[screen3](other/screenshots/screen3.png)
-[screen4](other/screenshots/screen4.png)
-[screen5](other/screenshots/screen5.png)
+<img src="other/screenshots/screen2.png" width="500">
+
+<img src="other/screenshots/screen4.png" width="500">
+
+<img src="other/screenshots/screen5.png" width="500">
+
+### On a CRT screen
+<img src="other/screenshots/screen3.png" width="500">
+
 
 ## License
 
