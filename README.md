@@ -176,11 +176,14 @@ Additionally, the following commands are available:
 
 ## Screenshots
 
-[screen1](other/screenshots/screen1.png)
-[screen2](other/screenshots/screen2.png)
-[screen3](other/screenshots/screen3.png)
-[screen4](other/screenshots/screen4.png)
-[screen5](other/screenshots/screen5.png)
+[screen1](.github/screenshots/screen1.png)
+[screen2](.github/screenshots/screen2.png)
+[screen3](.github/screenshots/screen3.png)
+[screen4](.github/screenshots/screen4.png)
+[screen5](.github/screenshots/screen5.png)
+[screen6](.github/screenshots/screen6.png)
+[screen7](.github/screenshots/screen7.png)
+
 
 ## License
 
