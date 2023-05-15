@@ -178,7 +178,7 @@ Additionally, the following commands are available:
 
 ## Screenshots
 
-<img src=".github/screenshots/screen1.png" width="500">
+<img src=".github/screenshots/screen2.png" width="500">
 
 <img src=".github/screenshots/screen3.png" width="500">
 
