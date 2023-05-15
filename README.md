@@ -176,14 +176,18 @@ Additionally, the following commands are available:
 
 ## Screenshots
 
-<img src="other/screenshots/screen2.png" width="500">
+<img src=".github/screenshots/screen4.png" width="500">
 
-<img src="other/screenshots/screen4.png" width="500">
+<img src=".github/screenshots/screen3.png" width="500">
 
-<img src="other/screenshots/screen5.png" width="500">
+<img src=".github/screenshots/screen5.png" width="500">
+
+<img src=".github/screenshots/screen6.png" width="500">
+
+<img src=".github/screenshots/screen7.png" width="500">
 
 ### On a CRT screen
-<img src="other/screenshots/screen3.png" width="500">
+<img src=".github/screenshots/screen3.png" width="500">
 
 
 ## License
