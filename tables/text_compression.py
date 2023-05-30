@@ -469,7 +469,8 @@ def print_strings(rom, file = None):
 
 def encode_greedy_from_dict(s, i, rev, a2i, info):
   a = s[i:]
-  if r := rev.get(a[0]):
+  r = rev.get(a[0])
+  if r:
     for k, v in r.items():
       if a.startswith(k):
         return [v + info.DICT_BASE_ENC], len(k)
@@ -477,7 +478,8 @@ def encode_greedy_from_dict(s, i, rev, a2i, info):
   if a[0] == '[':
     cmd, param = a[1:a.index(']')], None
     cmdlen = len(cmd)
-    if r := a2i.get(a[:cmdlen+2]):
+    r = a2i.get(a[:cmdlen+2])
+    if r:
       return [r], cmdlen+2
     if ' ' in cmd:
       cmd, param = cmd.split(' ', 1)
