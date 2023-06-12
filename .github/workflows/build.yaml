@@ -35,3 +35,26 @@ jobs:
         brew install sdl2 coreutils
     - name: Build
       run: make -j$(nproc) zelda3
+  build-switch:
+    runs-on: ubuntu-latest
+    container:
+      image: devkitpro/devkita64:latest
+    steps:
+    - uses: actions/checkout@v3
+    - name: Fix dubious ownership error
+      run: git config --global --add safe.directory '*'
+    - name: Build Zelda3 switch
+      run: |
+        cd platform/switch
+        make
+        cd -
+        mkdir uploads
+        ls -al platform/switch
+        cp platform/switch/zelda3.nro uploads
+        cp platform/switch/zelda3.ini uploads
+        
+    - name: Upload AppImage
+      uses: actions/upload-artifact@v3
+      with:
+        name: Zelda3-switch
+        path: uploads/
