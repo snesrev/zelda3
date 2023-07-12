@@ -475,6 +475,8 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       return ParseBoolBit(value, &g_config.features0, kFeatures0_GameChangingBugFixes);
     } else if (StringEqualsNoCase(key, "CancelBirdTravel")) {
       return ParseBoolBit(value, &g_config.features0, kFeatures0_CancelBirdTravel);
+    } else if (StringEqualsNoCase(key, "QuickSpin")) {
+      return ParseBoolBit(value, &g_config.features0, kFeatures0_QuickSpin);
     }
   }
   return false;

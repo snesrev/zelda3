@@ -1970,6 +1970,7 @@ void Link_HandleSwordCooldown() {  // 879ac2
   } else {
     HandleSwordControls();
   }
+  quickspin_is_ready = false;
 
 }
 
@@ -2133,6 +2134,7 @@ void Link_APress_PerformBasic(uint8 action_x2) {  // 879c5f
 }
 
 void HandleSwordSfxAndBeam() {  // 879c66
+	
   link_direction &= ~0xf;
   button_b_frames = 0;
   link_spin_attack_step_counter = 0;
@@ -2165,10 +2167,19 @@ void Link_CheckForSwordSwing() {  // 879cd9
       if ((R14 & 0x30) == 0x30)
         return;
     }
-    button_mask_b_y |= 0x80;
-    HandleSwordSfxAndBeam();
-    link_cant_change_direction |= 1;
-    link_animation_steps = 0;
+	
+	if(quickspin_is_ready){
+	  Link_ResetSwordAndItemUsage();
+      Link_ActivateSpinAttack();
+	  //fprintf(stderr,"performed quickspin\n");
+	} else {
+	  
+	
+      button_mask_b_y |= 0x80;
+      HandleSwordSfxAndBeam();
+      link_cant_change_direction |= 1;
+      link_animation_steps = 0;
+    }
   }
 
   if (!(joypad1H_last & kJoypadH_B))
@@ -5754,11 +5765,72 @@ void Link_HandleVelocity() {  // 87e245
   static const uint8 kSpeedMod[27] = { 24, 16, 10, 24, 16, 8, 8, 4, 12, 16, 9, 25, 20, 13, 16, 8, 64, 42, 16, 8, 4, 2, 48, 24, 32, 21, 0 };
 
   uint8 vel = link_speed_modifier + kSpeedMod[r0];
-  if (link_direction & 3)
+  if (link_direction & 3){
     link_actual_vel_x = (link_direction & 2) ? -vel : vel;
-  if (link_direction & 0xC)
+  }
+  if (link_direction & 0xC){
     link_actual_vel_y = (link_direction & 8) ? -vel : vel;
-
+  }
+  
+  //----------- QUICK SPIN --------------
+  
+  // convert velocity to signed ints
+  int velx = link_actual_vel_x;
+  int vely = link_actual_vel_y;
+  if(velx >= 127){
+    velx -= 256;
+  }
+  if(vely >= 127){
+    vely -= 256;
+  }
+  //fprintf(stderr, "x: %d y: %d\n",velx,vely);
+  
+  //check for directions
+  
+  uint8 quickspin_timer_duration = 24;
+  
+  if(vely < 0){
+	quickspin_timer_up = quickspin_timer_duration;
+  }
+  if(vely > 0){
+	quickspin_timer_down = quickspin_timer_duration;
+  }
+  if(velx < 0){
+	quickspin_timer_left = quickspin_timer_duration;
+  }
+  if(velx > 0){
+	quickspin_timer_right = quickspin_timer_duration;
+  }
+  
+  //decrement timers
+  
+  uint8 quickspin_timer_count = 0;
+  
+  if(quickspin_timer_up > 0){
+    quickspin_timer_up--;
+	quickspin_timer_count++;
+  }
+    if(quickspin_timer_down > 0){
+    quickspin_timer_down--;
+	quickspin_timer_count++;
+  }
+    if(quickspin_timer_left > 0){
+    quickspin_timer_left--;
+	quickspin_timer_count++;
+  }
+    if(quickspin_timer_right > 0){
+    quickspin_timer_right--;
+	quickspin_timer_count++;
+  }
+  //fprintf(stderr, "U: %d | D: %d | L: %d | R: %d | T: %d |\n", quickspin_timer_up,quickspin_timer_down,quickspin_timer_left,quickspin_timer_right, quickspin_timer_count);
+  if(quickspin_timer_count == 4){
+	//fprintf(stderr, "Can quickspin!\n");
+	quickspin_is_ready = true;
+	//Link_ActivateSpinAttack();
+  }
+  
+  
+  //-------------- END QUICKSPIN -------------------
   link_actual_vel_z = 0xff;
   link_z_coord = 0xffff;
   link_subpixel_z = 0;
