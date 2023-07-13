@@ -2167,14 +2167,13 @@ void Link_CheckForSwordSwing() {  // 879cd9
         return;
     }
 	
-	if(qs_ready){
+	if((enhanced_features0 & kFeatures0_QuickSpin) && qs_ready){
 	  Link_ResetSwordAndItemUsage();
       Link_ActivateSpinAttack();
 	  qs_up = 0;
 	  qs_down = 0;
 	  qs_left = 0;
 	  qs_right = 0;
-	  //fprintf(stderr,"performed quickspin\n");
 	} else {
 	  
 	
@@ -5775,105 +5774,90 @@ void Link_HandleVelocity() {  // 87e245
     link_actual_vel_y = (link_direction & 8) ? -vel : vel;
   }
   
-  //----------- QUICK SPIN --------------
-  qs_ready = false;
   
-  // convert velocity to signed ints
-  int velx = link_actual_vel_x;
-  int vely = link_actual_vel_y;
-  if(velx >= 127){
-    velx -= 256;
-  }
-  if(vely >= 127){
-    vely -= 256;
-  }
-  //fprintf(stderr, "x: %d y: %d\n",velx,vely);
-  
-  //check for directions
-  
-  uint8 qs_duration = 24;
-  
-  if(vely < 0){
-	qs_up = qs_duration;
-  }
-  if(vely > 0){
-	qs_down = qs_duration;
-  }
-  if(velx < 0){
-	qs_left = qs_duration;
-  }
-  if(velx > 0){
-	qs_right = qs_duration;
-  }
-  
-  //decrement timers
-  
-  uint8 qs_count = 0;
-  
-  if(qs_up > 0){
-    qs_up--;
-	qs_count++;
-  }
-  if(qs_down > 0){
-    qs_down--;
-	qs_count++;
-  }
-  if(qs_left > 0){
-    qs_left--;
-	qs_count++;
-  }
-  if(qs_right > 0){
-    qs_right--;
-	qs_count++;
-  }
-  //fprintf(stderr, "U: %d | D: %d | L: %d | R: %d | T: %d |\n", qs_up,qs_down,qs_left,qs_right, qs_count);
+  if(enhanced_features0 & kFeatures0_QuickSpin){
+    //----------- QUICK SPIN --------------
+    qs_ready = false;
 
-  
-  
-  if(qs_count == 4){
-	//CLOCKWISE
-    //U -> L
-    if(qs_up < qs_right && qs_right < qs_down && qs_down < qs_left){
-	  qs_ready = true;
-	}
-	// R -> U
-	if(qs_right < qs_down && qs_down < qs_left && qs_left < qs_up){
-	  qs_ready = true;
-	}
-	// D -> R
-	if(qs_down < qs_left && qs_left < qs_up && qs_up < qs_right){
-	  qs_ready = true;
-	}
-	// L -> D
-	if(qs_left < qs_up && qs_up < qs_right && qs_right < qs_down){
-	  qs_ready = true;
-	}
-	
-	//COUNTERCLOCKWISE
-    //U -> R
-    if(qs_up < qs_left && qs_left < qs_down && qs_down < qs_right){
-	  qs_ready = true;
-	}
-	// L -> U
-	if(qs_left < qs_down && qs_down < qs_right && qs_right < qs_up){
-	  qs_ready = true;
-	}
-	// D -> L
-	if(qs_down < qs_right && qs_right <= qs_up && qs_up < qs_left){
-	  qs_ready = true;
-	}
-	// R -> D
-	if(qs_right < qs_up && qs_up < qs_left && qs_left < qs_down){
-	  qs_ready = true;
-	}
-	
-	//fprintf(stderr, "Can quickspin!\n");
-	//quickspin_is_ready = true;
-	//Link_ActivateSpinAttack();
+    // convert velocity to signed ints
+    int velx = link_actual_vel_x;
+    int vely = link_actual_vel_y;
+    if(velx >= 127)
+    velx -= 256;
+    if(vely >= 127)
+    vely -= 256;
+    //fprintf(stderr, "x: %d y: %d\n",velx,vely);
+
+    //check for directions
+    uint8 qs_duration = 24;
+
+    if(vely < 0){
+    qs_up = qs_duration;
+    }
+    if(vely > 0){
+    qs_down = qs_duration;
+    }
+    if(velx < 0){
+    qs_left = qs_duration;
+    }
+    if(velx > 0){
+    qs_right = qs_duration;
+    }
+
+    //decrement timers
+
+    uint8 qs_count = 0;
+
+    if(qs_up > 0){
+    qs_up--;
+    qs_count++;
+    }
+    if(qs_down > 0){
+    qs_down--;
+    qs_count++;
+    }
+    if(qs_left > 0){
+    qs_left--;
+    qs_count++;
+    }
+    if(qs_right > 0){
+    qs_right--;
+    qs_count++;
+    }
+    //fprintf(stderr, "U: %d | D: %d | L: %d | R: %d | T: %d |\n", qs_up,qs_down,qs_left,qs_right, qs_count);
+
+
+
+    if(qs_count == 4){
+      // CLOCKWISE
+      // U -> L
+      if(qs_up < qs_right && qs_right < qs_down && qs_down < qs_left)
+        qs_ready = true;
+      // R -> U
+      else if(qs_right < qs_down && qs_down < qs_left && qs_left < qs_up)
+        qs_ready = true;
+      // D -> R
+      else if(qs_down < qs_left && qs_left < qs_up && qs_up < qs_right)
+        qs_ready = true;
+      // L -> D
+      else if(qs_left < qs_up && qs_up < qs_right && qs_right < qs_down)
+        qs_ready = true;
+
+      // COUNTERCLOCKWISE
+      // U -> R
+      else if(qs_up < qs_left && qs_left < qs_down && qs_down < qs_right)
+        qs_ready = true;
+      // L -> U
+      else if(qs_left < qs_down && qs_down < qs_right && qs_right < qs_up)
+        qs_ready = true;
+      // D -> L
+      else if(qs_down < qs_right && qs_right <= qs_up && qs_up < qs_left)
+        qs_ready = true;
+      // R -> D
+      else if(qs_right < qs_up && qs_up < qs_left && qs_left < qs_down)
+        qs_ready = true;
+    }
   }
-  
-  
-  //-------------- END QUICKSPIN -------------------
   link_actual_vel_z = 0xff;
   link_z_coord = 0xffff;
   link_subpixel_z = 0;

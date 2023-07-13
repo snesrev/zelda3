@@ -47,7 +47,7 @@ enum {
 
   kFeatures0_DimFlashes = 65536,
   
-  kFeatures0_QuickSpin = 262144,
+  kFeatures0_QuickSpin = 131072,
 };
 
 #define enhanced_features0 (*(uint32*)(g_ram+0x64c))
