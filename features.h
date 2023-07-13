@@ -58,11 +58,11 @@ enum {
 #define hud_cur_item_x (*(uint8*)(g_ram+0x656))
 #define hud_cur_item_l (*(uint8*)(g_ram+0x657))
 #define hud_cur_item_r (*(uint8*)(g_ram+0x658))
-#define quickspin_timer_up (*(uint8*)(g_ram+0x659))
-#define quickspin_timer_down (*(uint8*)(g_ram+0x65a))
-#define quickspin_timer_left (*(uint8*)(g_ram+0x65b))
-#define quickspin_timer_right (*(uint8*)(g_ram+0x65c))
-#define quickspin_is_ready (*(bool*)(g_ram+0x65d))
+#define qs_up (*(uint8*)(g_ram+0x659))
+#define qs_down (*(uint8*)(g_ram+0x65a))
+#define qs_left (*(uint8*)(g_ram+0x65b))
+#define qs_right (*(uint8*)(g_ram+0x65c))
+#define qs_ready (*(bool*)(g_ram+0x65d))
 
 
 
