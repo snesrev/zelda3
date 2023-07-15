@@ -2133,6 +2133,7 @@ void Link_APress_PerformBasic(uint8 action_x2) {  // 879c5f
 }
 
 void HandleSwordSfxAndBeam() {  // 879c66
+	
   link_direction &= ~0xf;
   button_b_frames = 0;
   link_spin_attack_step_counter = 0;
@@ -2165,10 +2166,22 @@ void Link_CheckForSwordSwing() {  // 879cd9
       if ((R14 & 0x30) == 0x30)
         return;
     }
-    button_mask_b_y |= 0x80;
-    HandleSwordSfxAndBeam();
-    link_cant_change_direction |= 1;
-    link_animation_steps = 0;
+	
+	if((enhanced_features0 & kFeatures0_QuickSpin) && qs_ready){
+	  Link_ResetSwordAndItemUsage();
+      Link_ActivateSpinAttack();
+	  qs_up = 0;
+	  qs_down = 0;
+	  qs_left = 0;
+	  qs_right = 0;
+	} else {
+	  
+	
+      button_mask_b_y |= 0x80;
+      HandleSwordSfxAndBeam();
+      link_cant_change_direction |= 1;
+      link_animation_steps = 0;
+    }
   }
 
   if (!(joypad1H_last & kJoypadH_B))
@@ -5754,11 +5767,97 @@ void Link_HandleVelocity() {  // 87e245
   static const uint8 kSpeedMod[27] = { 24, 16, 10, 24, 16, 8, 8, 4, 12, 16, 9, 25, 20, 13, 16, 8, 64, 42, 16, 8, 4, 2, 48, 24, 32, 21, 0 };
 
   uint8 vel = link_speed_modifier + kSpeedMod[r0];
-  if (link_direction & 3)
+  if (link_direction & 3){
     link_actual_vel_x = (link_direction & 2) ? -vel : vel;
-  if (link_direction & 0xC)
+  }
+  if (link_direction & 0xC){
     link_actual_vel_y = (link_direction & 8) ? -vel : vel;
+  }
+  
+  
+  if(enhanced_features0 & kFeatures0_QuickSpin){
+    //----------- QUICK SPIN --------------
+    qs_ready = false;
 
+    // convert velocity to signed ints
+    int velx = link_actual_vel_x;
+    int vely = link_actual_vel_y;
+    if(velx >= 127)
+    velx -= 256;
+    if(vely >= 127)
+    vely -= 256;
+    //fprintf(stderr, "x: %d y: %d\n",velx,vely);
+
+    //check for directions
+    uint8 qs_duration = 24;
+
+    if(vely < 0){
+    qs_up = qs_duration;
+    }
+    if(vely > 0){
+    qs_down = qs_duration;
+    }
+    if(velx < 0){
+    qs_left = qs_duration;
+    }
+    if(velx > 0){
+    qs_right = qs_duration;
+    }
+
+    //decrement timers
+
+    uint8 qs_count = 0;
+
+    if(qs_up > 0){
+    qs_up--;
+    qs_count++;
+    }
+    if(qs_down > 0){
+    qs_down--;
+    qs_count++;
+    }
+    if(qs_left > 0){
+    qs_left--;
+    qs_count++;
+    }
+    if(qs_right > 0){
+    qs_right--;
+    qs_count++;
+    }
+    //fprintf(stderr, "U: %d | D: %d | L: %d | R: %d | T: %d |\n", qs_up,qs_down,qs_left,qs_right, qs_count);
+
+
+
+    if(qs_count == 4){
+      // CLOCKWISE
+      // U -> L
+      if(qs_up < qs_right && qs_right < qs_down && qs_down < qs_left)
+        qs_ready = true;
+      // R -> U
+      else if(qs_right < qs_down && qs_down < qs_left && qs_left < qs_up)
+        qs_ready = true;
+      // D -> R
+      else if(qs_down < qs_left && qs_left < qs_up && qs_up < qs_right)
+        qs_ready = true;
+      // L -> D
+      else if(qs_left < qs_up && qs_up < qs_right && qs_right < qs_down)
+        qs_ready = true;
+
+      // COUNTERCLOCKWISE
+      // U -> R
+      else if(qs_up < qs_left && qs_left < qs_down && qs_down < qs_right)
+        qs_ready = true;
+      // L -> U
+      else if(qs_left < qs_down && qs_down < qs_right && qs_right < qs_up)
+        qs_ready = true;
+      // D -> L
+      else if(qs_down < qs_right && qs_right <= qs_up && qs_up < qs_left)
+        qs_ready = true;
+      // R -> D
+      else if(qs_right < qs_up && qs_up < qs_left && qs_left < qs_down)
+        qs_ready = true;
+    }
+  }
   link_actual_vel_z = 0xff;
   link_z_coord = 0xffff;
   link_subpixel_z = 0;
