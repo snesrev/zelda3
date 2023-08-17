@@ -126,12 +126,14 @@
       <LanguageStandard_C>stdc11</LanguageStandard_C>
       <DisableSpecificWarnings>4244;4018;4996</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <SubSystem>Console</SubSystem>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/PDBALTPATH:%_PDB% %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -143,6 +145,7 @@
       <LanguageStandard_C>stdc11</LanguageStandard_C>
       <DisableSpecificWarnings>4244;4018;4996</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -151,6 +154,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/PDBALTPATH:%_PDB% %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|Win32'">
@@ -162,6 +166,7 @@
       <LanguageStandard_C>stdc11</LanguageStandard_C>
       <DisableSpecificWarnings>4244;4018;4996</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
+      <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <TargetMachine>MachineX86</TargetMachine>
@@ -171,6 +176,7 @@
       <OptimizeReferences>true</OptimizeReferences>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <AdditionalOptions>/PDBALTPATH:%_PDB% %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -181,9 +187,11 @@
       <DisableSpecificWarnings>4244;4018;4996</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/PDBALTPATH:%_PDB% %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -193,9 +201,11 @@
       <DisableSpecificWarnings>4244;4018;4996</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalOptions>/PDBALTPATH:%_PDB% %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">
@@ -205,38 +215,36 @@
       <DisableSpecificWarnings>4244;4018;4996</DisableSpecificWarnings>
       <TreatWarningAsError>true</TreatWarningAsError>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
+      <AdditionalIncludeDirectories>$(SolutionDir);%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
+      <AdditionalOptions>/PDBALTPATH:%_PDB% %(AdditionalOptions)</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="ancilla.c" />
-    <ClCompile Include="attract.c" />
-    <ClCompile Include="config.c" />
-    <ClCompile Include="dungeon.c" />
-    <ClCompile Include="ending.c" />
-    <ClCompile Include="glsl_shader.c" />
-    <ClCompile Include="hud.c" />
-    <ClCompile Include="load_gfx.c" />
-    <ClCompile Include="main.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Disabled</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">Disabled</Optimization>
-      <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
-    </ClCompile>
-    <ClCompile Include="messaging.c" />
-    <ClCompile Include="misc.c" />
-    <ClCompile Include="audio.c" />
-    <ClCompile Include="nmi.c" />
-    <ClCompile Include="overlord.c" />
-    <ClCompile Include="overworld.c" />
-    <ClCompile Include="platform\win32\volume_control.c" />
-    <ClCompile Include="player.c" />
-    <ClCompile Include="player_oam.c" />
-    <ClCompile Include="poly.c" />
-    <ClCompile Include="select_file.c" />
-    <ClCompile Include="opengl.c" />
+    <ClCompile Include="src\ancilla.c" />
+    <ClCompile Include="src\attract.c" />
+    <ClCompile Include="src\config.c" />
+    <ClCompile Include="src\dungeon.c" />
+    <ClCompile Include="src\ending.c" />
+    <ClCompile Include="src\glsl_shader.c" />
+    <ClCompile Include="src\hud.c" />
+    <ClCompile Include="src\load_gfx.c" />
+    <ClCompile Include="src\main.c" />
+    <ClCompile Include="src\messaging.c" />
+    <ClCompile Include="src\misc.c" />
+    <ClCompile Include="src\audio.c" />
+    <ClCompile Include="src\nmi.c" />
+    <ClCompile Include="src\overlord.c" />
+    <ClCompile Include="src\overworld.c" />
+    <ClCompile Include="src\platform\win32\volume_control.c" />
+    <ClCompile Include="src\player.c" />
+    <ClCompile Include="src\player_oam.c" />
+    <ClCompile Include="src\poly.c" />
+    <ClCompile Include="src\select_file.c" />
+    <ClCompile Include="src\opengl.c" />
     <ClCompile Include="snes\apu.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
@@ -276,13 +284,10 @@
       <InlineFunctionExpansion Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</InlineFunctionExpansion>
     </ClCompile>
     <ClCompile Include="snes\tracing.c" />
-    <ClCompile Include="spc_player.c" />
-    <ClCompile Include="sprite.c" />
-    <ClCompile Include="sprite_main.c">
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='Release|x64'">MaxSpeed</Optimization>
-      <Optimization Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">MaxSpeed</Optimization>
-    </ClCompile>
-    <ClCompile Include="tagalong.c" />
+    <ClCompile Include="src\spc_player.c" />
+    <ClCompile Include="src\sprite.c" />
+    <ClCompile Include="src\sprite_main.c" />
+    <ClCompile Include="src\tagalong.c" />
     <ClCompile Include="third_party\gl_core\gl_core_3_1.c" />
     <ClCompile Include="third_party\opus-1.3.1-stripped\bands.c">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -429,34 +434,34 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClCompile>
-    <ClCompile Include="tile_detect.c" />
-    <ClCompile Include="util.c" />
-    <ClCompile Include="zelda_cpu_infra.c" />
-    <ClCompile Include="zelda_rtl.c" />
+    <ClCompile Include="src\tile_detect.c" />
+    <ClCompile Include="src\util.c" />
+    <ClCompile Include="src\zelda_cpu_infra.c" />
+    <ClCompile Include="src\zelda_rtl.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ancilla.h" />
-    <ClInclude Include="assets.h" />
-    <ClInclude Include="attract.h" />
-    <ClInclude Include="config.h" />
-    <ClInclude Include="dungeon.h" />
-    <ClInclude Include="ending.h" />
-    <ClInclude Include="features.h" />
-    <ClInclude Include="glsl_shader.h" />
-    <ClInclude Include="hud.h" />
-    <ClInclude Include="load_gfx.h" />
-    <ClInclude Include="messaging.h" />
-    <ClInclude Include="misc.h" />
-    <ClInclude Include="audio.h" />
-    <ClInclude Include="nmi.h" />
-    <ClInclude Include="overlord.h" />
-    <ClInclude Include="overworld.h" />
-    <ClInclude Include="platform\win32\volume_control.h" />
-    <ClInclude Include="player.h" />
-    <ClInclude Include="player_oam.h" />
-    <ClInclude Include="poly.h" />
-    <ClInclude Include="platform\win32\resource.h" />
-    <ClInclude Include="select_file.h" />
+    <ClInclude Include="src\ancilla.h" />
+    <ClInclude Include="src\assets.h" />
+    <ClInclude Include="src\attract.h" />
+    <ClInclude Include="src\config.h" />
+    <ClInclude Include="src\dungeon.h" />
+    <ClInclude Include="src\ending.h" />
+    <ClInclude Include="src\features.h" />
+    <ClInclude Include="src\glsl_shader.h" />
+    <ClInclude Include="src\hud.h" />
+    <ClInclude Include="src\load_gfx.h" />
+    <ClInclude Include="src\messaging.h" />
+    <ClInclude Include="src\misc.h" />
+    <ClInclude Include="src\audio.h" />
+    <ClInclude Include="src\nmi.h" />
+    <ClInclude Include="src\overlord.h" />
+    <ClInclude Include="src\overworld.h" />
+    <ClInclude Include="src\platform\win32\volume_control.h" />
+    <ClInclude Include="src\player.h" />
+    <ClInclude Include="src\player_oam.h" />
+    <ClInclude Include="src\poly.h" />
+    <ClInclude Include="src\platform\win32\resource.h" />
+    <ClInclude Include="src\select_file.h" />
     <ClInclude Include="snes\apu.h" />
     <ClInclude Include="snes\cart.h" />
     <ClInclude Include="snes\cpu.h" />
@@ -470,10 +475,10 @@
     <ClInclude Include="snes\snes_regs.h" />
     <ClInclude Include="snes\spc.h" />
     <ClInclude Include="snes\tracing.h" />
-    <ClInclude Include="spc_player.h" />
-    <ClInclude Include="sprite.h" />
-    <ClInclude Include="sprite_main.h" />
-    <ClInclude Include="tagalong.h" />
+    <ClInclude Include="src\spc_player.h" />
+    <ClInclude Include="src\sprite.h" />
+    <ClInclude Include="src\sprite_main.h" />
+    <ClInclude Include="src\tagalong.h" />
     <ClInclude Include="third_party\gl_core\gl_core_3_1.h" />
     <ClInclude Include="third_party\opus-1.3.1-stripped\arch.h">
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
@@ -731,22 +736,22 @@
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='ReleaseDeploy|x64'">true</ExcludedFromBuild>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|x64'">true</ExcludedFromBuild>
     </ClInclude>
-    <ClInclude Include="tile_detect.h" />
-    <ClInclude Include="types.h" />
-    <ClInclude Include="util.h" />
-    <ClInclude Include="variables.h" />
-    <ClInclude Include="zelda_cpu_infra.h" />
-    <ClInclude Include="zelda_rtl.h" />
+    <ClInclude Include="src\tile_detect.h" />
+    <ClInclude Include="src\types.h" />
+    <ClInclude Include="src\util.h" />
+    <ClInclude Include="src\variables.h" />
+    <ClInclude Include="src\zelda_cpu_infra.h" />
+    <ClInclude Include="src\zelda_rtl.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ResourceCompile Include="platform\win32\zelda3.rc" />
+    <ResourceCompile Include="src\platform\win32\zelda3.rc" />
   </ItemGroup>
   <ItemGroup>
-    <Image Include="platform\win32\triforce.ico" />
-    <Image Include="platform\linux\triforce.png" />
+    <Image Include="src\platform\win32\triforce.ico" />
+    <Image Include="src\platform\linux\triforce.png" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="LICENSE.txt">

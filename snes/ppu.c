@@ -6,7 +6,7 @@
 #include <stddef.h>
 #include <assert.h>
 #include "ppu.h"
-#include "../types.h"
+#include "src/types.h"
 
 static const uint8 kSpriteSizes[8][2] = {
   {8, 16}, {8, 32}, {8, 64}, {16, 32},

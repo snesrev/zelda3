@@ -49,17 +49,15 @@ Visit Wiki for more info on building the project: https://github.com/snesrev/zel
 ## Compiling on Windows with TCC (1mb Tiny C Compiler)
 1. Download the project by clicking "Code > Download ZIP" on the github page
 2. Extract the ZIP to your hard drive
-3. Place the USA rom named `zelda3.sfc` in the "\tables" subfolder
-4. Open the command prompt and navigate to that folder
-5. Type `python restool.py --extract-from-rom` and hit enter
-6. Close the command prompt
-7. Download [TCC](https://github.com/FitzRoyX/tinycc/releases/download/tcc_20221020/tcc_20221020.zip) and extract to the "\third_party" subfolder
-8. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.26.3/SDL2-devel-2.26.3-VC.zip) and extract to the "\third_party" subfolder
-9. Double-click `run_with_tcc.bat` in the main dir to create `zelda3.exe` in that same dir
-10. Configure with `zelda3.ini` in the main dir
+3. Place the USA rom named `zelda3.sfc` in the root directory.
+4. Double-click `extract_assets.bat` in the main dir to create `zelda3_assets.dat` in that same dir
+5. Download [TCC](https://github.com/FitzRoyX/tinycc/releases/download/tcc_20221020/tcc_20221020.zip) and extract to the "\third_party" subfolder
+6. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.26.3/SDL2-devel-2.26.3-VC.zip) and extract to the "\third_party" subfolder
+7. Double-click `run_with_tcc.bat` in the main dir to create `zelda3.exe` in that same dir
+8. Configure with `zelda3.ini` in the main dir
 
 ## Compiling on Windows with Visual Studio (4.5gb IDE and compiler)
-Same Steps 1-7 above<br/>
+Same Steps 1-4 above<br/>
 8. Double-click `Zelda3.sln`<br/>
 9. Install the **Desktop development with C++** workload with the VS Installer if you don't have it already (it should prompt you to do this).<br/>
 10. Change "debug" to "release" in the top dropdown<br/>
@@ -88,7 +86,7 @@ python3 -m pip install -r requirements.txt
 * macOS: `brew install sdl2` (you can get homebrew [here](https://brew.sh/))
 
 ## Compiling on Linux/MacOS
-1. Place your US ROM file named `zelda3.sfc` in `zelda3/tables`
+1. Place your US ROM file named `zelda3.sfc` in `zelda3`
 2. Compile
 ```sh
 make
@@ -124,7 +122,7 @@ Look at the wiki at https://github.com/snesrev/zelda3/wiki for more help.
 The ROM needs to be named `zelda3.sfc` and has to be from the US region with this exact SHA256 hash
 `66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`
 
-In case you're planning to move the executable to a different location, please include the file `tables/zelda3_assets.dat`.
+In case you're planning to move the executable to a different location, please include the file `zelda3_assets.dat`.
 
 ## Usage and controls
 

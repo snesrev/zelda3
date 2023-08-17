@@ -1,6 +1,10 @@
 import argparse
 import util
 import sys
+import os
+
+os.chdir(os.path.dirname(__file__))
+
 
 parser = argparse.ArgumentParser(description='Resource tool used to build zelda3_assets.dat', allow_abbrev=False)
 parser.add_argument('-r', '--rom', nargs='?', metavar='ROM')

@@ -810,9 +810,9 @@ uint32 g_asset_sizes[kNumberOfAssets];
 
 static void LoadAssets() {
   size_t length = 0;
-  uint8 *data = ReadWholeFile("tables/zelda3_assets.dat", &length);
+  uint8 *data = ReadWholeFile("zelda3_assets.dat", &length);
   if (!data)
-    data = ReadWholeFile("zelda3_assets.dat", &length);
+    data = ReadWholeFile("tables/zelda3_assets.dat", &length);
   if (!data) Die("Failed to read zelda3_assets.dat. Please see the README for information about how you get this file.");
 
   static const char kAssetsSig[] = { kAssets_Sig };
