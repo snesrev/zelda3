@@ -64,6 +64,38 @@ Same Steps 1-4 above<br/>
 12. Choose "build > build Zelda3" in the menu to create `zelda3.exe` in the "/bin/release" subfolder<br/>
 13. Configure with `zelda3.ini` in the main dir<br/>
 
+## Compiling on Linux with Nix
+1. Open a terminal
+2. Clone the repo and `cd` into it
+```sh
+git clone https://github.com/snesrev/zelda3
+cd zelda3
+```
+3. Place your US ROM file named `zelda3.sfc` in `zelda3/tables`
+4. Enter the nix shell environment
+```sh
+nix-shell
+```
+5. Compile
+```sh
+make
+```
+6. Running the executable with the proper graphics driver
+```sh
+nixGL ./zelda3
+```
+<details>
+<summary>
+Advanced make usage ...
+</summary>
+
+```sh
+make -j$(nproc) # run on all core
+make clean all  # clear gen+obj and rebuild
+CC=clang make   # specify compiler
+```
+</details>
+
 ## Installing libraries on Linux/MacOS
 1. Open a terminal
 2. Install pip if not already installed
