@@ -1,4 +1,5 @@
 # Zelda3
+
 A reimplementation of Zelda 3.
 
 Our discord server is: https://discord.gg/AJJbJAzNNJ
@@ -18,111 +19,23 @@ I got much assistance from spannerism's Zelda 3 JP disassembly and the other one
 
 ## Additional features
 
-A bunch of features have been added that are not supported by the original game. Some of them are:
+A bunch of features have been added that are not supported by the original game. Some of them are: basic widescreen, shaders, 240 vertical res, hi-res mode7 map, MSU-1 audio, item switching, and over 30 bugfixes.
 
-Support for pixel shaders.
+## Building
 
-Support for enhanced aspect ratios of 16:9 or 16:10.
+You must self-build for now. Steps for 64-bit Windows:<br>
+(0) Download [Python](https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe) and install with "Add to PATH" checked<br>
+(0a) Open the command prompt<br>
+(0b) Type `python -m pip install --upgrade pip pillow pyyaml` and hit enter<br>
+(0c) Close the command prompt<br>
+(1) Click the green button "Code > Download ZIP" on the github page and extract the ZIP<br>
+(2) Place your USA rom named zelda3.sfc in that folder<br>
+(3) Download [TCC](https://github.com/FitzRoyX/tinycc/releases/download/tcc_20230519/tcc_20230519.zip) and [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.28.2/SDL2-devel-2.28.2-VC.zip) and extract each ZIP into the "third-party" subfolder<br>
+(4) Double click "extract_assets.bat" in the main dir. This will create zelda3_assets.dat.<br>
+(5) Double-click "run_with_tcc.bat" in the main dir. This will create zelda3.exe and run it.<br>
+(6) Configure with zelda3.ini in a text editor like notepad++<br>
 
-Higher quality world map.
-
-Support for MSU audio tracks.
-
-Secondary item slot on button X (Hold X in inventory to select).
-
-Switching current item with L/R keys.
-
-## How to Play:
-
-Option 1: Launcher by RadzPrower (windows only) https://github.com/ajohns6/Zelda-3-Launcher
-
-Option 2: Building it yourself
-
-Visit Wiki for more info on building the project: https://github.com/snesrev/zelda3/wiki
-
-## Installing Python & libraries on Windows (required for asset extraction steps)
-1. Download [Python](https://www.python.org/ftp/python/3.11.1/python-3.11.1-amd64.exe) installer and install with "Add to PATH" checkbox checked
-2. Open the command prompt
-3. Type `python -m pip install --upgrade pip pillow pyyaml` and hit enter
-4. Close the command prompt
-
-## Compiling on Windows with TCC (1mb Tiny C Compiler)
-1. Download the project by clicking "Code > Download ZIP" on the github page
-2. Extract the ZIP to your hard drive
-3. Place the USA rom named `zelda3.sfc` in the root directory.
-4. Double-click `extract_assets.bat` in the main dir to create `zelda3_assets.dat` in that same dir
-5. Download [TCC](https://github.com/FitzRoyX/tinycc/releases/download/tcc_20221020/tcc_20221020.zip) and extract to the "\third_party" subfolder
-6. Download [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.26.3/SDL2-devel-2.26.3-VC.zip) and extract to the "\third_party" subfolder
-7. Double-click `run_with_tcc.bat` in the main dir to create `zelda3.exe` in that same dir
-8. Configure with `zelda3.ini` in the main dir
-
-## Compiling on Windows with Visual Studio (4.5gb IDE and compiler)
-Same Steps 1-4 above<br/>
-8. Double-click `Zelda3.sln`<br/>
-9. Install the **Desktop development with C++** workload with the VS Installer if you don't have it already (it should prompt you to do this).<br/>
-10. Change "debug" to "release" in the top dropdown<br/>
-12. Choose "build > build Zelda3" in the menu to create `zelda3.exe` in the "/bin/release" subfolder<br/>
-13. Configure with `zelda3.ini` in the main dir<br/>
-
-## Installing libraries on Linux/MacOS
-1. Open a terminal
-2. Install pip if not already installed
-```sh
-python3 -m ensurepip
-```
-3. Clone the repo and `cd` into it
-```sh
-git clone https://github.com/snesrev/zelda3
-cd zelda3
-```
-4. Install requirements using pip
-```sh
-python3 -m pip install -r requirements.txt
-```
-5. Install SDL2
-* Ubuntu/Debian `sudo apt install libsdl2-dev`
-* Fedora Linux `sudo dnf install SDL2-devel`
-* Arch Linux `sudo pacman -S sdl2`
-* macOS: `brew install sdl2` (you can get homebrew [here](https://brew.sh/))
-
-## Compiling on Linux/MacOS
-1. Place your US ROM file named `zelda3.sfc` in `zelda3`
-2. Compile
-```sh
-make
-```
-<details>
-<summary>
-Advanced make usage ...
-</summary>
-
-```sh
-make -j$(nproc) # run on all core
-make clean all  # clear gen+obj and rebuild
-CC=clang make   # specify compiler
-```
-</details>
-
-## Nintendo Switch
-
-You need [DevKitPro](https://devkitpro.org/wiki/Getting_Started) and [Atmosphere](https://github.com/Atmosphere-NX/Atmosphere) installed.
-
-```sh
-(dkp-)pacman -S git switch-dev switch-sdl2 switch-tools
-cd platform/switch
-make # Add -j$(nproc) to build using all cores ( Optional )
-# You can test the build directly onto the switch ( Optional )
-nxlink -s zelda3.nro
-```
-
-## More Compilation Help
-
-Look at the wiki at https://github.com/snesrev/zelda3/wiki for more help.
-
-The ROM needs to be named `zelda3.sfc` and has to be from the US region with this exact SHA256 hash
-`66871d66be19ad2c34c927d6b14cd8eb6fc3181965b6e517cb361f7316009cfb`
-
-In case you're planning to move the executable to a different location, please include the file `zelda3_assets.dat`.
+For other platforms and compilers, see: https://github.com/snesrev/smw/blob/main/BUILDING.md
 
 ## Usage and controls
 
