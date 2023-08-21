@@ -35,7 +35,7 @@ You must self-build for now. Steps for 64-bit Windows:<br>
 (5) Double-click "run_with_tcc.bat" in the main dir. This will create zelda3.exe and run it.<br>
 (6) Configure with zelda3.ini in a text editor like notepad++<br>
 
-For other platforms and compilers, see: https://github.com/snesrev/smw/blob/main/BUILDING.md
+For other platforms and compilers, see: https://github.com/snesrev/zelda3/blob/main/BUILDING.md
 
 ## Usage and controls
 
