@@ -25,9 +25,9 @@ A bunch of features have been added that are not supported by the original game.
 
 You must self-build for now. Steps for 64-bit Windows:<br>
 (0) Download [Python](https://www.python.org/ftp/python/3.11.4/python-3.11.4-amd64.exe) and install with "Add to PATH" checked<br>
-(0a) Open the command prompt<br>
-(0b) Type `python -m pip install --upgrade pip pillow pyyaml` and hit enter<br>
-(0c) Close the command prompt<br>
+(0b) Open the command prompt<br>
+(0c) Type `python -m pip install --upgrade pip pillow pyyaml` and hit enter<br>
+(0d) Close the command prompt<br>
 (1) Click the green button "Code > Download ZIP" on the github page and extract the ZIP<br>
 (2) Place your USA rom named zelda3.sfc in that folder<br>
 (3) Download [TCC](https://github.com/FitzRoyX/tinycc/releases/download/tcc_20230519/tcc_20230519.zip) and [SDL2](https://github.com/libsdl-org/SDL/releases/download/release-2.28.2/SDL2-devel-2.28.2-VC.zip) and extract each ZIP into the "third-party" subfolder<br>
