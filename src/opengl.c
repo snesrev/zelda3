@@ -208,7 +208,7 @@ static void OpenGLRenderer_EndDraw() {
   }
 
   int viewport_x = (drawable_width - viewport_width) >> 1;
-  int viewport_y = (viewport_height - viewport_height) >> 1;
+  int viewport_y = (drawable_height - viewport_height) >> 1;
 
   glBindTexture(GL_TEXTURE_2D, g_texture.gl_texture);
   if (g_draw_width == g_texture.width && g_draw_height == g_texture.height) {
@@ -222,7 +222,7 @@ static void OpenGLRenderer_EndDraw() {
     if (!g_opengl_es)
       glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, g_draw_width, g_draw_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, g_screen_buffer);
     else
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, g_draw_width, g_draw_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, g_screen_buffer);
+      glTexImage2D(GL_TEXTURE_2D, 0, GL_BGRA, g_draw_width, g_draw_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, g_screen_buffer);
   }
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
