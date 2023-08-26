@@ -1,0 +1,9 @@
+[Desktop Entry]
+Name=Zelda3
+Exec=zelda3
+Terminal=false
+Type=Application
+Icon=zelda3
+Comment=Zelda3 port
+Categories=Game;
+StartupWMClass=zelda3;

@@ -1,0 +1,86 @@
+#!/bin/bash
+
+SCRIPT_PATH=`dirname $(realpath $0)`/usr
+export LD_LIBRARY_PATH=${SCRIPT_PATH}/lib
+export LC_NUMERIC=en_US.UTF-8
+export ZELDA_ROM=$(shasum *.s[mf]c | grep -i 6D4F10A8B10E10DBE624CB23CF03B88BB8252973 | awk '{ print $2 }')
+export LANG_ROM=$(shasum *.s[mf]c | awk ' { print $2 }' | sed '/zelda3.sfc/ d')
+export LANG_ROM_HASH=$(shasum *.s[mf]c | awk '{ print toupper($1) }' | sed '/6D4F10A8B10E10DBE624CB23CF03B88BB8252973/I d')
+
+extract_language () {
+	sed -i 's/# Language/Language/g' "$ASSETDIR"/zelda3.ini
+	sed -i "s/Language = .*/Language = $1/g" "$ASSETDIR"/zelda3.ini
+	"${SCRIPT_PATH}"/bin/notify-send -i "${SCRIPT_PATH}"/../zelda3.png "Translating..."
+	"${SCRIPT_PATH}"/bin/python3 restool.py --extract-dialogue -r translate.sfc
+	"${SCRIPT_PATH}"/bin/python3 restool.py --languages="$1"
+}
+
+if [ ! -e zelda3_assets.dat ]; then
+	if [ ! -e "$ZELDA_ROM" ]; then
+        "${SCRIPT_PATH}"/bin/notify-send -i "${SCRIPT_PATH}"/../zelda3.png "Missing ROM file"
+        exit
+	else
+		export ASSETDIR="$(mktemp -d /tmp/assets-XXXXX)"
+		cp -r "${SCRIPT_PATH}"/assets/* "$ASSETDIR"
+		ln -s "$PWD"/"$ZELDA_ROM" "$ASSETDIR"/tables/zelda3.sfc
+		if [ -e "$LANG_ROM" ]; then
+			ln -s "$PWD"/"$LANG_ROM" "$ASSETDIR"/tables/translate.sfc
+		fi
+		cd "$ASSETDIR"/tables
+		"${SCRIPT_PATH}"/bin/notify-send -i "${SCRIPT_PATH}"/../zelda3.png "Extracting Assets"
+		"${SCRIPT_PATH}"/bin/python3 restool.py --extract-from-rom -r zelda3.sfc
+			if [ -e "translate.sfc" ]; then
+			case "$LANG_ROM_HASH" in         
+    		2E62494967FB0AFDF5DA1635607F9641DF7C6559)
+    			extract_language "de"
+    			;;
+    		229364A1B92A05167CD38609B1AA98F7041987CC)
+    			extract_language "fr"
+    			;;
+    		C1C6C7F76FFF936C534FF11F87A54162FC0AA100)
+    		    extract_language "fr-c"
+    			;;
+			7C073A222569B9B8E8CA5FCB5DFEC3B5E31DA895)
+    		    extract_language "en"
+    			;;
+			461FCBD700D1332009C0E85A7A136E2A8E4B111E)
+    		    extract_language "es"
+    			;;
+			3C4D605EEFDA1D76F101965138F238476655B11D)
+    		    extract_language "pl"
+    			;;
+			D0D09ED41F9C373FE6AFDCCAFBF0DA8C88D3D90D)
+    		    extract_language "pt"
+    			;;
+			B2A07A59E64C498BC1B2F28728F9BF4014C8D582)
+    		    extract_language "redux"
+    			;;
+			9325C22EB0A2A1F0017157C8B620BC3A605CEDE1)
+    		    extract_language "redux"
+    			;;
+			FA8ADFDBA2697C9A54D583A1284A22AC764C7637)
+    		    extract_language "nl"
+    			;;
+			43CD3438469B2C3FE879EA2F410B3EF3CB3F1CA4)
+    		    extract_language "sv"
+    			;;
+    			*)
+    			"${SCRIPT_PATH}"/bin/notify-send -i "${SCRIPT_PATH}"/../zelda3.png "Unknown ROM file"
+    			exit
+    			;;
+			esac
+			fi
+		cd -
+		cp "$ASSETDIR"/tables/zelda3_assets.dat .
+		cp "$ASSETDIR"/zelda3.ini .
+		rm -r "$ASSETDIR"
+	fi
+fi
+
+if [ ! -e zelda3.ini ]; then
+	cp "${SCRIPT_PATH}"/assets/zelda3.ini .
+fi
+
+"${SCRIPT_PATH}"/bin/zelda3 $@
+
+exit
