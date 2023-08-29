@@ -31,3 +31,9 @@ __pycache__
 /sprites-gfx
 /glsl-shaders
 /token.txt
+
+xcuserdata/
+*.hmap
+*.ipa
+*.dSYM.zip
+.build/

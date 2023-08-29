@@ -85,7 +85,8 @@ python3 -m pip install -r requirements.txt
 * Arch Linux `sudo pacman -S sdl2`
 * macOS: `brew install sdl2` (you can get homebrew [here](https://brew.sh/))
 
-## Compiling on Linux/MacOS
+## Compiling on Linux/macOS
+
 1. Place your US ROM file named `zelda3.sfc` in `zelda3`
 2. Compile
 ```sh
@@ -102,6 +103,17 @@ make clean all  # clear gen+obj and rebuild
 CC=clang make   # specify compiler
 ```
 </details>
+
+## Compiling on macOS with Xcode
+
+1. Place your US ROM file named `zelda3.sfc` in `zelda3`
+2. Open `zelda3/macOS/zelda3-macOS.xcodeproj` with Xcode
+3. Get the installation path for SDL2
+   - After install sdl2 using brew, execute `brew info sdl2`, it will print the installation path, e.g. `/opt/homebrew/Cellar/sdl2/2.28.2`
+4. In `General -> Frameworks and Libraries`, add libSDL2.dylib to target `zelda3`
+5. In `Build Settings -> Search Paths`, set the `Header Search Paths` & `Library Search Paths` of SDL2 for target `zelda3`
+   - The `Header Search Paths` is where the header files located inside the installation path, e.g. `/opt/homebrew/Cellar/sdl2/2.28.2/include/SDL2`
+   - The `Library Search Paths` is where the `libSDL2.dylib` located inside the installation path, e.g. `/opt/homebrew/Cellar/sdl2/2.28.2/lib`
 
 ## Nintendo Switch
 

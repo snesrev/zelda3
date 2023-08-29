@@ -1,0 +1,661 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		E8EFAC582A9E2BEC00CE841E /* gl_core_3_1.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAB9D2A9E2BEC00CE841E /* gl_core_3_1.c */; };
+		E8EFAC682A9E2BEC00CE841E /* opus_decoder_amalgam.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFABD62A9E2BEC00CE841E /* opus_decoder_amalgam.c */; };
+		E8EFAC752A9E2BEC00CE841E /* cart.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFABF92A9E2BEC00CE841E /* cart.c */; };
+		E8EFAC762A9E2BEC00CE841E /* ppu.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFABFB2A9E2BEC00CE841E /* ppu.c */; };
+		E8EFAC772A9E2BEC00CE841E /* dsp.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFABFE2A9E2BEC00CE841E /* dsp.c */; };
+		E8EFAC782A9E2BEC00CE841E /* spc.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFABFF2A9E2BEC00CE841E /* spc.c */; };
+		E8EFAC792A9E2BEC00CE841E /* apu.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC002A9E2BEC00CE841E /* apu.c */; };
+		E8EFAC7A2A9E2BEC00CE841E /* cpu.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC012A9E2BEC00CE841E /* cpu.c */; };
+		E8EFAC7B2A9E2BEC00CE841E /* tracing.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC022A9E2BEC00CE841E /* tracing.c */; };
+		E8EFAC7C2A9E2BEC00CE841E /* snes.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC032A9E2BEC00CE841E /* snes.c */; };
+		E8EFAC7D2A9E2BEC00CE841E /* dma.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC052A9E2BEC00CE841E /* dma.c */; };
+		E8EFAC7E2A9E2BEC00CE841E /* input.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC072A9E2BEC00CE841E /* input.c */; };
+		E8EFAC7F2A9E2BEC00CE841E /* snes_other.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC0E2A9E2BEC00CE841E /* snes_other.c */; };
+		E8EFAC802A9E2BEC00CE841E /* messaging.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC132A9E2BEC00CE841E /* messaging.c */; };
+		E8EFAC812A9E2BEC00CE841E /* sprite_main.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC152A9E2BEC00CE841E /* sprite_main.c */; };
+		E8EFAC822A9E2BEC00CE841E /* sprite.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC162A9E2BEC00CE841E /* sprite.c */; };
+		E8EFAC832A9E2BEC00CE841E /* poly.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC172A9E2BEC00CE841E /* poly.c */; };
+		E8EFAC842A9E2BEC00CE841E /* ancilla.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC182A9E2BEC00CE841E /* ancilla.c */; };
+		E8EFAC852A9E2BEC00CE841E /* spc_player.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC1A2A9E2BEC00CE841E /* spc_player.c */; };
+		E8EFAC862A9E2BEC00CE841E /* util.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC1B2A9E2BEC00CE841E /* util.c */; };
+		E8EFAC872A9E2BEC00CE841E /* zelda_cpu_infra.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC1C2A9E2BEC00CE841E /* zelda_cpu_infra.c */; };
+		E8EFAC882A9E2BEC00CE841E /* select_file.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC212A9E2BEC00CE841E /* select_file.c */; };
+		E8EFAC892A9E2BEC00CE841E /* overworld.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC232A9E2BEC00CE841E /* overworld.c */; };
+		E8EFAC8A2A9E2BEC00CE841E /* zelda_rtl.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC242A9E2BEC00CE841E /* zelda_rtl.c */; };
+		E8EFAC8B2A9E2BEC00CE841E /* tile_detect.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC272A9E2BEC00CE841E /* tile_detect.c */; };
+		E8EFAC8E2A9E2BEC00CE841E /* main.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC3E2A9E2BEC00CE841E /* main.c */; };
+		E8EFAC8F2A9E2BEC00CE841E /* player_oam.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC3F2A9E2BEC00CE841E /* player_oam.c */; };
+		E8EFAC902A9E2BEC00CE841E /* tagalong.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC402A9E2BEC00CE841E /* tagalong.c */; };
+		E8EFAC912A9E2BEC00CE841E /* config.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC422A9E2BEC00CE841E /* config.c */; };
+		E8EFAC922A9E2BEC00CE841E /* hud.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC432A9E2BEC00CE841E /* hud.c */; };
+		E8EFAC932A9E2BEC00CE841E /* overlord.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC462A9E2BEC00CE841E /* overlord.c */; };
+		E8EFAC942A9E2BEC00CE841E /* opengl.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC472A9E2BEC00CE841E /* opengl.c */; };
+		E8EFAC952A9E2BEC00CE841E /* glsl_shader.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC4A2A9E2BEC00CE841E /* glsl_shader.c */; };
+		E8EFAC962A9E2BEC00CE841E /* nmi.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC4D2A9E2BEC00CE841E /* nmi.c */; };
+		E8EFAC972A9E2BEC00CE841E /* attract.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC4E2A9E2BEC00CE841E /* attract.c */; };
+		E8EFAC982A9E2BEC00CE841E /* misc.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC4F2A9E2BEC00CE841E /* misc.c */; };
+		E8EFAC992A9E2BEC00CE841E /* load_gfx.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC532A9E2BEC00CE841E /* load_gfx.c */; };
+		E8EFAC9A2A9E2BEC00CE841E /* audio.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC542A9E2BEC00CE841E /* audio.c */; };
+		E8EFAC9B2A9E2BEC00CE841E /* ending.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC552A9E2BEC00CE841E /* ending.c */; };
+		E8EFAC9C2A9E2BEC00CE841E /* dungeon.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC562A9E2BEC00CE841E /* dungeon.c */; };
+		E8EFAC9D2A9E2BEC00CE841E /* player.c in Sources */ = {isa = PBXBuildFile; fileRef = E8EFAC572A9E2BEC00CE841E /* player.c */; };
+		E8EFACA02A9E2C8000CE841E /* libSDL2-2.0.0.dylib in Frameworks */ = {isa = PBXBuildFile; fileRef = E8EFAC9F2A9E2C8000CE841E /* libSDL2-2.0.0.dylib */; };
+		E8EFACA12A9E2C8000CE841E /* libSDL2-2.0.0.dylib in Embed Libraries */ = {isa = PBXBuildFile; fileRef = E8EFAC9F2A9E2C8000CE841E /* libSDL2-2.0.0.dylib */; settings = {ATTRIBUTES = (CodeSignOnCopy, ); }; };
+		E8EFACAB2A9E34A700CE841E /* zelda3_assets.dat in CopyFiles */ = {isa = PBXBuildFile; fileRef = E8EFACAA2A9E347200CE841E /* zelda3_assets.dat */; };
+		E8EFACAC2A9E34A700CE841E /* zelda3.ini in CopyFiles */ = {isa = PBXBuildFile; fileRef = E8EFACA92A9E347200CE841E /* zelda3.ini */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		E8EFAB8F2A9E2B4700CE841E /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 12;
+			dstPath = "";
+			dstSubfolderSpec = 16;
+			files = (
+				E8EFACAB2A9E34A700CE841E /* zelda3_assets.dat in CopyFiles */,
+				E8EFACAC2A9E34A700CE841E /* zelda3.ini in CopyFiles */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		E8EFACA22A9E2C8000CE841E /* Embed Libraries */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				E8EFACA12A9E2C8000CE841E /* libSDL2-2.0.0.dylib in Embed Libraries */,
+			);
+			name = "Embed Libraries";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
+/* Begin PBXFileReference section */
+		E8EFAB912A9E2B4700CE841E /* zelda3 */ = {isa = PBXFileReference; explicitFileType = "compiled.mach-o.executable"; includeInIndex = 0; path = zelda3; sourceTree = BUILT_PRODUCTS_DIR; };
+		E8EFAB9D2A9E2BEC00CE841E /* gl_core_3_1.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = gl_core_3_1.c; sourceTree = "<group>"; };
+		E8EFAB9E2A9E2BEC00CE841E /* gl_core_3_1.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = gl_core_3_1.h; sourceTree = "<group>"; };
+		E8EFABA02A9E2BEC00CE841E /* stb_image.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = stb_image.h; sourceTree = "<group>"; };
+		E8EFABA12A9E2BEC00CE841E /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
+		E8EFABD62A9E2BEC00CE841E /* opus_decoder_amalgam.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = opus_decoder_amalgam.c; sourceTree = "<group>"; };
+		E8EFABF92A9E2BEC00CE841E /* cart.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cart.c; sourceTree = "<group>"; };
+		E8EFABFA2A9E2BEC00CE841E /* dsp_regs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsp_regs.h; sourceTree = "<group>"; };
+		E8EFABFB2A9E2BEC00CE841E /* ppu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ppu.c; sourceTree = "<group>"; };
+		E8EFABFC2A9E2BEC00CE841E /* dma.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dma.h; sourceTree = "<group>"; };
+		E8EFABFD2A9E2BEC00CE841E /* input.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = input.h; sourceTree = "<group>"; };
+		E8EFABFE2A9E2BEC00CE841E /* dsp.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dsp.c; sourceTree = "<group>"; };
+		E8EFABFF2A9E2BEC00CE841E /* spc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = spc.c; sourceTree = "<group>"; };
+		E8EFAC002A9E2BEC00CE841E /* apu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = apu.c; sourceTree = "<group>"; };
+		E8EFAC012A9E2BEC00CE841E /* cpu.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = cpu.c; sourceTree = "<group>"; };
+		E8EFAC022A9E2BEC00CE841E /* tracing.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = tracing.c; sourceTree = "<group>"; };
+		E8EFAC032A9E2BEC00CE841E /* snes.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = snes.c; sourceTree = "<group>"; };
+		E8EFAC042A9E2BEC00CE841E /* snes_regs.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snes_regs.h; sourceTree = "<group>"; };
+		E8EFAC052A9E2BEC00CE841E /* dma.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dma.c; sourceTree = "<group>"; };
+		E8EFAC062A9E2BEC00CE841E /* saveload.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = saveload.h; sourceTree = "<group>"; };
+		E8EFAC072A9E2BEC00CE841E /* input.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = input.c; sourceTree = "<group>"; };
+		E8EFAC082A9E2BEC00CE841E /* cart.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cart.h; sourceTree = "<group>"; };
+		E8EFAC092A9E2BEC00CE841E /* ppu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ppu.h; sourceTree = "<group>"; };
+		E8EFAC0A2A9E2BEC00CE841E /* cpu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = cpu.h; sourceTree = "<group>"; };
+		E8EFAC0B2A9E2BEC00CE841E /* spc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = spc.h; sourceTree = "<group>"; };
+		E8EFAC0C2A9E2BEC00CE841E /* apu.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = apu.h; sourceTree = "<group>"; };
+		E8EFAC0D2A9E2BEC00CE841E /* dsp.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dsp.h; sourceTree = "<group>"; };
+		E8EFAC0E2A9E2BEC00CE841E /* snes_other.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = snes_other.c; sourceTree = "<group>"; };
+		E8EFAC0F2A9E2BEC00CE841E /* snes.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = snes.h; sourceTree = "<group>"; };
+		E8EFAC102A9E2BEC00CE841E /* tracing.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tracing.h; sourceTree = "<group>"; };
+		E8EFAC122A9E2BEC00CE841E /* player_oam.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = player_oam.h; sourceTree = "<group>"; };
+		E8EFAC132A9E2BEC00CE841E /* messaging.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = messaging.c; sourceTree = "<group>"; };
+		E8EFAC142A9E2BEC00CE841E /* tagalong.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tagalong.h; sourceTree = "<group>"; };
+		E8EFAC152A9E2BEC00CE841E /* sprite_main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sprite_main.c; sourceTree = "<group>"; };
+		E8EFAC162A9E2BEC00CE841E /* sprite.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = sprite.c; sourceTree = "<group>"; };
+		E8EFAC172A9E2BEC00CE841E /* poly.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = poly.c; sourceTree = "<group>"; };
+		E8EFAC182A9E2BEC00CE841E /* ancilla.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ancilla.c; sourceTree = "<group>"; };
+		E8EFAC192A9E2BEC00CE841E /* overlord.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = overlord.h; sourceTree = "<group>"; };
+		E8EFAC1A2A9E2BEC00CE841E /* spc_player.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = spc_player.c; sourceTree = "<group>"; };
+		E8EFAC1B2A9E2BEC00CE841E /* util.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = util.c; sourceTree = "<group>"; };
+		E8EFAC1C2A9E2BEC00CE841E /* zelda_cpu_infra.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = zelda_cpu_infra.c; sourceTree = "<group>"; };
+		E8EFAC1D2A9E2BEC00CE841E /* hud.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = hud.h; sourceTree = "<group>"; };
+		E8EFAC1E2A9E2BEC00CE841E /* config.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = config.h; sourceTree = "<group>"; };
+		E8EFAC1F2A9E2BEC00CE841E /* features.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = features.h; sourceTree = "<group>"; };
+		E8EFAC202A9E2BEC00CE841E /* types.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = types.h; sourceTree = "<group>"; };
+		E8EFAC212A9E2BEC00CE841E /* select_file.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = select_file.c; sourceTree = "<group>"; };
+		E8EFAC222A9E2BEC00CE841E /* misc.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = misc.h; sourceTree = "<group>"; };
+		E8EFAC232A9E2BEC00CE841E /* overworld.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = overworld.c; sourceTree = "<group>"; };
+		E8EFAC242A9E2BEC00CE841E /* zelda_rtl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = zelda_rtl.c; sourceTree = "<group>"; };
+		E8EFAC252A9E2BEC00CE841E /* nmi.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = nmi.h; sourceTree = "<group>"; };
+		E8EFAC262A9E2BEC00CE841E /* attract.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = attract.h; sourceTree = "<group>"; };
+		E8EFAC272A9E2BEC00CE841E /* tile_detect.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = tile_detect.c; sourceTree = "<group>"; };
+		E8EFAC342A9E2BEC00CE841E /* glsl_shader.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = glsl_shader.h; sourceTree = "<group>"; };
+		E8EFAC352A9E2BEC00CE841E /* player.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = player.h; sourceTree = "<group>"; };
+		E8EFAC362A9E2BEC00CE841E /* audio.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = audio.h; sourceTree = "<group>"; };
+		E8EFAC372A9E2BEC00CE841E /* ending.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ending.h; sourceTree = "<group>"; };
+		E8EFAC382A9E2BEC00CE841E /* dungeon.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = dungeon.h; sourceTree = "<group>"; };
+		E8EFAC392A9E2BEC00CE841E /* load_gfx.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = load_gfx.h; sourceTree = "<group>"; };
+		E8EFAC3A2A9E2BEC00CE841E /* assets.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = assets.h; sourceTree = "<group>"; };
+		E8EFAC3B2A9E2BEC00CE841E /* sprite_main.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sprite_main.h; sourceTree = "<group>"; };
+		E8EFAC3C2A9E2BEC00CE841E /* sprite.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = sprite.h; sourceTree = "<group>"; };
+		E8EFAC3D2A9E2BEC00CE841E /* messaging.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = messaging.h; sourceTree = "<group>"; };
+		E8EFAC3E2A9E2BEC00CE841E /* main.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = main.c; sourceTree = "<group>"; };
+		E8EFAC3F2A9E2BEC00CE841E /* player_oam.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = player_oam.c; sourceTree = "<group>"; };
+		E8EFAC402A9E2BEC00CE841E /* tagalong.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = tagalong.c; sourceTree = "<group>"; };
+		E8EFAC412A9E2BEC00CE841E /* zelda_cpu_infra.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zelda_cpu_infra.h; sourceTree = "<group>"; };
+		E8EFAC422A9E2BEC00CE841E /* config.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = config.c; sourceTree = "<group>"; };
+		E8EFAC432A9E2BEC00CE841E /* hud.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = hud.c; sourceTree = "<group>"; };
+		E8EFAC442A9E2BEC00CE841E /* util.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = util.h; sourceTree = "<group>"; };
+		E8EFAC452A9E2BEC00CE841E /* spc_player.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = spc_player.h; sourceTree = "<group>"; };
+		E8EFAC462A9E2BEC00CE841E /* overlord.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = overlord.c; sourceTree = "<group>"; };
+		E8EFAC472A9E2BEC00CE841E /* opengl.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = opengl.c; sourceTree = "<group>"; };
+		E8EFAC482A9E2BEC00CE841E /* ancilla.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ancilla.h; sourceTree = "<group>"; };
+		E8EFAC492A9E2BEC00CE841E /* poly.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = poly.h; sourceTree = "<group>"; };
+		E8EFAC4A2A9E2BEC00CE841E /* glsl_shader.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = glsl_shader.c; sourceTree = "<group>"; };
+		E8EFAC4B2A9E2BEC00CE841E /* tile_detect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tile_detect.h; sourceTree = "<group>"; };
+		E8EFAC4C2A9E2BEC00CE841E /* variables.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = variables.h; sourceTree = "<group>"; };
+		E8EFAC4D2A9E2BEC00CE841E /* nmi.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = nmi.c; sourceTree = "<group>"; };
+		E8EFAC4E2A9E2BEC00CE841E /* attract.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = attract.c; sourceTree = "<group>"; };
+		E8EFAC4F2A9E2BEC00CE841E /* misc.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = misc.c; sourceTree = "<group>"; };
+		E8EFAC502A9E2BEC00CE841E /* overworld.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = overworld.h; sourceTree = "<group>"; };
+		E8EFAC512A9E2BEC00CE841E /* select_file.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = select_file.h; sourceTree = "<group>"; };
+		E8EFAC522A9E2BEC00CE841E /* zelda_rtl.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = zelda_rtl.h; sourceTree = "<group>"; };
+		E8EFAC532A9E2BEC00CE841E /* load_gfx.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = load_gfx.c; sourceTree = "<group>"; };
+		E8EFAC542A9E2BEC00CE841E /* audio.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = audio.c; sourceTree = "<group>"; };
+		E8EFAC552A9E2BEC00CE841E /* ending.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = ending.c; sourceTree = "<group>"; };
+		E8EFAC562A9E2BEC00CE841E /* dungeon.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = dungeon.c; sourceTree = "<group>"; };
+		E8EFAC572A9E2BEC00CE841E /* player.c */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.c; path = player.c; sourceTree = "<group>"; };
+		E8EFAC9F2A9E2C8000CE841E /* libSDL2-2.0.0.dylib */ = {isa = PBXFileReference; lastKnownFileType = "compiled.mach-o.dylib"; name = "libSDL2-2.0.0.dylib"; path = "../../../../../opt/homebrew/Cellar/sdl2/2.28.2/lib/libSDL2-2.0.0.dylib"; sourceTree = "<group>"; };
+		E8EFACA92A9E347200CE841E /* zelda3.ini */ = {isa = PBXFileReference; lastKnownFileType = text; name = zelda3.ini; path = ../zelda3.ini; sourceTree = "<group>"; };
+		E8EFACAA2A9E347200CE841E /* zelda3_assets.dat */ = {isa = PBXFileReference; lastKnownFileType = file; name = zelda3_assets.dat; path = ../zelda3_assets.dat; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		E8EFAB8E2A9E2B4700CE841E /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E8EFACA02A9E2C8000CE841E /* libSDL2-2.0.0.dylib in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		E8EFAB882A9E2B4700CE841E = {
+			isa = PBXGroup;
+			children = (
+				E8EFACAA2A9E347200CE841E /* zelda3_assets.dat */,
+				E8EFACA92A9E347200CE841E /* zelda3.ini */,
+				E8EFABF82A9E2BEC00CE841E /* snes */,
+				E8EFAC112A9E2BEC00CE841E /* src */,
+				E8EFAB9B2A9E2BEC00CE841E /* third_party */,
+				E8EFAB922A9E2B4700CE841E /* Products */,
+				E8EFAC9E2A9E2C8000CE841E /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		E8EFAB922A9E2B4700CE841E /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				E8EFAB912A9E2B4700CE841E /* zelda3 */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		E8EFAB9B2A9E2BEC00CE841E /* third_party */ = {
+			isa = PBXGroup;
+			children = (
+				E8EFAB9C2A9E2BEC00CE841E /* gl_core */,
+				E8EFAB9F2A9E2BEC00CE841E /* stb */,
+				E8EFABA12A9E2BEC00CE841E /* .gitignore */,
+				E8EFABA22A9E2BEC00CE841E /* opus-1.3.1-stripped */,
+			);
+			name = third_party;
+			path = ../third_party;
+			sourceTree = "<group>";
+		};
+		E8EFAB9C2A9E2BEC00CE841E /* gl_core */ = {
+			isa = PBXGroup;
+			children = (
+				E8EFAB9D2A9E2BEC00CE841E /* gl_core_3_1.c */,
+				E8EFAB9E2A9E2BEC00CE841E /* gl_core_3_1.h */,
+			);
+			path = gl_core;
+			sourceTree = "<group>";
+		};
+		E8EFAB9F2A9E2BEC00CE841E /* stb */ = {
+			isa = PBXGroup;
+			children = (
+				E8EFABA02A9E2BEC00CE841E /* stb_image.h */,
+			);
+			path = stb;
+			sourceTree = "<group>";
+		};
+		E8EFABA22A9E2BEC00CE841E /* opus-1.3.1-stripped */ = {
+			isa = PBXGroup;
+			children = (
+				E8EFABD62A9E2BEC00CE841E /* opus_decoder_amalgam.c */,
+			);
+			path = "opus-1.3.1-stripped";
+			sourceTree = "<group>";
+		};
+		E8EFABF82A9E2BEC00CE841E /* snes */ = {
+			isa = PBXGroup;
+			children = (
+				E8EFABF92A9E2BEC00CE841E /* cart.c */,
+				E8EFABFA2A9E2BEC00CE841E /* dsp_regs.h */,
+				E8EFABFB2A9E2BEC00CE841E /* ppu.c */,
+				E8EFABFC2A9E2BEC00CE841E /* dma.h */,
+				E8EFABFD2A9E2BEC00CE841E /* input.h */,
+				E8EFABFE2A9E2BEC00CE841E /* dsp.c */,
+				E8EFABFF2A9E2BEC00CE841E /* spc.c */,
+				E8EFAC002A9E2BEC00CE841E /* apu.c */,
+				E8EFAC012A9E2BEC00CE841E /* cpu.c */,
+				E8EFAC022A9E2BEC00CE841E /* tracing.c */,
+				E8EFAC032A9E2BEC00CE841E /* snes.c */,
+				E8EFAC042A9E2BEC00CE841E /* snes_regs.h */,
+				E8EFAC052A9E2BEC00CE841E /* dma.c */,
+				E8EFAC062A9E2BEC00CE841E /* saveload.h */,
+				E8EFAC072A9E2BEC00CE841E /* input.c */,
+				E8EFAC082A9E2BEC00CE841E /* cart.h */,
+				E8EFAC092A9E2BEC00CE841E /* ppu.h */,
+				E8EFAC0A2A9E2BEC00CE841E /* cpu.h */,
+				E8EFAC0B2A9E2BEC00CE841E /* spc.h */,
+				E8EFAC0C2A9E2BEC00CE841E /* apu.h */,
+				E8EFAC0D2A9E2BEC00CE841E /* dsp.h */,
+				E8EFAC0E2A9E2BEC00CE841E /* snes_other.c */,
+				E8EFAC0F2A9E2BEC00CE841E /* snes.h */,
+				E8EFAC102A9E2BEC00CE841E /* tracing.h */,
+			);
+			name = snes;
+			path = ../snes;
+			sourceTree = "<group>";
+		};
+		E8EFAC112A9E2BEC00CE841E /* src */ = {
+			isa = PBXGroup;
+			children = (
+				E8EFAC122A9E2BEC00CE841E /* player_oam.h */,
+				E8EFAC132A9E2BEC00CE841E /* messaging.c */,
+				E8EFAC142A9E2BEC00CE841E /* tagalong.h */,
+				E8EFAC152A9E2BEC00CE841E /* sprite_main.c */,
+				E8EFAC162A9E2BEC00CE841E /* sprite.c */,
+				E8EFAC172A9E2BEC00CE841E /* poly.c */,
+				E8EFAC182A9E2BEC00CE841E /* ancilla.c */,
+				E8EFAC192A9E2BEC00CE841E /* overlord.h */,
+				E8EFAC1A2A9E2BEC00CE841E /* spc_player.c */,
+				E8EFAC1B2A9E2BEC00CE841E /* util.c */,
+				E8EFAC1C2A9E2BEC00CE841E /* zelda_cpu_infra.c */,
+				E8EFAC1D2A9E2BEC00CE841E /* hud.h */,
+				E8EFAC1E2A9E2BEC00CE841E /* config.h */,
+				E8EFAC1F2A9E2BEC00CE841E /* features.h */,
+				E8EFAC202A9E2BEC00CE841E /* types.h */,
+				E8EFAC212A9E2BEC00CE841E /* select_file.c */,
+				E8EFAC222A9E2BEC00CE841E /* misc.h */,
+				E8EFAC232A9E2BEC00CE841E /* overworld.c */,
+				E8EFAC242A9E2BEC00CE841E /* zelda_rtl.c */,
+				E8EFAC252A9E2BEC00CE841E /* nmi.h */,
+				E8EFAC262A9E2BEC00CE841E /* attract.h */,
+				E8EFAC272A9E2BEC00CE841E /* tile_detect.c */,
+				E8EFAC342A9E2BEC00CE841E /* glsl_shader.h */,
+				E8EFAC352A9E2BEC00CE841E /* player.h */,
+				E8EFAC362A9E2BEC00CE841E /* audio.h */,
+				E8EFAC372A9E2BEC00CE841E /* ending.h */,
+				E8EFAC382A9E2BEC00CE841E /* dungeon.h */,
+				E8EFAC392A9E2BEC00CE841E /* load_gfx.h */,
+				E8EFAC3A2A9E2BEC00CE841E /* assets.h */,
+				E8EFAC3B2A9E2BEC00CE841E /* sprite_main.h */,
+				E8EFAC3C2A9E2BEC00CE841E /* sprite.h */,
+				E8EFAC3D2A9E2BEC00CE841E /* messaging.h */,
+				E8EFAC3E2A9E2BEC00CE841E /* main.c */,
+				E8EFAC3F2A9E2BEC00CE841E /* player_oam.c */,
+				E8EFAC402A9E2BEC00CE841E /* tagalong.c */,
+				E8EFAC412A9E2BEC00CE841E /* zelda_cpu_infra.h */,
+				E8EFAC422A9E2BEC00CE841E /* config.c */,
+				E8EFAC432A9E2BEC00CE841E /* hud.c */,
+				E8EFAC442A9E2BEC00CE841E /* util.h */,
+				E8EFAC452A9E2BEC00CE841E /* spc_player.h */,
+				E8EFAC462A9E2BEC00CE841E /* overlord.c */,
+				E8EFAC472A9E2BEC00CE841E /* opengl.c */,
+				E8EFAC482A9E2BEC00CE841E /* ancilla.h */,
+				E8EFAC492A9E2BEC00CE841E /* poly.h */,
+				E8EFAC4A2A9E2BEC00CE841E /* glsl_shader.c */,
+				E8EFAC4B2A9E2BEC00CE841E /* tile_detect.h */,
+				E8EFAC4C2A9E2BEC00CE841E /* variables.h */,
+				E8EFAC4D2A9E2BEC00CE841E /* nmi.c */,
+				E8EFAC4E2A9E2BEC00CE841E /* attract.c */,
+				E8EFAC4F2A9E2BEC00CE841E /* misc.c */,
+				E8EFAC502A9E2BEC00CE841E /* overworld.h */,
+				E8EFAC512A9E2BEC00CE841E /* select_file.h */,
+				E8EFAC522A9E2BEC00CE841E /* zelda_rtl.h */,
+				E8EFAC532A9E2BEC00CE841E /* load_gfx.c */,
+				E8EFAC542A9E2BEC00CE841E /* audio.c */,
+				E8EFAC552A9E2BEC00CE841E /* ending.c */,
+				E8EFAC562A9E2BEC00CE841E /* dungeon.c */,
+				E8EFAC572A9E2BEC00CE841E /* player.c */,
+			);
+			name = src;
+			path = ../src;
+			sourceTree = "<group>";
+		};
+		E8EFAC9E2A9E2C8000CE841E /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				E8EFAC9F2A9E2C8000CE841E /* libSDL2-2.0.0.dylib */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E8EFAB902A9E2B4700CE841E /* zelda3 */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = E8EFAB982A9E2B4700CE841E /* Build configuration list for PBXNativeTarget "zelda3" */;
+			buildPhases = (
+				E8EFACA32A9E2E6300CE841E /* ShellScript */,
+				E8EFAB8D2A9E2B4700CE841E /* Sources */,
+				E8EFAB8E2A9E2B4700CE841E /* Frameworks */,
+				E8EFAB8F2A9E2B4700CE841E /* CopyFiles */,
+				E8EFACA22A9E2C8000CE841E /* Embed Libraries */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = zelda3;
+			productName = macOS;
+			productReference = E8EFAB912A9E2B4700CE841E /* zelda3 */;
+			productType = "com.apple.product-type.tool";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E8EFAB892A9E2B4700CE841E /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 1500;
+				LastUpgradeCheck = 1500;
+				TargetAttributes = {
+					E8EFAB902A9E2B4700CE841E = {
+						CreatedOnToolsVersion = 15.0;
+					};
+				};
+			};
+			buildConfigurationList = E8EFAB8C2A9E2B4700CE841E /* Build configuration list for PBXProject "zelda3-macOS" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = E8EFAB882A9E2B4700CE841E;
+			productRefGroup = E8EFAB922A9E2B4700CE841E /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E8EFAB902A9E2B4700CE841E /* zelda3 */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		E8EFACA32A9E2E6300CE841E /* ShellScript */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "/usr/bin/env python3 ${PROJECT_DIR}/../assets/restool.py --extract-from-rom\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		E8EFAB8D2A9E2B4700CE841E /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E8EFAC982A9E2BEC00CE841E /* misc.c in Sources */,
+				E8EFAC922A9E2BEC00CE841E /* hud.c in Sources */,
+				E8EFAC862A9E2BEC00CE841E /* util.c in Sources */,
+				E8EFAC782A9E2BEC00CE841E /* spc.c in Sources */,
+				E8EFAC892A9E2BEC00CE841E /* overworld.c in Sources */,
+				E8EFAC762A9E2BEC00CE841E /* ppu.c in Sources */,
+				E8EFAC9A2A9E2BEC00CE841E /* audio.c in Sources */,
+				E8EFAC902A9E2BEC00CE841E /* tagalong.c in Sources */,
+				E8EFAC822A9E2BEC00CE841E /* sprite.c in Sources */,
+				E8EFAC972A9E2BEC00CE841E /* attract.c in Sources */,
+				E8EFAC7A2A9E2BEC00CE841E /* cpu.c in Sources */,
+				E8EFAC7E2A9E2BEC00CE841E /* input.c in Sources */,
+				E8EFAC942A9E2BEC00CE841E /* opengl.c in Sources */,
+				E8EFAC962A9E2BEC00CE841E /* nmi.c in Sources */,
+				E8EFAC9C2A9E2BEC00CE841E /* dungeon.c in Sources */,
+				E8EFAC952A9E2BEC00CE841E /* glsl_shader.c in Sources */,
+				E8EFAC852A9E2BEC00CE841E /* spc_player.c in Sources */,
+				E8EFAC802A9E2BEC00CE841E /* messaging.c in Sources */,
+				E8EFAC9D2A9E2BEC00CE841E /* player.c in Sources */,
+				E8EFAC992A9E2BEC00CE841E /* load_gfx.c in Sources */,
+				E8EFAC912A9E2BEC00CE841E /* config.c in Sources */,
+				E8EFAC7F2A9E2BEC00CE841E /* snes_other.c in Sources */,
+				E8EFAC7C2A9E2BEC00CE841E /* snes.c in Sources */,
+				E8EFAC872A9E2BEC00CE841E /* zelda_cpu_infra.c in Sources */,
+				E8EFAC932A9E2BEC00CE841E /* overlord.c in Sources */,
+				E8EFAC8E2A9E2BEC00CE841E /* main.c in Sources */,
+				E8EFAC882A9E2BEC00CE841E /* select_file.c in Sources */,
+				E8EFAC812A9E2BEC00CE841E /* sprite_main.c in Sources */,
+				E8EFAC9B2A9E2BEC00CE841E /* ending.c in Sources */,
+				E8EFAC8B2A9E2BEC00CE841E /* tile_detect.c in Sources */,
+				E8EFAC7D2A9E2BEC00CE841E /* dma.c in Sources */,
+				E8EFAC582A9E2BEC00CE841E /* gl_core_3_1.c in Sources */,
+				E8EFAC792A9E2BEC00CE841E /* apu.c in Sources */,
+				E8EFAC7B2A9E2BEC00CE841E /* tracing.c in Sources */,
+				E8EFAC832A9E2BEC00CE841E /* poly.c in Sources */,
+				E8EFAC682A9E2BEC00CE841E /* opus_decoder_amalgam.c in Sources */,
+				E8EFAC842A9E2BEC00CE841E /* ancilla.c in Sources */,
+				E8EFAC752A9E2BEC00CE841E /* cart.c in Sources */,
+				E8EFAC772A9E2BEC00CE841E /* dsp.c in Sources */,
+				E8EFAC8F2A9E2BEC00CE841E /* player_oam.c in Sources */,
+				E8EFAC8A2A9E2BEC00CE841E /* zelda_rtl.c in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		E8EFAB962A9E2B4700CE841E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = macosx;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		E8EFAB972A9E2B4700CE841E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 13.5;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = macosx;
+				SWIFT_COMPILATION_MODE = wholemodule;
+			};
+			name = Release;
+		};
+		E8EFAB992A9E2B4700CE841E /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 5TCGFUXXZP;
+				ENABLE_HARDENED_RUNTIME = YES;
+				HEADER_SEARCH_PATHS = (
+					"${PROJECT_DIR}/../",
+					/opt/homebrew/Cellar/sdl2/2.28.2/include/SDL2,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/homebrew/Cellar/sdl2/2.28.2/lib,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		E8EFAB9A2A9E2B4700CE841E /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = "";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 5TCGFUXXZP;
+				ENABLE_HARDENED_RUNTIME = YES;
+				HEADER_SEARCH_PATHS = (
+					"${PROJECT_DIR}/../",
+					/opt/homebrew/Cellar/sdl2/2.28.2/include/SDL2,
+				);
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					/opt/homebrew/Cellar/sdl2/2.28.2/lib,
+				);
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		E8EFAB8C2A9E2B4700CE841E /* Build configuration list for PBXProject "zelda3-macOS" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E8EFAB962A9E2B4700CE841E /* Debug */,
+				E8EFAB972A9E2B4700CE841E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		E8EFAB982A9E2B4700CE841E /* Build configuration list for PBXNativeTarget "zelda3" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				E8EFAB992A9E2B4700CE841E /* Debug */,
+				E8EFAB9A2A9E2B4700CE841E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E8EFAB892A9E2B4700CE841E /* Project object */;
+}
