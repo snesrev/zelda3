@@ -7,10 +7,10 @@
 #include <string.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include "saveload.h"
+#include "snes/saveload.h"
 typedef struct Ppu Ppu;
 
-#include "../types.h"
+#include "src/types.h"
 
 typedef struct BgLayer {
   uint16_t hScroll;

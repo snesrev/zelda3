@@ -25,9 +25,9 @@ IF NOT EXIST "%SDL2%\lib\x64\SDL2.dll" (
   REM
 )
 
-IF NOT EXIST "tables\zelda3_assets.dat" (
+IF NOT EXIST "zelda3_assets.dat" (
   ECHO:
-  ECHO ERROR: tables\zelda3_assets.dat was not found.
+  ECHO ERROR: zelda3_assets.dat was not found.
   ECHO You need to extract assets from the ROM first, or get this file from a friend. Please see README.md
   ECHO:
   PAUSE
@@ -38,7 +38,7 @@ IF NOT EXIST "tables\zelda3_assets.dat" (
 
 
 echo Building with TCC...
-third_party\tcc\tcc.exe -ozelda3.exe -DCOMPILER_TCC=1 -DSTBI_NO_SIMD=1 -DHAVE_STDINT_H=1 -D_HAVE_STDINT_H=1 -DSYSTEM_VOLUME_MIXER_AVAILABLE=0 -I%SDL2%/include -L%SDL2%/lib/x64 -lSDL2 *.c snes/*.c third_party/gl_core/gl_core_3_1.c third_party/opus-1.3.1-stripped/opus_decoder_amalgam.c
+third_party\tcc\tcc.exe -ozelda3.exe -DCOMPILER_TCC=1 -DSTBI_NO_SIMD=1 -DHAVE_STDINT_H=1 -D_HAVE_STDINT_H=1 -DSYSTEM_VOLUME_MIXER_AVAILABLE=0 -I%SDL2%/include -L%SDL2%/lib/x64 -lSDL2 -I. src/*.c snes/*.c third_party/gl_core/gl_core_3_1.c third_party/opus-1.3.1-stripped/opus_decoder_amalgam.c
 IF ERRORLEVEL 1 goto GETOUT
 
 copy %SDL2%\lib\x64\SDL2.dll .

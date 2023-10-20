@@ -810,10 +810,20 @@ uint32 g_asset_sizes[kNumberOfAssets];
 
 static void LoadAssets() {
   size_t length = 0;
-  uint8 *data = ReadWholeFile("tables/zelda3_assets.dat", &length);
-  if (!data)
-    data = ReadWholeFile("zelda3_assets.dat", &length);
-  if (!data) Die("Failed to read zelda3_assets.dat. Please see the README for information about how you get this file.");
+  uint8 *data = ReadWholeFile("zelda3_assets.dat", &length);
+  if (!data) {
+    size_t bps_length, bps_src_length;
+    uint8 *bps, *bps_src;
+    bps = ReadWholeFile("zelda3_assets.bps", &bps_length);
+    if (!bps)
+      Die("Failed to read zelda3_assets.dat. Please see the README for information about how you get this file.");
+    bps_src = ReadWholeFile("zelda3.sfc", &bps_src_length);
+    if (!bps_src)
+      Die("Missing file: zelda3.sfc");
+    data = ApplyBps(bps_src, bps_src_length, bps, bps_length, &length);
+    if (!data)
+      Die("Unable to apply zelda3_assets.bps. Please make sure you got the right version of 'zelda3.sfc'");
+  }
 
   static const char kAssetsSig[] = { kAssets_Sig };
 

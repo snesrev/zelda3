@@ -809,7 +809,7 @@ extern MemBlk FindInAssetArray(int asset, int idx);
       file_data += b'\0'
     file_data += v
 
-  open('zelda3_assets.dat', 'wb').write(file_data)
+  open('../zelda3_assets.dat', 'wb').write(file_data)
 
 def main(args):
   print_all(args)

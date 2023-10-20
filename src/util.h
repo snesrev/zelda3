@@ -35,5 +35,7 @@ const char *SkipPrefix(const char *big, const char *little);
 void StrSet(char **rv, const char *s);
 char *StrFmt(const char *fmt, ...);
 char *ReplaceFilenameWithNewPath(const char *old_path, const char *new_path);
+uint8 *ApplyBps(const uint8 *src, size_t src_size_in,
+  const uint8 *bps, size_t bps_size, size_t *length_out);
 
 #endif  // ZELDA3_UTIL_H_

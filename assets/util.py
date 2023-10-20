@@ -10,7 +10,7 @@ def cache(user_function):
 
 # Both are common SNES rom extensions. For Zelda3 (NA), they are equivalent files.
 COMMON_ROM_NAMES = ['zelda3.sfc', 'zelda3.smc']
-DEFAULT_ROM_DIRECTORY = os.path.dirname(__file__)
+DEFAULT_ROM_DIRECTORY = os.path.join(os.path.dirname(__file__), '..')
 
 ZELDA3_SHA1_US = '6D4F10A8B10E10DBE624CB23CF03B88BB8252973'
 ZELDA3_SHA1 = {

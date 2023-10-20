@@ -27,7 +27,7 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 
 1 TEXTINCLUDE 
 BEGIN
-    "platform\\win32\\resource.h\0"
+    "src\\platform\\win32\\resource.h\0"
 END
 
 2 TEXTINCLUDE 
@@ -52,7 +52,7 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDI_ICON1               ICON                    "platform\\win32\\triforce.ico"
+IDI_ICON1               ICON                    "src\\platform\\win32\\triforce.ico"
 
 #endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
