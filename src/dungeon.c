@@ -15,14 +15,8 @@
 #include "tagalong.h"
 #include "messaging.h"
 #include "assets.h"
+#include "config.h"
 
-// todo: move to config
-static const uint16 kBossRooms[] = {
-  200, 51, 7,
-  32,
-  6, 90, 41, 144, 222, 164, 172,
-  13
-};
 static const uint8 kDungeonExit_From[12] = {200, 51, 7, 32, 6, 90, 41, 144, 222, 164, 172, 13};
 static const uint8 kDungeonExit_To[12] = {201, 99, 119, 32, 40, 74, 89, 152, 14, 214, 219, 13};
 static const uint16 kObjectSubtype1Params[] = {

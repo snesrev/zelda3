@@ -44,6 +44,13 @@ enum {
   kOutputMethod_OpenGL_ES,
 };
 
+static const uint16 kBossRooms[] = {
+        200, 51, 7,
+        32,
+        6, 90, 41, 144, 222, 164, 172,
+        13
+};
+
 typedef struct Config {
   int window_width;
   int window_height;
