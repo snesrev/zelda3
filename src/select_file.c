@@ -459,15 +459,14 @@ void CopyFile_SelectionAndBlinker() {  // 8cd13f
     uint8 k = selectfile_R16;
     if (a & 8) {
       do {
-        if (--k < 0) {
+        if (sign8(--k)) {
           k = 3;
           break;
         }
       } while (!selectfile_arr1[k]);
     } else {
       do {
-        k++;
-        if (k >= 4)
+        if (++k >= 4)
           k = 0;
       } while (k != 3 && !selectfile_arr1[k]);
     }
