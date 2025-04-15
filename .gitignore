@@ -31,3 +31,6 @@ __pycache__
 /sprites-gfx
 /glsl-shaders
 /token.txt
+.venv
+venv/
+venv.bak/
