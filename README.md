@@ -65,17 +65,28 @@ Same Steps 1-4 above<br/>
 13. Configure with `zelda3.ini` in the main dir<br/>
 
 ## Installing libraries on Linux/MacOS
+Changes in Python encourages use of virtual environments within projects instead of poluting the global space.  The `virtualenv` package is available outside of Python via `brew` on Linux/MacOS (homebrew is available [here](https://brew.sh/)):
+
 1. Open a terminal
-2. Install pip if not already installed
-```sh
-python3 -m ensurepip
-```
-3. Clone the repo and `cd` into it
+2. Clone the repo and cd into it:
 ```sh
 git clone https://github.com/snesrev/zelda3
 cd zelda3
 ```
-4. Install requirements using pip
+3. Install `virtualenv` via brew:
+```sh
+brew install virtualenv
+```
+4. Create a new virtual environment for Python in the `venv` directory within the cloned repo:
+```sh
+virtualenv -p python3 venv
+```
+5. Confirm that the virtual python environment is configured:
+```sh
+which pip
+/path/to/zelda2/venv/bin/pip
+```
+6. Install requirements using `pip`:
 ```sh
 python3 -m pip install -r requirements.txt
 ```
@@ -83,7 +94,7 @@ python3 -m pip install -r requirements.txt
 * Ubuntu/Debian `sudo apt install libsdl2-dev`
 * Fedora Linux `sudo dnf install SDL2-devel`
 * Arch Linux `sudo pacman -S sdl2`
-* macOS: `brew install sdl2` (you can get homebrew [here](https://brew.sh/))
+* macOS: `brew install sdl2`
 
 ## Compiling on Linux/MacOS
 1. Place your US ROM file named `zelda3.sfc` in `zelda3`
