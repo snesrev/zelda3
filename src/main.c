@@ -7,6 +7,7 @@
 #ifdef _WIN32
 #include "platform/win32/volume_control.h"
 #include <direct.h>
+#include <Windows.h>
 #else
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -305,6 +306,11 @@ int main(int argc, char** argv) {
                        g_config.no_sprite_limits * kPpuRenderFlags_NoSpriteLimits;
   ZeldaEnableMsu(g_config.enable_msu);
   ZeldaSetLanguage(g_config.language);
+  
+#ifdef _WIN32
+  SetProcessDPIAware();
+#endif
+
 
   if (g_config.fullscreen == 1)
     g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
