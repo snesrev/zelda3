@@ -51,6 +51,22 @@ kTextAlphabet_FR = [
   # 112-
 ]
 
+kTextAlphabet_IT = [
+  "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", "O", "P", # 0 - 15
+  "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z", "a", "b", "c", "d", "e", "f", # 16 - 31
+  "g", "h", "i", "j", "k", "l", "m", "n", "o", "p", "q", "r", "s", "t", "u", "v", # 32 - 47
+  "w", "x", "y", "z", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9", "!", "?", # 48 - 63
+  "-", ".", ",", 
+  # 64 - 79
+  "[...]", ">", "(", ")",
+  "[Ankh]", "[Waves]", "[Snake]", "[LinkL]", "[LinkR]",
+  "\"", "[Up]", "[Down]", "[Left]",
+  # 80 - 95
+  "[Right]", "'", "[1HeartL]", "[1HeartR]", "[2HeartL]", "[3HeartL]", "[3HeartR]",
+  "[4HeartL]", "[4HeartR]", " ", "<", "[A]", "[B]", "[X]", "[Y]", "[I]",
+  "¡", "[!]", " ",
+]
+
 kText_CommandLengths_US = [1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 1, 1, 1, 1, 1, ]
 kText_CommandNames_US = [
   "NextPic", "Choose", "Item", "Name", "Window", "Number",
@@ -388,6 +404,11 @@ class LangFR_C(LangEU):
   dictionary = kTextDictionary_FR
   rom_addrs = [0x9c8000, 0x8CF150]
 
+class LangIT(LangUS):
+  alphabet = kTextAlphabet_IT
+  dictionary = kTextDictionary_US
+  rom_addrs = [0x9c8000, 0x8edf40]
+
 kLanguages = {
   'us' : LangUS(),
   'de' : LangDE(),
@@ -400,6 +421,7 @@ kLanguages = {
   'redux' : LangUS(),
   'nl' : LangNL(),
   'sv' : LangSV(),
+  'it' : LangIT(),
 }
 
 def dialogue_filename(s):
