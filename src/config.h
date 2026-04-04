@@ -35,6 +35,7 @@ enum {
   kKeys_VolumeUp,
   kKeys_VolumeDown,
   kKeys_Total,
+  kKeys_Quit,
 };
 
 enum {

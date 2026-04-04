@@ -623,6 +623,10 @@ static void HandleCommand_Locked(uint32 j, bool pressed) {
     case kKeys_Reset:
       ZeldaReset(true);
       break;
+    case kKeys_Quit:
+      SDL_Quit();
+      exit(0);
+      break;
     case kKeys_Pause: g_paused = !g_paused; break;
     case kKeys_PauseDimmed:
       g_paused = !g_paused;
