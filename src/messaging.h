@@ -107,7 +107,7 @@ void RenderText_Draw_BorderIncremental();
 void RenderText_Draw_CharacterTilemap();
 void RenderText_Draw_MessageCharacters();
 void RenderText_Draw_Finish();
-void VWF_RenderSingle();
+void VWF_RenderSingle(int c);
 void RenderText_Draw_Choose2LowOr3();
 void RenderText_Draw_ChooseItem();
 void RenderText_FindYItem_Previous();
