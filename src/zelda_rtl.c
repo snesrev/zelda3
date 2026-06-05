@@ -274,34 +274,8 @@ static uint16 g_p2_input_this_frame;
 // the game runs as ordinary single-player through the same loop. Default on.
 bool g_mp_p2_enabled = true;
 static void Multiplayer_UpdateCamera(void);
-static void Multiplayer_CheckSpriteDamageToP2(void);
-static void Multiplayer_DrawP2Hud(void);
 static void Multiplayer_HandleP2Death(void);
 static void Multiplayer_WarpP2OnTransition(void);
-
-// Simple sprite-vs-P2 damage check. cur_player must be P2 when called.
-static void Multiplayer_CheckSpriteDamageToP2(void) {
-  if (link_disable_sprite_damage || countdown_for_blink)
-    return;
-  for (int k = 15; k >= 0; k--) {
-    if (sprite_state[k] != 9)  // 9 = active
-      continue;
-    if (sprite_floor[k] != link_is_on_lower_level)
-      continue;
-    if (sprite_hit_timer[k])
-      continue;
-    // Simple bounding box check
-    int dx = (int)link_x_coord - (int)(sprite_x_lo[k] | (sprite_x_hi[k] << 8));
-    int dy = (int)link_y_coord - (int)(sprite_y_lo[k] | (sprite_y_hi[k] << 8));
-    if (dx > -16 && dx < 16 && dy > -16 && dy < 16) {
-      // Apply damage to P2
-      link_give_damage = kSpriteInit_BumpDamage[sprite_type[k]];
-      if (link_give_damage == 0)
-        link_give_damage = 2;  // minimum damage
-      break;  // only one sprite damages per frame
-    }
-  }
-}
 
 // Process P2's NMI input (writes to per-player joypad globals via cur_player macros)
 static void Multiplayer_ProcessP2Input(uint16 joypad_input) {
@@ -386,26 +360,26 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     // player_handler_state and submodule_index checks.
     Link_Main();
 
-    // Check sprite collisions against P2
-    // Sprites already ran during Module_MainRouting (against P1).
-    // Now check if any active sprite overlaps P2 and apply damage.
-    Multiplayer_CheckSpriteDamageToP2();
-
-    // Draw P2's hearts as OAM sprites at bottom of screen
-    Multiplayer_DrawP2Hud();
-
-    // Draw P2's sprite into separate OAM slots
-    // Save the global sort settings, override for P2
-    uint16 saved_sort_offset = sort_sprites_offset_into_oam_buffer;
-    uint8 saved_sort_setting = (uint8)sort_sprites_setting;
-    sort_sprites_setting = 0; // will cause LinkOam_Main to set offset to 0x190
+    // Render P2's sprite. Use the OAM band OPPOSITE P1's so the two Links never
+    // share slots (the player offset table is {0x190, 0xe0}; LinkOam_Main selects
+    // it from sort_sprites_setting). LinkOam_Main also sets player_oam_y_offset,
+    // which Sprite_CheckDamageFromLink relies on below, so it must run first.
+    uint8 p1_oam_setting = (uint8)sort_sprites_setting;
+    sort_sprites_setting = p1_oam_setting ? 0 : 1;
     LinkOam_Main();
-    // Override: move P2's OAM to dedicated slots (0x40 = slot 16)
-    // Since LinkOam_Main wrote to offset 0x190 area, we relocate
-    // Actually, just let P2 use the 0x190 offset since P1 may use 0xe0
-    // Restore P1's settings
-    sort_sprites_offset_into_oam_buffer = saved_sort_offset;
-    sort_sprites_setting = saved_sort_setting;
+    sort_sprites_setting = p1_oam_setting;
+
+    // Real two-way combat for P2. Sprites already ran their AI against P1 during
+    // Module_MainRouting; re-run the engine's actual hitbox checks with
+    // cur_player == P2 so enemies can damage P2 (full recoil / shield / sfx) and
+    // P2's sword and items can damage enemies. No friendly fire: players never
+    // appear in the sprite arrays, so neither player's weapons can hit the other.
+    for (int k = 0; k < 16; k++) {
+      if (sprite_state[k] == 9) {
+        Sprite_CheckDamageToLink(k);
+        Sprite_CheckDamageFromLink(k);
+      }
+    }
 
     // Do NOT SyncFromRam: Link_Main wrote P2's new state into g_players[1] via
     // the cur_player macros, so the struct is already current. Pulling g_ram
@@ -430,39 +404,9 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
   nmi_boolean = 0;
 }
 
-#define MP_MAX_LEASH_DISTANCE 200  // max pixel distance before P2 is clamped
-
-// Draw P2's health as OAM sprites at the bottom of the screen.
-// Uses a simple row of heart tiles from the HUD character set.
-// cur_player must be P2 when called.
-static void Multiplayer_DrawP2Hud(void) {
-  // Draw hearts as OAM sprites at bottom-right of screen
-  // Heart tiles: 0x24 = full, 0x25 = half, 0x26 = empty
-  // Use OAM slots near the end to avoid conflicts
-  int max_hearts = cur_player->health_capacity >> 3;  // capacity is in 1/8 hearts
-  int cur_health = cur_player->health_current;
-  if (max_hearts > 20) max_hearts = 20;
-
-  int base_x = 176;  // bottom-right area
-  int base_y = 208;  // near bottom of screen
-  int oam_idx = 120;  // use high OAM slots (120-127)
-
-  for (int i = 0; i < max_hearts && oam_idx < 128; i++) {
-    int x = base_x + (i % 10) * 8;
-    int y = base_y + (i / 10) * 8;
-    uint8 charnum;
-    int hp_for_heart = cur_health - i * 8;
-    if (hp_for_heart >= 8)
-      charnum = 0x24;  // full heart
-    else if (hp_for_heart >= 4)
-      charnum = 0x25;  // half heart
-    else
-      charnum = 0x26;  // empty heart
-    // palette 5 (P2 color), priority 2
-    SetOamPlain(&oam_buf[oam_idx], x, y, charnum, 0x2A, 0);
-    oam_idx++;
-  }
-}
+// (P2 HUD intentionally deferred for this slice: the previous heart-OAM draw
+// used guessed tile/palette numbers. P2 health is tracked per-player and will
+// get a proper HUD in a later pass.)
 
 // Handle P2 death and respawn. Called each frame when P2 is active.
 // cur_player must be P2 when called.

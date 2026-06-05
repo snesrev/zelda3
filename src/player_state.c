@@ -283,33 +283,38 @@ void PlayerState_SyncFromRam(void) {
 void PlayerState_Init(int player_index) {
   assert(player_index >= 0 && player_index < MAX_PLAYERS);
   PlayerState *ps = &g_players[player_index];
-  memset(ps, 0, sizeof(PlayerState));
-
-  ps->player_index = (uint8)player_index;
-  ps->is_active = 1;
-  ps->is_dead = 0;
-  ps->respawn_timer = 0;
-  ps->is_ghost = 0;
-  ps->palette_index = (uint8)player_index;  // P1=green(0), P2=purple(1)
 
   if (player_index == 0) {
     // P1: pull initial state from g_ram (the normal game init path populates g_ram)
+    memset(ps, 0, sizeof(PlayerState));
     PlayerState *saved = cur_player;
     cur_player = ps;
     PlayerState_SyncFromRam();
     cur_player = saved;
+    ps->player_index = 0;
+    ps->is_active = 1;
+    ps->palette_index = 0;  // green tunic
   } else {
-    // P2 co-op: spawn near P1 with matching progression but own health pool
+    // P2 co-op: clone P1's FULL progression (items, sword, shield, abilities,
+    // dungeon access) so the second player has matching capabilities, per the
+    // design ("P2 spawns from P1"). Then override spawn + per-player fields.
+    // Health/magic become independent pools from here on.
     PlayerState *p1 = &g_players[0];
-    ps->health_capacity = p1->health_capacity;  // match P1's heart containers
-    ps->health_current  = p1->health_capacity;  // full health on join
-    ps->magic_power     = p1->magic_power;
-    ps->direction_facing = 0x02;  // facing down
-    ps->speed_setting = 0x12;     // normal walk speed
-    // Spawn slightly offset from P1
-    ps->x_coord = p1->x_coord + 16;
+    *ps = *p1;
+    ps->player_index = 1;
+    ps->is_active = 1;
+    ps->is_dead = 0;
+    ps->is_ghost = 0;
+    ps->respawn_timer = 0;
+    ps->palette_index = 1;                       // purple/red tunic
+    ps->health_current = p1->health_capacity;    // full health on join
+    ps->direction_facing = 0x02;                 // facing down
+    ps->x_coord = p1->x_coord + 16;              // spawn beside P1
     ps->y_coord = p1->y_coord;
-    ps->is_on_lower_level = p1->is_on_lower_level;
+    // Clear transient movement/combat state inherited from the clone.
+    ps->x_vel = ps->y_vel = 0;
+    ps->incapacitated_timer = 0;
+    ps->recoilmode_timer = 0;
   }
 }
 

@@ -416,17 +416,31 @@ static int RunHeadlessTest(void) {
   int in1 = 0x80; e = getenv("ZELDA3_P1_INPUT"); if (e) in1 = (int)strtol(e, NULL, 0);
   int in2 = 0x40; e = getenv("ZELDA3_P2_INPUT"); if (e) in2 = (int)strtol(e, NULL, 0);
   printf("[harness] driving P1=0x%x P2=0x%x for %d frames\n", in1, in2, total);
+  for (int k = 0; k < 16; k++) if (sprite_state[k] == 9)
+    printf("[harness]   sprite[%d] type=0x%02x pos=(%d,%d) hp=%d\n", k, sprite_type[k],
+           sprite_x_lo[k] | (sprite_x_hi[k] << 8), sprite_y_lo[k] | (sprite_y_hi[k] << 8), sprite_health[k]);
+  // Optional: pulse the B button (tap) every 16 frames so the sword actually
+  // swings instead of charging a spin attack. Enable with ZELDA3_PULSE_B=1.
+  int pulse_b = getenv("ZELDA3_PULSE_B") ? 1 : 0;
   mkdir("/tmp/zharness", 0755);
   for (int fr = 0; fr < total; fr++) {
-    ZeldaRunFrame(in1, in2);
+    int a1 = in1, a2 = in2;
+    if (pulse_b) {  // tap B (sword) for 2 of every 16 frames
+      int b = ((fr % 16) < 2) ? 0x01 : 0;
+      a1 = (in1 & ~0x01) | b;
+      a2 = (in2 & ~0x01) | b;
+    }
+    ZeldaRunFrame(a1, a2);
     if (fr % 20 == 0) {
       char path[160]; sprintf(path, "/tmp/zharness/frame_%03d.bmp", fr);
       HeadlessCapture(path);
       PlayerState *p1 = &g_players[0], *p2 = &g_players[1];
-      // joypad1H_last is a macro (-> cur_player->...); cur_player is P1 here.
-      printf("[harness] f=%3d P1=(%d,%d) vel=(%d,%d) joyH=%02x incap=%d hdl=%d mv=%d | P2=(%d,%d) vel=(%d,%d) hdl=%d mv=%d\n", fr,
-             p1->x_coord, p1->y_coord, (int8)p1->x_vel, (int8)p1->y_vel, joypad1H_last, p1->incapacitated_timer, p1->player_handler_state, p1->flag_moving,
-             p2->x_coord, p2->y_coord, (int8)p2->x_vel, (int8)p2->y_vel, p2->player_handler_state, p2->flag_moving);
+      int enemyhp = 0, nspr = 0;
+      for (int k = 0; k < 16; k++) if (sprite_state[k] == 9) { enemyhp += sprite_health[k]; nspr++; }
+      printf("[harness] f=%3d P1=(%d,%d hp=%d) P2=(%d,%d hp=%d sword=%d) enemies=%d totHP=%d\n", fr,
+             p1->x_coord, p1->y_coord, p1->health_current,
+             p2->x_coord, p2->y_coord, p2->health_current, p2->sword_type,
+             nspr, enemyhp);
     }
   }
   HeadlessCapture("/tmp/zharness/final.bmp");
