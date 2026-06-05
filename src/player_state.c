@@ -319,6 +319,76 @@ void PlayerState_Init(int player_index) {
 }
 
 // ============================================================================
+// Co-op death / respawn
+// (guarded: references g_mp_p2_enabled, which only exists in the co-op build)
+// ============================================================================
+#ifdef ZELDA3_MULTIPLAYER
+#define MP_RESPAWN_FRAMES 240   // ~4 seconds downed before reviving (fits uint8 timer)
+
+// Called at the engine's game-over points (a player just reached 0 health).
+// cur_player is the player that's going down. Returns true to SUPPRESS the
+// game-over (the player is put into a downed ghost state) when the other player
+// is still up; returns false only on a true double-KO so the engine can run the
+// normal game-over.
+bool Multiplayer_PreventGameOver(void) {
+  // Only meaningful when both players exist and co-op is on.
+  if (!g_mp_p2_enabled || !g_players[0].is_active || !g_players[1].is_active)
+    return false;
+
+  PlayerState *dying = cur_player;
+  PlayerState *other = (cur_player == &g_players[0]) ? &g_players[1] : &g_players[0];
+
+  // Both players down at once -> let the real game-over happen.
+  if (other->is_dead)
+    return false;
+
+  // Put the current player into the downed/ghost state (idempotent).
+  if (!dying->is_dead) {
+    dying->is_dead = 1;
+    dying->is_ghost = 1;
+    dying->respawn_timer = MP_RESPAWN_FRAMES;
+  }
+  dying->health_current = 0;
+  dying->disable_sprite_damage = 1;   // ghost: invulnerable while downed
+  dying->visibility_status = 0x0c;    // dim/translucent-ish
+  return true;
+}
+
+// Tick each downed player's respawn timer; revive beside the living partner.
+// Operates on the structs directly (independent of cur_player).
+void Multiplayer_UpdateDeathRespawn(void) {
+  if (!g_mp_p2_enabled) return;
+  for (int i = 0; i < 2; i++) {
+    PlayerState *ps = &g_players[i];
+    PlayerState *other = &g_players[i ^ 1];
+    if (!ps->is_active || !ps->is_dead)
+      continue;
+    if (ps->respawn_timer > 0) {
+      ps->respawn_timer--;
+      continue;
+    }
+    // Timer elapsed: revive next to the partner, but only if the partner is up.
+    if (other->is_dead)
+      continue;  // both down -> stay down (game over already triggered)
+    ps->x_coord = other->x_coord + 16;
+    ps->y_coord = other->y_coord;
+    ps->is_on_lower_level = other->is_on_lower_level;
+    ps->quadrant_x = other->quadrant_x;
+    ps->quadrant_y = other->quadrant_y;
+    ps->health_current = ps->health_capacity >> 1;   // revive with half hearts
+    if (ps->health_current < 8) ps->health_current = 8;
+    ps->is_dead = 0;
+    ps->is_ghost = 0;
+    ps->disable_sprite_damage = 0;
+    ps->visibility_status = 0;
+    ps->incapacitated_timer = 0;
+    ps->x_vel = ps->y_vel = 0;
+    ps->flag_moving = 0;
+  }
+}
+#endif  // ZELDA3_MULTIPLAYER
+
+// ============================================================================
 // Multiplayer config
 // ============================================================================
 MultiplayerConfig g_mp_config = {

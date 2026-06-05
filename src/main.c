@@ -431,14 +431,14 @@ static int RunHeadlessTest(void) {
       a2 = (in2 & ~0x01) | b;
     }
     ZeldaRunFrame(a1, a2);
-    if (fr % 4 == 0) {
+    if (fr % 10 == 0) {
       char path[160]; sprintf(path, "/tmp/zharness/frame_%03d.bmp", fr);
       HeadlessCapture(path);
       PlayerState *p1 = &g_players[0], *p2 = &g_players[1];
-      printf("[harness] f=%3d mod=%d sub=%d ssub=%d BG=(%d,%d) | P1=(%d,%d) P2=(%d,%d)\n", fr,
-             main_module_index, submodule_index, subsubmodule_index,
-             (int16)BG2HOFS_copy2, (int16)BG2VOFS_copy2,
-             p1->x_coord, p1->y_coord, p2->x_coord, p2->y_coord);
+      printf("[harness] f=%3d mod=%d sub=%d | P1=(%d,%d hp=%d dead=%d rt=%d) P2=(%d,%d hp=%d dead=%d rt=%d)\n", fr,
+             main_module_index, submodule_index,
+             p1->x_coord, p1->y_coord, p1->health_current, p1->is_dead, p1->respawn_timer,
+             p2->x_coord, p2->y_coord, p2->health_current, p2->is_dead, p2->respawn_timer);
     }
   }
   HeadlessCapture("/tmp/zharness/final.bmp");

@@ -165,14 +165,23 @@ void Link_ControlHandler() {  // 87807f
         number_of_times_hurt_by_sprites++;
         uint8 new_dmg = link_health_current - dmg;
         if (new_dmg == 0 || new_dmg >= 0xa8) {
-          mapbak_TM = TM_copy;
-          mapbak_TS = TS_copy;
-          saved_module_for_menu = main_module_index;
-          main_module_index = 18;
-          submodule_index = 1;
-          countdown_for_blink = 0;
-          link_hearts_filler = 0;
-          new_dmg = 0;
+#ifdef ZELDA3_MULTIPLAYER
+          // Co-op: if the other player is still up, this player goes down
+          // (ghost) instead of ending the game. Only a double-KO is game over.
+          if (Multiplayer_PreventGameOver()) {
+            new_dmg = 0;
+          } else
+#endif
+          {
+            mapbak_TM = TM_copy;
+            mapbak_TS = TS_copy;
+            saved_module_for_menu = main_module_index;
+            main_module_index = 18;
+            submodule_index = 1;
+            countdown_for_blink = 0;
+            link_hearts_filler = 0;
+            new_dmg = 0;
+          }
         }
         link_health_current = new_dmg;
       }

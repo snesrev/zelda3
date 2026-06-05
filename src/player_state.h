@@ -252,6 +252,17 @@ extern MultiplayerConfig g_mp_config;
 // spawned/updated and the game behaves as ordinary single-player.
 extern bool g_mp_p2_enabled;
 
+// Co-op death/respawn.
+// Multiplayer_PreventGameOver() is called at the engine's game-over points (when
+// a player reaches 0 health). If co-op is active and the OTHER player is still
+// up, it puts the current player (cur_player) into a downed "ghost" state and
+// returns true so the caller skips the game-over; only a simultaneous double-KO
+// returns false (real game over). Multiplayer_UpdateDeathRespawn() runs once per
+// frame to tick each downed player's respawn timer and revive it beside the
+// living partner.
+bool Multiplayer_PreventGameOver(void);
+void Multiplayer_UpdateDeathRespawn(void);
+
 // Initialize player state (copies from g_ram for P1, sets defaults for P2)
 void PlayerState_Init(int player_index);
 

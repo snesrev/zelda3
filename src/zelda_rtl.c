@@ -274,7 +274,6 @@ static uint16 g_p2_input_this_frame;
 // the game runs as ordinary single-player through the same loop. Default on.
 bool g_mp_p2_enabled = true;
 static void Multiplayer_UpdateCamera(void);
-static void Multiplayer_HandleP2Death(void);
 static void Multiplayer_WarpP2OnTransition(void);
 
 // Process P2's NMI input (writes to per-player joypad globals via cur_player macros)
@@ -396,16 +395,16 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     PlayerState_SetCurrent(0);
     PlayerState_SyncToRam();
 
-    // Handle P2 death/respawn
-    Multiplayer_HandleP2Death();
-
     // === Shared camera: center between both players ===
     Multiplayer_UpdateCamera();
   }
 
-  // Check for screen transitions and warp P2
-  if (g_mp_initialized)
+  // Per-frame co-op bookkeeping (runs even during transitions / when a player is
+  // downed): tick respawn timers + revive, and warp P2 to P1 after a transition.
+  if (g_mp_initialized) {
+    Multiplayer_UpdateDeathRespawn();
     Multiplayer_WarpP2OnTransition();
+  }
 
   nmi_boolean = 0;
 }
@@ -414,41 +413,8 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
 // used guessed tile/palette numbers. P2 health is tracked per-player and will
 // get a proper HUD in a later pass.)
 
-// Handle P2 death and respawn. Called each frame when P2 is active.
-// cur_player must be P2 when called.
-static void Multiplayer_HandleP2Death(void) {
-  PlayerState *p2 = &g_players[1];
-  PlayerState *p1 = &g_players[0];
-
-  // Check if P2 just died (health reached 0)
-  if (p2->health_current == 0 && !p2->is_dead) {
-    p2->is_dead = 1;
-    p2->is_ghost = 1;
-    p2->respawn_timer = 255;  // ~4.25 seconds at 60fps (max uint8)
-    p2->visibility_status = 0x12;  // make translucent
-  }
-
-  if (p2->is_dead) {
-    if (p2->respawn_timer > 0) {
-      p2->respawn_timer--;
-    } else {
-      // Respawn at P1's position
-      p2->x_coord = p1->x_coord + 16;
-      p2->y_coord = p1->y_coord;
-      p2->health_current = p2->health_capacity;
-      p2->is_dead = 0;
-      p2->is_ghost = 0;
-      p2->visibility_status = 0;
-      p2->disable_sprite_damage = 0;
-      // Brief invincibility after respawn
-    }
-  }
-
-  // Ghost state: no collision, translucent
-  if (p2->is_ghost) {
-    p2->disable_sprite_damage = 1;
-  }
-}
+// (Death/respawn is handled symmetrically for both players by
+// Multiplayer_PreventGameOver + Multiplayer_UpdateDeathRespawn in player_state.c.)
 
 // Snap P2 to P1 when a screen transition COMPLETES (or the module changes), so
 // P2 ends up beside P1 in the new room/area. Warping on completion (rather than
