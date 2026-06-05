@@ -248,6 +248,10 @@ extern PlayerState g_players[MAX_PLAYERS];
 // Runtime multiplayer configuration
 extern MultiplayerConfig g_mp_config;
 
+// Master co-op toggle (defined in zelda_rtl.c). When false, P2 is never
+// spawned/updated and the game behaves as ordinary single-player.
+extern bool g_mp_p2_enabled;
+
 // Initialize player state (copies from g_ram for P1, sets defaults for P2)
 void PlayerState_Init(int player_index);
 

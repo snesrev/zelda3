@@ -340,6 +340,101 @@ static const struct RendererFuncs kSdlRendererFuncs  = {
 
 void OpenGLRenderer_Create(struct RendererFuncs *funcs, bool use_opengl_es);
 
+#ifdef ZELDA3_HEADLESS_TEST
+// ---------------------------------------------------------------------------
+// Headless verification harness (built only with -DZELDA3_HEADLESS_TEST).
+// Reaches live gameplay by replaying a reference save, then drives divergent
+// scripted P1/P2 inputs to prove independent control / shared camera / combat,
+// dumping framebuffers to /tmp/zharness and logging per-player coords + CRC.
+// No SDL window, renderer, or audio device is created.
+// ---------------------------------------------------------------------------
+
+// Self-contained 32bpp BMP writer (PPU emits ARGB8888 == BGRA bytes in memory,
+// which matches BMP's BGRA pixel order; rows written bottom-up).
+static void HeadlessWriteBmp(const char *path, const uint8 *px, int w, int h, size_t pitch) {
+  FILE *f = fopen(path, "wb");
+  if (!f) return;
+  uint32 imgsize = (uint32)w * h * 4, filesize = 54 + imgsize;
+  uint8 hdr[54] = {0};
+  hdr[0] = 'B'; hdr[1] = 'M';
+  memcpy(hdr + 2, &filesize, 4);
+  uint32 dataoffs = 54, dibsize = 40, n_imgsize = imgsize; uint16 planes = 1, bpp = 32;
+  memcpy(hdr + 10, &dataoffs, 4); memcpy(hdr + 14, &dibsize, 4);
+  memcpy(hdr + 18, &w, 4); memcpy(hdr + 22, &h, 4);
+  memcpy(hdr + 26, &planes, 2); memcpy(hdr + 28, &bpp, 2);
+  memcpy(hdr + 34, &n_imgsize, 4);
+  fwrite(hdr, 1, 54, f);
+  for (int y = h - 1; y >= 0; y--)
+    fwrite(px + (size_t)y * pitch, 1, (size_t)w * 4, f);
+  fclose(f);
+}
+
+static void HeadlessCapture(const char *path) {
+  int w = 256, h = 224;            // basic renderer, scale 1
+  size_t pitch = (size_t)w * 4;
+  uint8 *buf = calloc((size_t)h, pitch);
+  if (!buf) return;
+  ZeldaDrawPpuFrame(buf, pitch, 0);
+  HeadlessWriteBmp(path, buf, w, h, pitch);
+  free(buf);
+}
+
+static int RunHeadlessTest(void) {
+  setvbuf(stdout, NULL, _IONBF, 0);  // unbuffered so logs survive a kill/timeout
+  // Force the basic renderer (256x224, scale 1) for deterministic capture.
+  g_ppu_render_flags = 0;
+  g_snes_width = 256; g_snes_height = 224;
+  g_zenv.ppu->extraLeftRight = 0;
+
+  LoadRom("zelda3.sfc");
+
+  // Local co-op mode (same as the normal coop binary configures).
+  g_mp_config.mode = MP_MODE_LOCAL;
+  g_mp_config.num_players = 2;
+  g_mp_config.local_player_index = 0;
+  g_mp_config.input_delay_frames = 0;
+
+  if (getenv("ZELDA3_NO_P2")) { g_mp_p2_enabled = false; printf("[harness] P2 DISABLED (single-player isolation)\n"); }
+  int slot = 0; const char *e = getenv("ZELDA3_TEST_SAVE"); if (e) slot = atoi(e);
+  printf("[harness] loading ref save %d, fast-forwarding replay...\n", slot);
+  SaveLoadSlot(kSaveLoad_Load, 256 + slot);
+
+  int guard = 0;
+  while (ZeldaRunFrame(0, 0) && ++guard < 1000000) {
+    if (guard % 20000 == 0)
+      printf("[harness] ...replaying frame %d (module=%d sub=%d)\n",
+             guard, main_module_index, submodule_index);
+  }
+  printf("[harness] replay ended after %d frames: module=%d sub=%d\n",
+         guard, main_module_index, submodule_index);
+  printf("[harness] after replay: P1=(%d,%d) act=%d | P2=(%d,%d) act=%d\n",
+         g_players[0].x_coord, g_players[0].y_coord, g_players[0].is_active,
+         g_players[1].x_coord, g_players[1].y_coord, g_players[1].is_active);
+
+  int total = 360; e = getenv("ZELDA3_TEST_FRAMES"); if (e) total = atoi(e);
+  // Constant per-player inputs, hex, overridable for probing (e.g. 0x80=right).
+  int in1 = 0x80; e = getenv("ZELDA3_P1_INPUT"); if (e) in1 = (int)strtol(e, NULL, 0);
+  int in2 = 0x40; e = getenv("ZELDA3_P2_INPUT"); if (e) in2 = (int)strtol(e, NULL, 0);
+  printf("[harness] driving P1=0x%x P2=0x%x for %d frames\n", in1, in2, total);
+  mkdir("/tmp/zharness", 0755);
+  for (int fr = 0; fr < total; fr++) {
+    ZeldaRunFrame(in1, in2);
+    if (fr % 20 == 0) {
+      char path[160]; sprintf(path, "/tmp/zharness/frame_%03d.bmp", fr);
+      HeadlessCapture(path);
+      PlayerState *p1 = &g_players[0], *p2 = &g_players[1];
+      // joypad1H_last is a macro (-> cur_player->...); cur_player is P1 here.
+      printf("[harness] f=%3d P1=(%d,%d) vel=(%d,%d) joyH=%02x incap=%d hdl=%d mv=%d | P2=(%d,%d) vel=(%d,%d) hdl=%d mv=%d\n", fr,
+             p1->x_coord, p1->y_coord, (int8)p1->x_vel, (int8)p1->y_vel, joypad1H_last, p1->incapacitated_timer, p1->player_handler_state, p1->flag_moving,
+             p2->x_coord, p2->y_coord, (int8)p2->x_vel, (int8)p2->y_vel, p2->player_handler_state, p2->flag_moving);
+    }
+  }
+  HeadlessCapture("/tmp/zharness/final.bmp");
+  printf("[harness] done (%d scripted frames).\n", total);
+  return 0;
+}
+#endif  // ZELDA3_HEADLESS_TEST
+
 #undef main
 int main(int argc, char** argv) {
   argc--, argv++;
@@ -369,6 +464,12 @@ int main(int argc, char** argv) {
                        g_config.no_sprite_limits * kPpuRenderFlags_NoSpriteLimits;
   ZeldaEnableMsu(g_config.enable_msu);
   ZeldaSetLanguage(g_config.language);
+
+#ifdef ZELDA3_HEADLESS_TEST
+  // Engine is initialized; run the headless verification harness and exit
+  // without ever creating an SDL window, renderer, or audio device.
+  return RunHeadlessTest();
+#endif
 
   if (g_config.fullscreen == 1)
     g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;

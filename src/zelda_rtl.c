@@ -270,6 +270,9 @@ static void ZeldaRunGameLoop() {
 #ifdef ZELDA3_MULTIPLAYER
 static bool g_mp_initialized = false;
 static uint16 g_p2_input_this_frame;
+// Master co-op toggle: when false, the second player is never spawned/updated and
+// the game runs as ordinary single-player through the same loop. Default on.
+bool g_mp_p2_enabled = true;
 static void Multiplayer_UpdateCamera(void);
 static void Multiplayer_CheckSpriteDamageToP2(void);
 static void Multiplayer_DrawP2Hud(void);
@@ -319,19 +322,29 @@ static void Multiplayer_ProcessP2Input(uint16 joypad_input) {
 }
 
 // Initialize P2 when first entering gameplay (module 7 = dungeon, 9 = overworld)
+static bool g_p1_seeded = false;
 static void Multiplayer_InitIfNeeded(void) {
-  if (g_mp_initialized) return;
+  // Only meaningful once we're in actual gameplay (dungeon/overworld).
   if (main_module_index != 7 && main_module_index != 9) return;
 
-  // P1 must be synced first
-  PlayerState_SetCurrent(0);
-  PlayerState_SyncFromRam();
+  // One-time: seed P1's PlayerState struct from the live g_ram (which holds the
+  // loaded save / boot state). After this the struct is authoritative for P1's
+  // link state and is shadowed back into g_ram via SyncToRam each frame. This
+  // must happen whether or not co-op is enabled, otherwise the empty struct
+  // would be synced over g_ram and wipe the game state.
+  if (!g_p1_seeded) {
+    PlayerState_SetCurrent(0);
+    PlayerState_SyncFromRam();
+    g_p1_seeded = true;
+  }
 
-  // Now init P2 based on P1's state
-  PlayerState_Init(1);
-  g_mp_initialized = true;
-  printf("Multiplayer: P2 initialized at (%d, %d)\n",
-         g_players[1].x_coord, g_players[1].y_coord);
+  // Spawn P2 from P1's state once, only when co-op is enabled.
+  if (g_mp_p2_enabled && !g_mp_initialized) {
+    PlayerState_Init(1);
+    g_mp_initialized = true;
+    printf("Multiplayer: P2 initialized at (%d, %d)\n",
+           g_players[1].x_coord, g_players[1].y_coord);
+  }
 }
 
 // Run the multiplayer game loop: P1 full update, then P2 Link_Main only
@@ -349,13 +362,18 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
   Module_MainRouting();
   NMI_PrepareSprites();
 
-  // Sync back any changes the game loop made to g_ram
-  PlayerState_SyncFromRam();
+  // NOTE: do NOT SyncFromRam here. In the multiplayer build the link_ macros
+  // resolve to cur_player->field (the PlayerState struct), so Module_MainRouting
+  // already wrote P1's new position/state into g_players[0]. Copying g_ram back
+  // over the struct would clobber that movement with the stale pre-frame link
+  // bytes (this is what froze both players). The struct is authoritative for
+  // link state; the SyncToRam above only shadows it into g_ram for the few
+  // subsystems that still read raw g_ram at link offsets.
 
   // === P2 update (Link_Main only — world state already updated) ===
   // Only update P2 during actual gameplay modules (7=dungeon, 9=overworld)
   // Skip during cutscenes, menus, transitions, etc.
-  if (g_mp_initialized && g_players[1].is_active &&
+  if (g_mp_p2_enabled && g_mp_initialized && g_players[1].is_active &&
       (main_module_index == 7 || main_module_index == 9)) {
     PlayerState_SetCurrent(1);
     PlayerState_SyncToRam();
@@ -389,10 +407,12 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     sort_sprites_offset_into_oam_buffer = saved_sort_offset;
     sort_sprites_setting = saved_sort_setting;
 
-    // Sync P2's state back from g_ram
-    PlayerState_SyncFromRam();
+    // Do NOT SyncFromRam: Link_Main wrote P2's new state into g_players[1] via
+    // the cur_player macros, so the struct is already current. Pulling g_ram
+    // back would clobber P2's movement (same bug as P1 above).
 
-    // Restore P1 as current (for systems that read cur_player outside the loop)
+    // Restore P1 as current so g_ram + cur_player reflect P1 for the subsequent
+    // Interrupt_NMI (joypad read) and ZeldaDrawPpuFrame.
     PlayerState_SetCurrent(0);
     PlayerState_SyncToRam();
 
@@ -515,50 +535,26 @@ static void Multiplayer_WarpP2OnTransition(void) {
   g_last_submodule_index = cur_submodule;
 }
 
+// Shared-screen camera. The engine's camera/scroll already follows P1 (it reads
+// link_x/y_coord, which resolve to g_players[0] during P1's Module_MainRouting).
+// Rather than fight that by writing the BG scroll registers afterwards (the old
+// version accumulated shifts into BG1/BG2 H/V OFS every frame, which both
+// corrupted the display AND broke P1's own movement, since the engine couples
+// Link's walking to the camera-scroll boundary), we simply keep P2 leashed
+// inside P1's viewport so both Links stay on screen.
+// FUTURE: a true shared-midpoint camera (would require hooking the scroll
+// computation itself in overworld.c / dungeon.c rather than post-processing it).
+#define MP_LEASH_X 112   // ~half of the 256px screen width
+#define MP_LEASH_Y 96    // ~half of the 224px screen height
 static void Multiplayer_UpdateCamera(void) {
   PlayerState *p1 = &g_players[0];
   PlayerState *p2 = &g_players[1];
-
-  // Calculate midpoint between both players
-  int mid_x = ((int)p1->x_coord + (int)p2->x_coord) / 2;
-  int mid_y = ((int)p1->y_coord + (int)p2->y_coord) / 2;
-
-  // Calculate distance
   int dx = (int)p2->x_coord - (int)p1->x_coord;
   int dy = (int)p2->y_coord - (int)p1->y_coord;
-
-  // If players are far apart, bias camera toward P1 and clamp P2
-  if (dx > MP_MAX_LEASH_DISTANCE) {
-    p2->x_coord = p1->x_coord + MP_MAX_LEASH_DISTANCE;
-    mid_x = (int)p1->x_coord + MP_MAX_LEASH_DISTANCE / 2;
-  } else if (dx < -MP_MAX_LEASH_DISTANCE) {
-    p2->x_coord = p1->x_coord - MP_MAX_LEASH_DISTANCE;
-    mid_x = (int)p1->x_coord - MP_MAX_LEASH_DISTANCE / 2;
-  }
-  if (dy > MP_MAX_LEASH_DISTANCE) {
-    p2->y_coord = p1->y_coord + MP_MAX_LEASH_DISTANCE;
-    mid_y = (int)p1->y_coord + MP_MAX_LEASH_DISTANCE / 2;
-  } else if (dy < -MP_MAX_LEASH_DISTANCE) {
-    p2->y_coord = p1->y_coord - MP_MAX_LEASH_DISTANCE;
-    mid_y = (int)p1->y_coord - MP_MAX_LEASH_DISTANCE / 2;
-  }
-
-  // Adjust camera scroll: shift BG2 scroll to center on the midpoint
-  // The camera normally centers on P1 at offset (128, 112) from top-left
-  // We want to shift the camera by the delta between midpoint and P1
-  int shift_x = mid_x - (int)p1->x_coord;
-  int shift_y = mid_y - (int)p1->y_coord;
-
-  BG2HOFS_copy2 += shift_x;
-  BG2VOFS_copy2 += shift_y;
-  BG2HOFS_copy += shift_x;
-  BG2VOFS_copy += shift_y;
-
-  // Also shift BG1 to keep layers aligned
-  BG1HOFS_copy2 += shift_x;
-  BG1VOFS_copy2 += shift_y;
-  BG1HOFS_copy += shift_x;
-  BG1VOFS_copy += shift_y;
+  if (dx >  MP_LEASH_X) p2->x_coord = p1->x_coord + MP_LEASH_X;
+  if (dx < -MP_LEASH_X) p2->x_coord = p1->x_coord - MP_LEASH_X;
+  if (dy >  MP_LEASH_Y) p2->y_coord = p1->y_coord + MP_LEASH_Y;
+  if (dy < -MP_LEASH_Y) p2->y_coord = p1->y_coord - MP_LEASH_Y;
 }
 #endif // ZELDA3_MULTIPLAYER
 
@@ -1059,7 +1055,14 @@ bool ZeldaRunFrame(int inputs) {
     EmuSyncMemoryRegion(&g_ram[kRam_CrystalRotateCounter], 1);
   }
 
-  if (g_emu_runframe == NULL || enhanced_features0 != 0 || g_zenv.dialogue_flags) {
+  if (g_emu_runframe == NULL || enhanced_features0 != 0 || g_zenv.dialogue_flags
+#ifdef ZELDA3_MULTIPLAYER
+      // Co-op intentionally diverges from a vanilla single-player SNES (a second
+      // Link, shared camera, etc.), so the reference-emulator memory compare is
+      // meaningless here. Always run the C implementation directly in co-op.
+      || g_mp_config.mode == MP_MODE_LOCAL
+#endif
+      ) {
     // can't compare against real impl when running with extra features.
     ZeldaRunFrameInternal(inputs, run_what);
   } else {

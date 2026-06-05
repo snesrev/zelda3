@@ -17,7 +17,7 @@ LIBS="$(sdl2-config --libs) -lm"
 case "$CFG" in
   vanilla) DEF="";                                              OUT="zelda3";         EXCLUDE="src/test_harness.c";;
   coop)    DEF="-DZELDA3_MULTIPLAYER=1";                        OUT="zelda3_coop";    EXCLUDE="src/test_harness.c";;
-  harness) DEF="-DZELDA3_MULTIPLAYER=1 -DZELDA3_HEADLESS_TEST=1"; OUT="zelda3_harness"; EXCLUDE="src/main.c";;
+  harness) DEF="-DZELDA3_MULTIPLAYER=1 -DZELDA3_HEADLESS_TEST=1"; OUT="zelda3_harness"; EXCLUDE="src/__none__.c";;
   *) echo "usage: $0 [vanilla|coop|harness]" >&2; exit 2;;
 esac
 
