@@ -444,7 +444,10 @@ static int RunHeadlessTest(void) {
     }
   }
   HeadlessCapture("/tmp/zharness/final.bmp");
-  printf("[harness] done (%d scripted frames).\n", total);
+  SyncChecksum fc = Multiplayer_ComputeChecksum();
+  printf("[harness] done (%d scripted frames). final g_ram CRC=%08x P1=(%d,%d) P2=(%d,%d)\n",
+         total, fc.checksum, g_players[0].x_coord, g_players[0].y_coord,
+         g_players[1].x_coord, g_players[1].y_coord);
   return 0;
 }
 #endif  // ZELDA3_HEADLESS_TEST
