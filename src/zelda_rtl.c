@@ -345,10 +345,16 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
   // subsystems that still read raw g_ram at link offsets.
 
   // === P2 update (Link_Main only — world state already updated) ===
-  // Only update P2 during actual gameplay modules (7=dungeon, 9=overworld)
-  // Skip during cutscenes, menus, transitions, etc.
-  if (g_mp_p2_enabled && g_mp_initialized && g_players[1].is_active &&
-      (main_module_index == 7 || main_module_index == 9)) {
+  // Only update P2 during NORMAL free movement: gameplay module (7=dungeon,
+  // 9=overworld) AND submodule_index == 0. When submodule_index != 0 a screen
+  // transition / special state is in progress: P1's Module_MainRouting drives
+  // the scroll and moves Link itself, so P2 must NOT move independently (it
+  // would wander out of the transitioning screen and desync the scroll). P2 is
+  // frozen during the transition and snapped back to P1 when it completes (see
+  // Multiplayer_WarpP2OnTransition below).
+  bool p2_normal_play = (main_module_index == 7 || main_module_index == 9) &&
+                        submodule_index == 0;
+  if (g_mp_p2_enabled && g_mp_initialized && g_players[1].is_active && p2_normal_play) {
     PlayerState_SetCurrent(1);
     PlayerState_SyncToRam();
 
@@ -444,35 +450,42 @@ static void Multiplayer_HandleP2Death(void) {
   }
 }
 
-// Warp P2 to P1 during screen transitions.
-// Called during the multiplayer game loop to detect transitions.
+// Snap P2 to P1 when a screen transition COMPLETES (or the module changes), so
+// P2 ends up beside P1 in the new room/area. Warping on completion (rather than
+// at the start) is what lets P2 follow P1 through doors, screen-edge scrolls and
+// dungeon entrances: during the transition P2 is frozen (see the p2_normal_play
+// gate above), and the engine has just moved P1 to the destination, so copying
+// P1's fresh position + room/level state to P2 places it correctly.
 static uint8 g_last_module_index = 0;
 static uint8 g_last_submodule_index = 0;
 static void Multiplayer_WarpP2OnTransition(void) {
-  // Detect module changes (screen transitions)
-  // Module 7 = dungeon, 9 = overworld
-  // When the main module changes, or submodule indicates a transition,
-  // teleport P2 to P1's position.
   uint8 cur_module = main_module_index;
   uint8 cur_submodule = submodule_index;
 
-  bool is_transition = false;
+  bool warp = false;
+  // Module changed (e.g. overworld<->dungeon entrance/exit): always re-place P2.
   if (cur_module != g_last_module_index)
-    is_transition = true;
-  // Dungeon room transitions (module 7, submodule changes from 0 to nonzero)
-  if (cur_module == 7 && cur_submodule != 0 && g_last_submodule_index == 0)
-    is_transition = true;
-  // Overworld scroll transitions
-  if (cur_module == 9 && cur_submodule != 0 && g_last_submodule_index == 0)
-    is_transition = true;
+    warp = true;
+  // Same-module transition just finished: submodule returned to 0 (normal play)
+  // from a nonzero transition state, in dungeon or overworld.
+  if ((cur_module == 7 || cur_module == 9) &&
+      cur_submodule == 0 && g_last_submodule_index != 0)
+    warp = true;
 
-  if (is_transition && g_players[1].is_active) {
+  if (warp && g_mp_p2_enabled && g_players[1].is_active) {
     PlayerState *p1 = &g_players[0];
     PlayerState *p2 = &g_players[1];
     p2->x_coord = p1->x_coord + 16;
     p2->y_coord = p1->y_coord;
     p2->is_on_lower_level = p1->is_on_lower_level;
-    // FUTURE: Multiplayer_HandleIndependentTransition()
+    p2->quadrant_x = p1->quadrant_x;
+    p2->quadrant_y = p1->quadrant_y;
+    // Clear any transient movement state so P2 doesn't keep a stale velocity
+    // from before the transition.
+    p2->x_vel = p2->y_vel = 0;
+    p2->flag_moving = 0;
+    // FUTURE: Multiplayer_HandleIndependentTransition() — load a second room
+    // for split-screen instead of warping P2 to P1.
   }
 
   g_last_module_index = cur_module;
