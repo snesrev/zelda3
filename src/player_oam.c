@@ -760,6 +760,13 @@ void CalculateSwordHitBox() {  // 879e63
 }
 
 void LinkOam_Main() {  // 8da18e
+#ifdef ZELDA3_MULTIPLAYER
+  // A downed co-op player renders as a flashing "ghost": skip drawing on
+  // alternate frame windows so it blinks. The OAM buffer is cleared at the start
+  // of each frame, so an early return simply leaves this player undrawn now.
+  if (cur_player->is_dead && (frame_counter & 4))
+    return;
+#endif
   uint16 y_coord_backup = link_y_coord;
 
   if (submodule_index == 18 || submodule_index == 19) {

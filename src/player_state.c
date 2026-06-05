@@ -350,12 +350,26 @@ bool Multiplayer_PreventGameOver(void) {
   }
   dying->health_current = 0;
   dying->disable_sprite_damage = 1;   // ghost: invulnerable while downed
-  dying->visibility_status = 0x0c;    // dim/translucent-ish
+  dying->visibility_status = 0;       // visible (LinkOam_Main flashes the ghost)
   return true;
 }
 
-// Tick each downed player's respawn timer; revive beside the living partner.
-// Operates on the structs directly (independent of cur_player).
+// Revive a downed player: clear the ghost state and give it some health back.
+static void Multiplayer_RevivePlayer(PlayerState *ps) {
+  ps->health_current = ps->health_capacity >> 1;   // revive with half hearts
+  if (ps->health_current < 8) ps->health_current = 8;
+  ps->is_dead = 0;
+  ps->is_ghost = 0;
+  ps->disable_sprite_damage = 0;
+  ps->visibility_status = 0;
+  ps->incapacitated_timer = 0;
+  ps->x_vel = ps->y_vel = 0;
+  ps->flag_moving = 0;
+}
+
+// Per-frame: keep downed players in the ghost state, let the living partner
+// revive a downed player by reaching them (revive-on-touch), and otherwise
+// auto-revive beside the partner once the respawn timer elapses.
 void Multiplayer_UpdateDeathRespawn(void) {
   if (!g_mp_p2_enabled) return;
   for (int i = 0; i < 2; i++) {
@@ -363,27 +377,38 @@ void Multiplayer_UpdateDeathRespawn(void) {
     PlayerState *other = &g_players[i ^ 1];
     if (!ps->is_active || !ps->is_dead)
       continue;
+
+    // Maintain the downed/ghost state each frame (invulnerable, 0 HP, visible
+    // base state — the flashing is done at render time in LinkOam_Main).
+    ps->disable_sprite_damage = 1;
+    ps->health_current = 0;
+    ps->visibility_status = 0;
+
+    // Both players down -> stay down; the killing blow already let the real
+    // game-over trigger.
+    if (other->is_dead)
+      continue;
+
+    // Revive-on-touch: the living partner walking onto the downed ghost revives
+    // it on the spot (classic co-op rescue).
+    int dx = (int)ps->x_coord - (int)other->x_coord;
+    int dy = (int)ps->y_coord - (int)other->y_coord;
+    if (dx * dx + dy * dy <= 24 * 24) {
+      Multiplayer_RevivePlayer(ps);
+      continue;
+    }
+
+    // Otherwise count down and auto-revive beside the partner when it elapses.
     if (ps->respawn_timer > 0) {
       ps->respawn_timer--;
       continue;
     }
-    // Timer elapsed: revive next to the partner, but only if the partner is up.
-    if (other->is_dead)
-      continue;  // both down -> stay down (game over already triggered)
     ps->x_coord = other->x_coord + 16;
     ps->y_coord = other->y_coord;
     ps->is_on_lower_level = other->is_on_lower_level;
     ps->quadrant_x = other->quadrant_x;
     ps->quadrant_y = other->quadrant_y;
-    ps->health_current = ps->health_capacity >> 1;   // revive with half hearts
-    if (ps->health_current < 8) ps->health_current = 8;
-    ps->is_dead = 0;
-    ps->is_ghost = 0;
-    ps->disable_sprite_damage = 0;
-    ps->visibility_status = 0;
-    ps->incapacitated_timer = 0;
-    ps->x_vel = ps->y_vel = 0;
-    ps->flag_moving = 0;
+    Multiplayer_RevivePlayer(ps);
   }
 }
 #endif  // ZELDA3_MULTIPLAYER
