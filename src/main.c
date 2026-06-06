@@ -97,38 +97,35 @@ static int GetPlayerForController(SDL_JoystickID joy_id) {
   return 0; // default to P1
 }
 
-// P2 keyboard mapping: Arrow keys + numpad
+// P2 keyboard (numpad cluster; requires NumLock ON). These keys are disjoint
+// from P1's defaults (arrows + Z X A S C V + Enter/RShift) so both players can
+// share one keyboard. `bit` is the control index, matching P1's control order
+// (0=Up,1=Down,2=Left,3=Right,4=Select,5=Start,6=A,7=B,8=X,9=Y,10=L,11=R); it is
+// then run through the SAME kKbdRemap as P1 so the resulting input bits match.
 static int HandleP2KeyInput(int keyCode, bool pressed) {
   int bit = -1;
   switch (keyCode) {
-    // B=Numpad1, Y=Numpad2, Select=Numpad3, Start=Numpad Enter
-    // Up=UpArrow, Down=DownArrow, Left=LeftArrow, Right=RightArrow
-    // A=Numpad5, X=Numpad4, L=Numpad7, R=Numpad8
-    case SDLK_KP_1:     bit = 0; break;  // B
-    case SDLK_KP_5:     bit = 1; break;  // A (mapped via kKbdRemap)
-    case SDLK_KP_3:     bit = 2; break;  // Select
-    case SDLK_KP_ENTER: bit = 3; break;  // Start
-    case SDLK_UP:       bit = 4; break;  // Up
-    case SDLK_DOWN:     bit = 5; break;  // Down
-    case SDLK_LEFT:     bit = 6; break;  // Left
-    case SDLK_RIGHT:    bit = 7; break;  // Right
-    case SDLK_KP_4:     bit = 8; break;  // Y
-    case SDLK_KP_2:     bit = 9; break;  // X
-    case SDLK_KP_7:     bit = 10; break; // L
-    case SDLK_KP_8:     bit = 11; break; // R
+    case SDLK_KP_8:     bit = 0;  break; // Up
+    case SDLK_KP_2:     bit = 1;  break; // Down
+    case SDLK_KP_4:     bit = 2;  break; // Left
+    case SDLK_KP_6:     bit = 3;  break; // Right
+    case SDLK_KP_1:     bit = 4;  break; // Select
+    case SDLK_KP_3:     bit = 5;  break; // Start
+    case SDLK_KP_0:     bit = 6;  break; // A  (lift / run / talk)
+    case SDLK_KP_5:     bit = 7;  break; // B  (sword)
+    case SDLK_KP_9:     bit = 8;  break; // X  (map)
+    case SDLK_KP_7:     bit = 9;  break; // Y  (use item)
+    case SDLK_KP_MINUS: bit = 10; break; // L
+    case SDLK_KP_PLUS:  bit = 11; break; // R
     default: return 0;
   }
-  // Use same remap as P1
   static const uint8 kKbdRemap[] = { 0, 4, 5, 6, 7, 2, 3, 8, 0, 9, 1, 10, 11 };
-  if (bit >= 0 && bit <= 11) {
-    int mapped = kKbdRemap[bit + 1]; // +1 because kKbdRemap[0] is null entry
-    if (pressed)
-      g_player_input_state[1] |= 1 << mapped;
-    else
-      g_player_input_state[1] &= ~(1 << mapped);
-    return 1;
-  }
-  return 0;
+  int mapped = kKbdRemap[bit + 1];  // +1: kKbdRemap[0] is the null entry (kKeys_Null)
+  if (pressed)
+    g_player_input_state[1] |= 1 << mapped;
+  else
+    g_player_input_state[1] &= ~(1 << mapped);
+  return 1;
 }
 #endif // ZELDA3_MULTIPLAYER
 
@@ -381,6 +378,36 @@ static void HeadlessCapture(const char *path) {
 
 static int RunHeadlessTest(void) {
   setvbuf(stdout, NULL, _IONBF, 0);  // unbuffered so logs survive a kill/timeout
+
+  // Self-test the P2 keyboard mapping (this can't be exercised any other way
+  // headless — the harness injects inputs directly, bypassing SDL handlers).
+  // Expected bits are the input layout: B=0x01,Y=0x02,Sel=0x04,St=0x08,
+  // Up=0x10,Dn=0x20,Lt=0x40,Rt=0x80,A=0x100,X=0x200,L=0x400,R=0x800.
+  {
+    struct { int key, want; const char *name; } t[] = {
+      { SDLK_KP_8, 0x10, "Up" }, { SDLK_KP_2, 0x20, "Down" },
+      { SDLK_KP_4, 0x40, "Left" }, { SDLK_KP_6, 0x80, "Right" },
+      { SDLK_KP_5, 0x01, "B" }, { SDLK_KP_0, 0x100, "A" },
+      { SDLK_KP_7, 0x02, "Y" }, { SDLK_KP_9, 0x200, "X" },
+      { SDLK_KP_1, 0x04, "Select" }, { SDLK_KP_3, 0x08, "Start" },
+      { SDLK_KP_MINUS, 0x400, "L" }, { SDLK_KP_PLUS, 0x800, "R" },
+    };
+    int fails = 0;
+    for (int i = 0; i < 12; i++) {
+      g_player_input_state[1] = 0;
+      HandleP2KeyInput(t[i].key, true);
+      if (g_player_input_state[1] != t[i].want) {
+        printf("[harness] P2 KEY MAP FAIL: %-6s got 0x%03x want 0x%03x\n",
+               t[i].name, g_player_input_state[1], t[i].want);
+        fails++;
+      }
+      HandleP2KeyInput(t[i].key, false);
+    }
+    g_player_input_state[1] = 0;
+    printf("[harness] P2 keyboard mapping self-test: %s (%d/12 correct)\n",
+           fails ? "FAIL" : "PASS", 12 - fails);
+  }
+
   // Force the basic renderer (256x224, scale 1) for deterministic capture.
   g_ppu_render_flags = 0;
   g_snes_width = 256; g_snes_height = 224;
@@ -942,17 +969,19 @@ static void HandleGamepadInput_Player(int player, int button, bool pressed) {
     if (g_player_gamepad_last_cmd[player][button] != 0)
       HandleCommand(g_player_gamepad_last_cmd[player][button], pressed);
   } else {
-    // P2: directly set input bits (same mapping as P1 controls)
+    // P2: translate the gamepad command to an input bit exactly like P1 does in
+    // HandleCommand (which indexes kKbdRemap by the FULL key id `cmd`). The old
+    // code subtracted kKeys_Controls first, shifting every button by one (e.g.
+    // D-pad Up registered as B). Use kKbdRemap[cmd] to match P1.
     if (pressed)
       g_player_gamepad_last_cmd[player][button] = FindCmdForGamepadButton(button, g_player_gamepad_modifiers[player]);
     uint16 cmd = g_player_gamepad_last_cmd[player][button];
     if (cmd >= kKeys_Controls && cmd <= kKeys_Controls_Last) {
       static const uint8 kKbdRemap[] = { 0, 4, 5, 6, 7, 2, 3, 8, 0, 9, 1, 10, 11 };
-      int j = cmd - kKeys_Controls;
       if (pressed)
-        g_player_input_state[1] |= 1 << kKbdRemap[j];
+        g_player_input_state[1] |= 1 << kKbdRemap[cmd];
       else
-        g_player_input_state[1] &= ~(1 << kKbdRemap[j]);
+        g_player_input_state[1] &= ~(1 << kKbdRemap[cmd]);
     }
   }
 }
