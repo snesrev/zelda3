@@ -2167,17 +2167,54 @@ uint8 Sprite_DirectionToFaceLink(int k, PointU8 *coords_out) {  // 86eaa4
   return (xm >= ym) ? right.a : below.a + 2;
 }
 
+#ifdef ZELDA3_MULTIPLAYER
+// Co-op aggro target. Enemies/bosses path and aim via Sprite_IsRightOfLink /
+// Sprite_IsBelowLink and everything built on them (Sprite_ProjectSpeedTowardsLink,
+// Sprite_ApplySpeedTowardsLink, Sprite_DirectionToFaceLink). By default those
+// read link_x/y = P1 (cur_player during sprite AI), so every enemy chases P1.
+// Here we point them at whichever player is closer to the sprite, so a boss or
+// enemy goes for the nearer target. This is pathing/facing ONLY: damage is
+// hit-tested per player separately (the P2 loop in zelda_rtl.c re-runs
+// Sprite_CheckDamageTo/FromLink), and the damage path uses Link_SetupHitBox +
+// CheckIfHitBoxesOverlap rather than these helpers, so retargeting can never
+// mis-apply damage. Falls back to P1 when P2 is inactive or downed, so single-P1
+// play is unchanged (and the non-MP build below is byte-for-byte the original).
+static int Sprite_AggroIAbs(int v) { return v < 0 ? -v : v; }
+static bool Sprite_NearestIsP2(int k) {
+  if (!g_mp_p2_enabled || !g_players[1].is_active || g_players[1].is_dead)
+    return false;
+  int sx = Sprite_GetX(k), sy = Sprite_GetY(k);
+  int d1 = Sprite_AggroIAbs((int)g_players[0].x_coord - sx) +
+           Sprite_AggroIAbs((int)g_players[0].y_coord - sy);
+  int d2 = Sprite_AggroIAbs((int)g_players[1].x_coord - sx) +
+           Sprite_AggroIAbs((int)g_players[1].y_coord - sy);
+  return d2 < d1;
+}
+static uint16 Sprite_AggroTargetX(int k) {
+  return Sprite_NearestIsP2(k) ? g_players[1].x_coord : (uint16)link_x_coord;
+}
+static uint16 Sprite_AggroTargetY(int k) {
+  return Sprite_NearestIsP2(k) ? g_players[1].y_coord : (uint16)link_y_coord;
+}
+#define MP_AGGRO_X(k) Sprite_AggroTargetX(k)
+#define MP_AGGRO_Y(k) Sprite_AggroTargetY(k)
+#else
+#define MP_AGGRO_X(k) ((uint16)link_x_coord)
+#define MP_AGGRO_Y(k) ((uint16)link_y_coord)
+#endif
+
 PairU8 Sprite_IsRightOfLink(int k) {  // 86ead1
-  uint16 x = link_x_coord - Sprite_GetX(k);
+  uint16 x = MP_AGGRO_X(k) - Sprite_GetX(k);
   PairU8 rv = { (uint8)(sign16(x) ? 1 : 0), (uint8)x };
   return rv;
 }
 
 PairU8 Sprite_IsBelowLink(int k) {  // 86eae8
-  int t = BYTE(link_y_coord) + 8;
+  uint16 ly = MP_AGGRO_Y(k);
+  int t = BYTE(ly) + 8;
   int u = (t & 0xff) + sprite_z[k];
   int v = (u & 0xff) - sprite_y_lo[k];
-  int w = HIBYTE(link_y_coord) - sprite_y_hi[k] - (v < 0);
+  int w = HIBYTE(ly) - sprite_y_hi[k] - (v < 0);
   uint8 y = (w & 0xff) + (t >> 8) + (u >> 8);
   PairU8 rv = { (uint8)(sign8(y) ? 1 : 0), (uint8)v };
   return rv;
