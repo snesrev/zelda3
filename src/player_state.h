@@ -277,6 +277,11 @@ extern bool g_mp_p2_enabled;
 bool Multiplayer_PreventGameOver(void);
 void Multiplayer_UpdateDeathRespawn(void);
 
+// Copy the SHARED inventory (items, equipment, rupees, keys, bombs, arrows,
+// abilities, progression) from one player to the other, preserving the
+// destination's per-player health/magic. Keeps both players' item pools in sync.
+void Multiplayer_ShareInventory(PlayerState *from, PlayerState *to);
+
 // Initialize player state (copies from g_ram for P1, sets defaults for P2)
 void PlayerState_Init(int player_index);
 

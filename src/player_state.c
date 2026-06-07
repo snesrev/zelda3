@@ -423,6 +423,24 @@ void Multiplayer_UpdateDeathRespawn(void) {
     Multiplayer_RevivePlayer(ps);
   }
 }
+
+// Share the team inventory between players. The inventory fields are contiguous
+// in PlayerState (item_bow .. keys_earned_per_dungeon), so copy that whole block
+// and then restore the destination's PER-PLAYER health/magic (which live inside
+// that same address range). This makes one player's pickups/purchases/upgrades
+// appear for both, while health and magic remain independent.
+void Multiplayer_ShareInventory(PlayerState *from, PlayerState *to) {
+  uint8 hcap = to->health_capacity, hcur = to->health_current;
+  uint8 mpow = to->magic_power, hfill = to->hearts_filler, mfill = to->magic_filler;
+  size_t n = (size_t)((char *)&to->keys_earned_per_dungeon[NUM_DUNGEON_KEY_SLOTS]
+                      - (char *)&to->item_bow);
+  memcpy(&to->item_bow, &from->item_bow, n);
+  to->health_capacity = hcap;
+  to->health_current  = hcur;
+  to->magic_power     = mpow;
+  to->hearts_filler   = hfill;
+  to->magic_filler    = mfill;
+}
 #endif  // ZELDA3_MULTIPLAYER
 
 // ============================================================================

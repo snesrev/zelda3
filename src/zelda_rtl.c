@@ -377,6 +377,9 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
                         submodule_index == 0;
   if (g_mp_p2_enabled && g_mp_initialized && g_players[1].is_active && p2_normal_play) {
     PlayerState_SetCurrent(1);
+    // Give P2 the current shared inventory before it acts (so it can use the
+    // team's items and its pickups add to the team total).
+    Multiplayer_ShareInventory(&g_players[0], &g_players[1]);
     PlayerState_SyncToRam();
 
     // Process P2 input into the per-player joypad globals
@@ -417,6 +420,10 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     // Turn P2's just-collected hearts/magic into actual health/magic (P1's
     // Hud_RefillLogic doesn't run for P2).
     Multiplayer_RefillP2();
+
+    // Push any shared-inventory changes P2 just made (pickups/item use) back to
+    // the canonical pool so P1 sees them next frame.
+    Multiplayer_ShareInventory(&g_players[1], &g_players[0]);
 
     // Do NOT SyncFromRam: Link_Main wrote P2's new state into g_players[1] via
     // the cur_player macros, so the struct is already current. Pulling g_ram
