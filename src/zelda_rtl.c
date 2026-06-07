@@ -320,6 +320,28 @@ static void Multiplayer_InitIfNeeded(void) {
   }
 }
 
+// Per-player health/magic refill for P2. The engine's Hud_RefillLogic only runs
+// for P1 (and also redraws the HUD), so we replicate just the per-player part
+// here — converting P2's just-collected hearts/magic fillers into P2's actual
+// health/magic. cur_player must be P2.
+static void Multiplayer_RefillP2(void) {
+  if (link_magic_filler) {
+    if (link_magic_power >= 128) { link_magic_power = 128; link_magic_filler = 0; }
+    else { link_magic_filler--; link_magic_power++; }
+  }
+  if (link_hearts_filler) {
+    if (link_health_current < link_health_capacity) {
+      link_health_current += 8;
+      if (link_health_current >= link_health_capacity)
+        link_health_current = link_health_capacity;
+      link_hearts_filler -= 8;
+    } else {
+      link_health_current = link_health_capacity;
+      link_hearts_filler = 0;
+    }
+  }
+}
+
 // Run the multiplayer game loop: P1 full update, then P2 Link_Main only
 static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
   frame_counter++;
@@ -383,8 +405,18 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
       if (sprite_state[k] == 9) {
         Sprite_CheckDamageToLink(k);
         Sprite_CheckDamageFromLink(k);
+        // Let P2 collect drops too (prize sprites are types 0xD8..0xE6). With
+        // cur_player == P2 this routes hearts/magic into P2's own pools (so P2
+        // heals/refills) and shared items into P2's inventory copy. The sprite
+        // is despawned on collect, so P1's pass next frame won't double-collect.
+        if (sprite_type[k] >= 0xd8 && sprite_type[k] <= 0xe6)
+          Sprite_CheckAbsorptionByPlayer(k);
       }
     }
+
+    // Turn P2's just-collected hearts/magic into actual health/magic (P1's
+    // Hud_RefillLogic doesn't run for P2).
+    Multiplayer_RefillP2();
 
     // Do NOT SyncFromRam: Link_Main wrote P2's new state into g_players[1] via
     // the cur_player macros, so the struct is already current. Pulling g_ram
