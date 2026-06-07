@@ -28,8 +28,18 @@ Verified: builds clean, deterministic, self-test passes.
 
 ---
 
-## 🔴 OPEN — P2 cannot pick up items / hearts / drops
+## ✅ FIXED — P2 can pick up items / hearts / drops (commits `b5c2675`, `35625d0`)
 
+> Resolution: in P2's update loop, active prize sprites (types 0xD8–0xE6) are run
+> through the engine's own `Sprite_CheckAbsorptionByPlayer` with `cur_player == P2`,
+> so P2 collects what it overlaps (P1's earlier pass + despawn-on-collect prevents
+> double-collect). `Multiplayer_RefillP2` then converts P2's collected heart/magic
+> fillers into P2 health/magic (the engine's `Hud_RefillLogic` only runs for P1).
+> Verified: P2 heals from collected hearts. (Shared-item team-pooling — P2's
+> rupees/keys going to P1's totals — is the remaining nuance; per-player health/
+> magic, the main need, works.)
+
+**(original finding below)**
 **Severity: HIGH for "real second player".** Item/rupee/heart/key collection is
 detected inside **sprite AI**, which runs only in P1's full `Module_MainRouting()`
 (`Sprite_Main` → per-sprite handlers; the touch test uses `link_x/y` = P1). P2's
@@ -49,6 +59,19 @@ reduced update never runs sprite AI, so **P2 walking over a drop collects nothin
 
 ---
 
+## ✅ FIXED — P2's link-relative projectiles follow P2 (commit `43359c5`)
+
+> Resolution: each ancilla slot is tagged with the firing player in
+> `Ancilla_AllocInit` (the universal slot allocator, so every spawn records the
+> current `cur_player`), and `Ancilla_ExecuteOne` runs the link-relative types
+> (boomerang 0x05, hookshot 0x1F, Byrna 0x30/0x31) with `cur_player` set to that
+> owner, restoring afterward. Other ancillae pass through the same save/restore as
+> a no-op. Verified: determinism holds with ancillae active, no crash, vanilla +
+> coop build clean. (P2 *can* use Y-items — `Link_HandleYItem` runs in P2's
+> `Link_Main` path — so this is meaningful; exact in-hand behavior of the 3 items
+> is best confirmed in interactive play.)
+
+**(original finding below)**
 ## 🔴 OPEN — P2's link-relative projectiles track P1 (boomerang, hookshot, Cane of Byrna)
 
 **Severity: HIGH for those 3 items.** Ancillae are updated once per frame inside
@@ -104,6 +127,9 @@ double-processing, so this is safe but slightly redundant.
 ---
 
 ## Priority for further work
-1. **P2 pickups** (esp. hearts) — biggest remaining gap in "P2 is a real player".
-2. **Ancilla owner** for boomerang/hookshot/Byrna — 3 items unusable by P2.
-3. (Optional) independent transitions / split-screen.
+1. ~~P2 pickups~~ — **done** (`b5c2675`).
+2. ~~Ancilla owner for boomerang/hookshot/Byrna~~ — **done** (`43359c5`).
+3. **Shared-item team pooling** — P2's collected rupees/keys go to its own copy, not
+   the team total; and P1's mid-game item pickups don't propagate to P2 (inventory
+   is cloned at P2 spawn, not continuously mirrored). Per-player health/magic work.
+4. (Optional) independent transitions / split-screen.
