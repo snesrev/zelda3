@@ -564,12 +564,21 @@ void RecoverPositionAfterDrowning() {  // 829583
   overworld_screen_transition = 0;
   submodule_index = 0;
   if (!link_health_current) {
-    mapbak_TM = TM_copy;
-    mapbak_TS = TS_copy;
-    saved_module_for_menu = main_module_index;
-    main_module_index = 18;
-    submodule_index = 1;
-    countdown_for_blink = 0;
+#ifdef ZELDA3_MULTIPLAYER
+    // Co-op: a downed player sits at 0 health; don't game-over while the other
+    // player is still up (keeps the current player in its ghost state).
+    if (Multiplayer_PreventGameOver()) {
+      // suppressed
+    } else
+#endif
+    {
+      mapbak_TM = TM_copy;
+      mapbak_TS = TS_copy;
+      saved_module_for_menu = main_module_index;
+      main_module_index = 18;
+      submodule_index = 1;
+      countdown_for_blink = 0;
+    }
   }
 }
 

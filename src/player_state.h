@@ -156,6 +156,20 @@ typedef struct PlayerState {
   uint8  is_on_lower_level_cached;  // 0xC1A7
   uint8  is_on_lower_level_mirror_cached; // 0xC1A8
 
+  // === Additional per-player Link state (co-op review fixes) ===
+  // Link_Main writes these every frame as part of his OWN state, but they were
+  // missing here, so the two players shared/corrupted them via g_ram.
+  uint8  player_handler_timer;            // 0x300  action/animation timer
+  uint8  state_for_spin_attack;           // 0x31C  spin/medallion anim gfx
+  uint8  step_counter_for_spin_attack;    // 0x31D  spin anim step counter
+  uint8  countdown_for_blink;             // 0x31F  post-hit invulnerability flash
+  uint8  player_near_pit_state;           // 0x5B   pit/hole fall state machine
+  uint8  player_on_somaria_platform;      // 0x2F5  standing on a Somaria platform
+  uint8  flag_is_link_immobilized;        // 0x2E4  control lock
+  uint16 kind_of_in_room_staircase;       // 0x44A  dungeon staircase/layer change
+  uint8  about_to_jump_off_ledge;         // 0x47A  ledge-jump state
+  uint8  flag_unk1;                       // 0xFC1  per-frame scratch flag
+
   // === Inventory (0xF340–0xF37B) — shared in Phase 1, split later ===
   uint8  item_bow;                   // 0xF340
   uint8  item_boomerang;             // 0xF341
@@ -247,6 +261,26 @@ extern PlayerState g_players[MAX_PLAYERS];
 
 // Runtime multiplayer configuration
 extern MultiplayerConfig g_mp_config;
+
+// Master co-op toggle (defined in zelda_rtl.c). When false, P2 is never
+// spawned/updated and the game behaves as ordinary single-player.
+extern bool g_mp_p2_enabled;
+
+// Co-op death/respawn.
+// Multiplayer_PreventGameOver() is called at the engine's game-over points (when
+// a player reaches 0 health). If co-op is active and the OTHER player is still
+// up, it puts the current player (cur_player) into a downed "ghost" state and
+// returns true so the caller skips the game-over; only a simultaneous double-KO
+// returns false (real game over). Multiplayer_UpdateDeathRespawn() runs once per
+// frame to tick each downed player's respawn timer and revive it beside the
+// living partner.
+bool Multiplayer_PreventGameOver(void);
+void Multiplayer_UpdateDeathRespawn(void);
+
+// Copy the SHARED inventory (items, equipment, rupees, keys, bombs, arrows,
+// abilities, progression) from one player to the other, preserving the
+// destination's per-player health/magic. Keeps both players' item pools in sync.
+void Multiplayer_ShareInventory(PlayerState *from, PlayerState *to);
 
 // Initialize player state (copies from g_ram for P1, sets defaults for P2)
 void PlayerState_Init(int player_index);

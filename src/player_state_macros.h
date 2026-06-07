@@ -185,6 +185,18 @@
 #undef link_magic_consumption
 #undef link_keys_earned_per_dungeon
 
+// Additional per-player Link state (co-op review fixes — were leaking via g_ram)
+#undef player_handler_timer
+#undef state_for_spin_attack
+#undef step_counter_for_spin_attack
+#undef countdown_for_blink
+#undef player_near_pit_state
+#undef player_on_somaria_platform
+#undef flag_is_link_immobilized
+#undef kind_of_in_room_staircase
+#undef about_to_jump_off_ledge
+#undef flag_unk1
+
 // Also redirect per-player non-link_ globals
 #undef button_mask_b_y
 #undef bitfield_for_a_button
@@ -401,6 +413,18 @@
 #define link_has_crystals                (cur_player->has_crystals)
 #define link_magic_consumption           (cur_player->magic_consumption)
 #define link_keys_earned_per_dungeon     (cur_player->keys_earned_per_dungeon)
+
+// Additional per-player Link state (co-op review fixes)
+#define player_handler_timer             (cur_player->player_handler_timer)
+#define state_for_spin_attack            (cur_player->state_for_spin_attack)
+#define step_counter_for_spin_attack     (cur_player->step_counter_for_spin_attack)
+#define countdown_for_blink              (cur_player->countdown_for_blink)
+#define player_near_pit_state            (cur_player->player_near_pit_state)
+#define player_on_somaria_platform       (cur_player->player_on_somaria_platform)
+#define flag_is_link_immobilized         (cur_player->flag_is_link_immobilized)
+#define kind_of_in_room_staircase        (cur_player->kind_of_in_room_staircase)
+#define about_to_jump_off_ledge          (cur_player->about_to_jump_off_ledge)
+#define flag_unk1                        (cur_player->flag_unk1)
 
 // Per-player non-link_ globals
 #define button_mask_b_y                  (cur_player->button_mask_b_y)

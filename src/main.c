@@ -97,38 +97,35 @@ static int GetPlayerForController(SDL_JoystickID joy_id) {
   return 0; // default to P1
 }
 
-// P2 keyboard mapping: Arrow keys + numpad
+// P2 keyboard (numpad cluster; requires NumLock ON). These keys are disjoint
+// from P1's defaults (arrows + Z X A S C V + Enter/RShift) so both players can
+// share one keyboard. `bit` is the control index, matching P1's control order
+// (0=Up,1=Down,2=Left,3=Right,4=Select,5=Start,6=A,7=B,8=X,9=Y,10=L,11=R); it is
+// then run through the SAME kKbdRemap as P1 so the resulting input bits match.
 static int HandleP2KeyInput(int keyCode, bool pressed) {
   int bit = -1;
   switch (keyCode) {
-    // B=Numpad1, Y=Numpad2, Select=Numpad3, Start=Numpad Enter
-    // Up=UpArrow, Down=DownArrow, Left=LeftArrow, Right=RightArrow
-    // A=Numpad5, X=Numpad4, L=Numpad7, R=Numpad8
-    case SDLK_KP_1:     bit = 0; break;  // B
-    case SDLK_KP_5:     bit = 1; break;  // A (mapped via kKbdRemap)
-    case SDLK_KP_3:     bit = 2; break;  // Select
-    case SDLK_KP_ENTER: bit = 3; break;  // Start
-    case SDLK_UP:       bit = 4; break;  // Up
-    case SDLK_DOWN:     bit = 5; break;  // Down
-    case SDLK_LEFT:     bit = 6; break;  // Left
-    case SDLK_RIGHT:    bit = 7; break;  // Right
-    case SDLK_KP_4:     bit = 8; break;  // Y
-    case SDLK_KP_2:     bit = 9; break;  // X
-    case SDLK_KP_7:     bit = 10; break; // L
-    case SDLK_KP_8:     bit = 11; break; // R
+    case SDLK_KP_8:     bit = 0;  break; // Up
+    case SDLK_KP_2:     bit = 1;  break; // Down
+    case SDLK_KP_4:     bit = 2;  break; // Left
+    case SDLK_KP_6:     bit = 3;  break; // Right
+    case SDLK_KP_1:     bit = 4;  break; // Select
+    case SDLK_KP_3:     bit = 5;  break; // Start
+    case SDLK_KP_0:     bit = 6;  break; // A  (lift / run / talk)
+    case SDLK_KP_5:     bit = 7;  break; // B  (sword)
+    case SDLK_KP_9:     bit = 8;  break; // X  (map)
+    case SDLK_KP_7:     bit = 9;  break; // Y  (use item)
+    case SDLK_KP_MINUS: bit = 10; break; // L
+    case SDLK_KP_PLUS:  bit = 11; break; // R
     default: return 0;
   }
-  // Use same remap as P1
   static const uint8 kKbdRemap[] = { 0, 4, 5, 6, 7, 2, 3, 8, 0, 9, 1, 10, 11 };
-  if (bit >= 0 && bit <= 11) {
-    int mapped = kKbdRemap[bit + 1]; // +1 because kKbdRemap[0] is null entry
-    if (pressed)
-      g_player_input_state[1] |= 1 << mapped;
-    else
-      g_player_input_state[1] &= ~(1 << mapped);
-    return 1;
-  }
-  return 0;
+  int mapped = kKbdRemap[bit + 1];  // +1: kKbdRemap[0] is the null entry (kKeys_Null)
+  if (pressed)
+    g_player_input_state[1] |= 1 << mapped;
+  else
+    g_player_input_state[1] &= ~(1 << mapped);
+  return 1;
 }
 #endif // ZELDA3_MULTIPLAYER
 
@@ -340,6 +337,171 @@ static const struct RendererFuncs kSdlRendererFuncs  = {
 
 void OpenGLRenderer_Create(struct RendererFuncs *funcs, bool use_opengl_es);
 
+#ifdef ZELDA3_HEADLESS_TEST
+// ---------------------------------------------------------------------------
+// Headless verification harness (built only with -DZELDA3_HEADLESS_TEST).
+// Reaches live gameplay by replaying a reference save, then drives divergent
+// scripted P1/P2 inputs to prove independent control / shared camera / combat,
+// dumping framebuffers to /tmp/zharness and logging per-player coords + CRC.
+// No SDL window, renderer, or audio device is created.
+// ---------------------------------------------------------------------------
+
+// Self-contained 32bpp BMP writer (PPU emits ARGB8888 == BGRA bytes in memory,
+// which matches BMP's BGRA pixel order; rows written bottom-up).
+static void HeadlessWriteBmp(const char *path, const uint8 *px, int w, int h, size_t pitch) {
+  FILE *f = fopen(path, "wb");
+  if (!f) return;
+  uint32 imgsize = (uint32)w * h * 4, filesize = 54 + imgsize;
+  uint8 hdr[54] = {0};
+  hdr[0] = 'B'; hdr[1] = 'M';
+  memcpy(hdr + 2, &filesize, 4);
+  uint32 dataoffs = 54, dibsize = 40, n_imgsize = imgsize; uint16 planes = 1, bpp = 32;
+  memcpy(hdr + 10, &dataoffs, 4); memcpy(hdr + 14, &dibsize, 4);
+  memcpy(hdr + 18, &w, 4); memcpy(hdr + 22, &h, 4);
+  memcpy(hdr + 26, &planes, 2); memcpy(hdr + 28, &bpp, 2);
+  memcpy(hdr + 34, &n_imgsize, 4);
+  fwrite(hdr, 1, 54, f);
+  for (int y = h - 1; y >= 0; y--)
+    fwrite(px + (size_t)y * pitch, 1, (size_t)w * 4, f);
+  fclose(f);
+}
+
+static void HeadlessCapture(const char *path) {
+  int w = 256, h = 224;            // basic renderer, scale 1
+  size_t pitch = (size_t)w * 4;
+  uint8 *buf = calloc((size_t)h, pitch);
+  if (!buf) return;
+  ZeldaDrawPpuFrame(buf, pitch, 0);
+  HeadlessWriteBmp(path, buf, w, h, pitch);
+  free(buf);
+}
+
+static int RunHeadlessTest(void) {
+  setvbuf(stdout, NULL, _IONBF, 0);  // unbuffered so logs survive a kill/timeout
+
+  // Self-test the P2 keyboard mapping (this can't be exercised any other way
+  // headless — the harness injects inputs directly, bypassing SDL handlers).
+  // Expected bits are the input layout: B=0x01,Y=0x02,Sel=0x04,St=0x08,
+  // Up=0x10,Dn=0x20,Lt=0x40,Rt=0x80,A=0x100,X=0x200,L=0x400,R=0x800.
+  {
+    struct { int key, want; const char *name; } t[] = {
+      { SDLK_KP_8, 0x10, "Up" }, { SDLK_KP_2, 0x20, "Down" },
+      { SDLK_KP_4, 0x40, "Left" }, { SDLK_KP_6, 0x80, "Right" },
+      { SDLK_KP_5, 0x01, "B" }, { SDLK_KP_0, 0x100, "A" },
+      { SDLK_KP_7, 0x02, "Y" }, { SDLK_KP_9, 0x200, "X" },
+      { SDLK_KP_1, 0x04, "Select" }, { SDLK_KP_3, 0x08, "Start" },
+      { SDLK_KP_MINUS, 0x400, "L" }, { SDLK_KP_PLUS, 0x800, "R" },
+    };
+    int fails = 0;
+    for (int i = 0; i < 12; i++) {
+      g_player_input_state[1] = 0;
+      HandleP2KeyInput(t[i].key, true);
+      if (g_player_input_state[1] != t[i].want) {
+        printf("[harness] P2 KEY MAP FAIL: %-6s got 0x%03x want 0x%03x\n",
+               t[i].name, g_player_input_state[1], t[i].want);
+        fails++;
+      }
+      HandleP2KeyInput(t[i].key, false);
+    }
+    g_player_input_state[1] = 0;
+    printf("[harness] P2 keyboard mapping self-test: %s (%d/12 correct)\n",
+           fails ? "FAIL" : "PASS", 12 - fails);
+  }
+
+  // Force the basic renderer (256x224, scale 1) for deterministic capture.
+  g_ppu_render_flags = 0;
+  g_snes_width = 256; g_snes_height = 224;
+  g_zenv.ppu->extraLeftRight = 0;
+
+  LoadRom("zelda3.sfc");
+
+  // Local co-op mode (same as the normal coop binary configures).
+  g_mp_config.mode = MP_MODE_LOCAL;
+  g_mp_config.num_players = 2;
+  g_mp_config.local_player_index = 0;
+  g_mp_config.input_delay_frames = 0;
+
+  if (getenv("ZELDA3_NO_P2")) { g_mp_p2_enabled = false; printf("[harness] P2 DISABLED (single-player isolation)\n"); }
+  int slot = 0; const char *e = getenv("ZELDA3_TEST_SAVE"); if (e) slot = atoi(e);
+  printf("[harness] loading ref save %d, fast-forwarding replay...\n", slot);
+  SaveLoadSlot(kSaveLoad_Load, 256 + slot);
+
+  int guard = 0;
+  while (ZeldaRunFrame(0, 0) && ++guard < 1000000) {
+    if (guard % 20000 == 0)
+      printf("[harness] ...replaying frame %d (module=%d sub=%d)\n",
+             guard, main_module_index, submodule_index);
+  }
+  printf("[harness] replay ended after %d frames: module=%d sub=%d\n",
+         guard, main_module_index, submodule_index);
+  printf("[harness] after replay: P1=(%d,%d) act=%d | P2=(%d,%d) act=%d\n",
+         g_players[0].x_coord, g_players[0].y_coord, g_players[0].is_active,
+         g_players[1].x_coord, g_players[1].y_coord, g_players[1].is_active);
+
+  int total = 360; e = getenv("ZELDA3_TEST_FRAMES"); if (e) total = atoi(e);
+  // Constant per-player inputs, hex, overridable for probing (e.g. 0x80=right).
+  int in1 = 0x80; e = getenv("ZELDA3_P1_INPUT"); if (e) in1 = (int)strtol(e, NULL, 0);
+  int in2 = 0x40; e = getenv("ZELDA3_P2_INPUT"); if (e) in2 = (int)strtol(e, NULL, 0);
+  // Pickup refill test: knock P2 to 1 heart and seed its heart filler (as a
+  // collected heart would), then verify the per-player refill (Multiplayer_RefillP2)
+  // converts it to P2 health. Enable with ZELDA3_TEST_PICKUP=1. (The collection
+  // itself reuses the engine's proven Sprite_CheckAbsorptionByPlayer; spawning a
+  // valid collectible sprite headless needs the full drop init, so we verify the
+  // added refill path here directly.)
+  if (getenv("ZELDA3_TEST_PICKUP")) {
+    g_players[1].health_current = 8;    // 1 heart
+    g_players[1].hearts_filler = 24;    // 3 hearts pending (as if collected)
+    printf("[harness] PICKUP TEST: P2 hp=8, hearts_filler=24 (expect P2 hp -> 32)\n");
+    in1 = 0; in2 = 0;
+  }
+  if (getenv("ZELDA3_TEST_INVSHARE")) {
+    // Give P1 distinctive shared inventory + different health; expect P2 to
+    // inherit the items/rupees/keys but KEEP its own (different) health.
+    g_players[0].item_bow = 3; g_players[0].rupees_goal = 150; g_players[0].num_keys = 5;
+    g_players[0].health_current = 40; g_players[1].health_current = 8;
+    printf("[harness] INVSHARE TEST: P1 bow=3 rupees=150 keys=5 hp=40; P2 hp=8\n");
+    printf("[harness]   (expect P2 bow=3 rupees=150 keys=5, P2 hp stays ~8)\n");
+    in1 = 0; in2 = 0;
+  }
+  printf("[harness] driving P1=0x%x P2=0x%x for %d frames\n", in1, in2, total);
+  for (int k = 0; k < 16; k++) if (sprite_state[k] == 9)
+    printf("[harness]   sprite[%d] type=0x%02x pos=(%d,%d) hp=%d\n", k, sprite_type[k],
+           sprite_x_lo[k] | (sprite_x_hi[k] << 8), sprite_y_lo[k] | (sprite_y_hi[k] << 8), sprite_health[k]);
+  // Optional: pulse the B button (tap) every 16 frames so the sword actually
+  // swings instead of charging a spin attack. Enable with ZELDA3_PULSE_B=1.
+  int pulse_b = getenv("ZELDA3_PULSE_B") ? 1 : 0;
+  mkdir("/tmp/zharness", 0755);
+  for (int fr = 0; fr < total; fr++) {
+    int a1 = in1, a2 = in2;
+    if (pulse_b) {  // tap B (sword) for 2 of every 16 frames
+      int b = ((fr % 16) < 2) ? 0x01 : 0;
+      a1 = (in1 & ~0x01) | b;
+      a2 = (in2 & ~0x01) | b;
+    }
+    ZeldaRunFrame(a1, a2);
+    if (fr % 10 == 0) {
+      char path[160]; sprintf(path, "/tmp/zharness/frame_%03d.bmp", fr);
+      HeadlessCapture(path);
+      PlayerState *p1 = &g_players[0], *p2 = &g_players[1];
+      printf("[harness] f=%3d mod=%d sub=%d | P1=(%d,%d hp=%d dead=%d rt=%d) P2=(%d,%d hp=%d dead=%d rt=%d)\n", fr,
+             main_module_index, submodule_index,
+             p1->x_coord, p1->y_coord, p1->health_current, p1->is_dead, p1->respawn_timer,
+             p2->x_coord, p2->y_coord, p2->health_current, p2->is_dead, p2->respawn_timer);
+    }
+  }
+  HeadlessCapture("/tmp/zharness/final.bmp");
+  SyncChecksum fc = Multiplayer_ComputeChecksum();
+  printf("[harness] done (%d scripted frames). final g_ram CRC=%08x P1=(%d,%d) P2=(%d,%d)\n",
+         total, fc.checksum, g_players[0].x_coord, g_players[0].y_coord,
+         g_players[1].x_coord, g_players[1].y_coord);
+  if (getenv("ZELDA3_TEST_INVSHARE"))
+    printf("[harness] INVSHARE RESULT: P2 bow=%d rupees=%d keys=%d hp=%d | P1 hp=%d\n",
+           g_players[1].item_bow, g_players[1].rupees_goal, g_players[1].num_keys,
+           g_players[1].health_current, g_players[0].health_current);
+  return 0;
+}
+#endif  // ZELDA3_HEADLESS_TEST
+
 #undef main
 int main(int argc, char** argv) {
   argc--, argv++;
@@ -369,6 +531,12 @@ int main(int argc, char** argv) {
                        g_config.no_sprite_limits * kPpuRenderFlags_NoSpriteLimits;
   ZeldaEnableMsu(g_config.enable_msu);
   ZeldaSetLanguage(g_config.language);
+
+#ifdef ZELDA3_HEADLESS_TEST
+  // Engine is initialized; run the headless verification harness and exit
+  // without ever creating an SDL window, renderer, or audio device.
+  return RunHeadlessTest();
+#endif
 
   if (g_config.fullscreen == 1)
     g_win_flags ^= SDL_WINDOW_FULLSCREEN_DESKTOP;
@@ -826,17 +994,19 @@ static void HandleGamepadInput_Player(int player, int button, bool pressed) {
     if (g_player_gamepad_last_cmd[player][button] != 0)
       HandleCommand(g_player_gamepad_last_cmd[player][button], pressed);
   } else {
-    // P2: directly set input bits (same mapping as P1 controls)
+    // P2: translate the gamepad command to an input bit exactly like P1 does in
+    // HandleCommand (which indexes kKbdRemap by the FULL key id `cmd`). The old
+    // code subtracted kKeys_Controls first, shifting every button by one (e.g.
+    // D-pad Up registered as B). Use kKbdRemap[cmd] to match P1.
     if (pressed)
       g_player_gamepad_last_cmd[player][button] = FindCmdForGamepadButton(button, g_player_gamepad_modifiers[player]);
     uint16 cmd = g_player_gamepad_last_cmd[player][button];
     if (cmd >= kKeys_Controls && cmd <= kKeys_Controls_Last) {
       static const uint8 kKbdRemap[] = { 0, 4, 5, 6, 7, 2, 3, 8, 0, 9, 1, 10, 11 };
-      int j = cmd - kKeys_Controls;
       if (pressed)
-        g_player_input_state[1] |= 1 << kKbdRemap[j];
+        g_player_input_state[1] |= 1 << kKbdRemap[cmd];
       else
-        g_player_input_state[1] &= ~(1 << kKbdRemap[j]);
+        g_player_input_state[1] &= ~(1 << kKbdRemap[cmd]);
     }
   }
 }

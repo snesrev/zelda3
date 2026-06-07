@@ -184,6 +184,18 @@ static void PlayerState_Sync(bool to_ram) {
   SYNC_U8 (is_on_lower_level_cached,    0xC1A7);
   SYNC_U8 (is_on_lower_level_mirror_cached, 0xC1A8);
 
+  // Additional per-player Link state (co-op review fixes)
+  SYNC_U8 (player_handler_timer,         0x300);
+  SYNC_U8 (state_for_spin_attack,        0x31C);
+  SYNC_U8 (step_counter_for_spin_attack, 0x31D);
+  SYNC_U8 (countdown_for_blink,          0x31F);
+  SYNC_U8 (player_near_pit_state,        0x5B);
+  SYNC_U8 (player_on_somaria_platform,   0x2F5);
+  SYNC_U8 (flag_is_link_immobilized,     0x2E4);
+  SYNC_U16(kind_of_in_room_staircase,    0x44A);
+  SYNC_U8 (about_to_jump_off_ledge,      0x47A);
+  SYNC_U8 (flag_unk1,                    0xFC1);
+
   // Inventory
   SYNC_U8 (item_bow,                     0xF340);
   SYNC_U8 (item_boomerang,               0xF341);
@@ -283,35 +295,153 @@ void PlayerState_SyncFromRam(void) {
 void PlayerState_Init(int player_index) {
   assert(player_index >= 0 && player_index < MAX_PLAYERS);
   PlayerState *ps = &g_players[player_index];
-  memset(ps, 0, sizeof(PlayerState));
-
-  ps->player_index = (uint8)player_index;
-  ps->is_active = 1;
-  ps->is_dead = 0;
-  ps->respawn_timer = 0;
-  ps->is_ghost = 0;
-  ps->palette_index = (uint8)player_index;  // P1=green(0), P2=purple(1)
 
   if (player_index == 0) {
     // P1: pull initial state from g_ram (the normal game init path populates g_ram)
+    memset(ps, 0, sizeof(PlayerState));
     PlayerState *saved = cur_player;
     cur_player = ps;
     PlayerState_SyncFromRam();
     cur_player = saved;
+    ps->player_index = 0;
+    ps->is_active = 1;
+    ps->palette_index = 0;  // green tunic
   } else {
-    // P2 co-op: spawn near P1 with matching progression but own health pool
+    // P2 co-op: clone P1's FULL progression (items, sword, shield, abilities,
+    // dungeon access) so the second player has matching capabilities, per the
+    // design ("P2 spawns from P1"). Then override spawn + per-player fields.
+    // Health/magic become independent pools from here on.
     PlayerState *p1 = &g_players[0];
-    ps->health_capacity = p1->health_capacity;  // match P1's heart containers
-    ps->health_current  = p1->health_capacity;  // full health on join
-    ps->magic_power     = p1->magic_power;
-    ps->direction_facing = 0x02;  // facing down
-    ps->speed_setting = 0x12;     // normal walk speed
-    // Spawn slightly offset from P1
-    ps->x_coord = p1->x_coord + 16;
+    *ps = *p1;
+    ps->player_index = 1;
+    ps->is_active = 1;
+    ps->is_dead = 0;
+    ps->is_ghost = 0;
+    ps->respawn_timer = 0;
+    ps->palette_index = 1;                       // purple/red tunic
+    ps->health_current = p1->health_capacity;    // full health on join
+    ps->direction_facing = 0x02;                 // facing down
+    ps->x_coord = p1->x_coord + 16;              // spawn beside P1
     ps->y_coord = p1->y_coord;
-    ps->is_on_lower_level = p1->is_on_lower_level;
+    // Clear transient movement/combat state inherited from the clone.
+    ps->x_vel = ps->y_vel = 0;
+    ps->incapacitated_timer = 0;
+    ps->recoilmode_timer = 0;
   }
 }
+
+// ============================================================================
+// Co-op death / respawn
+// (guarded: references g_mp_p2_enabled, which only exists in the co-op build)
+// ============================================================================
+#ifdef ZELDA3_MULTIPLAYER
+#define MP_RESPAWN_FRAMES 240   // ~4 seconds downed before reviving (fits uint8 timer)
+
+// Called at the engine's game-over points (a player just reached 0 health).
+// cur_player is the player that's going down. Returns true to SUPPRESS the
+// game-over (the player is put into a downed ghost state) when the other player
+// is still up; returns false only on a true double-KO so the engine can run the
+// normal game-over.
+bool Multiplayer_PreventGameOver(void) {
+  // Only meaningful when both players exist and co-op is on.
+  if (!g_mp_p2_enabled || !g_players[0].is_active || !g_players[1].is_active)
+    return false;
+
+  PlayerState *dying = cur_player;
+  PlayerState *other = (cur_player == &g_players[0]) ? &g_players[1] : &g_players[0];
+
+  // Both players down at once -> let the real game-over happen.
+  if (other->is_dead)
+    return false;
+
+  // Put the current player into the downed/ghost state (idempotent).
+  if (!dying->is_dead) {
+    dying->is_dead = 1;
+    dying->is_ghost = 1;
+    dying->respawn_timer = MP_RESPAWN_FRAMES;
+  }
+  dying->health_current = 0;
+  dying->disable_sprite_damage = 1;   // ghost: invulnerable while downed
+  dying->visibility_status = 0;       // visible (LinkOam_Main flashes the ghost)
+  return true;
+}
+
+// Revive a downed player: clear the ghost state and give it some health back.
+static void Multiplayer_RevivePlayer(PlayerState *ps) {
+  ps->health_current = ps->health_capacity >> 1;   // revive with half hearts
+  if (ps->health_current < 8) ps->health_current = 8;
+  ps->is_dead = 0;
+  ps->is_ghost = 0;
+  ps->disable_sprite_damage = 0;
+  ps->visibility_status = 0;
+  ps->incapacitated_timer = 0;
+  ps->x_vel = ps->y_vel = 0;
+  ps->flag_moving = 0;
+}
+
+// Per-frame: keep downed players in the ghost state, let the living partner
+// revive a downed player by reaching them (revive-on-touch), and otherwise
+// auto-revive beside the partner once the respawn timer elapses.
+void Multiplayer_UpdateDeathRespawn(void) {
+  if (!g_mp_p2_enabled) return;
+  for (int i = 0; i < 2; i++) {
+    PlayerState *ps = &g_players[i];
+    PlayerState *other = &g_players[i ^ 1];
+    if (!ps->is_active || !ps->is_dead)
+      continue;
+
+    // Maintain the downed/ghost state each frame (invulnerable, 0 HP, visible
+    // base state — the flashing is done at render time in LinkOam_Main).
+    ps->disable_sprite_damage = 1;
+    ps->health_current = 0;
+    ps->visibility_status = 0;
+
+    // Both players down -> stay down; the killing blow already let the real
+    // game-over trigger.
+    if (other->is_dead)
+      continue;
+
+    // Revive-on-touch: the living partner walking onto the downed ghost revives
+    // it on the spot (classic co-op rescue).
+    int dx = (int)ps->x_coord - (int)other->x_coord;
+    int dy = (int)ps->y_coord - (int)other->y_coord;
+    if (dx * dx + dy * dy <= 24 * 24) {
+      Multiplayer_RevivePlayer(ps);
+      continue;
+    }
+
+    // Otherwise count down and auto-revive beside the partner when it elapses.
+    if (ps->respawn_timer > 0) {
+      ps->respawn_timer--;
+      continue;
+    }
+    ps->x_coord = other->x_coord + 16;
+    ps->y_coord = other->y_coord;
+    ps->is_on_lower_level = other->is_on_lower_level;
+    ps->quadrant_x = other->quadrant_x;
+    ps->quadrant_y = other->quadrant_y;
+    Multiplayer_RevivePlayer(ps);
+  }
+}
+
+// Share the team inventory between players. The inventory fields are contiguous
+// in PlayerState (item_bow .. keys_earned_per_dungeon), so copy that whole block
+// and then restore the destination's PER-PLAYER health/magic (which live inside
+// that same address range). This makes one player's pickups/purchases/upgrades
+// appear for both, while health and magic remain independent.
+void Multiplayer_ShareInventory(PlayerState *from, PlayerState *to) {
+  uint8 hcap = to->health_capacity, hcur = to->health_current;
+  uint8 mpow = to->magic_power, hfill = to->hearts_filler, mfill = to->magic_filler;
+  size_t n = (size_t)((char *)&to->keys_earned_per_dungeon[NUM_DUNGEON_KEY_SLOTS]
+                      - (char *)&to->item_bow);
+  memcpy(&to->item_bow, &from->item_bow, n);
+  to->health_capacity = hcap;
+  to->health_current  = hcur;
+  to->magic_power     = mpow;
+  to->hearts_filler   = hfill;
+  to->magic_filler    = mfill;
+}
+#endif  // ZELDA3_MULTIPLAYER
 
 // ============================================================================
 // Multiplayer config

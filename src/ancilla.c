@@ -658,6 +658,12 @@ void Bomb_CheckSpriteDamage(int k) {  // 888287
   }
 }
 
+#ifdef ZELDA3_MULTIPLAYER
+// Which player fired each ancilla slot (0 = P1, 1 = P2). Tagged at allocation in
+// Ancilla_AllocInit; used below to run link-relative ancillae as their owner.
+static uint8 g_ancilla_owner[16];
+#endif
+
 void Ancilla_ExecuteAll() {  // 88832b
   for (int i = 9; i >= 0; i--) {
     cur_object_index = i;
@@ -674,7 +680,19 @@ void Ancilla_ExecuteOne(uint8 type, int k) {  // 88833c
   if (submodule_index == 0 && ancilla_timer[k] != 0)
     ancilla_timer[k]--;
 
+#ifdef ZELDA3_MULTIPLAYER
+  // Boomerang (0x05), hookshot (0x1F) and Cane of Byrna sparks (0x30/0x31) read
+  // Link's position every frame. Ancillae update during P1's routing, so run
+  // these as the player who fired them — otherwise P2's boomerang returns to P1,
+  // P2's hookshot chain draws from P1, and P2's Byrna sparks orbit P1.
+  PlayerState *mp_saved = cur_player;
+  if (type == 0x05 || type == 0x1f || type == 0x30 || type == 0x31)
+    PlayerState_SetCurrent(g_ancilla_owner[k] & 1);
   kAncilla_Funcs[type - 1](k);
+  cur_player = mp_saved;
+#else
+  kAncilla_Funcs[type - 1](k);
+#endif
 }
 
 void Ancilla13_IceRodSparkle(int k) {  // 888435
@@ -6988,8 +7006,12 @@ int Ancilla_AllocInit(uint8 type, uint8 limit) {  // 8ff577
 
   // Try to reuse an empty ancilla slot
   for (int j = (type == 7 || type == 8) ? limit : 4; j >= 0; j--) {
-    if (ancilla_type[j] == 0)
+    if (ancilla_type[j] == 0) {
+#ifdef ZELDA3_MULTIPLAYER
+      g_ancilla_owner[j] = (cur_player == &g_players[1]) ? 1 : 0;  // tag firer
+#endif
       return j;
+    }
   }
   int k = ancilla_alloc_rotate;
   do {
@@ -6999,6 +7021,9 @@ int Ancilla_AllocInit(uint8 type, uint8 limit) {  // 8ff577
     // reuse slots for sparkles or arrows in wall
     if (old_type == 0x3c || old_type == 0x13 || old_type == 0xa) {
       ancilla_alloc_rotate = k;
+#ifdef ZELDA3_MULTIPLAYER
+      g_ancilla_owner[k] = (cur_player == &g_players[1]) ? 1 : 0;  // tag firer
+#endif
       return k;
     }
   } while (k != 0);
