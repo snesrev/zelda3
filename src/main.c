@@ -454,6 +454,15 @@ static int RunHeadlessTest(void) {
     printf("[harness] PICKUP TEST: P2 hp=8, hearts_filler=24 (expect P2 hp -> 32)\n");
     in1 = 0; in2 = 0;
   }
+  if (getenv("ZELDA3_TEST_INVSHARE")) {
+    // Give P1 distinctive shared inventory + different health; expect P2 to
+    // inherit the items/rupees/keys but KEEP its own (different) health.
+    g_players[0].item_bow = 3; g_players[0].rupees_goal = 150; g_players[0].num_keys = 5;
+    g_players[0].health_current = 40; g_players[1].health_current = 8;
+    printf("[harness] INVSHARE TEST: P1 bow=3 rupees=150 keys=5 hp=40; P2 hp=8\n");
+    printf("[harness]   (expect P2 bow=3 rupees=150 keys=5, P2 hp stays ~8)\n");
+    in1 = 0; in2 = 0;
+  }
   printf("[harness] driving P1=0x%x P2=0x%x for %d frames\n", in1, in2, total);
   for (int k = 0; k < 16; k++) if (sprite_state[k] == 9)
     printf("[harness]   sprite[%d] type=0x%02x pos=(%d,%d) hp=%d\n", k, sprite_type[k],
@@ -485,6 +494,10 @@ static int RunHeadlessTest(void) {
   printf("[harness] done (%d scripted frames). final g_ram CRC=%08x P1=(%d,%d) P2=(%d,%d)\n",
          total, fc.checksum, g_players[0].x_coord, g_players[0].y_coord,
          g_players[1].x_coord, g_players[1].y_coord);
+  if (getenv("ZELDA3_TEST_INVSHARE"))
+    printf("[harness] INVSHARE RESULT: P2 bow=%d rupees=%d keys=%d hp=%d | P1 hp=%d\n",
+           g_players[1].item_bow, g_players[1].rupees_goal, g_players[1].num_keys,
+           g_players[1].health_current, g_players[0].health_current);
   return 0;
 }
 #endif  // ZELDA3_HEADLESS_TEST

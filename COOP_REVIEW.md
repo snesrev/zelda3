@@ -129,7 +129,8 @@ double-processing, so this is safe but slightly redundant.
 ## Priority for further work
 1. ~~P2 pickups~~ — **done** (`b5c2675`).
 2. ~~Ancilla owner for boomerang/hookshot/Byrna~~ — **done** (`43359c5`).
-3. **Shared-item team pooling** — P2's collected rupees/keys go to its own copy, not
-   the team total; and P1's mid-game item pickups don't propagate to P2 (inventory
-   is cloned at P2 spawn, not continuously mirrored). Per-player health/magic work.
+3. ~~Shared-item team pooling~~ — **done** (`c5e2beb`): `Multiplayer_ShareInventory`
+   mirrors the inventory block both ways each frame, so items/rupees/keys/upgrades
+   are one shared pool while health/magic stay per-player. Verified: P2 inherits
+   P1's rupees/keys/bow; P2 health stays independent; deterministic.
 4. (Optional) independent transitions / split-screen.
