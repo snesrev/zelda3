@@ -184,6 +184,18 @@ static void PlayerState_Sync(bool to_ram) {
   SYNC_U8 (is_on_lower_level_cached,    0xC1A7);
   SYNC_U8 (is_on_lower_level_mirror_cached, 0xC1A8);
 
+  // Additional per-player Link state (co-op review fixes)
+  SYNC_U8 (player_handler_timer,         0x300);
+  SYNC_U8 (state_for_spin_attack,        0x31C);
+  SYNC_U8 (step_counter_for_spin_attack, 0x31D);
+  SYNC_U8 (countdown_for_blink,          0x31F);
+  SYNC_U8 (player_near_pit_state,        0x5B);
+  SYNC_U8 (player_on_somaria_platform,   0x2F5);
+  SYNC_U8 (flag_is_link_immobilized,     0x2E4);
+  SYNC_U16(kind_of_in_room_staircase,    0x44A);
+  SYNC_U8 (about_to_jump_off_ledge,      0x47A);
+  SYNC_U8 (flag_unk1,                    0xFC1);
+
   // Inventory
   SYNC_U8 (item_bow,                     0xF340);
   SYNC_U8 (item_boomerang,               0xF341);

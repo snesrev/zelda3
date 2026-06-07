@@ -156,6 +156,20 @@ typedef struct PlayerState {
   uint8  is_on_lower_level_cached;  // 0xC1A7
   uint8  is_on_lower_level_mirror_cached; // 0xC1A8
 
+  // === Additional per-player Link state (co-op review fixes) ===
+  // Link_Main writes these every frame as part of his OWN state, but they were
+  // missing here, so the two players shared/corrupted them via g_ram.
+  uint8  player_handler_timer;            // 0x300  action/animation timer
+  uint8  state_for_spin_attack;           // 0x31C  spin/medallion anim gfx
+  uint8  step_counter_for_spin_attack;    // 0x31D  spin anim step counter
+  uint8  countdown_for_blink;             // 0x31F  post-hit invulnerability flash
+  uint8  player_near_pit_state;           // 0x5B   pit/hole fall state machine
+  uint8  player_on_somaria_platform;      // 0x2F5  standing on a Somaria platform
+  uint8  flag_is_link_immobilized;        // 0x2E4  control lock
+  uint16 kind_of_in_room_staircase;       // 0x44A  dungeon staircase/layer change
+  uint8  about_to_jump_off_ledge;         // 0x47A  ledge-jump state
+  uint8  flag_unk1;                       // 0xFC1  per-frame scratch flag
+
   // === Inventory (0xF340–0xF37B) — shared in Phase 1, split later ===
   uint8  item_bow;                   // 0xF340
   uint8  item_boomerang;             // 0xF341
