@@ -373,6 +373,12 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
   // would wander out of the transitioning screen and desync the scroll). P2 is
   // frozen during the transition and snapped back to P1 when it completes (see
   // Multiplayer_WarpP2OnTransition below).
+  // Capture P1's scripted-control-lock flag while cur_player is still P1 (the
+  // link_ macros resolve to P1 here; we can't read it once we switch to P2,
+  // and the field name collides with the macro so g_players[0].<field> won't
+  // compile). Used below to freeze P2 during P1-driven cutscenes.
+  uint8 p1_immobilized = flag_is_link_immobilized;
+
   bool p2_normal_play = (main_module_index == 7 || main_module_index == 9) &&
                         submodule_index == 0;
   if (g_mp_p2_enabled && g_mp_initialized && g_players[1].is_active && p2_normal_play) {
@@ -382,12 +388,21 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     Multiplayer_ShareInventory(&g_players[0], &g_players[1]);
     PlayerState_SyncToRam();
 
-    // Process P2 input into the per-player joypad globals
-    Multiplayer_ProcessP2Input(p2_input);
+    // Co-op cutscene / scripted control lock. flag_is_link_immobilized is the
+    // engine's authoritative "Link can't move this frame" gate (player.c:
+    // Link_Main skips Link_ControlHandler when it's set) and is now per-player.
+    // P1's scripted sequences that stay in normal gameplay (item-get overhead
+    // pose, Ether/Bombos/Quake spell animations, tree pull, scripted dungeon
+    // events) set only P1's copy, so without this P2 would keep walking/acting
+    // through the cutscene. Module-level cutscenes, the menu/map and text boxes
+    // are module 14 (or submodule != 0) and already freeze P2 via the gate
+    // above; this covers the in-module case by feeding P2 no input while P1 is
+    // locked, so both players are held together.
+    uint16 p2_eff_input = p1_immobilized ? 0 : p2_input;
 
-    // During cutscenes (submodule != 0 in certain cases), lock P2 controls
-    // just like P1 is locked. The existing Link_Main handles this via
-    // player_handler_state and submodule_index checks.
+    // Process P2 input into the per-player joypad globals
+    Multiplayer_ProcessP2Input(p2_eff_input);
+
     Link_Main();
 
     // Render P2's sprite. Use the OAM band OPPOSITE P1's so the two Links never
