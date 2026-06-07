@@ -442,6 +442,18 @@ static int RunHeadlessTest(void) {
   // Constant per-player inputs, hex, overridable for probing (e.g. 0x80=right).
   int in1 = 0x80; e = getenv("ZELDA3_P1_INPUT"); if (e) in1 = (int)strtol(e, NULL, 0);
   int in2 = 0x40; e = getenv("ZELDA3_P2_INPUT"); if (e) in2 = (int)strtol(e, NULL, 0);
+  // Pickup refill test: knock P2 to 1 heart and seed its heart filler (as a
+  // collected heart would), then verify the per-player refill (Multiplayer_RefillP2)
+  // converts it to P2 health. Enable with ZELDA3_TEST_PICKUP=1. (The collection
+  // itself reuses the engine's proven Sprite_CheckAbsorptionByPlayer; spawning a
+  // valid collectible sprite headless needs the full drop init, so we verify the
+  // added refill path here directly.)
+  if (getenv("ZELDA3_TEST_PICKUP")) {
+    g_players[1].health_current = 8;    // 1 heart
+    g_players[1].hearts_filler = 24;    // 3 hearts pending (as if collected)
+    printf("[harness] PICKUP TEST: P2 hp=8, hearts_filler=24 (expect P2 hp -> 32)\n");
+    in1 = 0; in2 = 0;
+  }
   printf("[harness] driving P1=0x%x P2=0x%x for %d frames\n", in1, in2, total);
   for (int k = 0; k < 16; k++) if (sprite_state[k] == 9)
     printf("[harness]   sprite[%d] type=0x%02x pos=(%d,%d) hp=%d\n", k, sprite_type[k],
