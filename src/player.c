@@ -1540,6 +1540,16 @@ endif_1:
   if (x == 6) {
     Link_CancelDash();
     submodule_index = 7;
+#ifdef ZELDA3_MULTIPLAYER
+    // Co-op: P2 reaching a fall's room-change must NOT write shared room state
+    // (dungeon_room_index / overworld pit transition) — the post-Link_Main
+    // hazard-revert can only undo main_module_index/submodule_index, not those.
+    // submodule_index=7 just above already trips that guard (it snaps P2 back
+    // beside P1), so bail here before any shared write. Only P1 leads a
+    // room-changing fall; P2 falls in and reappears next to P1.
+    if (cur_player == &g_players[1])
+      return;
+#endif
     link_this_controls_sprite_oam = 6;
     player_near_pit_state = 3;
     link_visibility_status = 12;

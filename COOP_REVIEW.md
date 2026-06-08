@@ -236,3 +236,55 @@ fine within one binary but would need field-wise checksums for cross-ABI online.
 **Headless limits:** boss fights, deep water/pits, and the leash boundary aren't
 reachable by the start-area harness, so those exact paths aren't exercised in CI;
 changes are `#ifdef`-guarded and determinism stays byte-identical + lockstep-neutral.
+
+## Review round 2 — frontend/online + special subsystems
+
+A second adversarial pass (`main.c` input/controller/online wiring; tagalongs,
+mirror/warps, menu, swimming, HUD) after round-1's fixes landed.
+
+**Fixed:**
+- **Online input-ring overflow on a stalled/paused peer (CRITICAL desync).**
+  `InputRing_Push` had no full-check; a paused peer (stops ticking, sends no
+  input and no BYE) froze the sim while local capture kept pushing, wrapping the
+  256-slot ring and clobbering unconsumed input -> desync on resume. Push now
+  refuses to overwrite when full and the lockstep driver holds local capture.
+  Headless `ringcap` test added.
+- **Online autosave desync (MEDIUM).** The launch autosave-load ran for online
+  peers, seeding host/client from possibly-different saves -> frame-1 desync.
+  Skipped for HOST/CLIENT.
+- **P2 dungeon-hole room corruption (CRITICAL).** A P2 pit fall reached the
+  fall's room-change writes (`dungeon_room_index` / overworld pit transition)
+  that the hazard-revert can't undo. P2 now bails at the room-change moment (the
+  `submodule_index` it sets trips the revert, snapping P2 beside P1); only P1
+  leads room-changing falls. Covers indoor travel/damaging pits and outdoor pits.
+
+**Documented (verified non-desync; deferred — cosmetic/minor or unverifiable
+headlessly, where a blind change risks a regression):**
+- **In-room staircases:** P2 stepping on one only sets `submodule`/`main_module`
+  (both cleaned up by the revert -> no corruption); P2 is snapped beside P1
+  rather than changing dungeon layer independently. Non-corrupting.
+- **HUD: P2 hearts overlap P1's 2nd heart row** once a player exceeds 10 hearts
+  (both use cols 20-29; P2 draws over P1's row 2). Purely cosmetic. A clean
+  relocation needs a verified free, on-screen HUD row; the reference save has 3
+  hearts so neither the overlap nor a fix is observable headlessly — deferred
+  rather than risk an off-screen/flickering move (the dungeon floor indicator
+  occupies the only obvious lower-row slot, intermittently).
+- **Both players swimming at once** share the swim-stroke scratch
+  (`swimcoll_var*`, g_ram 0x326-0x33F, not per-player) -> glitchy strokes.
+  Deterministic (identical on both online peers, so NOT a desync); a lone
+  swimmer is fine. Per-player split deferred (irregular scratch layout,
+  unverifiable headlessly).
+- **P2 firing the Magic Mirror / a warp item:** absorbed by the hazard-revert
+  (P2 snapped to P1, no magic cost, shared writes overwritten by P1). Benign.
+- **Shared camera anchors on a downed P1** for the ~4s revive window, leashing a
+  living P2 near P1's body (revive-on-touch always reachable). By design.
+- **Controller hotplug edge cases:** unplugging P1's pad compacts the table and
+  promotes P2's pad to P1; a 5th controller leaks its handle; a duplicate
+  DEVICEADDED double-tracks a pad. Real but niche (need physical replug / 5+
+  pads) and unverifiable in the SDL-less harness.
+
+**Verified clean:** controller instance-id vs device-index handling, keyboard
+P1/P2 mapping, online local/remote wiring (host=P1 / client=P2, in-order
+consume, input sampled 1:1 per sim frame), tagalongs (P1-only by spec), medallion
+spells, menu/pause freeze, P2 OAM floor priority, magic-HUD tilemap bounds,
+ghost-revive gating, BYE-on-quit.
