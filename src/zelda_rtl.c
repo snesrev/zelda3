@@ -377,7 +377,10 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
   // link_ macros resolve to P1 here; we can't read it once we switch to P2,
   // and the field name collides with the macro so g_players[0].<field> won't
   // compile). Used below to freeze P2 during P1-driven cutscenes.
-  uint8 p1_immobilized = flag_is_link_immobilized;
+  // A dead/ghost P1 sets its own immobilize flag (to stay frozen), but that must
+  // NOT freeze P2 — P2 needs to move to revive P1. Only mirror P1's lock to P2
+  // for real cutscenes (P1 alive and immobilized).
+  uint8 p1_immobilized = flag_is_link_immobilized && !g_players[0].is_dead;
 
   bool p2_normal_play = (main_module_index == 7 || main_module_index == 9) &&
                         submodule_index == 0;

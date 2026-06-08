@@ -370,29 +370,40 @@ bool Multiplayer_PreventGameOver(void) {
   PlayerState *dying = cur_player;
   PlayerState *other = (cur_player == &g_players[0]) ? &g_players[1] : &g_players[0];
 
-  // Both players down at once -> let the real game-over happen.
-  if (other->is_dead)
-    return false;
-
-  // Put the current player into the downed/ghost state (idempotent).
+  // Put the current player into the downed/ghost state FIRST, before the
+  // double-KO check. On a true double-KO both players must end up flagged
+  // is_dead; otherwise the second one to die returned here unmarked, and the
+  // per-frame respawn logic would auto-revive the first ghost on the very frame
+  // the real game-over fires (a "zombie" alive-during-game-over state).
   if (!dying->is_dead) {
     dying->is_dead = 1;
     dying->is_ghost = 1;
     dying->respawn_timer = MP_RESPAWN_FRAMES;
   }
   dying->health_current = 0;
-  dying->disable_sprite_damage = 1;   // ghost: invulnerable while downed
-  dying->visibility_status = 0;       // visible (LinkOam_Main flashes the ghost)
+  dying->hearts_filler = 0;            // no refill heal/SFX tug-of-war while downed
+  dying->magic_filler = 0;
+  dying->disable_sprite_damage = 1;    // ghost: invulnerable while downed
+  dying->flag_is_link_immobilized = 1; // ghost: frozen (can't walk into pits/doors)
+  dying->visibility_status = 0;        // visible (LinkOam_Main flashes the ghost)
+
+  // Both players down -> let the real game-over happen (both are now flagged).
+  if (other->is_dead)
+    return false;
   return true;
 }
 
 // Revive a downed player: clear the ghost state and give it some health back.
 static void Multiplayer_RevivePlayer(PlayerState *ps) {
-  ps->health_current = ps->health_capacity >> 1;   // revive with half hearts
+  // Revive with half capacity, rounded DOWN to a whole heart. Health is tracked
+  // in units of 8 (one heart); a non-multiple renders a garbled heart and breaks
+  // low-health logic. At least one full heart.
+  ps->health_current = (ps->health_capacity >> 1) & ~7;
   if (ps->health_current < 8) ps->health_current = 8;
   ps->is_dead = 0;
   ps->is_ghost = 0;
   ps->disable_sprite_damage = 0;
+  ps->flag_is_link_immobilized = 0;   // unfreeze the ghost
   ps->visibility_status = 0;
   ps->incapacitated_timer = 0;
   ps->x_vel = ps->y_vel = 0;
@@ -410,10 +421,14 @@ void Multiplayer_UpdateDeathRespawn(void) {
     if (!ps->is_active || !ps->is_dead)
       continue;
 
-    // Maintain the downed/ghost state each frame (invulnerable, 0 HP, visible
-    // base state — the flashing is done at render time in LinkOam_Main).
+    // Maintain the downed/ghost state each frame (invulnerable, 0 HP, frozen so
+    // it can't walk into pits/doors/transitions and corrupt shared module state,
+    // visible base state — the flashing is done at render time in LinkOam_Main).
     ps->disable_sprite_damage = 1;
+    ps->flag_is_link_immobilized = 1;
     ps->health_current = 0;
+    ps->hearts_filler = 0;
+    ps->magic_filler = 0;
     ps->visibility_status = 0;
 
     // Both players down -> stay down; the killing blow already let the real

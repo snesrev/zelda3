@@ -463,6 +463,20 @@ static int RunHeadlessTest(void) {
     printf("[harness]   (expect P2 bow=3 rupees=150 keys=5, P2 hp stays ~8)\n");
     in1 = 0; in2 = 0;
   }
+  if (getenv("ZELDA3_TEST_DEATH")) {
+    // Down P2 and verify: PreventGameOver suppresses game-over + ghosts P2; the
+    // ghost stays invulnerable/0-HP/frozen; then auto-respawns beside P1 once the
+    // timer elapses. Place P2 far enough that revive-on-touch won't fire first.
+    PlayerState_SetCurrent(1);
+    cur_player->health_current = 0;
+    bool suppressed = Multiplayer_PreventGameOver();
+    PlayerState_SetCurrent(0);
+    g_players[1].x_coord = g_players[0].x_coord + 80;
+    g_players[1].y_coord = g_players[0].y_coord + 80;
+    printf("[harness] DEATH TEST: PreventGameOver=%d (expect 1) P2 is_dead=%d rt=%d (expect 1, ~240)\n",
+           suppressed, g_players[1].is_dead, g_players[1].respawn_timer);
+    in1 = 0; in2 = 0;
+  }
   printf("[harness] driving P1=0x%x P2=0x%x for %d frames\n", in1, in2, total);
   for (int k = 0; k < 16; k++) if (sprite_state[k] == 9)
     printf("[harness]   sprite[%d] type=0x%02x pos=(%d,%d) hp=%d\n", k, sprite_type[k],
