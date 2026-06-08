@@ -98,7 +98,9 @@ Mappings can be customized in `zelda3.ini`.
 - **Shared screen / camera** centers on Player 1; Player 2 is kept within the
   viewport (leashed) so both stay on screen.
 - **Combat both ways:** enemies can damage either player, and either player's
-  sword/items damage enemies. **No friendly fire** — you can't hurt each other.
+  sword/items damage enemies. Most enemies and bosses **chase whichever player is
+  closer**. **No friendly fire** with swords/arrows/beams. Bombs explode on
+  whoever is in range (either player) — but there's no extra cross-damage.
 - **Screen transitions:** when P1 goes through a door, dungeon entrance, or screen
   edge, P2 comes along and re-appears beside P1 in the new room/area.
 - **Going down (not game over):** if one player's hearts hit 0 they drop into a
@@ -106,8 +108,9 @@ Mappings can be customized in `zelda3.ini`.
   ending the game. They **revive** automatically after a few seconds beside the
   living partner, **or instantly if the other player walks over to them**
   (revive-on-touch). It's only **Game Over if *both* players are down at once.**
-- **Shared progression:** Player 2 starts with the same items/equipment as Player 1.
-  **Health and magic are independent** per player.
+- **Shared progression:** Player 2 starts with the same items/equipment as Player 1,
+  and pickups/upgrades are pooled (incl. heart containers, which raise **both**
+  players' max hearts). **Current health and magic are independent** per player.
 
 ---
 
@@ -115,6 +118,18 @@ Mappings can be customized in `zelda3.ini`.
 
 - P2's hearts are the same color as P1's (distinguished by being the second HUD
   row); if P1 has **more than 10 hearts**, P1's second heart row overlaps P2's.
+- **P2 has no on-screen magic meter yet** (P2's magic works and is independent —
+  it just isn't drawn; needs a HUD-layout pass).
+- **P2 can lift *dungeon* pots, but not yet *overworld* sprite objects** (bushes,
+  rocks, throwable pots). The team still gets those items via P1 (shared
+  inventory). This needs a per-player lift/carry pass and is best done with
+  interactive testing.
+- The **Cane of Somaria** block, when created by P2, currently latches to P1 for
+  carrying.
+- A few bosses that read the player position directly still target P1 (most
+  enemies/bosses target the nearest player).
+- **Item selection (the Y-item) is Player 1's** — P2 uses whatever item P1 has
+  equipped.
 - The "downed" ghost is a simple flash (the engine has no true translucency).
 - Co-op shares one screen (no split-screen). A hook for future independent-room /
   split-screen transitions is stubbed in `zelda_rtl.c`.
