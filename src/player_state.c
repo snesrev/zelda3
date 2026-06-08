@@ -660,6 +660,11 @@ void GameState_Snapshot(void *out_buffer, uint32 *out_size) {
   // STUB: Would memcpy g_ram (128KB) + both PlayerState structs
   // into out_buffer for rollback netcode.
   // *out_size = sizeof(g_ram) + sizeof(g_players);
+  // NOTE: a correct snapshot must ALSO capture the per-frame owner tables that
+  // live OUTSIDE g_ram and g_players — g_ancilla_owner[] (ancilla.c) and
+  // g_sprite_carry_owner[] (sprite.c). They're already folded into
+  // Multiplayer_ComputeChecksum, so rollback restore must cover them too or it
+  // will desync. (Accessors: Ancilla_GetOwnerTable / Sprite_GetCarryOwnerTable.)
   (void)out_buffer;
   if (out_size)
     *out_size = 0;

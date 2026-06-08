@@ -277,6 +277,7 @@ bool g_mp_p2_enabled = true;
 static void Multiplayer_UpdateCamera(void);
 static void Multiplayer_WarpP2OnTransition(void);
 static void Multiplayer_PlaceP2Beside(PlayerState *p1, PlayerState *p2);
+static void Multiplayer_SeparatePlayers(void);
 
 // Process P2's NMI input (writes to per-player joypad globals via cur_player macros)
 static void Multiplayer_ProcessP2Input(uint16 joypad_input) {
@@ -525,6 +526,7 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
   if (g_mp_initialized) {
     Multiplayer_UpdateDeathRespawn();
     Multiplayer_WarpP2OnTransition();
+    Multiplayer_SeparatePlayers();
   }
 
   nmi_boolean = 0;
@@ -619,6 +621,30 @@ static void Multiplayer_UpdateCamera(void) {
   if (dx < -MP_LEASH_X) { int v = (int)p1->x_coord - MP_LEASH_X; p2->x_coord = v < 0 ? 0 : (uint16)v; p2->x_vel = 0; }
   if (dy >  MP_LEASH_Y) { p2->y_coord = p1->y_coord + MP_LEASH_Y; p2->y_vel = 0; }
   if (dy < -MP_LEASH_Y) { int v = (int)p1->y_coord - MP_LEASH_Y; p2->y_coord = v < 0 ? 0 : (uint16)v; p2->y_vel = 0; }
+}
+
+// Soft co-op body collision (Phase 3): keep the two Links from fully stacking.
+// Only P2 is nudged (P1 stays put as the camera/scroll anchor), 1px/frame along
+// the shortest escape axis — gentle enough that P2's normal tile collision next
+// frame keeps it out of walls, and "soft" enough that a player can still shove
+// the other around. Integer-only (deterministic). Skipped for ghosts, different
+// floors, and non-normal-play states (menus/transitions freeze P2 anyway).
+#define MP_BODY_HALF 12   // soft half-extent; the Link sprite is ~16px wide
+static void Multiplayer_SeparatePlayers(void) {
+  PlayerState *p1 = &g_players[0], *p2 = &g_players[1];
+  if (!g_mp_p2_enabled || !p1->is_active || !p2->is_active) return;
+  if (p1->is_dead || p2->is_dead) return;                    // ghosts are intangible
+  if (!((main_module_index == 7 || main_module_index == 9) && submodule_index == 0)) return;
+  if (p1->is_on_lower_level != p2->is_on_lower_level) return; // different floors don't collide
+  int dx = (int)p2->x_coord - (int)p1->x_coord;
+  int dy = (int)p2->y_coord - (int)p1->y_coord;
+  int adx = dx < 0 ? -dx : dx, ady = dy < 0 ? -dy : dy;
+  if (adx >= MP_BODY_HALF || ady >= MP_BODY_HALF) return;     // not overlapping
+  // Push P2 out 1px along the axis of least penetration (shortest way out).
+  if ((MP_BODY_HALF - adx) <= (MP_BODY_HALF - ady))
+    p2->x_coord += (dx >= 0) ? 1 : -1;
+  else
+    p2->y_coord += (dy >= 0) ? 1 : -1;
 }
 #endif // ZELDA3_MULTIPLAYER
 
@@ -1088,6 +1114,11 @@ bool ZeldaRunFrame(int inputs) {
     inputs = StateRecorder_ReadNextReplayState(&state_recorder);
   } else {
     //    input_state = InputStateReadFromFile();
+    // Co-op caveat: the StateRecorder captures only P1's joypad, so the built-in
+    // rewind/replay is P1-only — a recorded co-op session would desync P2 on
+    // playback (P2 input isn't in the stream). This matches the design that P2
+    // state is ephemeral/not saved; co-op just doesn't support rewind. A future
+    // fix would record g_p2_input_this_frame alongside P1's.
     StateRecorder_Record(&state_recorder, inputs);
 
     // This is whether APUI00 is true or false, this is used by the ancilla code.
