@@ -693,7 +693,10 @@ void Ancilla_ExecuteOne(uint8 type, int k) {  // 88833c
   // these as the player who fired them — otherwise P2's boomerang returns to P1,
   // P2's hookshot chain draws from P1, and P2's Byrna sparks orbit P1.
   PlayerState *mp_saved = cur_player;
-  if (type == 0x05 || type == 0x1f || type == 0x30 || type == 0x31)
+  // 0x05 boomerang, 0x1F hookshot, 0x2C Cane-of-Somaria block, 0x30/0x31 Byrna
+  // sparks all re-read Link's position every frame (carry/return/orbit), so run
+  // them as the player who created them rather than always P1.
+  if (type == 0x05 || type == 0x1f || type == 0x2c || type == 0x30 || type == 0x31)
     PlayerState_SetCurrent(g_ancilla_owner[k] & 1);
   kAncilla_Funcs[type - 1](k);
   cur_player = mp_saved;

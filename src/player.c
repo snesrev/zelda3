@@ -2477,31 +2477,56 @@ fail:
       goto fail;
     link_bottle_info[btidx] = 2;
     link_item_in_hand = 0;
-    submodule_index = 4;
-    saved_module_for_menu = main_module_index;
-    main_module_index = 14;
-    animate_heart_refill_countdown = 7;
-    Hud_Rebuild();
+#ifdef ZELDA3_MULTIPLAYER
+    if (cur_player == &g_players[1]) {
+      // P2 can't drive the P1 menu-refill module (that refills P1 and freezes
+      // the game). Fill P2's own per-player filler; Multiplayer_RefillP2 drains
+      // it into P2's health each frame.
+      link_hearts_filler = link_health_capacity;
+    } else
+#endif
+    {
+      submodule_index = 4;
+      saved_module_for_menu = main_module_index;
+      main_module_index = 14;
+      animate_heart_refill_countdown = 7;
+      Hud_Rebuild();
+    }
   } else if (b == 4) { // green potion
     if (link_magic_power == 128)
       goto fail;
     link_bottle_info[btidx] = 2;
     link_item_in_hand = 0;
-    submodule_index = 8;
-    saved_module_for_menu = main_module_index;
-    main_module_index = 14;
-    animate_heart_refill_countdown = 7;
-    Hud_Rebuild();
+#ifdef ZELDA3_MULTIPLAYER
+    if (cur_player == &g_players[1]) {
+      link_magic_filler = 128;   // P2's magic refilled inline (see red potion)
+    } else
+#endif
+    {
+      submodule_index = 8;
+      saved_module_for_menu = main_module_index;
+      main_module_index = 14;
+      animate_heart_refill_countdown = 7;
+      Hud_Rebuild();
+    }
   } else if (b == 5) { // blue potion
     if (link_health_capacity == link_health_current && link_magic_power == 128)
       goto fail;
     link_bottle_info[btidx] = 2;
     link_item_in_hand = 0;
-    submodule_index = 9;
-    saved_module_for_menu = main_module_index;
-    main_module_index = 14;
-    animate_heart_refill_countdown = 7;
-    Hud_Rebuild();
+#ifdef ZELDA3_MULTIPLAYER
+    if (cur_player == &g_players[1]) {
+      link_hearts_filler = link_health_capacity;   // P2 health + magic refilled inline
+      link_magic_filler = 128;
+    } else
+#endif
+    {
+      submodule_index = 9;
+      saved_module_for_menu = main_module_index;
+      main_module_index = 14;
+      animate_heart_refill_countdown = 7;
+      Hud_Rebuild();
+    }
   } else if (b == 6) { // fairy
     link_item_in_hand = 0;
     if (ReleaseFairy() < 0)
