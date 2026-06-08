@@ -29,6 +29,7 @@
 #ifdef ZELDA3_MULTIPLAYER
 #include "player_state.h"
 #include "net_transport.h"
+#include "net_udp.h"
 #endif
 
 static bool g_run_without_emu = 0;
@@ -381,6 +382,28 @@ static void HeadlessCapture(const char *path) {
 static int RunHeadlessTest(void) {
   setvbuf(stdout, NULL, _IONBF, 0);  // unbuffered so logs survive a kill/timeout
 
+  // UDP transport self-test (ZELDA3_TEST_UDP): stand up a host + client on
+  // localhost in-process and verify InputFrames round-trip over real sockets,
+  // including the loss-tolerance redundancy + frame de-dup. Exercises the actual
+  // wire path the online lockstep uses.
+  if (getenv("ZELDA3_TEST_UDP")) {
+    UdpTransport host, client;
+    if (!Udp_InitHost(&host, 38891) || !Udp_InitClient(&client, "127.0.0.1", 38891)) {
+      printf("[harness] UDP TEST: socket init failed (sandbox may block UDP)\n");
+      return 1;
+    }
+    InputFrame rf;
+    for (uint32 f = 0; f < 5; f++) { InputFrame lf = { f, (uint16)(0x40 + f), 1, 0 }; client.iface.send(&client.iface, &lf); }
+    int got = 0; uint32 expect = 0;
+    for (int t = 0; t < 1000 && got < 5; t++) { while (host.iface.recv(&host.iface, &rf)) { if (rf.frame_number == expect) { got++; expect++; } } SDL_Delay(1); }
+    for (uint32 f = 0; f < 5; f++) { InputFrame hf = { f, (uint16)(0x80 + f), 0, 0 }; host.iface.send(&host.iface, &hf); }
+    int g2 = 0; uint32 e2 = 0;
+    for (int t = 0; t < 1000 && g2 < 5; t++) { while (client.iface.recv(&client.iface, &rf)) { if (rf.frame_number == e2) { g2++; e2++; } } SDL_Delay(1); }
+    printf("[harness] UDP TEST: host received %d/5 (client->host), client received %d/5 (host->client) -> %s\n",
+           got, g2, (got == 5 && g2 == 5) ? "PASS" : "FAIL");
+    return (got == 5 && g2 == 5) ? 0 : 1;
+  }
+
   // Self-test the P2 keyboard mapping (this can't be exercised any other way
   // headless — the harness injects inputs directly, bypassing SDL handlers).
   // Expected bits are the input layout: B=0x01,Y=0x02,Sel=0x04,St=0x08,
@@ -680,6 +703,44 @@ int main(int argc, char** argv) {
   memset(g_player_gamepad_buttons, 0, sizeof(g_player_gamepad_buttons));
   memset(g_player_gamepad_modifiers, 0, sizeof(g_player_gamepad_modifiers));
   memset(g_player_gamepad_last_cmd, 0, sizeof(g_player_gamepad_last_cmd));
+
+  // Online co-op (optional): "--host [port]" or "--connect <ip> [port]", plus
+  // "--net-delay N" (input-delay frames; default 2). Without these flags the
+  // game stays in local co-op. Both peers run the identical deterministic sim;
+  // only 8-byte InputFrames are exchanged (see NET_ONLINE.md).
+  {
+    static UdpTransport s_udp;
+    const char *connect_ip = NULL;
+    int want_host = 0, port = 0, delay = 2;
+    for (int i = 0; i < argc; i++) {
+      if (strcmp(argv[i], "--host") == 0) {
+        want_host = 1;
+        if (i + 1 < argc && argv[i + 1][0] != '-') port = atoi(argv[++i]);
+      } else if (strcmp(argv[i], "--connect") == 0 && i + 1 < argc) {
+        connect_ip = argv[++i];
+        if (i + 1 < argc && argv[i + 1][0] != '-') port = atoi(argv[++i]);
+      } else if (strcmp(argv[i], "--net-delay") == 0 && i + 1 < argc) {
+        delay = atoi(argv[++i]);
+      }
+    }
+    if (port <= 0 || port > 65535) port = 7777;
+    bool online_ok = false;
+    if (want_host)          online_ok = Udp_InitHost(&s_udp, (unsigned short)port);
+    else if (connect_ip)    online_ok = Udp_InitClient(&s_udp, connect_ip, (unsigned short)port);
+    if (online_ok) {
+      g_mp_config.mode = want_host ? MP_MODE_HOST : MP_MODE_CLIENT;
+      g_mp_config.local_player_index = want_host ? 0 : 1;  // host drives P1, client P2
+      g_mp_config.num_players = 2;
+      g_mp_config.input_delay_frames = (uint8)(delay < 0 ? 0 : delay > 10 ? 10 : delay);
+      Multiplayer_LockstepInit(&s_udp.iface, g_mp_config.local_player_index,
+                               g_mp_config.input_delay_frames);
+      printf("[net] ONLINE co-op: %s, you are Player %d, input_delay=%d frames\n",
+             want_host ? "HOST" : "CLIENT", g_mp_config.local_player_index + 1,
+             g_mp_config.input_delay_frames);
+    } else if (want_host || connect_ip) {
+      printf("[net] online init FAILED — staying in local co-op\n");
+    }
+  }
 #endif
 
   for (int i = 0; i < SDL_NumJoysticks(); i++)
@@ -787,7 +848,19 @@ int main(int argc, char** argv) {
 
     SDL_LockMutex(g_audio_mutex);
 #ifdef ZELDA3_MULTIPLAYER
-    bool is_replay = ZeldaRunFrame(inputs, inputs_p2);
+    bool is_replay = false;
+    if (g_mp_config.mode == MP_MODE_HOST || g_mp_config.mode == MP_MODE_CLIENT) {
+      // Online lockstep: our local controls drive whichever player we are; the
+      // driver sends them, ingests the peer's input, and advances the sim only
+      // for frames both players' inputs are ready. If it returns 0 it's waiting
+      // on the peer — we just render the last frame again this tick.
+      int li = inputs;
+      if ((li & 0x30) == 0x30) li ^= 0x30;
+      if ((li & 0xc0) == 0xc0) li ^= 0xc0;
+      Multiplayer_LockstepTick((uint16)li);
+    } else {
+      is_replay = ZeldaRunFrame(inputs, inputs_p2);
+    }
 #else
     bool is_replay = ZeldaRunFrame(inputs);
 #endif

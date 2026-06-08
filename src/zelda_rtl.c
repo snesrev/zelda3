@@ -1118,12 +1118,14 @@ static NetTransport *g_net_transport;
 static int g_net_local_player;     // which player's input is captured locally (0/1)
 static int g_net_input_delay;      // sim trails input capture by this many frames
 static uint32 g_net_send_frame;    // frame number to tag the next local input with
+static uint32 g_net_remote_next;   // next remote frame# expected (de-dups UDP resends)
 
 void Multiplayer_LockstepInit(NetTransport *t, int local_player_index, int input_delay) {
   g_net_transport = t;
   g_net_local_player = (local_player_index != 0);
   g_net_input_delay = input_delay < 0 ? 0 : input_delay;
   g_net_send_frame = 0;
+  g_net_remote_next = 0;
   Multiplayer_ResetLockstep();   // clears the input rings + g_sim_frame
 }
 
@@ -1141,11 +1143,17 @@ int Multiplayer_LockstepTick(uint16 local_joypad) {
   g_net_transport->send(g_net_transport, &lf);
   g_net_send_frame++;
 
-  // 2. Ingest any remote input that has arrived into the remote player's ring.
+  // 2. Ingest remote input into the remote player's ring, in order, de-duping
+  //    the redundant copies a UDP transport resends for loss tolerance: accept a
+  //    frame only when it's exactly the next one expected (older = duplicate,
+  //    newer = a gap that a later resend will fill).
+  int remote = g_net_local_player ^ 1;
   InputFrame rf;
   while (g_net_transport->recv(g_net_transport, &rf)) {
-    if (rf.player_index < MAX_PLAYERS && (int)rf.player_index != g_net_local_player)
-      InputRing_Push(rf.player_index, &rf);
+    if ((int)rf.player_index == remote && rf.frame_number == g_net_remote_next) {
+      InputRing_Push(remote, &rf);
+      g_net_remote_next++;
+    }
   }
 
   // 3. Advance the sim for every frame whose inputs (both players) are present,
