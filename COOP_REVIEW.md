@@ -200,3 +200,39 @@ P1 only"); could add an independent P2 item-cycle later.
 
 **Low / cosmetic:** 1-frame homing lag on P2's returning boomerang / Byrna spark
 (ancillae update in P1's phase, before P2 moves); these are non-blocking.
+
+## Review round — boss damage, P2 world-flow, soft collision
+
+A fresh 3-front adversarial review (determinism/`cur_player`, combat/sprites,
+world-flow) after the online netcode landed. Fixes shipped:
+
+- **Bosses & hazards damage BOTH players** (was: P2 immune to a whole class of
+  inline-AI contact damage). Agahnim's barrier, King Helmasaur body/tail/fireball,
+  Trinexx trail/shell, Blind bump, indoor boulder, Guruguru/firebar now hit P2 via
+  the bomb pattern + new `MP_ALSO_FOR_P2()` (`src/mp_dual.h`). RNG-free, P1 path
+  byte-identical, vanilla unchanged.
+- **P2 hazards no longer hurt P1.** P2 drowning/pit/fall used to set the shared
+  module/submodule, whose recovery ran against P1 (bounced P1, stranded P2). P2's
+  `Link_Main` is now bracketed: the shared transition state is reverted and the
+  hazard is resolved locally for P2 (ghost-if-lethal, else pull beside P1).
+- **P2 input** gets the same opposing-direction (up+down / left+right) filter as P1.
+- **Stale transient state** (handler/aux/z/deep-water/incap) now cleared whenever
+  P2 is relocated (transition warp, hazard recovery, ghost revive) — unified into
+  `Multiplayer_PlaceP2Beside()`.
+- **Camera-leash** low-side clamp no longer underflows `uint16` near the map origin.
+- **Soft player collision (Phase 3):** P2 is nudged 1px/frame out of P1's body so
+  the Links don't fully stack (P1 stays the camera anchor); integer/deterministic.
+
+**Verified clean (no action):** `cur_player` save/restore discipline, no
+float/rand/time in the sim, sync coverage, ancilla ownership, friendly-fire
+impossibility, game-over only on double-KO, transition-warp coverage,
+shared-inventory vs per-player health/magic, pause/cutscene lock.
+
+**Documented cautions (future, not bugs):** StateRecorder rewind is P1-only (co-op
+sessions can't rewind — P2 input isn't recorded); the rollback snapshot stub must
+also capture the ancilla/sprite owner tables; `PlayerState` implicit padding is
+fine within one binary but would need field-wise checksums for cross-ABI online.
+
+**Headless limits:** boss fights, deep water/pits, and the leash boundary aren't
+reachable by the start-area harness, so those exact paths aren't exercised in CI;
+changes are `#ifdef`-guarded and determinism stays byte-identical + lockstep-neutral.

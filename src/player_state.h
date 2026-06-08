@@ -16,6 +16,13 @@
 #define NUM_BOTTLES 4
 #define NUM_DUNGEON_KEY_SLOTS 16
 
+// NOTE (future cross-platform online): this struct mixes uint8/uint16 fields, so
+// the compiler inserts implicit padding bytes. Multiplayer_ComputeChecksum CRCs
+// sizeof(g_players) INCLUDING that padding, and P2 is cloned from P1 with a
+// struct copy — both deterministic within ONE binary, but two peers built with
+// different compilers/ABIs could pad differently and disagree. If online ever
+// runs across heterogeneous builds, checksum field-by-field (skipping padding)
+// or pack this struct. Single-binary lockstep today is unaffected.
 typedef struct PlayerState {
   // === Movement & Position (g_ram 0x20–0x69) ===
   uint16 y_coord;                     // 0x20
