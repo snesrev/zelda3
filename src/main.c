@@ -415,9 +415,22 @@ static int RunHeadlessTest(void) {
     Udp_SendBye(&host);
     int bye_ok = 0;
     for (int t = 0; t < 200 && !bye_ok; t++) { while (client.iface.recv(&client.iface, &rf)) {} bye_ok = client.peer_lost; SDL_Delay(1); }
-    int all = (got == 5 && g2 == 5 && hs && desync_ok && bye_ok);
-    printf("[harness] UDP TEST: input %d/5,%d/5  handshake=%d  desync_detect=%d  disconnect=%d -> %s\n",
-           got, g2, hs, desync_ok, bye_ok, all ? "PASS" : "FAIL");
+    // 4) Packet hardening: a validly-formatted INPUT from the WRONG source plus
+    //    several malformed datagrams must all be dropped — the sentinel frame
+    //    must never surface, and the session's status must be untouched.
+    InputFrame sentinel = { 0x7777u, 0x1234, 1, 0 };
+    uint8 spoof[2 + INPUT_FRAME_WIRE_SIZE];
+    spoof[0] = NETPKT_INPUT; spoof[1] = 1; InputFrame_Serialize(&sentinel, &spoof[2]);
+    Udp_TestRawSendLocal(38891, spoof, sizeof(spoof));         // good format, wrong source
+    uint8 junk_type[4]  = { 99, 1, 2, 3 };                     Udp_TestRawSendLocal(38891, junk_type, sizeof(junk_type));    // unknown type
+    uint8 junk_count[2] = { NETPKT_INPUT, 200 };               Udp_TestRawSendLocal(38891, junk_count, sizeof(junk_count));  // count past cap
+    uint8 junk_trunc[2] = { NETPKT_INPUT, 5 };                 Udp_TestRawSendLocal(38891, junk_trunc, sizeof(junk_trunc));  // claims 5, carries 0
+    int spoof_seen = 0;
+    for (int t = 0; t < 100; t++) { while (host.iface.recv(&host.iface, &rf)) { if (rf.frame_number == 0x7777u) spoof_seen = 1; } SDL_Delay(1); }
+    int hard_ok = !spoof_seen && host.handshaked && !host.version_mismatch;
+    int all = (got == 5 && g2 == 5 && hs && desync_ok && bye_ok && hard_ok);
+    printf("[harness] UDP TEST: input %d/5,%d/5  handshake=%d  desync_detect=%d  disconnect=%d  hardening=%d -> %s\n",
+           got, g2, hs, desync_ok, bye_ok, hard_ok, all ? "PASS" : "FAIL");
     return all ? 0 : 1;
   }
 

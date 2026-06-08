@@ -93,9 +93,17 @@ than just input:
 - **On-screen status** — the window title shows `connecting…`,
   `waiting for player…` (the lockstep stalled awaiting the peer),
   `player disconnected`, `DESYNC DETECTED`, or `INCOMPATIBLE VERSION`.
+- **Packet hardening** — UDP accepts bytes from anyone, so the receive path is
+  strict: every datagram is type/length-validated before any field is read
+  (`Udp_PacketWellFormed`), over-length reads are clamped, and once the peer's
+  address is known, datagrams from any other source are dropped
+  (`Udp_AddrMatches`). Stray scans, wrong-port traffic, and trivially spoofed
+  packets can't inject input, flip a status flag, or keep a dead link looking
+  alive. (Defeating a *forged* source address needs crypto and is out of scope.)
 
 Verified headlessly over localhost (`ZELDA3_TEST_UDP=1 ./zelda3_harness`):
-input round-trip, **handshake**, **desync detection**, and **clean disconnect**
+input round-trip, **handshake**, **desync detection**, **clean disconnect**, and
+**packet hardening** (a wrong-source frame + malformed datagrams are all dropped)
 all PASS.
 
 ## What remains (real-machine validation + polish)

@@ -65,4 +65,9 @@ bool Udp_InitClient(UdpTransport *ut, const char *host_ip, unsigned short port, 
 // Send a clean-disconnect notice to the peer (call on quit).
 void Udp_SendBye(UdpTransport *ut);
 
+#ifdef ZELDA3_HEADLESS_TEST
+// Test-only: send a raw datagram to 127.0.0.1:port from a throwaway socket.
+int Udp_TestRawSendLocal(unsigned short port, const uint8 *buf, int len);
+#endif
+
 #endif  // ZELDA3_MULTIPLAYER
