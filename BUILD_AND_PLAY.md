@@ -118,8 +118,8 @@ Mappings can be customized in `zelda3.ini`.
 
 - P2's hearts are the same color as P1's (distinguished by being the second HUD
   row); if P1 has **more than 10 hearts**, P1's second heart row overlaps P2's.
-- **P2 has no on-screen magic meter yet** (P2's magic works and is independent —
-  it just isn't drawn; needs a HUD-layout pass).
+- P2's magic meter is a compact green gauge in the gap just left of the heart
+  rows (P1's is the tall gauge on the far left); both are independent.
 - **P2 can lift *dungeon* pots, but not yet *overworld* sprite objects** (bushes,
   rocks, throwable pots). The team still gets those items via P1 (shared
   inventory). This needs a per-player lift/carry pass and is best done with
