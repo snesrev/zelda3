@@ -35,10 +35,12 @@ frames behind input capture so the remote frame has time to arrive.
 | Input ring buffer + `InputsReady`/`ConsumeInputs` | `player_state.c` | wired + frame-accurate |
 | **Transport abstraction** (`NetTransport`) | `net_transport.h` | the seam for real UDP |
 | **Loopback transport** (in-process, lossless, real wire format) | `net_transport.c` | done |
+| **UDP transport** (real sockets, loss-tolerant redundancy + de-dup) | `net_udp.c` | done |
 | **Lockstep driver** `Multiplayer_LockstepInit` / `Multiplayer_LockstepTick` | `zelda_rtl.c` | done |
-| Dual-player loop runs for HOST/CLIENT (not just LOCAL) | `zelda_rtl.c` | fixed |
+| Dual-player loop runs for HOST/CLIENT (not just LOCAL) | `zelda_rtl.c` | done |
+| **Real-time loop wiring** + `--host`/`--connect`/`--net-delay` CLI | `main.c` | done |
 | Desync checksum covers `g_ram` + `g_players` + ancilla owner | `player_state.c` | done |
-| Headless verification (`ZELDA3_TEST_NET`) | `main.c` | done |
+| Headless verification (`ZELDA3_TEST_NET`, `ZELDA3_TEST_UDP`) | `main.c` | done |
 
 **Verified** (headless harness):
 - **Pipeline-neutral:** driving the sim through the full lockstep pipeline
@@ -47,40 +49,50 @@ frames behind input capture so the remote frame has time to arrive.
   inputs.
 - **Deterministic with delay:** `input_delay=2` and `=4` are identical
   run-to-run — the input buffer never corrupts state.
+- **UDP wire works:** a host + client on localhost round-trip InputFrames over
+  real sockets (incl. redundant-resend de-dup and host learning the client's
+  address) — `ZELDA3_TEST_UDP=1 ./zelda3_harness` → PASS.
 
 Because two online peers both run the lockstep driver from the identical input
 pair, this is the proof they will stay in sync; the periodic checksum
 (`Multiplayer_ComputeChecksum`) detects any divergence.
 
-### Try it
+### Play online
 ```
-./build.sh harness
+# Machine A (host, becomes Player 1):
+zelda3_coop --host 7777            (or any port; default 7777)
+# Machine B (client, becomes Player 2):
+zelda3_coop --connect <A's IP> 7777
+# Optional latency buffer (default 2): --net-delay 3
+```
+Each player uses their normal controls (arrows + ZXASCV / a controller) to drive
+their own Link. The host must be reachable on the UDP port (LAN, or port-forward
+for WAN). **Windows note:** the TCC build needs `-lws2_32` added to link Winsock
+(POSIX/macOS need no extra lib).
+
+### Test the foundation headlessly
+```
 ./zelda3_harness                       # direct path, prints final CRC
 ZELDA3_TEST_NET=1 ./zelda3_harness     # same sim via the lockstep pipeline → same CRC
 ZELDA3_TEST_NET=1 ZELDA3_NET_DELAY=2 ./zelda3_harness   # buffered, still deterministic
+ZELDA3_TEST_UDP=1 ./zelda3_harness     # UDP host<->client round-trip over localhost
 ```
 
-## What remains for real two-machine online
+## What remains (real-machine validation + polish)
 
-Only the **transport + connection** — the lockstep core above is done and the
-driver is transport-agnostic, so this is "implement one interface":
+The implementation is complete and the wire path is verified locally; what can
+only be done off-sandbox / as polish:
 
-1. **UDP transport** implementing `NetTransport` (send/recv `InputFrame`): a
-   `UdpTransport` next to the loopback one. Raw sockets behind `#ifdef _WIN32`
-   (Winsock) / POSIX, or add SDL_net. Resend-last-input on packet loss (inputs
-   are tiny and idempotent per frame).
-2. **Connection setup:** host opens a port; client connects by `IP:port`
-   (a simple connect screen / `zelda3.ini` entry). Exchange a handshake with the
-   agreed `input_delay`, RNG/seed sanity, and feature flags.
-3. **Real-time loop wiring** in `main.c`: in HOST/CLIENT mode call
-   `Multiplayer_LockstepTick(local_joypad)` once per display frame instead of the
-   direct `ZeldaRunFrame`; if it returns 0 (waiting on the peer) render the last
-   frame and try again next tick (stall, don't advance).
-4. **Failure handling:** timeout → pause/"waiting for player"; `INPUT_FLAG_DISCONNECT`
-   to end cleanly; on a checksum mismatch, surface a desync error.
+1. **Two-real-machine playtest** over LAN/WAN (the sandbox is single-instance, so
+   only localhost is exercisable here).
+2. **NAT/WAN convenience:** port-forward today; a relay/hole-punch or a "code"
+   matchmaking layer would make WAN connect-by-default.
+3. **Richer failure UX:** an on-screen "waiting for player…" while the driver
+   stalls, a timeout/disconnect via `INPUT_FLAG_DISCONNECT`, and a visible
+   desync warning if the periodic checksum ever diverges. (A startup handshake
+   exchanging `input_delay` + feature flags so both sides can't misconfigure.)
 
-None of these touch the simulation — they only feed it inputs. The determinism
-that makes them work is already proven.
+None of these touch the simulation — they only feed it inputs.
 
 ## Why lockstep (not rollback)
 
