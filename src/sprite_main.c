@@ -8,6 +8,125 @@
 #include "dungeon.h"
 #include "player.h"
 #include "misc.h"
+#include "mp_dual.h"
+
+// ---------------------------------------------------------------------------
+// Co-op: position-based contact damage for BOTH players.
+//
+// These bosses/hazards apply contact damage inline in their AI, testing the
+// CURRENT player's coords. The sprite-AI pass always runs as Player 1, so P2
+// used to be immune to all of them. Each inline check is factored into a small
+// per-current-player helper here; the handler calls it for P1 (unchanged) and
+// MP_ALSO_FOR_P2() re-runs it for P2. Helpers are RNG-free and touch only the
+// current player + shared sprite/oam state, so re-running them is deterministic.
+// In a vanilla build the helpers are simply the original single-player checks
+// (MP_ALSO_FOR_P2 compiles to nothing).
+// ---------------------------------------------------------------------------
+
+static void Trinexx_TrailHurtPlayer(int k) {
+  if ((uint16)(link_x_coord - cur_sprite_x + 8) < 16 &&
+      (uint16)(link_y_coord - cur_sprite_y + 16) < 16 &&
+      !sign8(sprite_ai_state[k]) &&
+      !(countdown_for_blink | link_disable_sprite_damage | submodule_index | flag_unk1)) {
+    link_auxiliary_state = 1;
+    link_give_damage = 8;
+    link_incapacitated_timer = 16;
+    link_actual_vel_x ^= 255;
+    link_actual_vel_y ^= 255;
+  }
+}
+
+static void Trinexx_ShellHurtPlayer(int k, uint16 x, uint16 y) {
+  if ((uint16)(x - link_x_coord + 40) < 80 && (uint16)(y - link_y_coord + 16) < 64 &&
+      !(countdown_for_blink | link_disable_sprite_damage)) {
+    link_auxiliary_state = 1;
+    link_give_damage = 8;
+    link_incapacitated_timer = 16;
+    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, 32);
+    link_actual_vel_x = pt.x;
+    link_actual_vel_y = pt.y;
+  }
+}
+
+static void HelmasaurKing_BodyHurtPlayer(int k) {
+  if (!(frame_counter & 7) &&
+      (uint16)(link_x_coord - cur_sprite_x + 36) < 72 &&
+      (uint16)(link_y_coord - cur_sprite_y + 40) < 64)
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
+}
+
+static void HelmasaurFireball_HurtPlayer(int k) {
+  if (!((k ^ frame_counter) & 3) &&
+      (uint16)(link_x_coord - cur_sprite_x + 8) < 16 &&
+      (uint16)(link_y_coord - cur_sprite_y + 16) < 16)
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
+}
+
+static void Blind_BumpHurtPlayer(int k) {
+  if ((uint16)(link_x_coord - cur_sprite_x + 14) < 28 &&
+      (uint16)(link_y_coord - cur_sprite_y) < 28 &&
+      !(countdown_for_blink | link_disable_sprite_damage)) {
+    link_auxiliary_state = 1;
+    link_give_damage = 8;
+    link_incapacitated_timer = 16;
+    link_actual_vel_x ^= 255;
+    link_actual_vel_y ^= 255;
+  }
+}
+
+static void Boulder_CrushPlayer(int k) {
+  if ((uint16)(cur_sprite_x - link_x_coord + 4) < 16 && (uint16)(cur_sprite_y - link_y_coord - 4) < 12)
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
+}
+
+static void EvilBarrier_ZapPlayer(int k) {
+  if ((uint16)(link_y_coord - cur_sprite_y + 8) < 24 &&
+      (uint16)(link_x_coord - cur_sprite_x + 32) < 64 &&
+      sign8(link_actual_vel_y - 1)) {
+    link_electrocute_on_touch = 64;
+    link_incapacitated_timer = 12;
+    link_auxiliary_state = 1;
+    link_give_damage = 2;
+    link_actual_vel_x = 0;
+    link_actual_vel_y = 48;
+  }
+}
+
+#ifdef ZELDA3_MULTIPLAYER
+// P2-only re-checks for the two hazards whose damage is computed inside an OAM
+// render loop: P1's original loop is left byte-for-byte unchanged, and these
+// re-test the (already-written) oam/segment positions against P2 without
+// touching any rendering state. Guarded so vanilla -Werror has no unused fn.
+static void KingHelmasaurTail_HurtP2(int k, PrepOamCoordsRet *info) {
+  bool is_hit = false;
+  for (int i = overlord_gen2[3]; i != 16; i++) {
+    uint8 x = overlord_x_lo[i + 5] + info->x;
+    uint8 y = overlord_y_lo[i + 5] + info->y;
+    if (!countdown_for_blink && sprite_anim_clock[k]) {
+      if ((uint8)(link_x_coord - BG2HOFS_copy2 - x + 12) < 24 &&
+          (uint8)(link_y_coord - BG2VOFS_copy2 + 8 - y + 8) < 16) {
+        is_hit = true;
+        link_actual_vel_x = 0;
+        link_actual_vel_y = 56;
+      }
+    }
+  }
+  if (is_hit && !flag_block_link_menu)
+    Sprite_AttemptDamageToLinkPlusRecoil(k);
+}
+
+static void Firebar_HurtP2(int k) {
+  OamEnt *oam = GetOamCurPtr();
+  for (int i = 0; i < 4; i++, oam++) {
+    if (bytewise_extended_oam[oam - oam_buf] & 1)
+      continue;
+    if ((uint8)(oam->x + BG2HOFS_copy2 - link_x_coord + 12) < 24 &&
+        oam->y < 0xf0 &&
+        (uint8)(oam->y + BG2VOFS_copy2 - link_y_coord + 4) < 16)
+      Sprite_AttemptDamageToLinkPlusRecoil(k);
+  }
+}
+#endif
 
 #define byte_7FFE01 (*(uint8*)(g_ram+0x1FE01))
 static const int8 kSpriteKeese_Tab2[16] = {0, 8, 11, 14, 16, 14, 11, 8, 0, -8, -11, -14, -16, -14, -11, -8};
@@ -1682,11 +1801,8 @@ void Sprite_70_KingHelmasaurFireball(int k) {  // 85807f
 
   if (Sprite_ReturnIfInactive(k))
     return;
-  if (!((k ^ frame_counter) & 3) &&
-      (uint16)(link_x_coord - cur_sprite_x + 8) < 16 &&
-      (uint16)(link_y_coord - cur_sprite_y + 16) < 16) {
-    Sprite_AttemptDamageToLinkPlusRecoil(k);
-  }
+  HelmasaurFireball_HurtPlayer(k);
+  MP_ALSO_FOR_P2(HelmasaurFireball_HurtPlayer(k));
   switch (sprite_ai_state[k]) {
   case 0:  // pre migrate down
     if (!sprite_delay_main[k]) {
@@ -15764,15 +15880,8 @@ void Blind_Decelerate_Y(int k) {  // 9da6a4
 void Blind_CheckBumpDamage(int k) {  // 9da6c0
   if (!(sprite_delay_aux4[k] | sprite_F[k]))
     Sprite_CheckDamageToAndFromLink(k);
-  if ((uint16)(link_x_coord - cur_sprite_x + 14) < 28 &&
-      (uint16)(link_y_coord - cur_sprite_y) < 28 &&
-      !(countdown_for_blink | link_disable_sprite_damage)) {
-    link_auxiliary_state = 1;
-    link_give_damage = 8;
-    link_incapacitated_timer = 16;
-    link_actual_vel_x ^= 255;
-    link_actual_vel_y ^= 255;
-  }
+  Blind_BumpHurtPlayer(k);
+  MP_ALSO_FOR_P2(Blind_BumpHurtPlayer(k));
 }
 
 void Blind_Animate(int k) {  // 9da6ef
@@ -16121,16 +16230,8 @@ void Sprite_TrinexxD_Draw(int k) {  // 9daf84
     cur_sprite_x = moldorm_x_hi[j] << 8 | moldorm_x_lo[j];
     cur_sprite_y = moldorm_y_hi[j] << 8 | moldorm_y_lo[j];
 
-    if ((uint16)(link_x_coord - cur_sprite_x + 8) < 16 &&
-        (uint16)(link_y_coord - cur_sprite_y + 16) < 16 &&
-        !sign8(sprite_ai_state[k]) &&
-        !(countdown_for_blink | link_disable_sprite_damage | submodule_index | flag_unk1)) {
-      link_auxiliary_state = 1;
-      link_give_damage = 8;
-      link_incapacitated_timer = 16;
-      link_actual_vel_x ^= 255;
-      link_actual_vel_y ^= 255;
-    }
+    Trinexx_TrailHurtPlayer(k);
+    MP_ALSO_FOR_P2(Trinexx_TrailHurtPlayer(k));
     oam_cur_ptr += kTrinexxD_OamOffs[i];
     oam_ext_cur_ptr += (kTrinexxD_OamOffs[i] >> 2);
     sprite_oam_flags[k] = 1;
@@ -16335,14 +16436,8 @@ void Trinexx_WagTail(int k) {  // 9db3b5
 void Trinexx_HandleShellCollision(int k) {  // 9db3e6
   uint16 x = sprite_A[k] | sprite_B[k] << 8;
   uint16 y = sprite_C[k] | sprite_G[k] << 8;
-  if ((uint16)(x - link_x_coord + 40) < 80 && (uint16)(y - link_y_coord + 16) < 64 && !(countdown_for_blink | link_disable_sprite_damage)) {
-    link_auxiliary_state = 1;
-    link_give_damage = 8;
-    link_incapacitated_timer = 16;
-    ProjectSpeedRet pt = Sprite_ProjectSpeedTowardsLink(k, 32);
-    link_actual_vel_x = pt.x;
-    link_actual_vel_y = pt.y;
-  }
+  Trinexx_ShellHurtPlayer(k, x, y);
+  MP_ALSO_FOR_P2(Trinexx_ShellHurtPlayer(k, x, y));
 }
 
 void SpriteDraw_TrinexxRockHead(int k, PrepOamCoordsRet *info) {  // 9db560
@@ -17593,8 +17688,8 @@ void Sprite_C2_Boulder(int k) {  // 9dcfcb
   Sprite_MoveXYZ(k);
   if ((k ^ frame_counter) & 3)
     return;
-  if ((uint16)(cur_sprite_x - link_x_coord + 4) < 16 && (uint16)(cur_sprite_y - link_y_coord - 4) < 12)
-    Sprite_AttemptDamageToLinkPlusRecoil(k);
+  Boulder_CrushPlayer(k);
+  MP_ALSO_FOR_P2(Boulder_CrushPlayer(k));
   if (!((k ^ frame_counter) & 3) && Sprite_CheckTileCollision(k))
     sprite_state[k] = 0;
 }
@@ -18773,16 +18868,8 @@ void Sprite_EvilBarrier(int k) {  // 9df06b
       link_electrocute_on_touch = 64;
   }
 
-  if ((uint16)(link_y_coord - cur_sprite_y + 8) < 24 &&
-      (uint16)(link_x_coord - cur_sprite_x + 32) < 64 &&
-      sign8(link_actual_vel_y - 1)) {
-    link_electrocute_on_touch = 64;
-    link_incapacitated_timer = 12;
-    link_auxiliary_state = 1;
-    link_give_damage = 2;
-    link_actual_vel_x = 0;
-    link_actual_vel_y = 48;
-  }
+  EvilBarrier_ZapPlayer(k);
+  MP_ALSO_FOR_P2(EvilBarrier_ZapPlayer(k));
 }
 
 void EvilBarrier_Draw(int k) {  // 9df249
@@ -19507,10 +19594,8 @@ void HelmasaurKing_CheckMaskDamageFromHammer(int k) {  // 9e8385
 }
 
 void HelmasaurKing_AttemptDamage(int k) {  // 9e83eb
-  if (!(frame_counter & 7) &&
-      (uint16)(link_x_coord - cur_sprite_x + 36) < 72 &&
-      (uint16)(link_y_coord - cur_sprite_y + 40) < 64)
-    Sprite_AttemptDamageToLinkPlusRecoil(k);
+  HelmasaurKing_BodyHurtPlayer(k);
+  MP_ALSO_FOR_P2(HelmasaurKing_BodyHurtPlayer(k));
 }
 
 void HelmasaurKing_ChipAwayAtMask(int k) {  // 9e847e
@@ -19761,6 +19846,7 @@ void KingHelmasaur_OperateTail(int k, PrepOamCoordsRet *info) {  // 9e8920
 
   if (is_hit && !flag_block_link_menu)
     Sprite_AttemptDamageToLinkPlusRecoil(k);
+  MP_ALSO_FOR_P2(KingHelmasaurTail_HurtP2(k, info));
   Sprite_CorrectOamEntries(k, 16, 2);
   Sprite_PrepOamCoordOrDoubleRet(k, info);
   tmp_counter = 16;
@@ -23425,6 +23511,7 @@ void Firebar_Main(int k) {  // 9ed049
           (uint8)(oam->y + BG2VOFS_copy2 - link_y_coord + 4) < 16)
         Sprite_AttemptDamageToLinkPlusRecoil(k);
     }
+    MP_ALSO_FOR_P2(Firebar_HurtP2(k));
   }
 }
 
