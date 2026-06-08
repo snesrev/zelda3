@@ -315,6 +315,15 @@ static void Multiplayer_InitIfNeeded(void) {
   if (!g_p1_seeded) {
     PlayerState_SetCurrent(0);
     PlayerState_SyncFromRam();
+    // Clear any co-op downed state carried in the struct. is_dead/is_ghost/etc.
+    // are co-op-only fields (NOT g_ram-backed), so SyncFromRam won't reset them;
+    // without this, re-seeding after a game-over+Continue would leave P1 a frozen
+    // 0-HP ghost. (P2 is re-cloned fresh by PlayerState_Init below.)
+    g_players[0].is_dead = 0;
+    g_players[0].is_ghost = 0;
+    g_players[0].respawn_timer = 0;
+    g_players[0].disable_sprite_damage = 0;
+    flag_is_link_immobilized = 0;   // macro -> cur_player (P1) here; field name collides
     g_p1_seeded = true;
   }
 
@@ -325,6 +334,17 @@ static void Multiplayer_InitIfNeeded(void) {
     printf("Multiplayer: P2 initialized at (%d, %d)\n",
            g_players[1].x_coord, g_players[1].y_coord);
   }
+}
+
+// Called when a save is (re)loaded into WRAM (file-select load, or the post-death
+// Continue path) — both route through CopySaveToWRAM. Force a re-seed of P1 from
+// the freshly loaded g_ram and a re-spawn of P2, so the loaded save's inventory/
+// position isn't overwritten by stale struct state and P2 matches the loaded
+// file. The re-seed also clears leftover co-op downed state, which fixes the
+// game-over -> Continue soft-lock (both players stuck as frozen 0-HP ghosts).
+void Multiplayer_OnSaveLoaded(void) {
+  g_p1_seeded = false;
+  g_mp_initialized = false;
 }
 
 // Per-player health/magic refill for P2. The engine's Hud_RefillLogic only runs
@@ -513,6 +533,7 @@ static void Multiplayer_WarpP2OnTransition(void) {
     p2->x_coord = p1->x_coord + 16;
     p2->y_coord = p1->y_coord;
     p2->is_on_lower_level = p1->is_on_lower_level;
+    p2->is_on_lower_level_mirror = p1->is_on_lower_level_mirror;  // keep OAM floor priority correct
     p2->quadrant_x = p1->quadrant_x;
     p2->quadrant_y = p1->quadrant_y;
     // Clear any transient movement state so P2 doesn't keep a stale velocity
@@ -541,12 +562,16 @@ static void Multiplayer_WarpP2OnTransition(void) {
 static void Multiplayer_UpdateCamera(void) {
   PlayerState *p1 = &g_players[0];
   PlayerState *p2 = &g_players[1];
+  if (p2->is_dead)
+    return;   // don't shove a frozen ghost around against the leash
   int dx = (int)p2->x_coord - (int)p1->x_coord;
   int dy = (int)p2->y_coord - (int)p1->y_coord;
-  if (dx >  MP_LEASH_X) p2->x_coord = p1->x_coord + MP_LEASH_X;
-  if (dx < -MP_LEASH_X) p2->x_coord = p1->x_coord - MP_LEASH_X;
-  if (dy >  MP_LEASH_Y) p2->y_coord = p1->y_coord + MP_LEASH_Y;
-  if (dy < -MP_LEASH_Y) p2->y_coord = p1->y_coord - MP_LEASH_Y;
+  // Clamp P2 into P1's viewport, and kill P2's velocity into the boundary so it
+  // doesn't jitter/stutter while pushing against the leash at a screen edge.
+  if (dx >  MP_LEASH_X) { p2->x_coord = p1->x_coord + MP_LEASH_X; p2->x_vel = 0; }
+  if (dx < -MP_LEASH_X) { p2->x_coord = p1->x_coord - MP_LEASH_X; p2->x_vel = 0; }
+  if (dy >  MP_LEASH_Y) { p2->y_coord = p1->y_coord + MP_LEASH_Y; p2->y_vel = 0; }
+  if (dy < -MP_LEASH_Y) { p2->y_coord = p1->y_coord - MP_LEASH_Y; p2->y_vel = 0; }
 }
 #endif // ZELDA3_MULTIPLAYER
 
