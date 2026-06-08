@@ -571,7 +571,18 @@ FrameInputPair Multiplayer_ConsumeInputs(void) {
       pair.joypad[i] = frame.joypad;
     }
   }
+  g_sim_frame++;   // this frame's inputs are now consumed; advance to the next
   return pair;
+}
+
+// Reset the lockstep input pipeline (rings + frame counter) — call when (re)starting
+// an online session.
+void Multiplayer_ResetLockstep(void) {
+  for (int i = 0; i < MAX_PLAYERS; i++) {
+    g_input_rings[i].read_pos = 0;
+    g_input_rings[i].write_pos = 0;
+  }
+  g_sim_frame = 0;
 }
 
 // ============================================================================

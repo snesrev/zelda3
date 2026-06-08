@@ -28,6 +28,7 @@
 #include "audio.h"
 #ifdef ZELDA3_MULTIPLAYER
 #include "player_state.h"
+#include "net_transport.h"
 #endif
 
 static bool g_run_without_emu = 0;
@@ -485,6 +486,41 @@ static int RunHeadlessTest(void) {
   // Optional: pulse the B button (tap) every 16 frames so the sword actually
   // swings instead of charging a spin attack. Enable with ZELDA3_PULSE_B=1.
   int pulse_b = getenv("ZELDA3_PULSE_B") ? 1 : 0;
+
+  if (getenv("ZELDA3_TEST_NET")) {
+    // Drive the sim through the ONLINE input-lockstep pipeline (loopback
+    // transport) instead of the direct path. Proves the pipeline is
+    // behavior-neutral: at input_delay=0 the final CRC must equal the direct
+    // path's CRC for the same inputs (run a normal harness to compare). delay>0
+    // must stay deterministic run-to-run. This exercises the real wire format
+    // (frames are serialized/deserialized through the loopback FIFO).
+    int delay = getenv("ZELDA3_NET_DELAY") ? atoi(getenv("ZELDA3_NET_DELAY")) : 0;
+    static LoopbackTransport lt;
+    Loopback_Init(&lt);
+    g_mp_config.mode = MP_MODE_HOST;                  // online co-op, host = P1 local
+    Multiplayer_LockstepInit(&lt.iface, 0, delay);
+    printf("[harness] NET TEST: lockstep via loopback, local=P1, input_delay=%d, P1=0x%x P2=0x%x\n",
+           delay, in1, in2);
+    for (int t = 0; t < total + delay; t++) {
+      // The remote peer (P2) transmits its input for this tick over the "wire".
+      InputFrame rf; rf.frame_number = (uint32)t; rf.joypad = (uint16)in2;
+      rf.player_index = 1; rf.flags = 0;
+      Loopback_Inject(&lt, &rf);
+      Multiplayer_LockstepTick((uint16)in1);
+    }
+    HeadlessCapture("/tmp/zharness/net_final.bmp");  // render once (matches the direct
+                                                     // path's final capture) so render-only
+                                                     // side effects line up for comparison.
+    SyncChecksum nc = Multiplayer_ComputeChecksum();
+    // At input_delay=0 this CRC must equal the direct-path "done" CRC for the
+    // same inputs (proves the lockstep pipeline is behavior-neutral). delay>0
+    // must be identical run-to-run (proves the input buffer is deterministic).
+    printf("[harness] NET RESULT: sim_frames=%u CRC=%08x P1=(%d,%d) P2=(%d,%d)\n",
+           g_sim_frame, nc.checksum, g_players[0].x_coord, g_players[0].y_coord,
+           g_players[1].x_coord, g_players[1].y_coord);
+    return 0;
+  }
+
   mkdir("/tmp/zharness", 0755);
   for (int fr = 0; fr < total; fr++) {
     int a1 = in1, a2 = in2;

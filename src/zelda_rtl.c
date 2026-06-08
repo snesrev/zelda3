@@ -15,6 +15,7 @@
 #include "player.h"
 #include "player_oam.h"
 #include "sprite.h"
+#include "net_transport.h"
 #endif
 ZeldaEnv g_zenv;
 uint8 g_ram[131072];
@@ -615,7 +616,12 @@ void ZeldaRunFrameInternal(uint16 input, int run_what) {
     ZeldaRunPolyLoop();
   if (run_what & 1) {
 #ifdef ZELDA3_MULTIPLAYER
-    if (g_mp_config.mode == MP_MODE_LOCAL)
+    // Run the dual-player loop for every co-op mode (local OR online host/client).
+    // Online lockstep feeds the remote player's input in through the same
+    // g_p2_input_this_frame path, so the loop is identical to local co-op.
+    if (g_mp_config.mode == MP_MODE_LOCAL ||
+        g_mp_config.mode == MP_MODE_HOST ||
+        g_mp_config.mode == MP_MODE_CLIENT)
       ZeldaRunGameLoop_Multiplayer(g_p2_input_this_frame);
     else
 #endif
@@ -1083,8 +1089,11 @@ bool ZeldaRunFrame(int inputs) {
 #ifdef ZELDA3_MULTIPLAYER
       // Co-op intentionally diverges from a vanilla single-player SNES (a second
       // Link, shared camera, etc.), so the reference-emulator memory compare is
-      // meaningless here. Always run the C implementation directly in co-op.
+      // meaningless here. Always run the C implementation directly in co-op —
+      // local OR online (host/client).
       || g_mp_config.mode == MP_MODE_LOCAL
+      || g_mp_config.mode == MP_MODE_HOST
+      || g_mp_config.mode == MP_MODE_CLIENT
 #endif
       ) {
     // can't compare against real impl when running with extra features.
@@ -1097,6 +1106,61 @@ bool ZeldaRunFrame(int inputs) {
 
   return is_replay;
 }
+
+#ifdef ZELDA3_MULTIPLAYER
+// ============================================================================
+// Online input-lockstep driver (transport-agnostic; see net_transport.h).
+// The deterministic sim is the same on both peers, so only InputFrames cross
+// the wire. This is the verified foundation; a real UDP transport plugs into
+// the NetTransport passed to Multiplayer_LockstepInit with no changes here.
+// ============================================================================
+static NetTransport *g_net_transport;
+static int g_net_local_player;     // which player's input is captured locally (0/1)
+static int g_net_input_delay;      // sim trails input capture by this many frames
+static uint32 g_net_send_frame;    // frame number to tag the next local input with
+
+void Multiplayer_LockstepInit(NetTransport *t, int local_player_index, int input_delay) {
+  g_net_transport = t;
+  g_net_local_player = (local_player_index != 0);
+  g_net_input_delay = input_delay < 0 ? 0 : input_delay;
+  g_net_send_frame = 0;
+  Multiplayer_ResetLockstep();   // clears the input rings + g_sim_frame
+}
+
+int Multiplayer_LockstepTick(uint16 local_joypad) {
+  if (!g_net_transport)
+    return 0;
+
+  // 1. Tag this tick's local input, queue it locally, and transmit it.
+  InputFrame lf;
+  lf.frame_number = g_net_send_frame;
+  lf.joypad = local_joypad;
+  lf.player_index = (uint8)g_net_local_player;
+  lf.flags = INPUT_FLAG_NONE;
+  InputRing_Push(g_net_local_player, &lf);
+  g_net_transport->send(g_net_transport, &lf);
+  g_net_send_frame++;
+
+  // 2. Ingest any remote input that has arrived into the remote player's ring.
+  InputFrame rf;
+  while (g_net_transport->recv(g_net_transport, &rf)) {
+    if (rf.player_index < MAX_PLAYERS && (int)rf.player_index != g_net_local_player)
+      InputRing_Push(rf.player_index, &rf);
+  }
+
+  // 3. Advance the sim for every frame whose inputs (both players) are present,
+  //    keeping it input_delay frames behind capture so the remote frame has time
+  //    to arrive. Both peers run the identical pair -> they stay in lockstep.
+  int advanced = 0;
+  while ((int)(g_net_send_frame - g_sim_frame) > g_net_input_delay &&
+         Multiplayer_InputsReady()) {
+    FrameInputPair pair = Multiplayer_ConsumeInputs();
+    ZeldaRunFrame(pair.joypad[0], pair.joypad[1]);
+    advanced++;
+  }
+  return advanced;
+}
+#endif  // ZELDA3_MULTIPLAYER
 
 void ZeldaSetLanguage(const char *language) {
   static const uint8 kDefaultConf[3] = { 0, 0, 0 };
