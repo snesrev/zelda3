@@ -30,6 +30,7 @@
 #include "player_state.h"
 #include "net_transport.h"
 #include "net_udp.h"
+#include "sprite.h"
 #endif
 
 static bool g_run_without_emu = 0;
@@ -487,6 +488,28 @@ static int RunHeadlessTest(void) {
     printf("[harness] INVSHARE TEST: P1 bow=3 rupees=150 keys=5 hp=40; P2 hp=8\n");
     printf("[harness]   (expect P2 bow=3 rupees=150 keys=5, P2 hp stays ~8)\n");
     in1 = 0; in2 = 0;
+  }
+  if (getenv("ZELDA3_TEST_LIFT")) {
+    // Verify a P2-carried object follows P2 (the carry-owner fix). Separate the
+    // players, spawn a carried sprite tagged to P2 AT P1's position, then run a
+    // couple frames: the carried-sprite handler should reposition it to P2's
+    // hands (near P2), not P1's. Without the fix it would track P1.
+    g_players[1].x_coord = g_players[0].x_coord + 80;  // P2 to the right of P1 (within leash)
+    g_players[1].y_coord = g_players[0].y_coord;
+    PlayerState_SetCurrent(1);                          // spawn as P2 -> owner = P2
+    Sprite_SpawnThrowableTerrain(0, g_players[0].x_coord, g_players[0].y_coord);
+    PlayerState_SetCurrent(0);
+    for (int fr = 0; fr < 2; fr++) ZeldaRunFrame(0, 0);
+    int kc = -1; for (int k = 0; k < 16; k++) if (sprite_state[k] == 10) { kc = k; break; }
+    if (kc < 0) { printf("[harness] LIFT TEST: no carried sprite spawned -> FAIL\n"); return 1; }
+    int sx = sprite_x_lo[kc] | (sprite_x_hi[kc] << 8);
+    int sy = sprite_y_lo[kc] | (sprite_y_hi[kc] << 8);
+    int dP1 = abs(sx - (int)g_players[0].x_coord) + abs(sy - (int)g_players[0].y_coord);
+    int dP2 = abs(sx - (int)g_players[1].x_coord) + abs(sy - (int)g_players[1].y_coord);
+    printf("[harness] LIFT TEST: P1=(%d,%d) P2=(%d,%d) carried@(%d,%d) distP1=%d distP2=%d -> %s\n",
+           g_players[0].x_coord, g_players[0].y_coord, g_players[1].x_coord, g_players[1].y_coord,
+           sx, sy, dP1, dP2, (dP2 < dP1) ? "FOLLOWS P2 (PASS)" : "FOLLOWS P1 (FAIL)");
+    return (dP2 < dP1) ? 0 : 1;
   }
   if (getenv("ZELDA3_TEST_DEATH")) {
     // Down P2 and verify: PreventGameOver suppresses game-over + ghosts P2; the

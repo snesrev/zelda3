@@ -618,6 +618,8 @@ uint32 ComputeCRC32(const uint8 *data, size_t length) {
 // Defined in ancilla.c — the per-frame ancilla owner table (which player fired
 // each link-relative ancilla), simulation state kept outside g_ram.
 extern const uint8 *Ancilla_GetOwnerTable(int *len);
+// Defined in sprite.c — which player is carrying each sprite slot (lift/carry).
+extern const uint8 *Sprite_GetCarryOwnerTable(int *len);
 #endif
 
 SyncChecksum Multiplayer_ComputeChecksum(void) {
@@ -634,6 +636,10 @@ SyncChecksum Multiplayer_ComputeChecksum(void) {
   const uint8 *owner = Ancilla_GetOwnerTable(&owner_len);
   if (owner && owner_len > 0)
     crc = CRC32_Accumulate(crc, owner, (size_t)owner_len);
+  int carry_len = 0;
+  const uint8 *carry = Sprite_GetCarryOwnerTable(&carry_len);
+  if (carry && carry_len > 0)
+    crc = CRC32_Accumulate(crc, carry, (size_t)carry_len);
 #endif
   sc.checksum = crc ^ 0xFFFFFFFF;
   return sc;

@@ -13,6 +13,20 @@
 #include "tile_detect.h"
 #include "sprite_main.h"
 #include "assets.h"
+
+#ifdef ZELDA3_MULTIPLAYER
+// Which player is carrying each sprite slot (0 = P1, 1 = P2). Set when a sprite
+// enters the carried state (10); used to run the carried-sprite handler as its
+// carrier so a P2-lifted object follows P2's hands and is thrown in P2's facing
+// direction (the carried handler reads link_ via cur_player). Mirrors the
+// g_ancilla_owner pattern in ancilla.c.
+static uint8 g_sprite_carry_owner[16];
+const uint8 *Sprite_GetCarryOwnerTable(int *len) {
+  if (len) *len = (int)sizeof(g_sprite_carry_owner);
+  return g_sprite_carry_owner;
+}
+#endif
+
 static const uint16 kOamGetBufferPos_Tab0[6] = {0x171, 0x201, 0x31, 0xc1, 0x141, 0x1d1};
 static const uint16 kOamGetBufferPos_Tab1[48] = {
    0x30,  0x50,  0x80,  0xb0,  0xe0, 0x110, 0x140, 0x170, 0x1d0, 0x1d4, 0x1dc, 0x1e0, 0x1e4, 0x1ec, 0x1f0, 0x1f8,
@@ -1029,6 +1043,9 @@ int Sprite_SpawnThrowableTerrain_silently(uint8 what, uint16 x, uint16 y) {  // 
   if (k < 0)
     return k;
   sprite_state[k] = 10;
+#ifdef ZELDA3_MULTIPLAYER
+  g_sprite_carry_owner[k] = (cur_player == &g_players[1]) ? 1 : 0;  // tile-lift carrier
+#endif
   sprite_type[k] = 0xEC;
   Sprite_SetX(k, x);
   Sprite_SetY(k, y);
@@ -1213,6 +1230,18 @@ void Sprite_ExecuteSingle(int k) {  // 8684e2
   uint8 st = sprite_state[k];
   if (st != 0)
     Sprite_TimersAndOam(k);
+#ifdef ZELDA3_MULTIPLAYER
+  // Run a carried sprite (state 10) as the player who lifted it, so it tracks
+  // that player's hands/facing and is thrown by their input. The sprite loop
+  // runs in P1's pass, so without this a P2-lifted object snaps to P1.
+  if (st == 10 && g_mp_p2_enabled) {
+    PlayerState *mp_saved = cur_player;
+    PlayerState_SetCurrent(g_sprite_carry_owner[k] & 1);
+    kSprite_ExecuteSingle[st](k);
+    cur_player = mp_saved;
+    return;
+  }
+#endif
   kSprite_ExecuteSingle[st](k);
 }
 
@@ -2671,6 +2700,9 @@ bool Sprite_ReturnIfLiftedPermissive(int k) {  // 86f257
     SpriteSfx_QueueSfx2WithPan(k, 0x1d);
     sprite_unk4[k] = sprite_state[k];
     sprite_state[k] = 10;
+#ifdef ZELDA3_MULTIPLAYER
+    g_sprite_carry_owner[k] = (cur_player == &g_players[1]) ? 1 : 0;  // sprite-lift carrier
+#endif
     sprite_delay_main[k] = 16;
     sprite_unk3[k] = 0;
     sprite_I[k] = 0;
