@@ -6,6 +6,15 @@
 // desync detection; BYE is a clean disconnect. The lockstep driver still only
 // send()s/recv()s InputFrames — the control packets are handled here and surface
 // as status fields the frontend reads.
+//
+// Hardening: UDP is a raw, unauthenticated, anyone-can-send-you-bytes socket, so
+// the receive path is strict about what it accepts. Every datagram is bounds-
+// checked against its declared type (Udp_PacketWellFormed) BEFORE any field is
+// read, oversized reads are clamped, and once we know our peer's address we drop
+// anything that doesn't come from it (Udp_AddrMatches) — stray scans, wrong-port
+// traffic, and trivially spoofed packets can't inject input, flip status flags,
+// or keep a dead link looking alive. (Full anti-spoofing of a forged source addr
+// needs crypto and is out of scope; this stops everything short of that.)
 #include "net_udp.h"
 
 #ifdef ZELDA3_MULTIPLAYER
@@ -89,6 +98,36 @@ static bool Udp_Send(NetTransport *t, const InputFrame *f) {
 
 static bool Udp_RxqEmpty(UdpTransport *ut) { return ut->rx_head == ut->rx_tail; }
 
+// Reject anything whose declared type/length is impossible BEFORE we read fields.
+// This is the single gate every inbound datagram passes; downstream code may then
+// trust the lengths. Returns false for unknown types, short packets, an INPUT
+// frame count past the redundancy cap, or an INPUT packet too small for its count.
+static bool Udp_PacketWellFormed(const uint8 *pkt, int n) {
+  if (n < 1) return false;
+  switch (pkt[0]) {
+    case NETPKT_INPUT:
+      if (n < 2) return false;
+      if (pkt[1] > UDP_REDUNDANT_FRAMES) return false;
+      return 2 + (int)pkt[1] * INPUT_FRAME_WIRE_SIZE <= n;
+    case NETPKT_HELLO: return n >= 3;
+    case NETPKT_SYNC:  return n >= 9;
+    case NETPKT_BYE:   return true;
+    default:           return false;
+  }
+}
+
+// Does a received datagram's source address match the peer we've locked onto?
+// We only ever speak IPv4 here, so compare family/port/addr explicitly (memcmp
+// would also compare sockaddr padding, which isn't guaranteed zeroed).
+static bool Udp_AddrMatches(const UdpTransport *ut, const unsigned char *src, socklen_t srclen) {
+  if (srclen < (socklen_t)sizeof(struct sockaddr_in)) return false;
+  const struct sockaddr_in *a = (const struct sockaddr_in *)ut->peer_addr;
+  const struct sockaddr_in *b = (const struct sockaddr_in *)src;
+  return a->sin_family == b->sin_family &&
+         a->sin_port   == b->sin_port &&
+         a->sin_addr.s_addr == b->sin_addr.s_addr;
+}
+
 // Process one received datagram by type.
 static void Udp_HandlePacket(UdpTransport *ut, const uint8 *pkt, int n) {
   if (n < 1) return;
@@ -148,11 +187,19 @@ static bool Udp_Recv(NetTransport *t, InputFrame *out) {
     int n = recvfrom(ut->sock, (char *)pkt, sizeof(pkt), 0,
                      (struct sockaddr *)src, &srclen);
     if (n <= 0) return false;                  // nothing pending (non-blocking)
-    if (ut->is_host && !ut->peer_known) {       // host locks onto the client addr
+    if (n > (int)sizeof(pkt)) n = (int)sizeof(pkt);   // clamp (paranoia: no over-read)
+    if (!Udp_PacketWellFormed(pkt, n)) continue;      // drop garbage outright
+
+    if (ut->is_host && !ut->peer_known) {       // host locks onto the first valid sender
+      if (srclen > (socklen_t)sizeof(ut->peer_addr)) srclen = sizeof(ut->peer_addr);
       memcpy(ut->peer_addr, src, srclen);
       ut->peer_addr_len = (int)srclen;
       ut->peer_known = 1;
+    } else if (!Udp_AddrMatches(ut, src, srclen)) {
+      continue;                                 // not from our peer — ignore (anti-spoof)
     }
+
+    // Only genuine peer traffic counts toward liveness / clears a lost flag.
     ut->idle_polls = 0;
     if (ut->peer_lost && pkt[0] != NETPKT_BYE) ut->peer_lost = 0;  // traffic resumed
     Udp_HandlePacket(ut, pkt, n);
@@ -237,5 +284,25 @@ bool Udp_InitClient(UdpTransport *ut, const char *host_ip, unsigned short port, 
   printf("[net] connecting to host %s:%u\n", host_ip, port);
   return true;
 }
+
+#ifdef ZELDA3_HEADLESS_TEST
+// Test-only: fire a raw datagram at 127.0.0.1:port from a throwaway socket (so it
+// arrives from an ephemeral source port that differs from any established peer).
+// Lets the harness verify the receive path drops malformed and wrong-source
+// packets. Returns sendto()'s result (>=0 ok), or -1 if the socket couldn't open.
+int Udp_TestRawSendLocal(unsigned short port, const uint8 *buf, int len) {
+  if (!Udp_PlatformInit()) return -1;
+  int s = (int)socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  if (s == INVALID_SOCKET) return -1;
+  struct sockaddr_in a;
+  memset(&a, 0, sizeof(a));
+  a.sin_family = AF_INET;
+  a.sin_port = htons(port);
+  inet_pton(AF_INET, "127.0.0.1", &a.sin_addr);
+  int r = (int)sendto(s, (const char *)buf, len, 0, (struct sockaddr *)&a, sizeof(a));
+  CLOSESOCK(s);
+  return r;
+}
+#endif
 
 #endif  // ZELDA3_MULTIPLAYER
