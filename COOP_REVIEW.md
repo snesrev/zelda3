@@ -134,3 +134,69 @@ double-processing, so this is safe but slightly redundant.
    are one shared pool while health/magic stay per-player. Verified: P2 inherits
    P1's rupees/keys/bow; P2 health stays independent; deterministic.
 4. (Optional) independent transitions / split-screen.
+
+---
+
+## Round 2 — adversarial hardening (PR #3)
+
+A second full review (multiple focused audits) found and fixed:
+
+- **18 more per-player state leaks** — Link-personal `g_ram` vars `Link_Main`/the
+  OAM renderer write each frame that weren't in `PlayerState` (ripple/grass & foot
+  OAM variant, lift/throw/grab/dash anim timing, swim-stroke cadence, pit-fall
+  state, hookshot pull, doorway gating, medallion-cast guard, block-push and
+  knockback-recoil timers). P2-disabled CRC is byte-identical to before.
+- **Death/respawn** — double-KO race (zombie revive during game-over), ghost now
+  frozen (can't corrupt shared module state), revive health rounded to a whole
+  heart, fillers cleared on death, ghost invulnerability gated on `is_dead`.
+- **CRITICAL save-load inventory wipe** — `SyncToRam` ran from boot with a zeroed
+  P1 struct and overwrote the just-loaded inventory before P1 was seeded; now
+  `SyncToRam` is gated on `g_p1_seeded` and P1 is seeded across the load+gameplay
+  module span (5–11).
+- **Controller disconnect** — `SDL_CONTROLLERDEVICEREMOVED` handler (no stuck
+  inputs / mis-routed reconnect).
+- **Shared heart-container capacity** — `health_capacity` now shared so containers
+  raise both players' max HP; current health/magic stay per-player.
+- **Desync checksum** — now folds `g_players[]` + the ancilla owner table in, so
+  P2 desyncs are detectable and the headless determinism checks cover P2.
+
+### Still open (foundation / cosmetic, non-blocking)
+- P2 magic meter on HUD (cosmetic; needs visual iteration).
+- Replay/record logs P1 input only; input-ring-buffer abstraction not yet wired
+  into the live path (future online-lockstep foundation).
+- A few bosses read `link_x/y` directly and still target P1 (most target nearest
+  via the centralized helpers).
+
+---
+
+## Round 3 — combat / ancilla / collision audit
+
+Verified working for P2: sword, sword beam, spin attack, arrows, fire/ice rod,
+hammer all damage enemies (the damage path reads only per-player state); no
+double-damage / double-drop (detection sets pending damage, recoil applies it
+once, `Sprite_GiveDamage` takes max not sum); no friendly fire via
+sword/arrow/beam (players aren't sprites); P2 tile collision, block pushing,
+chest opening and dungeon-pot lifting are independent and correct; ancilla owner
+tagging covers all four swapped link-relative types.
+
+**Fixed:**
+- **Bombs damage both players** (was: blast only hit P1 — FF against P1 and P2
+  bomb-immune). Split `Bomb_CheckPlayerDamage` out and run it for both players;
+  sprite damage still runs once.
+
+**Deferred to interactive testing (risky to do blind; documented):**
+- **P2 lifting *sprite-based* objects** (overworld bushes/rocks/pots): the
+  detect→latch→execute→carry chain is split across P1's sprite-AI phase and the
+  player handler and mutates shared sprite state; enabling it for P2 safely needs
+  real liftable-sprite testing (a blind change risks breaking P1's core
+  lift/carry). P2 can already lift *tile-based* dungeon pots. Plan: make the
+  lift/carry flags per-player and run a P2 detect+execute pass.
+- **Cane of Somaria block carry** mis-targets P1 for P2 (type 0x2C not in the
+  ancilla owner-swap list; also touches shared carry flags). Advanced item;
+  needs the same per-player carry-flag work.
+
+**By design:** P2's Y-item is P1's selected item (Phase 5.7: "item selection is
+P1 only"); could add an independent P2 item-cycle later.
+
+**Low / cosmetic:** 1-frame homing lag on P2's returning boomerang / Byrna spark
+(ancillae update in P1's phase, before P2 moves); these are non-blocking.
