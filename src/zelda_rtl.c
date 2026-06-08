@@ -297,8 +297,15 @@ static void Multiplayer_ProcessP2Input(uint16 joypad_input) {
 // Initialize P2 when first entering gameplay (module 7 = dungeon, 9 = overworld)
 static bool g_p1_seeded = false;
 static void Multiplayer_InitIfNeeded(void) {
-  // Only meaningful once we're in actual gameplay (dungeon/overworld).
-  if (main_module_index != 7 && main_module_index != 9) return;
+  // Seed P1 across the whole load + gameplay span (5=LoadFile, 6=PreDungeon,
+  // 7=Dungeon, 8/10=OverworldLoad, 9/11=Overworld), NOT just gameplay (7/9).
+  // CopySaveToWRAM memcpys the SRAM save (inventory at 0xF340+) straight into
+  // g_ram and sets main_module_index=5, so by module 5 the loaded inventory is
+  // already present. Seeding here captures it BEFORE the spawn-position setup in
+  // modules 6/8 (which writes Link's x/y through the macros into the now-seeded,
+  // authoritative struct). Seeding only at 7/9 was too late: the per-frame
+  // SyncToRam (gated below) would otherwise have wiped the inventory first.
+  if (main_module_index < 5 || main_module_index > 11) return;
 
   // One-time: seed P1's PlayerState struct from the live g_ram (which holds the
   // loaded save / boot state). After this the struct is authoritative for P1's
@@ -352,7 +359,12 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
 
   // === P1 update (full game loop) ===
   PlayerState_SetCurrent(0);
-  PlayerState_SyncToRam();
+  // Only shadow the struct into g_ram once P1 has been seeded from the loaded
+  // save. Before seeding, the engine is the sole owner of g_ram (the SRAM->WRAM
+  // inventory load, Link_Initialize, Dungeon_LoadEntrance); writing the still
+  // empty P1 struct back over it would wipe the just-loaded inventory.
+  if (g_p1_seeded)
+    PlayerState_SyncToRam();
 
   Module_MainRouting();
   NMI_PrepareSprites();
