@@ -390,6 +390,20 @@ static int RunHeadlessTest(void) {
   // including the loss-tolerance redundancy + frame de-dup. Exercises the actual
   // wire path the online lockstep uses.
   if (getenv("ZELDA3_TEST_UDP")) {
+    // C1 guard: InputRing_Push must refuse to overwrite UNCONSUMED input once
+    // full. A stalled online peer used to wrap the ring (INPUT_RING_SIZE) and
+    // clobber the oldest unconsumed frame, desyncing on resume. Push past
+    // capacity into a never-drained ring and verify it caps and keeps frame 0.
+    InputFrame ring_seed = { 0, 0xABCD, 0, 0 };
+    int ring_pushed = InputRing_Push(0, &ring_seed) ? 1 : 0;
+    for (uint32 f = 1; f < INPUT_RING_SIZE + 50; f++) {
+      InputFrame x = { f, (uint16)f, 0, 0 };
+      if (InputRing_Push(0, &x)) ring_pushed++;
+    }
+    InputFrame ring_peek;
+    int ring_ok = (ring_pushed == INPUT_RING_SIZE) &&
+                  InputRing_Peek(0, 0, &ring_peek) && ring_peek.joypad == 0xABCD;
+
     UdpTransport host, client;
     if (!Udp_InitHost(&host, 38891, 2) || !Udp_InitClient(&client, "127.0.0.1", 38891, 2)) {
       printf("[harness] UDP TEST: socket init failed (sandbox may block UDP)\n");
@@ -428,9 +442,9 @@ static int RunHeadlessTest(void) {
     int spoof_seen = 0;
     for (int t = 0; t < 100; t++) { while (host.iface.recv(&host.iface, &rf)) { if (rf.frame_number == 0x7777u) spoof_seen = 1; } SDL_Delay(1); }
     int hard_ok = !spoof_seen && host.handshaked && !host.version_mismatch;
-    int all = (got == 5 && g2 == 5 && hs && desync_ok && bye_ok && hard_ok);
-    printf("[harness] UDP TEST: input %d/5,%d/5  handshake=%d  desync_detect=%d  disconnect=%d  hardening=%d -> %s\n",
-           got, g2, hs, desync_ok, bye_ok, hard_ok, all ? "PASS" : "FAIL");
+    int all = (got == 5 && g2 == 5 && hs && desync_ok && bye_ok && hard_ok && ring_ok);
+    printf("[harness] UDP TEST: input %d/5,%d/5  handshake=%d  desync_detect=%d  disconnect=%d  hardening=%d  ringcap=%d -> %s\n",
+           got, g2, hs, desync_ok, bye_ok, hard_ok, ring_ok, all ? "PASS" : "FAIL");
     return all ? 0 : 1;
   }
 
@@ -807,7 +821,14 @@ int main(int argc, char** argv) {
   uint32 frameCtr = 0;
   bool audiopaused = true;
 
-  if (g_config.autosave)
+  // Online co-op must start both peers from identical state; an autosave-load
+  // here would seed host/client from possibly-different save files and desync
+  // the lockstep on frame 1. Skip it when online (both peers boot the same).
+  bool mp_online = false;
+#ifdef ZELDA3_MULTIPLAYER
+  mp_online = (g_mp_config.mode == MP_MODE_HOST || g_mp_config.mode == MP_MODE_CLIENT);
+#endif
+  if (g_config.autosave && !mp_online)
     HandleCommand(kKeys_Load + 0, true);
 
   while(running) {

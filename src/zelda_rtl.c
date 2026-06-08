@@ -1209,25 +1209,32 @@ int Multiplayer_LockstepTick(uint16 local_joypad) {
   if (!g_net_transport)
     return 0;
 
-  // 1. Tag this tick's local input, queue it locally, and transmit it.
+  // 1. Tag this tick's local input, queue it locally, and transmit it — but only
+  //    while the local ring has room. A stalled peer (paused, or one-way packet
+  //    loss) freezes the sim so the ring never drains; without this gate the ring
+  //    would wrap at INPUT_RING_SIZE and overwrite unconsumed input, desyncing on
+  //    resume. When full we hold local capture (standard lockstep wait-for-peer).
   InputFrame lf;
   lf.frame_number = g_net_send_frame;
   lf.joypad = local_joypad;
   lf.player_index = (uint8)g_net_local_player;
   lf.flags = INPUT_FLAG_NONE;
-  InputRing_Push(g_net_local_player, &lf);
-  g_net_transport->send(g_net_transport, &lf);
-  g_net_send_frame++;
+  if (InputRing_Push(g_net_local_player, &lf)) {
+    g_net_transport->send(g_net_transport, &lf);
+    g_net_send_frame++;
+  }
 
   // 2. Ingest remote input into the remote player's ring, in order, de-duping
   //    the redundant copies a UDP transport resends for loss tolerance: accept a
   //    frame only when it's exactly the next one expected (older = duplicate,
-  //    newer = a gap that a later resend will fill).
+  //    newer = a gap that a later resend will fill). Stop if the ring fills; the
+  //    dropped frame's redundant resend is re-accepted next tick once it drains.
   int remote = g_net_local_player ^ 1;
   InputFrame rf;
   while (g_net_transport->recv(g_net_transport, &rf)) {
     if ((int)rf.player_index == remote && rf.frame_number == g_net_remote_next) {
-      InputRing_Push(remote, &rf);
+      if (!InputRing_Push(remote, &rf))
+        break;
       g_net_remote_next++;
     }
   }

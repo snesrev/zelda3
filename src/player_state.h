@@ -345,7 +345,7 @@ typedef struct InputRingBuffer {
 // One ring buffer per player
 extern InputRingBuffer g_input_rings[MAX_PLAYERS];
 
-void InputRing_Push(int player_index, const InputFrame *frame);
+bool InputRing_Push(int player_index, const InputFrame *frame);
 bool InputRing_Pop(int player_index, InputFrame *out);
 bool InputRing_Peek(int player_index, uint32 frame_number, InputFrame *out);
 uint32 InputRing_Count(int player_index);
