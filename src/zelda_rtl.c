@@ -456,7 +456,14 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     // appear in the sprite arrays, so neither player's weapons can hit the other.
     for (int k = 0; k < 16; k++) {
       if (sprite_state[k] == 9) {
-        Sprite_CheckDamageToLink(k);
+        // Wallmaster (0x90) grabs Link and warps them to the dungeon entrance,
+        // but its carry/warp runs during P1's pass against P1's state. If it
+        // latched onto P2 here, it would teleport the WRONG player (P1) and kick
+        // off a global room reload from inside this P2 update -> desync. Keep the
+        // wallmaster P1-only by skipping its grab check for P2 (it still grabs P1
+        // via its own AI). P2's weapons can still hit it (CheckDamageFromLink).
+        if (sprite_type[k] != 0x90)
+          Sprite_CheckDamageToLink(k);
         Sprite_CheckDamageFromLink(k);
         // Let P2 collect drops too (prize sprites are types 0xD8..0xE6). With
         // cur_player == P2 this routes hearts/magic into P2's own pools (so P2
