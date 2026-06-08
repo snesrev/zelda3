@@ -356,6 +356,9 @@ bool Multiplayer_InputsReady(void);
 // Get the combined joypad inputs for this frame (call after InputsReady)
 FrameInputPair Multiplayer_ConsumeInputs(void);
 
+// Reset the lockstep input rings + frame counter (call when starting a session)
+void Multiplayer_ResetLockstep(void);
+
 // Compute a checksum of g_ram for desync detection
 SyncChecksum Multiplayer_ComputeChecksum(void);
 
