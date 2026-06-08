@@ -276,6 +276,7 @@ static uint16 g_p2_input_this_frame;
 bool g_mp_p2_enabled = true;
 static void Multiplayer_UpdateCamera(void);
 static void Multiplayer_WarpP2OnTransition(void);
+static void Multiplayer_PlaceP2Beside(PlayerState *p1, PlayerState *p2);
 
 // Process P2's NMI input (writes to per-player joypad globals via cur_player macros)
 static void Multiplayer_ProcessP2Input(uint16 joypad_input) {
@@ -439,7 +440,30 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     // Process P2 input into the per-player joypad globals
     Multiplayer_ProcessP2Input(p2_eff_input);
 
+    // P2's Link_Main can hit a hazard (drowning / pit damage / pit fall) whose
+    // handler sets the SHARED main_module_index/submodule_index to a recovery or
+    // transition state. That state machine then runs in P1's module pass against
+    // P1 — yanking P1 to its safe-return spot and stranding P2. Co-op: a P2
+    // hazard must affect only P2. Snapshot the shared transition state; if P2
+    // changed it, revert it and resolve the hazard locally for P2 below.
+    uint8 mp_hazard_module = main_module_index;
+    uint8 mp_hazard_submodule = submodule_index;
+
     Link_Main();
+
+    if (main_module_index != mp_hazard_module || submodule_index != mp_hazard_submodule) {
+      main_module_index = mp_hazard_module;
+      submodule_index = mp_hazard_submodule;
+      if (link_health_current == 0) {
+        // Hazard damage was lethal to P2 -> drop P2 into the ghost/respawn state
+        // (cur_player == P2 here). On a true double-KO let game-over run.
+        if (!Multiplayer_PreventGameOver()) { main_module_index = 18; submodule_index = 0; }
+      } else {
+        // P2 survived -> pull it back beside P1 (out of the water/pit) and clear
+        // any half-started fall/swim handler state.
+        Multiplayer_PlaceP2Beside(&g_players[0], &g_players[1]);
+      }
+    }
 
     // Render P2's sprite. Use the OAM band OPPOSITE P1's so the two Links never
     // share slots (the player offset table is {0x190, 0xe0}; LinkOam_Main selects
@@ -519,6 +543,28 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
 // dungeon entrances: during the transition P2 is frozen (see the p2_normal_play
 // gate above), and the engine has just moved P1 to the destination, so copying
 // P1's fresh position + room/level state to P2 places it correctly.
+// Place P2 right beside P1 and clear ALL transient per-frame state, so P2
+// resumes cleanly at P1's location. Used by the transition warp and to recover
+// P2 from a hazard. Resetting the handler/aux/z/deep-water/incap state matters
+// when P2 was mid-action (swimming, recoiling, falling) at the instant it's
+// relocated; otherwise it would resume that action on incompatible terrain.
+static void Multiplayer_PlaceP2Beside(PlayerState *p1, PlayerState *p2) {
+  p2->x_coord = p1->x_coord + 16;
+  p2->y_coord = p1->y_coord;
+  p2->is_on_lower_level = p1->is_on_lower_level;
+  p2->is_on_lower_level_mirror = p1->is_on_lower_level_mirror;  // keep OAM floor priority correct
+  p2->quadrant_x = p1->quadrant_x;
+  p2->quadrant_y = p1->quadrant_y;
+  p2->x_vel = p2->y_vel = 0;
+  p2->flag_moving = 0;
+  p2->player_handler_state = 0;
+  p2->auxiliary_state = 0;
+  p2->z_coord = 0;
+  p2->is_in_deep_water = 0;
+  p2->incapacitated_timer = 0;
+  p2->visibility_status = 0;
+}
+
 static uint8 g_last_module_index = 0;
 static uint8 g_last_submodule_index = 0;
 static void Multiplayer_WarpP2OnTransition(void) {
@@ -538,16 +584,7 @@ static void Multiplayer_WarpP2OnTransition(void) {
   if (warp && g_mp_p2_enabled && g_players[1].is_active) {
     PlayerState *p1 = &g_players[0];
     PlayerState *p2 = &g_players[1];
-    p2->x_coord = p1->x_coord + 16;
-    p2->y_coord = p1->y_coord;
-    p2->is_on_lower_level = p1->is_on_lower_level;
-    p2->is_on_lower_level_mirror = p1->is_on_lower_level_mirror;  // keep OAM floor priority correct
-    p2->quadrant_x = p1->quadrant_x;
-    p2->quadrant_y = p1->quadrant_y;
-    // Clear any transient movement state so P2 doesn't keep a stale velocity
-    // from before the transition.
-    p2->x_vel = p2->y_vel = 0;
-    p2->flag_moving = 0;
+    Multiplayer_PlaceP2Beside(p1, p2);
     // FUTURE: Multiplayer_HandleIndependentTransition() — load a second room
     // for split-screen instead of warping P2 to P1.
   }
@@ -576,10 +613,12 @@ static void Multiplayer_UpdateCamera(void) {
   int dy = (int)p2->y_coord - (int)p1->y_coord;
   // Clamp P2 into P1's viewport, and kill P2's velocity into the boundary so it
   // doesn't jitter/stutter while pushing against the leash at a screen edge.
+  // Signed intermediates on the low side: coords are uint16 and P1 can be within
+  // a leash of the map origin (0), where p1->coord - MP_LEASH would underflow.
   if (dx >  MP_LEASH_X) { p2->x_coord = p1->x_coord + MP_LEASH_X; p2->x_vel = 0; }
-  if (dx < -MP_LEASH_X) { p2->x_coord = p1->x_coord - MP_LEASH_X; p2->x_vel = 0; }
+  if (dx < -MP_LEASH_X) { int v = (int)p1->x_coord - MP_LEASH_X; p2->x_coord = v < 0 ? 0 : (uint16)v; p2->x_vel = 0; }
   if (dy >  MP_LEASH_Y) { p2->y_coord = p1->y_coord + MP_LEASH_Y; p2->y_vel = 0; }
-  if (dy < -MP_LEASH_Y) { p2->y_coord = p1->y_coord - MP_LEASH_Y; p2->y_vel = 0; }
+  if (dy < -MP_LEASH_Y) { int v = (int)p1->y_coord - MP_LEASH_Y; p2->y_coord = v < 0 ? 0 : (uint16)v; p2->y_vel = 0; }
 }
 #endif // ZELDA3_MULTIPLAYER
 
@@ -1032,6 +1071,10 @@ bool ZeldaRunFrame(int inputs) {
   if ((inputs & 0xc0) == 0xc0) inputs ^= 0xc0;
 
 #ifdef ZELDA3_MULTIPLAYER
+  // Same opposing-direction filter P1 gets above (the SNES pad can't report
+  // up+down / left+right at once); keep P2 symmetric and deterministic.
+  if ((inputs_p2 & 0x30) == 0x30) inputs_p2 ^= 0x30;
+  if ((inputs_p2 & 0xc0) == 0xc0) inputs_p2 ^= 0xc0;
   // Store P2 input for use in the multiplayer game loop
   g_p2_input_this_frame = (uint16)inputs_p2;
 #endif
