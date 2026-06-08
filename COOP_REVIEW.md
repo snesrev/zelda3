@@ -288,3 +288,36 @@ P1/P2 mapping, online local/remote wiring (host=P1 / client=P2, in-order
 consume, input sampled 1:1 per sim frame), tagalongs (P1-only by spec), medallion
 spells, menu/pause freeze, P2 OAM floor priority, magic-HUD tilemap bounds,
 ghost-revive gating, BYE-on-quit.
+
+## Review round 3 — dungeon/puzzle/item mechanics with two players
+
+Audited the least-covered area. Dungeon room-tag handlers and switch/lever
+sprite-AI run only in P1's module pass (P2 runs `Link_Main` only), so they read
+P1's position/buttons exclusively. **None are desyncs** (deterministic on both
+peers) or hard soft-locks (P1 can operate everything; the leash keeps P2 close,
+so dungeons stay completable). The gap is the co-op affordance — "P2 holds the
+switch / pulls the lever."
+
+**Fixed (additive, P1 path byte-identical — verified CRC unchanged):**
+- **Pressure plates, blue/orange star-tile floor switches, and shutter switches**
+  now trigger from EITHER player. `RoomTag_MaybeCheckShutters` /
+  `RoomTag_CheckForPressedSwitch` check P1 first (unchanged), then re-run the
+  identical tile check as P2. P2 can hold a plate to keep a door open, flip a
+  star-tile floor, or trip a shutter.
+
+**Documented / deferred** (unverifiable headlessly; fixes touch shared switch-AI
+state where a blind change could break a co-op puzzle — need in-dungeon
+playtesting):
+- **Pull levers / crystal-pull switches** (water flood/drain, pull-switch walls)
+  live in sprite AI gated on P1's contact+buttons — P2 can't pull them.
+- **Push/depress water switches & A-press interaction sprites** detect only P1.
+- **Boots-dash breakable walls** check P1's dash state only (bomb-opened walls
+  already work for both).
+- **Locked / big-key doors** open only from P1's facing tile (keys are SHARED,
+  only P1 decrements — verified NO double-consume; P2 just can't open a lock).
+
+**Verified CLEAN:** torch lighting works for P2 (fire keys off the tile
+attribute, not position; lit count is shared room state); chests & absorbable
+pickups are single-award, routed to the correct player then pooled (no
+double-award / double-key-consume); crystal switches toggle from P2's hits;
+block-pushing works for P2. No new desync vectors found.
