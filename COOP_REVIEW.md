@@ -134,3 +134,35 @@ double-processing, so this is safe but slightly redundant.
    are one shared pool while health/magic stay per-player. Verified: P2 inherits
    P1's rupees/keys/bow; P2 health stays independent; deterministic.
 4. (Optional) independent transitions / split-screen.
+
+---
+
+## Round 2 — adversarial hardening (PR #3)
+
+A second full review (multiple focused audits) found and fixed:
+
+- **18 more per-player state leaks** — Link-personal `g_ram` vars `Link_Main`/the
+  OAM renderer write each frame that weren't in `PlayerState` (ripple/grass & foot
+  OAM variant, lift/throw/grab/dash anim timing, swim-stroke cadence, pit-fall
+  state, hookshot pull, doorway gating, medallion-cast guard, block-push and
+  knockback-recoil timers). P2-disabled CRC is byte-identical to before.
+- **Death/respawn** — double-KO race (zombie revive during game-over), ghost now
+  frozen (can't corrupt shared module state), revive health rounded to a whole
+  heart, fillers cleared on death, ghost invulnerability gated on `is_dead`.
+- **CRITICAL save-load inventory wipe** — `SyncToRam` ran from boot with a zeroed
+  P1 struct and overwrote the just-loaded inventory before P1 was seeded; now
+  `SyncToRam` is gated on `g_p1_seeded` and P1 is seeded across the load+gameplay
+  module span (5–11).
+- **Controller disconnect** — `SDL_CONTROLLERDEVICEREMOVED` handler (no stuck
+  inputs / mis-routed reconnect).
+- **Shared heart-container capacity** — `health_capacity` now shared so containers
+  raise both players' max HP; current health/magic stay per-player.
+- **Desync checksum** — now folds `g_players[]` + the ancilla owner table in, so
+  P2 desyncs are detectable and the headless determinism checks cover P2.
+
+### Still open (foundation / cosmetic, non-blocking)
+- P2 magic meter on HUD (cosmetic; needs visual iteration).
+- Replay/record logs P1 input only; input-ring-buffer abstraction not yet wired
+  into the live path (future online-lockstep foundation).
+- A few bosses read `link_x/y` directly and still target P1 (most target nearest
+  via the centralized helpers).
