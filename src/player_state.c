@@ -465,12 +465,16 @@ void Multiplayer_UpdateDeathRespawn(void) {
 // that same address range). This makes one player's pickups/purchases/upgrades
 // appear for both, while health and magic remain independent.
 void Multiplayer_ShareInventory(PlayerState *from, PlayerState *to) {
-  uint8 hcap = to->health_capacity, hcur = to->health_current;
+  // Per-player (NOT shared): CURRENT health & magic and their fillers. Max-HP
+  // capacity IS shared, so heart containers (and the shared heart_pieces counter,
+  // which also lives in the copied block) raise both players' max health
+  // together — otherwise P1 collecting a container would consume the shared
+  // heart pieces while only P1's max HP grew.
+  uint8 hcur = to->health_current;
   uint8 mpow = to->magic_power, hfill = to->hearts_filler, mfill = to->magic_filler;
   size_t n = (size_t)((char *)&to->keys_earned_per_dungeon[NUM_DUNGEON_KEY_SLOTS]
                       - (char *)&to->item_bow);
   memcpy(&to->item_bow, &from->item_bow, n);
-  to->health_capacity = hcap;
   to->health_current  = hcur;
   to->magic_power     = mpow;
   to->hearts_filler   = hfill;
@@ -586,19 +590,40 @@ static void CRC32_InitTable(void) {
   crc32_table_init = true;
 }
 
-uint32 ComputeCRC32(const uint8 *data, size_t length) {
+static uint32 CRC32_Accumulate(uint32 crc, const uint8 *data, size_t length) {
   if (!crc32_table_init)
     CRC32_InitTable();
-  uint32 crc = 0xFFFFFFFF;
   for (size_t i = 0; i < length; i++)
     crc = crc32_table[(crc ^ data[i]) & 0xFF] ^ (crc >> 8);
-  return crc ^ 0xFFFFFFFF;
+  return crc;
 }
+
+uint32 ComputeCRC32(const uint8 *data, size_t length) {
+  return CRC32_Accumulate(0xFFFFFFFF, data, length) ^ 0xFFFFFFFF;
+}
+
+#ifdef ZELDA3_MULTIPLAYER
+// Defined in ancilla.c — the per-frame ancilla owner table (which player fired
+// each link-relative ancilla), simulation state kept outside g_ram.
+extern const uint8 *Ancilla_GetOwnerTable(int *len);
+#endif
 
 SyncChecksum Multiplayer_ComputeChecksum(void) {
   SyncChecksum sc;
   sc.frame_number = g_sim_frame;
-  sc.checksum = ComputeCRC32(g_ram, 0x20000);
+  uint32 crc = CRC32_Accumulate(0xFFFFFFFF, g_ram, 0x20000);
+#ifdef ZELDA3_MULTIPLAYER
+  // g_ram only holds a shadow of P1's link state; the PlayerState structs are
+  // authoritative (P2's entire state lives only in g_players[1]). Fold the
+  // structs and the ancilla owner table into the checksum so a P2-side desync is
+  // actually detectable (and so the headless determinism checks cover P2).
+  crc = CRC32_Accumulate(crc, (const uint8 *)g_players, sizeof(g_players));
+  int owner_len = 0;
+  const uint8 *owner = Ancilla_GetOwnerTable(&owner_len);
+  if (owner && owner_len > 0)
+    crc = CRC32_Accumulate(crc, owner, (size_t)owner_len);
+#endif
+  sc.checksum = crc ^ 0xFFFFFFFF;
   return sc;
 }
 
