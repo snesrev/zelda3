@@ -170,6 +170,26 @@ typedef struct PlayerState {
   uint8  about_to_jump_off_ledge;         // 0x47A  ledge-jump state
   uint8  flag_unk1;                       // 0xFC1  per-frame scratch flag
 
+  // Additional per-player Link state (co-op review round 2 — also leaked via g_ram)
+  uint8  draw_water_ripples_or_grass;     // 0x351  ripple/grass + sword/shadow OAM variant
+  uint8  some_animation_timer;            // 0x30B  lift/throw/grab/dash anim timer
+  uint8  some_animation_timer_steps;      // 0x30A  lift/throw/grab/dash anim step
+  uint8  swimming_countdown;              // 0x2CB  swim-stroke pacing
+  uint8  byte_7E02CC;                     // 0x2CC  swim-stroke / swim anim
+  uint8  fallhole_var1;                   // 0x302  pit/hole fall state
+  uint8  fallhole_var2;                   // 0x2CA  pit/hole fall state
+  uint8  byte_7E02C9;                     // 0x2C9  fall direction index
+  uint8  related_to_hookshot;             // 0x37E  hookshot grab/pull state
+  uint8  is_standing_in_doorway;          // 0x6C   doorway state (gates sword/items)
+  uint8  byte_7E0324;                     // 0x324  medallion-cast one-shot guard
+  uint8  byte_7E005C;                     // 0x5C   animation-cadence countdown
+  uint8  byte_7E0322;                     // 0x322  water-staircase / moving-floor bits
+  uint8  gravestone_push_timeout;         // 0x61   block/gravestone push timer
+  uint8  byte_7E02C2;                     // 0x2C2  block/gravestone push companion
+  uint8  byte_7E02C5;                     // 0x2C5  recoil/knockback anim sub-timer
+  uint8  primary_water_grass_timer;       // 0x356  foot ripple/grass anim phase
+  uint8  secondary_water_grass_timer;     // 0x355  foot ripple/grass anim phase
+
   // === Inventory (0xF340–0xF37B) — shared in Phase 1, split later ===
   uint8  item_bow;                   // 0xF340
   uint8  item_boomerang;             // 0xF341

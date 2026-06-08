@@ -197,6 +197,26 @@
 #undef about_to_jump_off_ledge
 #undef flag_unk1
 
+// Additional per-player Link state (co-op review round 2)
+#undef draw_water_ripples_or_grass
+#undef some_animation_timer
+#undef some_animation_timer_steps
+#undef swimming_countdown
+#undef byte_7E02CC
+#undef fallhole_var1
+#undef fallhole_var2
+#undef byte_7E02C9
+#undef related_to_hookshot
+#undef is_standing_in_doorway
+#undef byte_7E0324
+#undef byte_7E005C
+#undef byte_7E0322
+#undef gravestone_push_timeout
+#undef byte_7E02C2
+#undef byte_7E02C5
+#undef primary_water_grass_timer
+#undef secondary_water_grass_timer
+
 // Also redirect per-player non-link_ globals
 #undef button_mask_b_y
 #undef bitfield_for_a_button
@@ -425,6 +445,26 @@
 #define kind_of_in_room_staircase        (cur_player->kind_of_in_room_staircase)
 #define about_to_jump_off_ledge          (cur_player->about_to_jump_off_ledge)
 #define flag_unk1                        (cur_player->flag_unk1)
+
+// Additional per-player Link state (co-op review round 2)
+#define draw_water_ripples_or_grass      (cur_player->draw_water_ripples_or_grass)
+#define some_animation_timer             (cur_player->some_animation_timer)
+#define some_animation_timer_steps       (cur_player->some_animation_timer_steps)
+#define swimming_countdown               (cur_player->swimming_countdown)
+#define byte_7E02CC                      (cur_player->byte_7E02CC)
+#define fallhole_var1                    (cur_player->fallhole_var1)
+#define fallhole_var2                    (cur_player->fallhole_var2)
+#define byte_7E02C9                      (cur_player->byte_7E02C9)
+#define related_to_hookshot              (cur_player->related_to_hookshot)
+#define is_standing_in_doorway           (cur_player->is_standing_in_doorway)
+#define byte_7E0324                      (cur_player->byte_7E0324)
+#define byte_7E005C                      (cur_player->byte_7E005C)
+#define byte_7E0322                      (cur_player->byte_7E0322)
+#define gravestone_push_timeout          (cur_player->gravestone_push_timeout)
+#define byte_7E02C2                      (cur_player->byte_7E02C2)
+#define byte_7E02C5                      (cur_player->byte_7E02C5)
+#define primary_water_grass_timer        (cur_player->primary_water_grass_timer)
+#define secondary_water_grass_timer      (cur_player->secondary_water_grass_timer)
 
 // Per-player non-link_ globals
 #define button_mask_b_y                  (cur_player->button_mask_b_y)

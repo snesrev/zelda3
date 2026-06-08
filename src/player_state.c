@@ -196,6 +196,26 @@ static void PlayerState_Sync(bool to_ram) {
   SYNC_U8 (about_to_jump_off_ledge,      0x47A);
   SYNC_U8 (flag_unk1,                    0xFC1);
 
+  // Additional per-player Link state (co-op review round 2 — also leaked via g_ram)
+  SYNC_U8 (draw_water_ripples_or_grass,  0x351);
+  SYNC_U8 (some_animation_timer,         0x30B);
+  SYNC_U8 (some_animation_timer_steps,   0x30A);
+  SYNC_U8 (swimming_countdown,           0x2CB);
+  SYNC_U8 (byte_7E02CC,                  0x2CC);
+  SYNC_U8 (fallhole_var1,                0x302);
+  SYNC_U8 (fallhole_var2,                0x2CA);
+  SYNC_U8 (byte_7E02C9,                  0x2C9);
+  SYNC_U8 (related_to_hookshot,          0x37E);
+  SYNC_U8 (is_standing_in_doorway,       0x6C);
+  SYNC_U8 (byte_7E0324,                  0x324);
+  SYNC_U8 (byte_7E005C,                  0x5C);
+  SYNC_U8 (byte_7E0322,                  0x322);
+  SYNC_U8 (gravestone_push_timeout,      0x61);
+  SYNC_U8 (byte_7E02C2,                  0x2C2);
+  SYNC_U8 (byte_7E02C5,                  0x2C5);
+  SYNC_U8 (primary_water_grass_timer,    0x356);
+  SYNC_U8 (secondary_water_grass_timer,  0x355);
+
   // Inventory
   SYNC_U8 (item_bow,                     0xF340);
   SYNC_U8 (item_boomerang,               0xF341);
@@ -350,29 +370,40 @@ bool Multiplayer_PreventGameOver(void) {
   PlayerState *dying = cur_player;
   PlayerState *other = (cur_player == &g_players[0]) ? &g_players[1] : &g_players[0];
 
-  // Both players down at once -> let the real game-over happen.
-  if (other->is_dead)
-    return false;
-
-  // Put the current player into the downed/ghost state (idempotent).
+  // Put the current player into the downed/ghost state FIRST, before the
+  // double-KO check. On a true double-KO both players must end up flagged
+  // is_dead; otherwise the second one to die returned here unmarked, and the
+  // per-frame respawn logic would auto-revive the first ghost on the very frame
+  // the real game-over fires (a "zombie" alive-during-game-over state).
   if (!dying->is_dead) {
     dying->is_dead = 1;
     dying->is_ghost = 1;
     dying->respawn_timer = MP_RESPAWN_FRAMES;
   }
   dying->health_current = 0;
-  dying->disable_sprite_damage = 1;   // ghost: invulnerable while downed
-  dying->visibility_status = 0;       // visible (LinkOam_Main flashes the ghost)
+  dying->hearts_filler = 0;            // no refill heal/SFX tug-of-war while downed
+  dying->magic_filler = 0;
+  dying->disable_sprite_damage = 1;    // ghost: invulnerable while downed
+  dying->flag_is_link_immobilized = 1; // ghost: frozen (can't walk into pits/doors)
+  dying->visibility_status = 0;        // visible (LinkOam_Main flashes the ghost)
+
+  // Both players down -> let the real game-over happen (both are now flagged).
+  if (other->is_dead)
+    return false;
   return true;
 }
 
 // Revive a downed player: clear the ghost state and give it some health back.
 static void Multiplayer_RevivePlayer(PlayerState *ps) {
-  ps->health_current = ps->health_capacity >> 1;   // revive with half hearts
+  // Revive with half capacity, rounded DOWN to a whole heart. Health is tracked
+  // in units of 8 (one heart); a non-multiple renders a garbled heart and breaks
+  // low-health logic. At least one full heart.
+  ps->health_current = (ps->health_capacity >> 1) & ~7;
   if (ps->health_current < 8) ps->health_current = 8;
   ps->is_dead = 0;
   ps->is_ghost = 0;
   ps->disable_sprite_damage = 0;
+  ps->flag_is_link_immobilized = 0;   // unfreeze the ghost
   ps->visibility_status = 0;
   ps->incapacitated_timer = 0;
   ps->x_vel = ps->y_vel = 0;
@@ -390,10 +421,14 @@ void Multiplayer_UpdateDeathRespawn(void) {
     if (!ps->is_active || !ps->is_dead)
       continue;
 
-    // Maintain the downed/ghost state each frame (invulnerable, 0 HP, visible
-    // base state — the flashing is done at render time in LinkOam_Main).
+    // Maintain the downed/ghost state each frame (invulnerable, 0 HP, frozen so
+    // it can't walk into pits/doors/transitions and corrupt shared module state,
+    // visible base state — the flashing is done at render time in LinkOam_Main).
     ps->disable_sprite_damage = 1;
+    ps->flag_is_link_immobilized = 1;
     ps->health_current = 0;
+    ps->hearts_filler = 0;
+    ps->magic_filler = 0;
     ps->visibility_status = 0;
 
     // Both players down -> stay down; the killing blow already let the real
@@ -430,12 +465,16 @@ void Multiplayer_UpdateDeathRespawn(void) {
 // that same address range). This makes one player's pickups/purchases/upgrades
 // appear for both, while health and magic remain independent.
 void Multiplayer_ShareInventory(PlayerState *from, PlayerState *to) {
-  uint8 hcap = to->health_capacity, hcur = to->health_current;
+  // Per-player (NOT shared): CURRENT health & magic and their fillers. Max-HP
+  // capacity IS shared, so heart containers (and the shared heart_pieces counter,
+  // which also lives in the copied block) raise both players' max health
+  // together — otherwise P1 collecting a container would consume the shared
+  // heart pieces while only P1's max HP grew.
+  uint8 hcur = to->health_current;
   uint8 mpow = to->magic_power, hfill = to->hearts_filler, mfill = to->magic_filler;
   size_t n = (size_t)((char *)&to->keys_earned_per_dungeon[NUM_DUNGEON_KEY_SLOTS]
                       - (char *)&to->item_bow);
   memcpy(&to->item_bow, &from->item_bow, n);
-  to->health_capacity = hcap;
   to->health_current  = hcur;
   to->magic_power     = mpow;
   to->hearts_filler   = hfill;
@@ -551,19 +590,40 @@ static void CRC32_InitTable(void) {
   crc32_table_init = true;
 }
 
-uint32 ComputeCRC32(const uint8 *data, size_t length) {
+static uint32 CRC32_Accumulate(uint32 crc, const uint8 *data, size_t length) {
   if (!crc32_table_init)
     CRC32_InitTable();
-  uint32 crc = 0xFFFFFFFF;
   for (size_t i = 0; i < length; i++)
     crc = crc32_table[(crc ^ data[i]) & 0xFF] ^ (crc >> 8);
-  return crc ^ 0xFFFFFFFF;
+  return crc;
 }
+
+uint32 ComputeCRC32(const uint8 *data, size_t length) {
+  return CRC32_Accumulate(0xFFFFFFFF, data, length) ^ 0xFFFFFFFF;
+}
+
+#ifdef ZELDA3_MULTIPLAYER
+// Defined in ancilla.c — the per-frame ancilla owner table (which player fired
+// each link-relative ancilla), simulation state kept outside g_ram.
+extern const uint8 *Ancilla_GetOwnerTable(int *len);
+#endif
 
 SyncChecksum Multiplayer_ComputeChecksum(void) {
   SyncChecksum sc;
   sc.frame_number = g_sim_frame;
-  sc.checksum = ComputeCRC32(g_ram, 0x20000);
+  uint32 crc = CRC32_Accumulate(0xFFFFFFFF, g_ram, 0x20000);
+#ifdef ZELDA3_MULTIPLAYER
+  // g_ram only holds a shadow of P1's link state; the PlayerState structs are
+  // authoritative (P2's entire state lives only in g_players[1]). Fold the
+  // structs and the ancilla owner table into the checksum so a P2-side desync is
+  // actually detectable (and so the headless determinism checks cover P2).
+  crc = CRC32_Accumulate(crc, (const uint8 *)g_players, sizeof(g_players));
+  int owner_len = 0;
+  const uint8 *owner = Ancilla_GetOwnerTable(&owner_len);
+  if (owner && owner_len > 0)
+    crc = CRC32_Accumulate(crc, owner, (size_t)owner_len);
+#endif
+  sc.checksum = crc ^ 0xFFFFFFFF;
   return sc;
 }
 

@@ -2560,6 +2560,12 @@ void Sprite_Func3(int k) {  // 86efda
 bool Sprite_CheckDamageToLink(int k) {  // 86f145
   if (link_disable_sprite_damage)
     return false;
+#ifdef ZELDA3_MULTIPLAYER
+  // A downed co-op player is a ghost: invulnerable regardless of how the
+  // per-frame disable_sprite_damage flag happens to be set mid-frame.
+  if (cur_player->is_dead)
+    return false;
+#endif
   return Sprite_CheckDamageToPlayer_1(k);
 }
 

@@ -662,6 +662,13 @@ void Bomb_CheckSpriteDamage(int k) {  // 888287
 // Which player fired each ancilla slot (0 = P1, 1 = P2). Tagged at allocation in
 // Ancilla_AllocInit; used below to run link-relative ancillae as their owner.
 static uint8 g_ancilla_owner[16];
+
+// Expose the owner table to the desync checksum (it's per-frame simulation state
+// that lives outside g_ram, so it must be folded into Multiplayer_ComputeChecksum).
+const uint8 *Ancilla_GetOwnerTable(int *len) {
+  if (len) *len = (int)sizeof(g_ancilla_owner);
+  return g_ancilla_owner;
+}
 #endif
 
 void Ancilla_ExecuteAll() {  // 88832b

@@ -44,6 +44,7 @@ static void HandleGamepadAxisInput(int gamepad_id, int axis, int value);
 static void OpenOneGamepad(int i);
 #ifdef ZELDA3_MULTIPLAYER
 static void HandleGamepadInput_Player(int player, int button, bool pressed);
+static void CloseOneGamepad(SDL_JoystickID joy_id);
 #endif
 static void HandleVolumeAdjustment(int volume_adjustment);
 static void LoadAssets();
@@ -463,6 +464,20 @@ static int RunHeadlessTest(void) {
     printf("[harness]   (expect P2 bow=3 rupees=150 keys=5, P2 hp stays ~8)\n");
     in1 = 0; in2 = 0;
   }
+  if (getenv("ZELDA3_TEST_DEATH")) {
+    // Down P2 and verify: PreventGameOver suppresses game-over + ghosts P2; the
+    // ghost stays invulnerable/0-HP/frozen; then auto-respawns beside P1 once the
+    // timer elapses. Place P2 far enough that revive-on-touch won't fire first.
+    PlayerState_SetCurrent(1);
+    cur_player->health_current = 0;
+    bool suppressed = Multiplayer_PreventGameOver();
+    PlayerState_SetCurrent(0);
+    g_players[1].x_coord = g_players[0].x_coord + 80;
+    g_players[1].y_coord = g_players[0].y_coord + 80;
+    printf("[harness] DEATH TEST: PreventGameOver=%d (expect 1) P2 is_dead=%d rt=%d (expect 1, ~240)\n",
+           suppressed, g_players[1].is_dead, g_players[1].respawn_timer);
+    in1 = 0; in2 = 0;
+  }
   printf("[harness] driving P1=0x%x P2=0x%x for %d frames\n", in1, in2, total);
   for (int k = 0; k < 16; k++) if (sprite_state[k] == 9)
     printf("[harness]   sprite[%d] type=0x%02x pos=(%d,%d) hp=%d\n", k, sprite_type[k],
@@ -650,6 +665,11 @@ int main(int argc, char** argv) {
       case SDL_CONTROLLERDEVICEADDED:
         OpenOneGamepad(event.cdevice.which);
         break;
+#ifdef ZELDA3_MULTIPLAYER
+      case SDL_CONTROLLERDEVICEREMOVED:
+        CloseOneGamepad(event.cdevice.which);
+        break;
+#endif
       case SDL_CONTROLLERAXISMOTION:
         HandleGamepadAxisInput(event.caxis.which, event.caxis.axis, event.caxis.value);
         break;
@@ -949,6 +969,36 @@ static void OpenOneGamepad(int i) {
 #endif
   }
 }
+
+#ifdef ZELDA3_MULTIPLAYER
+// Handle a controller disconnect: close it, compact the controller table so slot
+// order (0=P1, 1=P2) stays contiguous, and clear per-player gamepad state so a
+// button held at the moment of disconnect doesn't stay logically pressed (stuck
+// input) and stale modifiers from a reassigned slot don't bleed in.
+static void CloseOneGamepad(SDL_JoystickID joy_id) {
+  int idx = -1;
+  for (int i = 0; i < g_num_controllers; i++)
+    if (g_controller_joy_ids[i] == joy_id) { idx = i; break; }
+  if (idx < 0) return;
+  if (g_controllers[idx])
+    SDL_GameControllerClose(g_controllers[idx]);
+  for (int i = idx; i < g_num_controllers - 1; i++) {
+    g_controllers[i] = g_controllers[i + 1];
+    g_controller_joy_ids[i] = g_controller_joy_ids[i + 1];
+  }
+  g_num_controllers--;
+  g_controllers[g_num_controllers] = NULL;
+  g_controller_joy_ids[g_num_controllers] = 0;
+  for (int p = 0; p < 2; p++) {
+    g_player_gamepad_buttons[p] = 0;
+    g_player_gamepad_modifiers[p] = 0;
+    for (int c = 0; c < kGamepadBtn_Count; c++)
+      g_player_gamepad_last_cmd[p][c] = 0;
+  }
+  printf("Controller removed (id %d); %d controller(s) remain\n",
+         (int)joy_id, g_num_controllers);
+}
+#endif
 
 static int RemapSdlButton(int button) {
   switch (button) {
