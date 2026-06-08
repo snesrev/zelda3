@@ -408,6 +408,12 @@ static void Multiplayer_RevivePlayer(PlayerState *ps) {
   ps->incapacitated_timer = 0;
   ps->x_vel = ps->y_vel = 0;
   ps->flag_moving = 0;
+  // Clear any mid-action handler state so a ghost revived (or auto-teleported)
+  // beside the partner doesn't resume a stale swim/fall/recoil on new terrain.
+  ps->player_handler_state = 0;
+  ps->auxiliary_state = 0;
+  ps->z_coord = 0;
+  ps->is_in_deep_water = 0;
 }
 
 // Per-frame: keep downed players in the ghost state, let the living partner
