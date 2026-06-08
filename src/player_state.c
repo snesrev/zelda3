@@ -504,11 +504,18 @@ MultiplayerConfig g_mp_config = {
 // ============================================================================
 InputRingBuffer g_input_rings[MAX_PLAYERS];
 
-void InputRing_Push(int player_index, const InputFrame *frame) {
+// Returns false (without overwriting) when the ring is full — i.e. the consumer
+// hasn't drained it. Online lockstep relies on this: if a peer stalls (pauses,
+// or one-way packet loss) the sim can't advance, the consumer freezes, and an
+// unchecked push would wrap and clobber unconsumed input, desyncing on resume.
+bool InputRing_Push(int player_index, const InputFrame *frame) {
   assert(player_index >= 0 && player_index < MAX_PLAYERS);
   InputRingBuffer *rb = &g_input_rings[player_index];
+  if (rb->write_pos - rb->read_pos >= INPUT_RING_SIZE)
+    return false;
   rb->frames[rb->write_pos & (INPUT_RING_SIZE - 1)] = *frame;
   rb->write_pos++;
+  return true;
 }
 
 bool InputRing_Pop(int player_index, InputFrame *out) {
