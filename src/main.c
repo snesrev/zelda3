@@ -90,6 +90,8 @@ static int g_player_input_state[2];        // keyboard input per player
 static uint8 g_player_gamepad_buttons[2];  // gamepad dpad/axis per player
 static uint32 g_player_gamepad_modifiers[2];
 static uint16 g_player_gamepad_last_cmd[2][kGamepadBtn_Count];
+static UdpTransport *g_online_udp = NULL;   // set when online co-op is active
+static int g_online_stall_frames = 0;       // consecutive frames the sim didn't advance
 
 // Map a joystick instance ID to a player index (0 or 1)
 static int GetPlayerForController(SDL_JoystickID joy_id) {
@@ -389,20 +391,34 @@ static int RunHeadlessTest(void) {
   // wire path the online lockstep uses.
   if (getenv("ZELDA3_TEST_UDP")) {
     UdpTransport host, client;
-    if (!Udp_InitHost(&host, 38891) || !Udp_InitClient(&client, "127.0.0.1", 38891)) {
+    if (!Udp_InitHost(&host, 38891, 2) || !Udp_InitClient(&client, "127.0.0.1", 38891, 2)) {
       printf("[harness] UDP TEST: socket init failed (sandbox may block UDP)\n");
       return 1;
     }
     InputFrame rf;
+    // 1) Input round-trip + handshake (send() also emits HELLO until handshaked).
     for (uint32 f = 0; f < 5; f++) { InputFrame lf = { f, (uint16)(0x40 + f), 1, 0 }; client.iface.send(&client.iface, &lf); }
     int got = 0; uint32 expect = 0;
     for (int t = 0; t < 1000 && got < 5; t++) { while (host.iface.recv(&host.iface, &rf)) { if (rf.frame_number == expect) { got++; expect++; } } SDL_Delay(1); }
     for (uint32 f = 0; f < 5; f++) { InputFrame hf = { f, (uint16)(0x80 + f), 0, 0 }; host.iface.send(&host.iface, &hf); }
     int g2 = 0; uint32 e2 = 0;
     for (int t = 0; t < 1000 && g2 < 5; t++) { while (client.iface.recv(&client.iface, &rf)) { if (rf.frame_number == e2) { g2++; e2++; } } SDL_Delay(1); }
-    printf("[harness] UDP TEST: host received %d/5 (client->host), client received %d/5 (host->client) -> %s\n",
-           got, g2, (got == 5 && g2 == 5) ? "PASS" : "FAIL");
-    return (got == 5 && g2 == 5) ? 0 : 1;
+    // pump a few more recvs so HELLOs are processed both ways
+    for (int t = 0; t < 50; t++) { host.iface.send(&host.iface, &rf); client.iface.send(&client.iface, &rf); while (host.iface.recv(&host.iface, &rf)) {} while (client.iface.recv(&client.iface, &rf)) {} SDL_Delay(1); }
+    int hs = host.handshaked && client.handshaked && !host.version_mismatch && !client.version_mismatch;
+    // 2) Desync detection: send mismatched checksums for the same frame.
+    host.iface.send_sync(&host.iface, 600, 0xAAAA1111);
+    client.iface.send_sync(&client.iface, 600, 0xBBBB2222);
+    for (int t = 0; t < 200 && !(host.desynced && client.desynced); t++) { while (host.iface.recv(&host.iface, &rf)) {} while (client.iface.recv(&client.iface, &rf)) {} SDL_Delay(1); }
+    int desync_ok = host.desynced && client.desynced;
+    // 3) Clean disconnect: BYE -> peer_lost.
+    Udp_SendBye(&host);
+    int bye_ok = 0;
+    for (int t = 0; t < 200 && !bye_ok; t++) { while (client.iface.recv(&client.iface, &rf)) {} bye_ok = client.peer_lost; SDL_Delay(1); }
+    int all = (got == 5 && g2 == 5 && hs && desync_ok && bye_ok);
+    printf("[harness] UDP TEST: input %d/5,%d/5  handshake=%d  desync_detect=%d  disconnect=%d -> %s\n",
+           got, g2, hs, desync_ok, bye_ok, all ? "PASS" : "FAIL");
+    return all ? 0 : 1;
   }
 
   // Self-test the P2 keyboard mapping (this can't be exercised any other way
@@ -747,14 +763,16 @@ int main(int argc, char** argv) {
       }
     }
     if (port <= 0 || port > 65535) port = 7777;
+    int d = (delay < 0) ? 0 : (delay > 10 ? 10 : delay);
     bool online_ok = false;
-    if (want_host)          online_ok = Udp_InitHost(&s_udp, (unsigned short)port);
-    else if (connect_ip)    online_ok = Udp_InitClient(&s_udp, connect_ip, (unsigned short)port);
+    if (want_host)          online_ok = Udp_InitHost(&s_udp, (unsigned short)port, d);
+    else if (connect_ip)    online_ok = Udp_InitClient(&s_udp, connect_ip, (unsigned short)port, d);
     if (online_ok) {
       g_mp_config.mode = want_host ? MP_MODE_HOST : MP_MODE_CLIENT;
       g_mp_config.local_player_index = want_host ? 0 : 1;  // host drives P1, client P2
       g_mp_config.num_players = 2;
-      g_mp_config.input_delay_frames = (uint8)(delay < 0 ? 0 : delay > 10 ? 10 : delay);
+      g_mp_config.input_delay_frames = (uint8)d;
+      g_online_udp = &s_udp;
       Multiplayer_LockstepInit(&s_udp.iface, g_mp_config.local_player_index,
                                g_mp_config.input_delay_frames);
       printf("[net] ONLINE co-op: %s, you are Player %d, input_delay=%d frames\n",
@@ -880,7 +898,8 @@ int main(int argc, char** argv) {
       int li = inputs;
       if ((li & 0x30) == 0x30) li ^= 0x30;
       if ((li & 0xc0) == 0xc0) li ^= 0xc0;
-      Multiplayer_LockstepTick((uint16)li);
+      int adv = Multiplayer_LockstepTick((uint16)li);
+      g_online_stall_frames = (adv > 0) ? 0 : (g_online_stall_frames + 1);
     } else {
       is_replay = ZeldaRunFrame(inputs, inputs_p2);
     }
@@ -902,6 +921,23 @@ int main(int argc, char** argv) {
       snprintf(title, sizeof(title), "%s | FPS: %d", kWindowTitle, g_curr_fps);
       SDL_SetWindowTitle(g_window, title);
     }
+
+#ifdef ZELDA3_MULTIPLAYER
+    // Surface online status in the window title (most severe first).
+    if (g_online_udp) {
+      const char *st = NULL;
+      if (g_online_udp->version_mismatch) st = "online: INCOMPATIBLE VERSION - cannot play";
+      else if (g_online_udp->desynced)    st = "online: DESYNC DETECTED (states diverged)";
+      else if (g_online_udp->peer_lost)   st = "online: player disconnected";
+      else if (!g_online_udp->handshaked) st = "online: connecting to peer...";
+      else if (g_online_stall_frames > 30) st = "online: waiting for player...";
+      char t[96];
+      if (st) snprintf(t, sizeof(t), "%s - %s", kWindowTitle, st);
+      else    snprintf(t, sizeof(t), "%s - online co-op (you are Player %d)",
+                       kWindowTitle, g_mp_config.local_player_index + 1);
+      SDL_SetWindowTitle(g_window, t);
+    }
+#endif
 
     // if vsync isn't working, delay manually
     curTick = SDL_GetTicks();
@@ -925,6 +961,11 @@ int main(int argc, char** argv) {
   }
   if (g_config.autosave)
     HandleCommand(kKeys_Save + 0, true);
+
+#ifdef ZELDA3_MULTIPLAYER
+  // Tell the peer we're leaving so it shows "player disconnected" promptly.
+  if (g_online_udp) Udp_SendBye(g_online_udp);
+#endif
 
   // clean sdl
   if (g_config.enable_audio) {

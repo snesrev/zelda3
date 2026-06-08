@@ -1119,6 +1119,7 @@ static int g_net_local_player;     // which player's input is captured locally (
 static int g_net_input_delay;      // sim trails input capture by this many frames
 static uint32 g_net_send_frame;    // frame number to tag the next local input with
 static uint32 g_net_remote_next;   // next remote frame# expected (de-dups UDP resends)
+static uint32 g_net_last_sync_frame; // last frame we sent a SYNC checksum for
 
 void Multiplayer_LockstepInit(NetTransport *t, int local_player_index, int input_delay) {
   g_net_transport = t;
@@ -1126,6 +1127,7 @@ void Multiplayer_LockstepInit(NetTransport *t, int local_player_index, int input
   g_net_input_delay = input_delay < 0 ? 0 : input_delay;
   g_net_send_frame = 0;
   g_net_remote_next = 0;
+  g_net_last_sync_frame = 0xFFFFFFFF;
   Multiplayer_ResetLockstep();   // clears the input rings + g_sim_frame
 }
 
@@ -1165,6 +1167,15 @@ int Multiplayer_LockstepTick(uint16 local_joypad) {
     FrameInputPair pair = Multiplayer_ConsumeInputs();
     ZeldaRunFrame(pair.joypad[0], pair.joypad[1]);
     advanced++;
+  }
+
+  // Periodically hand the transport our state checksum for this frame; it
+  // exchanges them with the peer and flags a desync if they ever disagree.
+  if (g_net_transport->send_sync && g_sim_frame != g_net_last_sync_frame &&
+      (g_sim_frame % SYNC_CHECKSUM_INTERVAL) == 0) {
+    g_net_last_sync_frame = g_sim_frame;
+    g_net_transport->send_sync(g_net_transport, g_sim_frame,
+                               Multiplayer_ComputeChecksum().checksum);
   }
   return advanced;
 }
