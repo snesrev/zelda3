@@ -166,3 +166,37 @@ A second full review (multiple focused audits) found and fixed:
   into the live path (future online-lockstep foundation).
 - A few bosses read `link_x/y` directly and still target P1 (most target nearest
   via the centralized helpers).
+
+---
+
+## Round 3 — combat / ancilla / collision audit
+
+Verified working for P2: sword, sword beam, spin attack, arrows, fire/ice rod,
+hammer all damage enemies (the damage path reads only per-player state); no
+double-damage / double-drop (detection sets pending damage, recoil applies it
+once, `Sprite_GiveDamage` takes max not sum); no friendly fire via
+sword/arrow/beam (players aren't sprites); P2 tile collision, block pushing,
+chest opening and dungeon-pot lifting are independent and correct; ancilla owner
+tagging covers all four swapped link-relative types.
+
+**Fixed:**
+- **Bombs damage both players** (was: blast only hit P1 — FF against P1 and P2
+  bomb-immune). Split `Bomb_CheckPlayerDamage` out and run it for both players;
+  sprite damage still runs once.
+
+**Deferred to interactive testing (risky to do blind; documented):**
+- **P2 lifting *sprite-based* objects** (overworld bushes/rocks/pots): the
+  detect→latch→execute→carry chain is split across P1's sprite-AI phase and the
+  player handler and mutates shared sprite state; enabling it for P2 safely needs
+  real liftable-sprite testing (a blind change risks breaking P1's core
+  lift/carry). P2 can already lift *tile-based* dungeon pots. Plan: make the
+  lift/carry flags per-player and run a P2 detect+execute pass.
+- **Cane of Somaria block carry** mis-targets P1 for P2 (type 0x2C not in the
+  ancilla owner-swap list; also touches shared carry flags). Advanced item;
+  needs the same per-player carry-flag work.
+
+**By design:** P2's Y-item is P1's selected item (Phase 5.7: "item selection is
+P1 only"); could add an independent P2 item-cycle later.
+
+**Low / cosmetic:** 1-frame homing lag on P2's returning boomerang / Byrna spark
+(ancillae update in P1's phase, before P2 moves); these are non-blocking.
