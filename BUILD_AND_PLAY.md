@@ -120,12 +120,10 @@ Mappings can be customized in `zelda3.ini`.
   row); if P1 has **more than 10 hearts**, P1's second heart row overlaps P2's.
 - P2's magic meter is a compact green gauge in the gap just left of the heart
   rows (P1's is the tall gauge on the far left); both are independent.
-- **P2 can lift *dungeon* pots, but not yet *overworld* sprite objects** (bushes,
-  rocks, throwable pots). The team still gets those items via P1 (shared
-  inventory). This needs a per-player lift/carry pass and is best done with
-  interactive testing.
-- The **Cane of Somaria** block, when created by P2, currently latches to P1 for
-  carrying.
+- P2 can lift, carry, and **throw tile objects** (bushes, rocks, pots) — they
+  follow P2 and throw in P2's facing. The few *sprite*-based liftables (e.g.
+  cuccos) are still P1-only — lifting those needs P2's own sprite-detection pass
+  (a smaller follow-up; the team still gets their effect via P1).
 - A few bosses that read the player position directly still target P1 (most
   enemies/bosses target the nearest player).
 - **Item selection (the Y-item) is Player 1's** — P2 uses whatever item P1 has
