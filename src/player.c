@@ -97,6 +97,13 @@ void Dungeon_HandleLayerChange() {  // 81ff05
 }
 
 void CacheCameraProperties() {  // 81ff28
+#ifdef ZELDA3_MULTIPLAYER
+  // Only P1 maintains the outdoor scroll-back cache. P2 is warped to P1 on
+  // transitions so it never needs its own, and some cache fields (e.g.
+  // is_standing_in_doorway_cahed) are shared storage P2 must not overwrite.
+  if (cur_player == &g_players[1])
+    return;
+#endif
   BG2HOFS_copy2_cached = BG2HOFS_copy2;
   BG2VOFS_copy2_cached = BG2VOFS_copy2;
   link_y_coord_cached = link_y_coord;
@@ -6109,6 +6116,15 @@ void HandleDoorTransitions() {  // 87e901
 
   link_x_page_movement_delta = 0;
   link_y_page_movement_delta = 0;
+
+#ifdef ZELDA3_MULTIPLAYER
+  // Only P1 may start a dungeon room/door transition. If P2 ran this, P2 walking
+  // into a doorway would drive the shared inter-room transition from P2's
+  // position — dragging the whole party to a different room or out to the
+  // overworld. P2 follows via Multiplayer_WarpP2OnTransition after P1 transitions.
+  if (cur_player == &g_players[1])
+    return;
+#endif
 
   // Using a potion might have changed us into a different module, and the routines
   // below just increment the submodule value, causing all kinds of havoc.

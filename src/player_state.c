@@ -453,6 +453,7 @@ void Multiplayer_UpdateDeathRespawn(void) {
     ps->x_coord = other->x_coord + 16;
     ps->y_coord = other->y_coord;
     ps->is_on_lower_level = other->is_on_lower_level;
+    ps->is_on_lower_level_mirror = other->is_on_lower_level_mirror;  // OAM floor priority
     ps->quadrant_x = other->quadrant_x;
     ps->quadrant_y = other->quadrant_y;
     Multiplayer_RevivePlayer(ps);

@@ -2116,6 +2116,13 @@ void CopySaveToWRAM() {  // 8ccfbb
   which_entrance = 0;
   nmi_disable_core_updates = 0;
   hud_palette = 0;
+#ifdef ZELDA3_MULTIPLAYER
+  // A save was just loaded into WRAM (file-select load OR post-death Continue).
+  // Re-seed P1 from this fresh state and re-spawn P2 to match, and clear any
+  // leftover co-op downed state (fixes loading a different file keeping stale
+  // inventory, and the game-over->Continue frozen-ghost soft-lock).
+  Multiplayer_OnSaveLoaded();
+#endif
 }
 
 void RenderText() {  // 8ec440

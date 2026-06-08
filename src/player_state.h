@@ -297,6 +297,11 @@ extern bool g_mp_p2_enabled;
 bool Multiplayer_PreventGameOver(void);
 void Multiplayer_UpdateDeathRespawn(void);
 
+// Called when a save is (re)loaded into WRAM (file-select load or post-death
+// Continue) so P1 is re-seeded from the loaded state and P2 is re-spawned to
+// match. Defined in zelda_rtl.c.
+void Multiplayer_OnSaveLoaded(void);
+
 // Copy the SHARED inventory (items, equipment, rupees, keys, bombs, arrows,
 // abilities, progression) from one player to the other, preserving the
 // destination's per-player health/magic. Keeps both players' item pools in sync.
