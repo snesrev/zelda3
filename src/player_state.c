@@ -196,6 +196,26 @@ static void PlayerState_Sync(bool to_ram) {
   SYNC_U8 (about_to_jump_off_ledge,      0x47A);
   SYNC_U8 (flag_unk1,                    0xFC1);
 
+  // Additional per-player Link state (co-op review round 2 — also leaked via g_ram)
+  SYNC_U8 (draw_water_ripples_or_grass,  0x351);
+  SYNC_U8 (some_animation_timer,         0x30B);
+  SYNC_U8 (some_animation_timer_steps,   0x30A);
+  SYNC_U8 (swimming_countdown,           0x2CB);
+  SYNC_U8 (byte_7E02CC,                  0x2CC);
+  SYNC_U8 (fallhole_var1,                0x302);
+  SYNC_U8 (fallhole_var2,                0x2CA);
+  SYNC_U8 (byte_7E02C9,                  0x2C9);
+  SYNC_U8 (related_to_hookshot,          0x37E);
+  SYNC_U8 (is_standing_in_doorway,       0x6C);
+  SYNC_U8 (byte_7E0324,                  0x324);
+  SYNC_U8 (byte_7E005C,                  0x5C);
+  SYNC_U8 (byte_7E0322,                  0x322);
+  SYNC_U8 (gravestone_push_timeout,      0x61);
+  SYNC_U8 (byte_7E02C2,                  0x2C2);
+  SYNC_U8 (byte_7E02C5,                  0x2C5);
+  SYNC_U8 (primary_water_grass_timer,    0x356);
+  SYNC_U8 (secondary_water_grass_timer,  0x355);
+
   // Inventory
   SYNC_U8 (item_bow,                     0xF340);
   SYNC_U8 (item_boomerang,               0xF341);
