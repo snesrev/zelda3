@@ -17,6 +17,10 @@ typedef struct NetTransport {
   bool (*send)(struct NetTransport *t, const InputFrame *f);
   bool (*recv)(struct NetTransport *t, InputFrame *out);  // non-blocking
   void (*close)(struct NetTransport *t);
+  // Optional (may be NULL, e.g. loopback): exchange a periodic state checksum so
+  // the transport can flag a desync. Called by the lockstep driver every so many
+  // frames with the local sim's checksum for that frame.
+  void (*send_sync)(struct NetTransport *t, uint32 frame, uint32 checksum);
   void *impl;
 } NetTransport;
 

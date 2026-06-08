@@ -78,19 +78,34 @@ ZELDA3_TEST_NET=1 ZELDA3_NET_DELAY=2 ./zelda3_harness   # buffered, still determ
 ZELDA3_TEST_UDP=1 ./zelda3_harness     # UDP host<->client round-trip over localhost
 ```
 
-## What remains (real-machine validation + polish)
+## Robustness & status (implemented)
 
-The implementation is complete and the wire path is verified locally; what can
-only be done off-sandbox / as polish:
+The UDP protocol now prefixes each datagram with a type byte and carries more
+than just input:
+- **Handshake (`HELLO`)** — peers exchange protocol version + `input_delay`; a
+  version mismatch is flagged (and shown) instead of silently desyncing. A
+  received HELLO is answered once so both sides complete the handshake.
+- **Desync detection (`SYNC`)** — the lockstep driver hands the transport a full
+  state checksum every second; peers exchange them and flag a divergence with
+  the frame number. (This is the determinism invariant, now checked live.)
+- **Disconnect (`BYE`)** — sent on quit; the peer also flags `peer_lost` after
+  ~10s of silence (timeout).
+- **On-screen status** — the window title shows `connecting…`,
+  `waiting for player…` (the lockstep stalled awaiting the peer),
+  `player disconnected`, `DESYNC DETECTED`, or `INCOMPATIBLE VERSION`.
+
+Verified headlessly over localhost (`ZELDA3_TEST_UDP=1 ./zelda3_harness`):
+input round-trip, **handshake**, **desync detection**, and **clean disconnect**
+all PASS.
+
+## What remains (real-machine validation + polish)
 
 1. **Two-real-machine playtest** over LAN/WAN (the sandbox is single-instance, so
    only localhost is exercisable here).
 2. **NAT/WAN convenience:** port-forward today; a relay/hole-punch or a "code"
    matchmaking layer would make WAN connect-by-default.
-3. **Richer failure UX:** an on-screen "waiting for player…" while the driver
-   stalls, a timeout/disconnect via `INPUT_FLAG_DISCONNECT`, and a visible
-   desync warning if the periodic checksum ever diverges. (A startup handshake
-   exchanging `input_delay` + feature flags so both sides can't misconfigure.)
+3. **Recovery polish:** the desync flag currently warns; auto-resync (state
+   transfer) and a graceful "pause + reconnect" on timeout are future niceties.
 
 None of these touch the simulation — they only feed it inputs.
 
