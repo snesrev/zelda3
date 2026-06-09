@@ -524,9 +524,23 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
   // Per-frame co-op bookkeeping (runs even during transitions / when a player is
   // downed): tick respawn timers + revive, and warp P2 to P1 after a transition.
   if (g_mp_initialized) {
-    Multiplayer_UpdateDeathRespawn();
-    Multiplayer_WarpP2OnTransition();
-    Multiplayer_SeparatePlayers();
+    // After a real double-KO + Continue (or bottle-fairy revival), the engine
+    // returns to gameplay but those paths bypass CopySaveToWRAM (hence
+    // Multiplayer_OnSaveLoaded), so BOTH players are still flagged is_dead here.
+    // UpdateDeathRespawn's "both down -> stay down" rule would then keep them
+    // frozen 0-HP ghosts forever. Detect that (both dead, but back in a normal
+    // gameplay module rather than the game-over module) and re-seed: next frame
+    // InitIfNeeded clears P1's downed state and re-clones P2, so both come back.
+    // (Both-dead can't legitimately persist in module 7/9 — a fatal double-KO
+    // switches to the game-over module the same frame.)
+    if (g_players[0].is_dead && g_players[1].is_dead &&
+        (main_module_index == 7 || main_module_index == 9)) {
+      Multiplayer_OnSaveLoaded();
+    } else {
+      Multiplayer_UpdateDeathRespawn();
+      Multiplayer_WarpP2OnTransition();
+      Multiplayer_SeparatePlayers();
+    }
   }
 
   nmi_boolean = 0;

@@ -357,3 +357,34 @@ frame a box opens); archery/digging awards fire once into the shared pool.
 
 These were verified by code inspection; the start-area harness can't reach
 dungeon big-key drops / shops to exercise them at runtime.
+
+## Review round 5 — save / continue / game-over / intro / map flows
+
+Audited the last-uncovered flows.
+
+**Fixed (CRITICAL):**
+- **Real double-KO → "Continue" (or bottle-fairy revival) left BOTH players as
+  permanent frozen 0-HP ghosts (soft-lock).** The co-op downed flags are cleared
+  only by `Multiplayer_OnSaveLoaded` (via `CopySaveToWRAM`), but the in-game
+  continue choices and the fairy-revival path return to gameplay WITHOUT routing
+  through it. So both players stayed `is_dead`, and `UpdateDeathRespawn`'s
+  "both down -> stay down" rule kept re-zeroing their HP and freezing them every
+  frame, with no revive path. Fix (additive): in the per-frame co-op bookkeeping,
+  if both players are dead but the engine is back in a normal gameplay module
+  (7/9, not the game-over module), call `Multiplayer_OnSaveLoaded()` so the next
+  `InitIfNeeded` re-seeds P1 (clearing its downed state) and re-clones P2 — both
+  come back. (A fatal double-KO switches to the game-over module the same frame,
+  so both-dead can't legitimately persist in 7/9; the trigger only fires
+  post-continue.) P1/vanilla path byte-identical (CRC unchanged).
+
+**Verified CLEAN:** save / Save-and-Quit / autosave write only the shared
+inventory block to SRAM (no P2 bytes, no P1 corruption; state consistent at save
+time); file-select load re-seeds via `CopySaveToWRAM`→`OnSaveLoaded` (P2 respawns
+fresh, the old inventory-wipe path stays sound); the scripted intro spawns P2 and
+holds it through P1's control-locks (no soft-lock); map screens freeze P2 and
+resume coherently (struct stays authoritative); mirror/whirlpool/bird/endgame are
+module changes caught by `WarpP2OnTransition`; no flow leaves P2 permanently
+inactive except the (now-fixed) game-over→continue case.
+
+Code-verified; the game-over→continue revival is not reproducible in the
+start-area headless harness (its death test only exercises a single-KO ghost).
