@@ -6211,6 +6211,18 @@ void HandleDoorTransitions() {  // 87e901
 }
 
 void ApplyLinksMovementToCamera() {  // 87e9d3
+#ifdef ZELDA3_MULTIPLAYER
+  // Only P1 drives the shared dungeon camera / scroll / quadrant and the saved
+  // quadrant-visit flags. If P2 ran this, P2 crossing an intra-room quadrant
+  // boundary would shove P1's camera, rewrite the shared room bounds, and
+  // pollute the room's save flags from P2's position. P2 stays on screen via the
+  // leash (Multiplayer_UpdateCamera) and is re-placed beside P1 on transitions,
+  // and its collision uses P1's (correct, since they're leashed) shared quadrant
+  // context — so it never needs to drive the camera. Mirrors the
+  // HandleDoorTransitions P2 guard (the sibling branch of HandleIndoorCameraAndDoors).
+  if (cur_player == &g_players[1])
+    return;
+#endif
   // Sometimes, when using spin attack, this routine will end up getting
   // called twice in the same frame, which messes up things.
   g_ApplyLinksMovementToCamera_called = true;

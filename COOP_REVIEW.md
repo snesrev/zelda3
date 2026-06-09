@@ -388,3 +388,46 @@ inactive except the (now-fixed) game-over→continue case.
 
 Code-verified; the game-over→continue revival is not reproducible in the
 start-area headless harness (its death test only exercises a single-KO ghost).
+
+## Review round 6 — progression / follower / dark-world / dungeon-camera
+
+Audited progression-gating events, escort/follower quests, dark-world/bunny, and
+deeper item-grab + dungeon-movement interactions. Root pattern (same as rounds
+1/3/5): P2's `Link_Main` writing SHARED g_ram dungeon state the hazard-revert
+doesn't undo.
+
+**Fixed (HIGH):**
+- **P2 crossing an intra-room quadrant boundary INDOORS corrupted the shared
+  camera/scroll + saved quadrant flags.** `ApplyLinksMovementToCamera` was the
+  unguarded sibling of the already-P2-guarded `HandleDoorTransitions`
+  (`HandleIndoorCameraAndDoors` calls one or the other). When P2 crossed a
+  quadrant boundary its pass rewrote shared `room_bounds`/`composite_of_layout_
+  and_quadrant`/BG scroll and OR'd `dung_quadrants_visited` + `save_dung_info`
+  from P2's position — shoving P1's camera and polluting the room's save flags.
+  Fix (additive, mirrors the door guard): early-return for P2. P2 stays on screen
+  via the leash and uses P1's (correct, leashed) shared quadrant context for its
+  own collision, so it never needs to drive the camera. P1 path byte-identical.
+
+**Documented / deferred (unverifiable headlessly; intricate per-player vs shared
+split where a blind guard could strand P2 on the wrong layer/room):**
+- **P2 hitting a layer-change / in-room-staircase / hookshot-onto-staircase tile**
+  rewrites the SHARED `dungeon_room_index` (`+= 16` / `+= 0x10` / `= travel_dest`)
+  in `Dungeon_HandleLayerChange` (player.c:89) and player.c:3204-3211 / 5388-5396.
+  Conditional (only on those specific tiles) and the leash keeps P2 near P1, so
+  Medium; the correct fix must keep P2's per-player `is_on_lower_level` while
+  skipping the shared room-id/save writes — needs in-dungeon playtesting.
+
+**LOW affordance gaps (P1-driven by design; co-op still completable — P1 performs
+them, P2 can't trigger but also can't corrupt/double-fire):** Master Sword pull,
+King Zora flippers, Zelda-rescue escort start, whirlpool/bird travel — all gated
+on P1 proximity/buttons in P1's sprite/event pass.
+
+**Verified CLEAN:** dark-world/bunny transform (all per-player fields; shared
+moon pearl consistent); follower/escort delivery (followers follow P1, so P1 is
+always the one at the destination; P2 can't break it); hookshot pull (owner-
+tagged, pulls P2 to P2's anchor); magic powder / cape / bombable floors work for
+P2; chests open + single-award for P2; boss/maiden/Agahnim rewards single-fire
+into shared inventory. No new desync vectors.
+
+Code-verified; the dungeon-camera and layer-change paths need a real dungeon
+(not the start-area harness) to exercise at runtime.
