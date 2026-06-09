@@ -321,3 +321,39 @@ attribute, not position; lit count is shared room state); chests & absorbable
 pickups are single-award, routed to the correct player then pooled (no
 double-award / double-key-consume); crystal switches toggle from P2's hits;
 block-pushing works for P2. No new desync vectors found.
+
+## Review round 4 — economy / NPC / item-receipt interactions
+
+Audited shops, paying minigames, NPC dialogue, fountains, and the item-receipt
+machinery.
+
+**Fixed (CRITICAL + the High that shares its root cause):**
+- **P2 collecting a hold-up item (e.g. a dropped big key) soft-locked P2
+  permanently.** `Link_ReceiveItem` puts the receiving player in the empty
+  `HoldUpItem` pose + sets `disable_sprite_damage`, and that pose is ONLY ended
+  by the item-receipt ancilla (type 0x22). But `Ancilla_ExecuteOne` redirected
+  `cur_player` to the ancilla owner for only 0x05/0x1F/0x2C/0x30/0x31 — not
+  0x22 — so a P2 receipt ran as P1, reset P1, and left P2 frozen forever (the
+  ghost-revive couldn't fire because `disable_sprite_damage` stayed set). Also
+  the heal/heart-container went to P1. Fix: add 0x22 to the owner-redirect so the
+  receipt runs as the collector, AND mirror any heart-container `health_capacity`
+  delta from P2 onto P1 so the per-frame inventory sync doesn't wipe the shared
+  max-HP gain. Purely additive — P1/vanilla path byte-identical (CRC unchanged).
+
+**Documented / deferred:**
+- **Milestone (big-chest) item ancilla (0x29)** reads Link's collision to decide
+  who collects and is more complex; it is NOT a P2 soft-lock (a P2-opened big
+  chest is simply collected by P1 — the item is shared, so still obtained), so it
+  is left as a minor affordance gap pending in-dungeon playtesting.
+
+**Verified CLEAN (no double-charge / double-award / desync):** shops & all paying
+minigames check affordability before deducting and run once in P1's pass against
+the SHARED rupee pool (no double-charge, no underflow; P2 can't buy — the
+documented A-press-interaction-P1-only limitation); prize/rupee/heart absorption
+is single-collect (`sprite_state=0` immediately) and credited once then pooled;
+the rupee count-up animation runs once and is mirrored (no divergence); text
+boxes freeze BOTH players (the `submodule_index!=0` gate re-evaluates the same
+frame a box opens); archery/digging awards fire once into the shared pool.
+
+These were verified by code inspection; the start-area harness can't reach
+dungeon big-key drops / shops to exercise them at runtime.

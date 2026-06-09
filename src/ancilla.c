@@ -688,17 +688,30 @@ void Ancilla_ExecuteOne(uint8 type, int k) {  // 88833c
     ancilla_timer[k]--;
 
 #ifdef ZELDA3_MULTIPLAYER
-  // Boomerang (0x05), hookshot (0x1F) and Cane of Byrna sparks (0x30/0x31) read
-  // Link's position every frame. Ancillae update during P1's routing, so run
-  // these as the player who fired them — otherwise P2's boomerang returns to P1,
-  // P2's hookshot chain draws from P1, and P2's Byrna sparks orbit P1.
+  // Boomerang (0x05), hookshot (0x1F), Cane-of-Somaria block (0x2C) and Cane of
+  // Byrna sparks (0x30/0x31) re-read Link's position every frame (carry/return/
+  // orbit), so run them as the player who created them rather than always P1.
+  //
+  // Item-receipt (0x22) too: it resets the RECEIVING player's hold-up pose +
+  // disable_sprite_damage and applies the heal. The hold-up handler is empty and
+  // is ONLY ended by this ancilla, so if a P2 pickup's receipt ran as P1 it would
+  // reset P1 and leave P2 frozen in the hold-up pose forever (and the ghost
+  // revive can't fire because disable_sprite_damage stays set). Run it as the
+  // owner so the correct player is unstuck and healed.
   PlayerState *mp_saved = cur_player;
-  // 0x05 boomerang, 0x1F hookshot, 0x2C Cane-of-Somaria block, 0x30/0x31 Byrna
-  // sparks all re-read Link's position every frame (carry/return/orbit), so run
-  // them as the player who created them rather than always P1.
-  if (type == 0x05 || type == 0x1f || type == 0x2c || type == 0x30 || type == 0x31)
+  bool mp_receipt = (type == 0x22);
+  if (type == 0x05 || type == 0x1f || type == 0x2c || type == 0x30 || type == 0x31 || mp_receipt)
     PlayerState_SetCurrent(g_ancilla_owner[k] & 1);
+  uint8 mp_cap_before = g_players[1].health_capacity;
   kAncilla_Funcs[type - 1](k);
+  // A heart-container receipt run as P2 bumps the SHARED max-health capacity on
+  // P2's struct; mirror that delta onto P1 so the per-frame P1->P2 inventory sync
+  // doesn't wipe it (heart containers must raise BOTH players' max HP).
+  if (mp_receipt && cur_player == &g_players[1]) {
+    uint8 d = (uint8)(g_players[1].health_capacity - mp_cap_before);
+    if (d)
+      g_players[0].health_capacity = (uint8)(g_players[0].health_capacity + d);
+  }
   cur_player = mp_saved;
 #else
   kAncilla_Funcs[type - 1](k);
