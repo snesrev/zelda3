@@ -431,3 +431,42 @@ into shared inventory. No new desync vectors.
 
 Code-verified; the dungeon-camera and layer-change paths need a real dungeon
 (not the start-area harness) to exercise at runtime.
+
+## Review round 7 — systematic sweep: P2 writes to shared dungeon state
+
+A full enumeration of the recurring class (P2's `Link_Main` call-tree writing
+SHARED g_ram state the hazard-revert can't undo), tracing every `kPlayerHandlers`
+entry + movement/collision + item/A-press path.
+
+**CLASS CLOSED for camera/quadrant/dungeon-save:** the only P2-reachable entries
+to the camera/quadrant/visited-flag/room-bounds writes are `HandleDoorTransitions`
+and `ApplyLinksMovementToCamera`, both now P2-guarded — verified end-to-end. No
+other path reaches `SetAndSaveVisitedQuadrantFlags`/`Dungeon_AdjustQuadrant`/
+room-bounds for P2.
+
+**Fixed (additive, matches design):**
+- **P2 casting the Magic Mirror.** `LinkItem_Mirror` wrote shared world-warp
+  state (`last_light_vs_dark_world`, `bird_travel_*`, `Mirror_SaveRoomData`,
+  `index_of_changable_dungeon_objs`) from P2's pass — the warp submodule is
+  reverted but those shared writes are not. Mirror is P1-led (Phase 5.5), so P2
+  now early-returns from `LinkItem_Mirror`; it follows P1's warp via
+  `WarpP2OnTransition`. Purely additive; P1 byte-identical (CRC unchanged).
+
+**Confirmed WORKING-AS-INTENDED (the shared write is the CORRECT shared event —
+NOT bugs; guarding them would regress shipped features):** P2 opening chests
+(sets the shared chest-opened bit once, item to shared pool, tile redrawn — no
+double-collect, verified round 4); P2 lifting/throwing pots/bushes (PR #10, the
+shared tile-replacement is the legitimate lift); P2 pushing dungeon blocks
+(round 3; single-pusher; the simultaneous-two-block edge stays the documented
+minor); P2 collecting indoor floor-rupee tiles (single-collect, tile consumed
+for the team). P2 reading signs is neutralized by the revert (benign no-op).
+
+**Still DEFERRED (intricate per-player/shared split or ancilla-class; need
+in-dungeon playtesting):** layer-change / in-room-staircase / hookshot-staircase
+`dungeon_room_index` writes; hookshot-pulled gravestone overworld reveal (ancilla
+class). Transient scratch (`allow_scroll_z`, `room_transitioning_flags`, etc.)
+is the same low-risk category as the accepted `flag_unk1` — at most a 1-frame
+cosmetic scroll perturbation; left as-is.
+
+Static trace (reachability + write targets verified from source); the dungeon
+paths aren't reachable by the start-area harness.

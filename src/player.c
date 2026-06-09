@@ -2959,6 +2959,15 @@ void LinkState_SpinAttack() {  // 87a804
 }
 
 void LinkItem_Mirror() {  // 87a91a
+#ifdef ZELDA3_MULTIPLAYER
+  // Mirror warps are P1-led (Phase 5.5: "if P1 uses the mirror, P2 teleports
+  // with them"). If P2 cast it, P2's pass would write shared world-warp state
+  // (last_light_vs_dark_world / bird_travel / Mirror_SaveRoomData) the
+  // hazard-revert can't undo, and drive a partial warp from P2's position. P2
+  // follows P1's mirror warp via Multiplayer_WarpP2OnTransition.
+  if (cur_player == &g_players[1])
+    return;
+#endif
   if (!(button_mask_b_y & 0x40)) {
     if (!CheckYButtonPress())
       return;
