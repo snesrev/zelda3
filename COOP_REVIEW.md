@@ -470,3 +470,92 @@ cosmetic scroll perturbation; left as-is.
 
 Static trace (reachability + write targets verified from source); the dungeon
 paths aren't reachable by the start-area harness.
+
+## Review round 8 — full-stack review: online transport, frontend commands, savestates
+
+A fresh end-to-end review of the whole co-op surface (diff vs vanilla master),
+focusing on the layers earlier rounds touched least: the UDP transport's
+protocol-level behavior over time, the frontend's out-of-band commands, and
+the savestate/reset lifecycle. The engine-side diffs (sprite/ancilla/player/
+dungeon/HUD/OAM and the mp_dual duplication blocks) were re-audited and came
+back clean: cur_player save/restore discipline, owner-table lifecycle,
+RNG-free duplicated damage blocks, and the vanilla-neutral prototype fixes
+all hold.
+
+**Fixed (CRITICAL — online was effectively unshippable):**
+- **The documented online command line never launched.** Vanilla treats the
+  first positional arg as a ROM path for the verification emulator, so
+  `zelda3_coop --host 7777` died at startup with "Failed to read file"
+  (`LoadRom("--host")`). The co-op flags and their values are now skipped
+  when looking for a ROM arg (multiplayer build only).
+- **Input delivery could hang the session permanently.** v1 resent only the
+  last 8 frames, and only while capturing: a client joining >~130ms after
+  host launch could never receive frame 0; an 8-packet loss burst was
+  unrecoverable; a paused/stalled peer stopped retransmission entirely (and
+  the 10s liveness timeout stopped counting with it). Protocol v2 makes the
+  input channel ack-based — packets carry "next frame I need", the sender
+  resends from that ack (512-frame history, ≤32/packet), and a per-tick
+  transport `poll()` retransmits/keeps alive independent of capture. A new
+  `ready()` gate holds BOTH sims at frame 0 until the session is established,
+  so launch order no longer matters.
+- **Different save files on the two machines = guaranteed desync.** Each
+  machine loaded its own `saves/sram.dat` the moment a file was selected. The
+  host now streams its 8KB SRAM to the client at connect (chunked,
+  re-requested until complete, gated by `ready()`); all later SRAM mutation
+  is deterministic sim code, so the one sync covers the session. The client
+  never persists the host's SRAM (a guest's local saves can't be clobbered).
+- **Savestate load / reset corrupted co-op state (local AND online).**
+  `LoadSnesState` and `ZeldaReset` restored/wiped g_ram but left the
+  still-"seeded" P1 struct authoritative, so the next frame SyncToRam stomped
+  the loaded state (load silently undone, P2 kept stale state). Both now
+  route through `Multiplayer_OnSaveLoaded()` (re-seed P1 from the restored
+  RAM, respawn P2) — same proven path as file-select loads. New headless
+  `ZELDA3_TEST_SAVESTATE` regression test: save, walk 57px, load, verify
+  position snaps back (drift ≤2px).
+- **Online out-of-band desync hatches closed.** Savestate-load, replay,
+  reset, and RAM-patching cheat hotkeys are ignored while online (each was an
+  instant-desync button on one machine); state SAVING stays allowed.
+
+**Fixed (HIGH/MEDIUM):**
+- **Handshake deadlock:** the single HELLO reply could be lost, leaving one
+  peer "connecting…" forever (it stopped answering once handshaked). v2
+  HELLOs carry a `got_yours` flag; any HELLO with the flag clear is answered,
+  and flag-set HELLOs terminate the exchange (no reply storm).
+- **Host peer-slot hijack:** the host locked onto the first well-formed
+  datagram from ANYONE — a single stray BYE byte from a port scan could claim
+  the slot (and immediately flag the peer lost), shutting out the real
+  client. The slot now locks only on a version-matching HELLO.
+- **Controller double-tracking:** SDL fires CONTROLLERDEVICEADDED for pads
+  already present at startup on top of the manual open loop, so every initial
+  pad occupied two slots — with two pads, the second one never mapped to
+  Player 2 (both pads drove P1). Pads are now de-duped by joystick instance
+  id; a pad beyond the table is closed instead of leaked.
+- **Turbo online** raced input capture a full ring (256 frames) ahead of the
+  lockstep sim, permanently pinning ~4s of input latency. Turbo is ignored
+  online; in local co-op it's unchanged.
+- **Unbounded catch-up burst:** after a long stall healed, the driver simmed
+  the whole backlog (up to 256 frames) inside one display tick — a multi-
+  second UI freeze with garbled audio. Capped at 8 frames/tick.
+
+**Verified (no change needed):** lockstep driver framing/dedup ordering (rings
+are strictly sequential, Peek/Pop heads agree); `Multiplayer_ProcessP2Input`
+exactly mirrors nmi.c's bit-reversal + opposing-direction filter; the macro
+redirect layer's undef/define sets are complete and consistent; checksum
+covers g_ram + both PlayerState structs + owner tables; in-game SRAM writes
+are all deterministic sim code (the initial-disk-read divergence was the only
+gap); exit-time autosave and state-saves online are read-only-safe.
+
+**Test coverage added this round** (all PASS, plus the full prior battery; the
+sim CRC for every pre-existing scenario is byte-identical to before —
+`0f79cbba` for the standard run): UDP late-join/burst-loss recovery, HELLO-
+only peer lock, SRAM sync + ready() gating, savestate re-seed, and a real
+two-process `--host`/`--connect` localhost session (client joining 6s late:
+handshake, save transfer, lockstep established, no desync).
+
+**Still deferred, unchanged (documented gameplay affordance gaps, not
+correctness):** P2 pulling levers / opening locked doors / A-press NPC
+interactions (P1 performs them; leash keeps players together); both-players-
+swimming stroke scratch sharing (deterministic, cosmetic; `swimcoll_*` is
+also touched from dungeon.c, so a blind per-player split risks breaking
+swimming for everyone); HUD heart-row overlap past 10 hearts (cosmetic);
+sprite-based liftables P1-only; P2 item selection follows P1 (by design).

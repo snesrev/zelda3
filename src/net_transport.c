@@ -44,6 +44,9 @@ static void Loopback_Wire(LoopbackTransport *lt) {
   lt->iface.send = Loopback_Send;
   lt->iface.recv = Loopback_Recv;
   lt->iface.close = Loopback_Close;
+  lt->iface.send_sync = NULL;  // loopback is lossless in-process: no sync needed
+  lt->iface.poll = NULL;       // ...no retransmit/keepalive upkeep either
+  lt->iface.ready = NULL;      // ...and no session setup: always ready
   lt->iface.impl = lt;
 }
 

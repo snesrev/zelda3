@@ -90,6 +90,12 @@ Mappings can be customized in `zelda3.ini`.
 ### Useful P1 hotkeys (single set, affects the whole game)
 - **Save state:** `Shift`+`F1`…`F10` — **Load state:** `F1`…`F10`
 - **Pause:** `P` — **Fullscreen:** `Alt`+`Enter` — **Reset:** `Ctrl`+`R` — **Turbo:** hold `Tab`
+- Loading a state (or resetting) in co-op re-seeds both players from the loaded
+  state: P1 resumes exactly as saved, P2 respawns fresh beside P1 (P2 is
+  ephemeral by design and isn't part of savestates).
+- **Online:** load/replay/reset/cheat hotkeys and turbo are disabled while
+  connected (any of them would instantly desync the two machines). Saving a
+  state still works.
 
 ---
 
