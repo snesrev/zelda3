@@ -66,9 +66,13 @@ zelda3_coop --connect <A's IP> 7777
 # Optional latency buffer (default 2): --net-delay 3
 ```
 Each player uses their normal controls (arrows + ZXASCV / a controller) to drive
-their own Link. The host must be reachable on the UDP port (LAN, or port-forward
-for WAN). **Windows note:** the TCC build needs `-lws2_32` added to link Winsock
-(POSIX/macOS need no extra lib).
+their own Link. Launch order doesn't matter — the host can idle on the title
+screen until the client connects; the game holds at the start until both peers
+are linked and the client has received the host's save data, then both run.
+The host's save files are the session's saves (the client's own local saves are
+neither used nor touched). The host must be reachable on the UDP port (LAN, or
+port-forward for WAN). **Windows note:** the TCC build needs `-lws2_32` added
+to link Winsock (POSIX/macOS need no extra lib).
 
 ### Test the foundation headlessly
 ```
@@ -78,38 +82,81 @@ ZELDA3_TEST_NET=1 ZELDA3_NET_DELAY=2 ./zelda3_harness   # buffered, still determ
 ZELDA3_TEST_UDP=1 ./zelda3_harness     # UDP host<->client round-trip over localhost
 ```
 
-## Robustness & status (implemented)
+## Robustness & status (implemented — protocol v2)
 
-The UDP protocol now prefixes each datagram with a type byte and carries more
+The UDP protocol prefixes each datagram with a type byte and carries more
 than just input:
+- **Ack-based input delivery (`INPUT`, v2)** — every INPUT packet carries the
+  sender's "next frame of yours I still need" (an ack). Each peer retransmits
+  its own input from the peer's last ack forward (a sliding window over a
+  512-frame history ring, ≤32 frames per packet), and the per-tick transport
+  `poll()` keeps retransmitting **even while input capture is held** (full
+  ring / stalled sim) — exactly when healing is needed. This makes delivery
+  self-healing under arbitrary burst loss and lets a client that connects
+  late still receive everything from frame 0. (v1 resent only the last 8
+  frames and only while capturing: >8 lost packets, a paused-peer stall, or a
+  client joining >130ms after host launch hung the session forever.)
+- **Session start gate (`ready`)** — the lockstep driver holds input capture
+  until the transport reports the session established (handshake done +
+  save data synced), so BOTH sims begin together at frame 0. The host can sit
+  on the title screen for minutes before the client connects.
+- **Save-data sync (`SRAM_REQ`/`SRAM`)** — both sims must load saves from
+  identical SRAM, but each machine boots with its own `saves/sram.dat`. At
+  connect the host streams its 8KB SRAM to the client (16×512B chunks; the
+  client re-requests until complete, so chunk loss is harmless). All later
+  in-game SRAM mutations are deterministic sim code, so one initial sync
+  keeps the whole save lifecycle identical on both peers. The client does
+  NOT persist the host's SRAM to disk (your local saves are never
+  overwritten by joining a friend's game).
 - **Handshake (`HELLO`)** — peers exchange protocol version + `input_delay`; a
-  version mismatch is flagged (and shown) instead of silently desyncing. A
-  received HELLO is answered once so both sides complete the handshake.
+  version mismatch is flagged (and shown) instead of silently desyncing. v2
+  HELLOs carry a `got_yours` flag and a peer answers any HELLO whose flag is
+  0 — a lost reply can no longer deadlock the handshake, and replies
+  terminate without a storm.
 - **Desync detection (`SYNC`)** — the lockstep driver hands the transport a full
   state checksum every second; peers exchange them and flag a divergence with
   the frame number. (This is the determinism invariant, now checked live.)
 - **Disconnect (`BYE`)** — sent on quit; the peer also flags `peer_lost` after
-  ~10s of silence (timeout).
+  ~10s of silence (timeout counted per tick in `poll()`, so it fires even
+  while capture is held).
 - **On-screen status** — the window title shows `connecting…`,
-  `waiting for player…` (the lockstep stalled awaiting the peer),
-  `player disconnected`, `DESYNC DETECTED`, or `INCOMPATIBLE VERSION`.
+  `receiving save data…`, `waiting for player…` (the lockstep stalled awaiting
+  the peer), `player disconnected`, `DESYNC DETECTED`, or `INCOMPATIBLE
+  VERSION`; session milestones are also printed to the console once each.
 - **Packet hardening** — UDP accepts bytes from anyone, so the receive path is
   strict: every datagram is type/length-validated before any field is read
-  (`Udp_PacketWellFormed`), over-length reads are clamped, and once the peer's
-  address is known, datagrams from any other source are dropped
-  (`Udp_AddrMatches`). Stray scans, wrong-port traffic, and trivially spoofed
-  packets can't inject input, flip a status flag, or keep a dead link looking
-  alive. (Defeating a *forged* source address needs crypto and is out of scope.)
+  (`Udp_PacketWellFormed`), over-length reads are clamped, the host's peer
+  slot can only be claimed by a **version-matching HELLO** (a stray scan
+  datagram can no longer hijack the slot or BYE-kill the session before it
+  starts), and once the peer's address is known, datagrams from any other
+  source are dropped (`Udp_AddrMatches`). (Defeating a *forged* source
+  address needs crypto and is out of scope.)
+- **Out-of-band commands disabled** — loading savestates/replays, reset, and
+  RAM-patching cheats are ignored while online (any of them would desync the
+  peers instantly); saving a state stays allowed (read-only). Turbo is also
+  ignored online — the sim can't outrun the peer, so turbo would only race
+  input capture a full ring ahead and pin ~4s of input latency.
+- **Catch-up cap** — after a stall heals, the sim fast-forwards at most 8
+  frames per display tick (a worst-case 256-frame backlog clears in under a
+  second) instead of bursting seconds of simulation in one frozen tick.
 
-Verified headlessly over localhost (`ZELDA3_TEST_UDP=1 ./zelda3_harness`):
-input round-trip, **handshake**, **desync detection**, **clean disconnect**, and
-**packet hardening** (a wrong-source frame + malformed datagrams are all dropped)
-all PASS.
+Verified headlessly (`ZELDA3_TEST_UDP=1 ./zelda3_harness`): input round-trip,
+**handshake**, **desync detection**, **clean disconnect**, **packet hardening**
+(wrong-source frame + malformed datagrams dropped), **ring capacity**,
+**late-join/burst-loss recovery** (40 frames delivered through the sliding ack
+window), **HELLO-only peer lock**, and **SRAM sync** (8KB transferred, ready()
+gates until complete) all PASS.
+
+Verified end-to-end (two real processes over localhost UDP, full `--host` /
+`--connect` CLI path): the host ran alone for 6 seconds, the client joined
+late, handshook, received the host's save data, and both sims established
+lockstep ("session established - simulation running in lockstep" on both)
+with no desync.
 
 ## What remains (real-machine validation + polish)
 
-1. **Two-real-machine playtest** over LAN/WAN (the sandbox is single-instance, so
-   only localhost is exercisable here).
+1. **Two-real-machine playtest** over LAN/WAN (the sandbox is single-machine,
+   so only localhost is exercisable here).
 2. **NAT/WAN convenience:** port-forward today; a relay/hole-punch or a "code"
    matchmaking layer would make WAN connect-by-default.
 3. **Recovery polish:** the desync flag currently warns; auto-resync (state

@@ -803,7 +803,13 @@ void ZeldaReset(bool preserve_sram) {
   ZeldaRestoreMusicAfterLoad_Locked(true);
   ZeldaApuUnlock();
   EmuSynchronizeWholeState();
-
+#ifdef ZELDA3_MULTIPLAYER
+  // g_ram was just wiped for a fresh boot, so the player structs must stop
+  // being authoritative until the game re-seeds them (otherwise the stale
+  // "seeded" P1 struct would shadow pre-reset state into the intro/file-select
+  // RAM every frame, and P2 would survive the reset).
+  Multiplayer_OnSaveLoaded();
+#endif
 }
 
 static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
@@ -815,6 +821,15 @@ static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
   ZeldaRestoreMusicAfterLoad_Locked(false);
   ZeldaApuUnlock();
   EmuSynchronizeWholeState();
+#ifdef ZELDA3_MULTIPLAYER
+  // A savestate restores g_ram wholesale, but the PlayerState structs are the
+  // authoritative link state in the co-op build. Without a re-seed, the stale
+  // still-"seeded" P1 struct would be SyncToRam'd right back over the freshly
+  // restored g_ram next frame (undoing the load), and P2 would keep pre-load
+  // state. Re-seed P1 from the restored g_ram and re-spawn P2 (same path as a
+  // file-select load — savestates predate co-op, so they carry no P2 state).
+  Multiplayer_OnSaveLoaded();
+#endif
 }
 
 static void SaveSnesState(SaveLoadFunc *func, void *ctx) {
@@ -1223,19 +1238,32 @@ int Multiplayer_LockstepTick(uint16 local_joypad) {
   if (!g_net_transport)
     return 0;
 
+  // 0. Transport upkeep, decoupled from input capture: hand it the next remote
+  //    frame we still need (its ack to advertise) and let it retransmit
+  //    un-acked local input / keep the handshake + liveness ticking. Capture
+  //    (step 1) stops when the local ring is full — exactly the stalled state
+  //    where retransmission must continue or the session would hang forever.
+  if (g_net_transport->poll)
+    g_net_transport->poll(g_net_transport, g_net_remote_next);
+
   // 1. Tag this tick's local input, queue it locally, and transmit it — but only
-  //    while the local ring has room. A stalled peer (paused, or one-way packet
-  //    loss) freezes the sim so the ring never drains; without this gate the ring
-  //    would wrap at INPUT_RING_SIZE and overwrite unconsumed input, desyncing on
-  //    resume. When full we hold local capture (standard lockstep wait-for-peer).
-  InputFrame lf;
-  lf.frame_number = g_net_send_frame;
-  lf.joypad = local_joypad;
-  lf.player_index = (uint8)g_net_local_player;
-  lf.flags = INPUT_FLAG_NONE;
-  if (InputRing_Push(g_net_local_player, &lf)) {
-    g_net_transport->send(g_net_transport, &lf);
-    g_net_send_frame++;
+  //    while the transport says the session is established (handshake + initial
+  //    save-data sync done; both peers then start capturing from frame 0
+  //    together) AND the local ring has room. A stalled peer (paused, or one-way
+  //    packet loss) freezes the sim so the ring never drains; without this gate
+  //    the ring would wrap at INPUT_RING_SIZE and overwrite unconsumed input,
+  //    desyncing on resume. When blocked we hold local capture (standard
+  //    lockstep wait-for-peer).
+  if (g_net_transport->ready == NULL || g_net_transport->ready(g_net_transport)) {
+    InputFrame lf;
+    lf.frame_number = g_net_send_frame;
+    lf.joypad = local_joypad;
+    lf.player_index = (uint8)g_net_local_player;
+    lf.flags = INPUT_FLAG_NONE;
+    if (InputRing_Push(g_net_local_player, &lf)) {
+      g_net_transport->send(g_net_transport, &lf);
+      g_net_send_frame++;
+    }
   }
 
   // 2. Ingest remote input into the remote player's ring, in order, de-duping
@@ -1256,8 +1284,15 @@ int Multiplayer_LockstepTick(uint16 local_joypad) {
   // 3. Advance the sim for every frame whose inputs (both players) are present,
   //    keeping it input_delay frames behind capture so the remote frame has time
   //    to arrive. Both peers run the identical pair -> they stay in lockstep.
+  //    Catch-up after a stall (peer paused / connection blip) is capped per
+  //    tick: the backlog can be up to a full ring (256 frames ≈ 4s of sim),
+  //    and bursting it in one tick would freeze the UI and garble audio.
+  //    8/tick still clears a worst-case backlog in under a second of fast-
+  //    forward. (Scheduling only — the simulated input pairs are identical on
+  //    both peers regardless of how ticks slice them, so lockstep is unaffected.)
   int advanced = 0;
-  while ((int)(g_net_send_frame - g_sim_frame) > g_net_input_delay &&
+  while (advanced < 8 &&
+         (int)(g_net_send_frame - g_sim_frame) > g_net_input_delay &&
          Multiplayer_InputsReady()) {
     FrameInputPair pair = Multiplayer_ConsumeInputs();
     ZeldaRunFrame(pair.joypad[0], pair.joypad[1]);
@@ -1404,6 +1439,14 @@ void ZeldaReadSram() {
 }
 
 void ZeldaWriteSram() {
+#ifdef ZELDA3_MULTIPLAYER
+  // Online guest: the in-memory SRAM is the HOST's save data (synced over the
+  // wire at connect). Persisting it would overwrite this machine's own local
+  // save files with the host's progression. Guests don't persist; the host's
+  // copy of the (identical, deterministic) session saves normally on its side.
+  if (g_mp_config.mode == MP_MODE_CLIENT)
+    return;
+#endif
   rename("saves/sram.dat", "saves/sram.bak");
   FILE *f = fopen("saves/sram.dat", "wb");
   if (f) {

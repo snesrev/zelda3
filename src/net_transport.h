@@ -21,6 +21,19 @@ typedef struct NetTransport {
   // the transport can flag a desync. Called by the lockstep driver every so many
   // frames with the local sim's checksum for that frame.
   void (*send_sync)(struct NetTransport *t, uint32 frame, uint32 checksum);
+  // Optional (may be NULL, e.g. loopback): per-tick upkeep, called once per
+  // display tick BEFORE send/recv with `ack_frame` = the next remote frame the
+  // lockstep driver still needs. A lossy transport uses this to advertise the
+  // ack, retransmit un-acked local input (decoupled from input capture, which
+  // stalls exactly when healing is needed), keep the handshake alive, and run
+  // its liveness timeout.
+  void (*poll)(struct NetTransport *t, uint32 ack_frame);
+  // Optional (may be NULL = always ready): is the session established enough to
+  // start capturing/sending local input? While false the lockstep driver holds
+  // capture, so BOTH sims sit at frame 0 and begin together once the transport
+  // is ready (UDP: handshake complete + the host's save data received). This is
+  // what makes "host launches, client connects a minute later" start cleanly.
+  int (*ready)(struct NetTransport *t);
   void *impl;
 } NetTransport;
 

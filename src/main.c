@@ -417,8 +417,8 @@ static int RunHeadlessTest(void) {
     for (uint32 f = 0; f < 5; f++) { InputFrame hf = { f, (uint16)(0x80 + f), 0, 0 }; host.iface.send(&host.iface, &hf); }
     int g2 = 0; uint32 e2 = 0;
     for (int t = 0; t < 1000 && g2 < 5; t++) { while (client.iface.recv(&client.iface, &rf)) { if (rf.frame_number == e2) { g2++; e2++; } } SDL_Delay(1); }
-    // pump a few more recvs so HELLOs are processed both ways
-    for (int t = 0; t < 50; t++) { host.iface.send(&host.iface, &rf); client.iface.send(&client.iface, &rf); while (host.iface.recv(&host.iface, &rf)) {} while (client.iface.recv(&client.iface, &rf)) {} SDL_Delay(1); }
+    // pump polls + recvs so HELLOs are exchanged and processed both ways
+    for (int t = 0; t < 50; t++) { host.iface.poll(&host.iface, 0); client.iface.poll(&client.iface, 0); while (host.iface.recv(&host.iface, &rf)) {} while (client.iface.recv(&client.iface, &rf)) {} SDL_Delay(1); }
     int hs = host.handshaked && client.handshaked && !host.version_mismatch && !client.version_mismatch;
     // 2) Desync detection: send mismatched checksums for the same frame.
     host.iface.send_sync(&host.iface, 600, 0xAAAA1111);
@@ -442,9 +442,87 @@ static int RunHeadlessTest(void) {
     int spoof_seen = 0;
     for (int t = 0; t < 100; t++) { while (host.iface.recv(&host.iface, &rf)) { if (rf.frame_number == 0x7777u) spoof_seen = 1; } SDL_Delay(1); }
     int hard_ok = !spoof_seen && host.handshaked && !host.version_mismatch;
-    int all = (got == 5 && g2 == 5 && hs && desync_ok && bye_ok && hard_ok && ring_ok);
-    printf("[harness] UDP TEST: input %d/5,%d/5  handshake=%d  desync_detect=%d  disconnect=%d  hardening=%d  ringcap=%d -> %s\n",
-           got, g2, hs, desync_ok, bye_ok, hard_ok, ring_ok, all ? "PASS" : "FAIL");
+    // 5) v2 ack/retransmit: a peer that starts receiving LATE (or after a burst
+    //    of loss) must still get every frame from 0 — the transmit window
+    //    resends from the peer's advertised ack, not just the last few frames.
+    //    40 frames is far beyond the old fixed 8-frame redundancy (which hung
+    //    here forever) and beyond one 32-frame burst, so this also proves the
+    //    window SLIDES as acks arrive.
+    int late_ok = 0;
+    {
+      UdpTransport h2, c2;
+      if (Udp_InitHost(&h2, 38892, 2) && Udp_InitClient(&c2, "127.0.0.1", 38892, 2)) {
+        for (uint32 f = 0; f < 40; f++) {
+          InputFrame lf = { f, (uint16)f, 1, 0 };
+          c2.iface.send(&c2.iface, &lf);     // host hasn't ingested ANY of these yet
+        }
+        uint32 expect = 0;
+        InputFrame rf2;
+        for (int t = 0; t < 2000 && expect < 40; t++) {
+          while (h2.iface.recv(&h2.iface, &rf2))
+            if (rf2.player_index == 1 && rf2.frame_number == expect) expect++;
+          h2.iface.poll(&h2.iface, expect);          // host advertises its ack
+          while (c2.iface.recv(&c2.iface, &rf2)) {}  // client ingests the ack
+          c2.iface.poll(&c2.iface, 0);               // client retransmits [ack..]
+          SDL_Delay(1);
+        }
+        late_ok = (expect == 40);
+        h2.iface.close(&h2.iface);
+        c2.iface.close(&c2.iface);
+      }
+    }
+    // 6) Host peer-slot lock: stray well-formed INPUT/BYE datagrams from a
+    //    random source must neither claim the slot nor flag the peer lost;
+    //    only a valid version-matching HELLO binds the peer.
+    int lock_ok = 0;
+    {
+      UdpTransport h3;
+      if (Udp_InitHost(&h3, 38893, 2)) {
+        uint8 sb[6 + INPUT_FRAME_WIRE_SIZE] = { NETPKT_INPUT, 1, 0, 0, 0, 0 };
+        InputFrame sf = { 1, 2, 1, 0 };
+        InputFrame_Serialize(&sf, &sb[6]);
+        Udp_TestRawSendLocal(38893, sb, sizeof(sb));      // stray INPUT
+        uint8 byeb[1] = { NETPKT_BYE };
+        Udp_TestRawSendLocal(38893, byeb, sizeof(byeb));  // stray BYE
+        InputFrame rf3;
+        for (int t = 0; t < 50; t++) { while (h3.iface.recv(&h3.iface, &rf3)) {} SDL_Delay(1); }
+        int pre = !h3.peer_known && !h3.peer_lost;
+        uint8 hb[4] = { NETPKT_HELLO, NET_PROTO_VERSION, 2, 0 };
+        Udp_TestRawSendLocal(38893, hb, sizeof(hb));      // valid HELLO claims it
+        for (int t = 0; t < 50 && !h3.peer_known; t++) { while (h3.iface.recv(&h3.iface, &rf3)) {} SDL_Delay(1); }
+        lock_ok = pre && h3.peer_known && h3.handshaked;
+        h3.iface.close(&h3.iface);
+      }
+    }
+    // 7) Save-data sync: the host serves its 8KB SRAM; the client REQs until
+    //    every chunk lands; ready() must hold the client back until then so
+    //    both sims would start from identical save data at frame 0.
+    int sram_ok2 = 0;
+    {
+      UdpTransport h4, c4;
+      static uint8 fake_sram[UDP_SRAM_SIZE];
+      for (int i = 0; i < UDP_SRAM_SIZE; i++) fake_sram[i] = (uint8)(i * 31 + (i >> 8));
+      if (Udp_InitHost(&h4, 38894, 2) && Udp_InitClient(&c4, "127.0.0.1", 38894, 2)) {
+        h4.sram_src = fake_sram;
+        int ready_before = c4.iface.ready(&c4.iface);   // must be 0 (no handshake/sram yet)
+        InputFrame rf4;
+        for (int t = 0; t < 2000 && !c4.sram_ok; t++) {
+          c4.iface.poll(&c4.iface, 0);                  // HELLOs, then SRAM_REQs
+          h4.iface.poll(&h4.iface, 0);
+          while (h4.iface.recv(&h4.iface, &rf4)) {}
+          while (c4.iface.recv(&c4.iface, &rf4)) {}
+          SDL_Delay(1);
+        }
+        sram_ok2 = !ready_before && c4.sram_ok && c4.iface.ready(&c4.iface) &&
+                   h4.iface.ready(&h4.iface) &&
+                   memcmp(c4.sram_buf, fake_sram, UDP_SRAM_SIZE) == 0;
+        h4.iface.close(&h4.iface);
+        c4.iface.close(&c4.iface);
+      }
+    }
+    int all = (got == 5 && g2 == 5 && hs && desync_ok && bye_ok && hard_ok && ring_ok && late_ok && lock_ok && sram_ok2);
+    printf("[harness] UDP TEST: input %d/5,%d/5  handshake=%d  desync_detect=%d  disconnect=%d  hardening=%d  ringcap=%d  latejoin=%d  hellolock=%d  sramsync=%d -> %s\n",
+           got, g2, hs, desync_ok, bye_ok, hard_ok, ring_ok, late_ok, lock_ok, sram_ok2, all ? "PASS" : "FAIL");
     return all ? 0 : 1;
   }
 
@@ -520,7 +598,10 @@ static int RunHeadlessTest(void) {
   if (getenv("ZELDA3_TEST_PICKUP")) {
     g_players[1].health_current = 8;    // 1 heart
     g_players[1].hearts_filler = 24;    // 3 hearts pending (as if collected)
-    printf("[harness] PICKUP TEST: P2 hp=8, hearts_filler=24 (expect P2 hp -> 32)\n");
+    // The refill caps at capacity, exactly like the engine's Hud_RefillLogic
+    // (the ref save has 3 hearts = capacity 24, so 8+24 fills to 24, not 32).
+    printf("[harness] PICKUP TEST: P2 hp=8, hearts_filler=24, capacity=%d (expect P2 hp -> %d)\n",
+           g_players[1].health_capacity, g_players[1].health_capacity);
     in1 = 0; in2 = 0;
   }
   if (getenv("ZELDA3_TEST_INVSHARE")) {
@@ -567,6 +648,30 @@ static int RunHeadlessTest(void) {
     printf("[harness] DEATH TEST: PreventGameOver=%d (expect 1) P2 is_dead=%d rt=%d (expect 1, ~240)\n",
            suppressed, g_players[1].is_dead, g_players[1].respawn_timer);
     in1 = 0; in2 = 0;
+  }
+  if (getenv("ZELDA3_TEST_SAVESTATE")) {
+    // Savestate load must re-seed the player structs from the restored g_ram
+    // (Multiplayer_OnSaveLoaded in LoadSnesState). Without it the stale
+    // still-"seeded" P1 struct is SyncToRam'd right back over the loaded
+    // state next frame — P1 keeps its pre-load position/inventory and the
+    // load is silently undone.
+    for (int fr = 0; fr < 30; fr++) ZeldaRunFrame(0x20, 0);   // P1 walks down (open ground here)
+    uint16 y_at_save = g_players[0].y_coord;
+    SaveLoadSlot(kSaveLoad_Save, 9);
+    for (int fr = 0; fr < 60; fr++) ZeldaRunFrame(0x20, 0);   // keep walking
+    uint16 y_after = g_players[0].y_coord;
+    SaveLoadSlot(kSaveLoad_Load, 9);
+    for (int fr = 0; fr < 2; fr++) ZeldaRunFrame(0, 0);       // let InitIfNeeded re-seed
+    uint16 y_loaded = g_players[0].y_coord;
+    int moved = (int)y_after - (int)y_at_save;                // walking down: y increases
+    int err = (int)y_loaded - (int)y_at_save;
+    if (err < 0) err = -err;
+    int pass = (moved > 20) && (err <= 2) && g_players[1].is_active;
+    printf("[harness] SAVESTATE TEST: y@save=%u y@+60walk=%u y@load=%u (drift=%d, walked=%d) P2act=%d -> %s\n",
+           y_at_save, y_after, y_loaded, err, moved, g_players[1].is_active,
+           pass ? "PASS" : "FAIL");
+    remove("saves/save9.sav");
+    return pass ? 0 : 1;
   }
   printf("[harness] driving P1=0x%x P2=0x%x for %d frames\n", in1, in2, total);
   for (int k = 0; k < 16; k++) if (sprite_state[k] == 9)
@@ -638,6 +743,14 @@ static int RunHeadlessTest(void) {
     printf("[harness] INVSHARE RESULT: P2 bow=%d rupees=%d keys=%d hp=%d | P1 hp=%d\n",
            g_players[1].item_bow, g_players[1].rupees_goal, g_players[1].num_keys,
            g_players[1].health_current, g_players[0].health_current);
+  if (getenv("ZELDA3_TEST_PICKUP")) {
+    int pickup_pass = g_players[1].health_current == g_players[1].health_capacity &&
+                      g_players[1].hearts_filler == 0;
+    printf("[harness] PICKUP RESULT: P2 hp=%d/%d filler=%d -> %s\n",
+           g_players[1].health_current, g_players[1].health_capacity,
+           g_players[1].hearts_filler, pickup_pass ? "PASS" : "FAIL");
+    return pickup_pass ? 0 : 1;
+  }
   return 0;
 }
 #endif  // ZELDA3_HEADLESS_TEST
@@ -748,8 +861,33 @@ int main(int argc, char** argv) {
     g_audiobuffer = malloc(g_frames_per_block * have.channels * sizeof(int16));
   }
 
+#ifdef ZELDA3_MULTIPLAYER
+  // Vanilla treats the first positional argument as a ROM path for the
+  // side-by-side verification emulator. The co-op CLI flags (--host /
+  // --connect / --net-delay) and their values must not be mistaken for one —
+  // "zelda3_coop --host 7777" used to die with "Failed to read file" here.
+  {
+    const char *rom_arg = NULL;
+    for (int i = 0; i < argc; i++) {
+      if (strcmp(argv[i], "--host") == 0) {
+        if (i + 1 < argc && argv[i + 1][0] != '-') i++;          // optional port
+      } else if (strcmp(argv[i], "--connect") == 0) {
+        if (i + 1 < argc) i++;                                   // ip
+        if (i + 1 < argc && argv[i + 1][0] != '-') i++;          // optional port
+      } else if (strcmp(argv[i], "--net-delay") == 0) {
+        if (i + 1 < argc) i++;                                   // frames
+      } else if (argv[i][0] != '-') {
+        rom_arg = argv[i];
+        break;
+      }
+    }
+    if (rom_arg && !g_run_without_emu)
+      LoadRom(rom_arg);
+  }
+#else
   if (argc >= 1 && !g_run_without_emu)
     LoadRom(argv[0]);
+#endif
 
 #if defined(_WIN32)
   _mkdir("saves");
@@ -799,6 +937,7 @@ int main(int argc, char** argv) {
       g_mp_config.local_player_index = want_host ? 0 : 1;  // host drives P1, client P2
       g_mp_config.num_players = 2;
       g_mp_config.input_delay_frames = (uint8)d;
+      s_udp.sram_src = g_zenv.sram;  // host serves its save data to the client
       g_online_udp = &s_udp;
       Multiplayer_LockstepInit(&s_udp.iface, g_mp_config.local_player_index,
                                g_mp_config.input_delay_frames);
@@ -925,6 +1064,16 @@ int main(int argc, char** argv) {
 #ifdef ZELDA3_MULTIPLAYER
     bool is_replay = false;
     if (g_mp_config.mode == MP_MODE_HOST || g_mp_config.mode == MP_MODE_CLIENT) {
+      // Client: the host's save data has fully arrived — install it as our
+      // SRAM before the sim can take a single step (the lockstep holds both
+      // sims at frame 0 until the transport reports ready). From here on every
+      // save/load both sims perform reads identical bytes on both machines.
+      if (g_mp_config.mode == MP_MODE_CLIENT && g_online_udp->sram_ok &&
+          !g_online_udp->sram_applied) {
+        memcpy(g_zenv.sram, g_online_udp->sram_buf, sizeof(g_online_udp->sram_buf));
+        g_online_udp->sram_applied = 1;
+        printf("[net] received host save data (8KB) — sessions now share one save\n");
+      }
       // Online lockstep: our local controls drive whichever player we are; the
       // driver sends them, ingests the peer's input, and advances the sim only
       // for frames both players' inputs are ready. If it returns 0 it's waiting
@@ -934,6 +1083,26 @@ int main(int argc, char** argv) {
       if ((li & 0xc0) == 0xc0) li ^= 0xc0;
       int adv = Multiplayer_LockstepTick((uint16)li);
       g_online_stall_frames = (adv > 0) ? 0 : (g_online_stall_frames + 1);
+      // One-shot console log of session milestones (the window title shows live
+      // status; these give users/logs a durable record of what happened).
+      static uint8 announced;  // bit0 running, bit1 desync, bit2 lost, bit3 vermis
+      if (adv > 0 && !(announced & 1)) {
+        announced |= 1;
+        printf("[net] session established - simulation running in lockstep\n");
+      }
+      if (g_online_udp->desynced && !(announced & 2)) {
+        announced |= 2;
+        printf("[net] DESYNC at frame %u - states diverged (please report!)\n",
+               g_online_udp->desync_frame);
+      }
+      if (g_online_udp->peer_lost && !(announced & 4)) {
+        announced |= 4;
+        printf("[net] peer disconnected (BYE or %ds timeout)\n", UDP_TIMEOUT_POLLS / 60);
+      }
+      if (g_online_udp->version_mismatch && !(announced & 8)) {
+        announced |= 8;
+        printf("[net] peer runs an INCOMPATIBLE protocol version - cannot play\n");
+      }
     } else {
       is_replay = ZeldaRunFrame(inputs, inputs_p2);
     }
@@ -944,7 +1113,15 @@ int main(int argc, char** argv) {
 
     frameCtr++;
 
-    if ((g_turbo ^ (is_replay & g_replay_turbo)) && (frameCtr & (g_turbo ? 0xf : 0x7f)) != 0) {
+    bool turbo_allowed = true;
+#ifdef ZELDA3_MULTIPLAYER
+    // Turbo online would just spin this loop at maximum speed: the sim can't
+    // run faster than the lockstep lets it, but local input capture would race
+    // a full ring (256 frames) ahead and pin ~4 seconds of input latency for
+    // the rest of the session. The peer's pace bounds the game; ignore turbo.
+    turbo_allowed = (g_mp_config.mode != MP_MODE_HOST && g_mp_config.mode != MP_MODE_CLIENT);
+#endif
+    if (turbo_allowed && (g_turbo ^ (is_replay & g_replay_turbo)) && (frameCtr & (g_turbo ? 0xf : 0x7f)) != 0) {
       continue;
     }
 
@@ -964,6 +1141,8 @@ int main(int argc, char** argv) {
       else if (g_online_udp->desynced)    st = "online: DESYNC DETECTED (states diverged)";
       else if (g_online_udp->peer_lost)   st = "online: player disconnected";
       else if (!g_online_udp->handshaked) st = "online: connecting to peer...";
+      else if (g_mp_config.mode == MP_MODE_CLIENT && !g_online_udp->sram_applied)
+        st = "online: receiving save data...";
       else if (g_online_stall_frames > 30) st = "online: waiting for player...";
       char t[96];
       if (st) snprintf(t, sizeof(t), "%s - %s", kWindowTitle, st);
@@ -1099,6 +1278,28 @@ void ZeldaApuUnlock() {
 static void HandleCommand_Locked(uint32 j, bool pressed) {
   if (!pressed)
     return;
+#ifdef ZELDA3_MULTIPLAYER
+  // Online lockstep: both peers must run the identical simulation from inputs
+  // alone. Any local command that mutates sim state out-of-band — loading a
+  // savestate or replay, resetting, patching RAM via cheats — would desync the
+  // peers instantly (the other machine never sees the change). Ignore them
+  // while online. Saving a state stays allowed (it only reads the sim), as do
+  // pure frontend commands (fullscreen, volume, window size, pause — pausing
+  // simply stalls the peer, which the lockstep handles).
+  if (g_mp_config.mode == MP_MODE_HOST || g_mp_config.mode == MP_MODE_CLIENT) {
+    bool mutates_sim =
+        (j <= kKeys_Load_Last) ||                              // load slot
+        (j >= kKeys_Replay && j <= kKeys_ReplayRef_Last) ||    // replay / ref load / ref replay
+        j == kKeys_Reset ||
+        j == kKeys_CheatLife || j == kKeys_CheatKeys ||
+        j == kKeys_CheatEquipment || j == kKeys_CheatWalkThroughWalls ||
+        j == kKeys_ClearKeyLog || j == kKeys_StopReplay;
+    if (mutates_sim) {
+      printf("[net] command %u disabled during online play (would desync)\n", j);
+      return;
+    }
+  }
+#endif
   if (j <= kKeys_Load_Last) {
     SaveLoadSlot(kSaveLoad_Load, j - kKeys_Load);
   } else if (j <= kKeys_Save_Last) {
@@ -1166,12 +1367,26 @@ static void OpenOneGamepad(int i) {
       return;
     }
 #ifdef ZELDA3_MULTIPLAYER
+    SDL_Joystick *joy = SDL_GameControllerGetJoystick(controller);
+    SDL_JoystickID jid = SDL_JoystickInstanceID(joy);
+    // De-dup: SDL fires CONTROLLERDEVICEADDED for pads already connected at
+    // startup, on top of our manual open loop — without this, every initial
+    // pad is tracked twice and the second physical pad lands in slot 2, never
+    // mapping to Player 2. SDL_GameControllerOpen refcounts the same handle,
+    // so close the extra reference and keep the existing slot.
+    for (int k = 0; k < g_num_controllers; k++) {
+      if (g_controller_joy_ids[k] == jid) {
+        SDL_GameControllerClose(controller);
+        return;
+      }
+    }
     if (g_num_controllers < MAX_SDL_CONTROLLERS) {
-      SDL_Joystick *joy = SDL_GameControllerGetJoystick(controller);
       g_controllers[g_num_controllers] = controller;
-      g_controller_joy_ids[g_num_controllers] = SDL_JoystickInstanceID(joy);
+      g_controller_joy_ids[g_num_controllers] = jid;
       g_num_controllers++;
       printf("Controller %d assigned to Player %d\n", i, g_num_controllers <= 2 ? g_num_controllers : 0);
+    } else {
+      SDL_GameControllerClose(controller);  // table full: don't leak the handle
     }
 #endif
   }
