@@ -627,3 +627,26 @@ untouched (determinism CRC still 0f79cbba).
   + two real `--host`/`--join` localhost processes reach "session established"
   with the host's save transferred. Builds clean (-Werror); prior battery still
   PASS.
+
+## NAT hole-punching + --online launcher (feature)
+
+- **Hole-punch:** the relay doubles as a rendezvous — it sends each peer the
+  other's public endpoint (`NETPKT_PEERINFO`, honored only from the relay's
+  address); both peers fire their normal packets directly at it alongside the
+  relay path, and the first direct arrival flips the session to direct P2P
+  (relay kept warm via a periodic ping; automatic fallback on ~3s of direct
+  silence; quiet give-up on unpunchable symmetric NATs — the session just stays
+  relayed). Transport-only — the sim is untouched (CRC still 0f79cbba) and path
+  flips are invisible to the protocol (connectionless + idempotent). The window
+  title shows `direct P2P` / `via relay`.
+- **Launcher UX:** `zelda3_coop --online` is an interactive setup (host LAN /
+  host via relay / join with code / connect to IP) so no flags are needed, and
+  the host's JOIN CODE is shown in the window title until the friend joins.
+  (Deliberately no in-game SNES-menu: D-pad text entry for a 16-char code is
+  bad UX and would mean risky surgery in the scripted file-select module.)
+- Verified: `ZELDA3_TEST_PUNCH` (rendezvous→DIRECT; 5/5 frames both ways with
+  the relay STOPPED; black-holed direct path → fallback, delivery continues
+  once the relay resumes) PASS; live `relay.py` + two processes print "direct
+  P2P established - bypassing the relay" on both sides and establish lockstep;
+  `--online` menu paths verified (bad code Dies, LAN-host starts); full prior
+  battery + determinism unchanged; vanilla untouched.

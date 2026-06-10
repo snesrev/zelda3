@@ -90,15 +90,28 @@ static void Udp_RawSendTo(UdpTransport *ut, const uint8 *buf, int len) {
   if (ut->is_host && !ut->peer_known) return;   // direct mode: no client addr yet
   if (len < 0) return;
   if (ut->relay) {
-    uint8 framed[4 + UDP_MAX_PACKET];
-    if (len > (int)sizeof(framed) - 4) return;
-    framed[0] = (uint8)ut->relay_room;
-    framed[1] = (uint8)(ut->relay_room >> 8);
-    framed[2] = (uint8)(ut->relay_room >> 16);
-    framed[3] = (uint8)(ut->relay_room >> 24);
-    memcpy(framed + 4, buf, (size_t)len);
-    sendto(ut->sock, (const char *)framed, len + 4, 0,
-           (struct sockaddr *)ut->peer_addr, ut->peer_addr_len);
+    // Hole-punch path selection: while TRYING, every packet goes BOTH via the
+    // relay (framed) and straight at the peer's public endpoint (plain) — the
+    // duplicate direct sends are the punches that open both NATs, and the
+    // receiver's protocol is idempotent so duplicates are harmless. Once
+    // DIRECT, send only direct (plus a periodic framed ping so the relay's
+    // room stays warm for an instant fallback if the direct path dies).
+    if (ut->punch_state != UDP_PUNCH_DIRECT ||
+        ++ut->relay_keepwarm >= UDP_RELAY_KEEPWARM) {
+      ut->relay_keepwarm = 0;
+      uint8 framed[4 + UDP_MAX_PACKET];
+      if (len > (int)sizeof(framed) - 4) return;
+      framed[0] = (uint8)ut->relay_room;
+      framed[1] = (uint8)(ut->relay_room >> 8);
+      framed[2] = (uint8)(ut->relay_room >> 16);
+      framed[3] = (uint8)(ut->relay_room >> 24);
+      memcpy(framed + 4, buf, (size_t)len);
+      sendto(ut->sock, (const char *)framed, len + 4, 0,
+             (struct sockaddr *)ut->peer_addr, ut->peer_addr_len);
+    }
+    if (ut->punch_state != UDP_PUNCH_NONE)
+      sendto(ut->sock, (const char *)buf, len, 0,
+             (struct sockaddr *)ut->direct_addr, ut->direct_addr_len);
   } else {
     sendto(ut->sock, (const char *)buf, len, 0,
            (struct sockaddr *)ut->peer_addr, ut->peer_addr_len);
@@ -179,6 +192,23 @@ static void Udp_Poll(NetTransport *t, uint32 ack_frame) {
       ut->sram_req_timer = UDP_SRAM_REQ_INTERVAL;
     }
   }
+  // Hole-punch: if the confirmed direct path goes quiet, fall back to dual-path
+  // punching (relay + direct) — the session continues over the relay while the
+  // direct sends keep trying to re-open the NAT mapping.
+  if (ut->punch_state == UDP_PUNCH_DIRECT &&
+      ++ut->direct_idle > UDP_PUNCH_DIRECT_IDLE) {
+    ut->punch_state = UDP_PUNCH_TRYING;
+    ut->punch_try_polls = 0;
+    printf("[net] direct path quiet - falling back to relay (still punching)\n");
+  }
+  // If punching never lands (e.g. a symmetric NAT randomizes the port per
+  // destination), stop the extra direct sends; the session simply stays on the
+  // relay, and the relay's periodic PEERINFO re-triggers an occasional retry.
+  if (ut->punch_state == UDP_PUNCH_TRYING &&
+      ++ut->punch_try_polls > UDP_TIMEOUT_POLLS) {
+    ut->punch_state = UDP_PUNCH_NONE;
+    ut->punch_try_polls = 0;
+  }
   // Liveness: one tick with no peer traffic; recv() resets this on arrival.
   // Counted only once a session exists — a host (or early-started client)
   // still waiting for its peer to appear is "connecting", not "disconnected"
@@ -215,20 +245,28 @@ static bool Udp_PacketWellFormed(const uint8 *pkt, int n) {
     case NETPKT_SRAM:
       return n >= UDP_SRAM_HDR + UDP_SRAM_CHUNK &&
              pkt[1] < UDP_SRAM_CHUNKS && pkt[2] == UDP_SRAM_CHUNKS;
+    case NETPKT_PEERINFO: return n >= 7;
     default:           return false;
   }
 }
 
-// Does a received datagram's source address match the peer we've locked onto?
-// We only ever speak IPv4 here, so compare family/port/addr explicitly (memcmp
-// would also compare sockaddr padding, which isn't guaranteed zeroed).
-static bool Udp_AddrMatches(const UdpTransport *ut, const unsigned char *src, socklen_t srclen) {
-  if (srclen < (socklen_t)sizeof(struct sockaddr_in)) return false;
-  const struct sockaddr_in *a = (const struct sockaddr_in *)ut->peer_addr;
+// IPv4 sockaddr equality (compare family/port/addr explicitly — memcmp would
+// also compare sockaddr padding, which isn't guaranteed zeroed).
+static bool Udp_SockaddrEq(const unsigned char *stored, int stored_len,
+                           const unsigned char *src, socklen_t srclen) {
+  if (stored_len < (int)sizeof(struct sockaddr_in) ||
+      srclen < (socklen_t)sizeof(struct sockaddr_in)) return false;
+  const struct sockaddr_in *a = (const struct sockaddr_in *)stored;
   const struct sockaddr_in *b = (const struct sockaddr_in *)src;
   return a->sin_family == b->sin_family &&
          a->sin_port   == b->sin_port &&
          a->sin_addr.s_addr == b->sin_addr.s_addr;
+}
+
+// Does a received datagram's source address match the peer we've locked onto
+// (the relay's address in relay mode)?
+static bool Udp_AddrMatches(const UdpTransport *ut, const unsigned char *src, socklen_t srclen) {
+  return Udp_SockaddrEq(ut->peer_addr, ut->peer_addr_len, src, srclen);
 }
 
 // Process one received datagram by type.
@@ -348,7 +386,45 @@ static bool Udp_Recv(NetTransport *t, InputFrame *out) {
       ut->peer_addr_len = (int)srclen;
       ut->peer_known = 1;
       ut->version_mismatch = 0;   // a valid peer bound; clear any stray-noise flag
-    } else if (!Udp_AddrMatches(ut, src, srclen)) {
+    } else if (Udp_AddrMatches(ut, src, srclen)) {
+      // From the locked peer (direct mode) or from the relay (relay mode).
+      if (ut->relay && pkt[0] == NETPKT_PEERINFO) {
+        // Rendezvous: the relay told us the OTHER peer's public endpoint as it
+        // sees it. Record it and start (or refresh) hole-punching — our normal
+        // outbound packets will additionally be fired straight at that endpoint
+        // (see Udp_RawSendTo); the peer does the same, and the simultaneous
+        // outbound traffic opens both NATs. Only honored from the relay's own
+        // address; it is relay CONTROL traffic, so it doesn't count as peer
+        // liveness. (A peer that can't be punched — e.g. symmetric NAT — just
+        // keeps playing via the relay; see the TRYING timeout in Udp_Poll.)
+        struct sockaddr_in da;
+        memset(&da, 0, sizeof(da));
+        da.sin_family = AF_INET;
+        memcpy(&da.sin_addr, &pkt[1], 4);
+        da.sin_port = htons((uint16)((pkt[5] << 8) | pkt[6]));
+        memcpy(ut->direct_addr, &da, sizeof(da));
+        ut->direct_addr_len = (int)sizeof(da);
+        if (ut->punch_state == UDP_PUNCH_NONE) {
+          ut->punch_state = UDP_PUNCH_TRYING;
+          ut->punch_try_polls = 0;
+          if (!ut->punch_try_printed) {
+            ut->punch_try_printed = 1;
+            printf("[net] peer endpoint received - attempting direct P2P (hole-punch)\n");
+          }
+        }
+        continue;
+      }
+    } else if (ut->relay && ut->punch_state != UDP_PUNCH_NONE &&
+               Udp_SockaddrEq(ut->direct_addr, ut->direct_addr_len, src, srclen)) {
+      // Punched-through traffic arriving straight from the peer: the direct
+      // path works. Switch to it (lower latency; the relay stays warm via the
+      // periodic framed ping and we fall back automatically if this goes quiet).
+      ut->direct_idle = 0;
+      if (ut->punch_state != UDP_PUNCH_DIRECT) {
+        ut->punch_state = UDP_PUNCH_DIRECT;
+        printf("[net] direct P2P established - bypassing the relay\n");
+      }
+    } else {
       continue;                                 // not from our peer — ignore (anti-spoof)
     }
 
@@ -593,9 +669,36 @@ void Udp_TestRelayPump(int s) {
         sendto(s, (const char *)(pkt + 4), n - 4, 0,
                (struct sockaddr *)g_test_relay_peers[i].addr, g_test_relay_peers[i].len);
   }
+  // Rendezvous (mirrors tools/relay.py): once both peers are known, periodically
+  // tell each the OTHER's observed endpoint so they can hole-punch.
+  static int peerinfo_ctr;
+  if (g_test_relay_npeers == 2 && ++peerinfo_ctr >= 25) {
+    peerinfo_ctr = 0;
+    for (int i = 0; i < 2; i++) {
+      const struct sockaddr_in *other =
+          (const struct sockaddr_in *)g_test_relay_peers[i ^ 1].addr;
+      uint8 p[7];
+      p[0] = NETPKT_PEERINFO;
+      memcpy(&p[1], &other->sin_addr, 4);
+      uint16 hp = ntohs(other->sin_port);
+      p[5] = (uint8)(hp >> 8);
+      p[6] = (uint8)hp;
+      sendto(s, (const char *)p, 7, 0,
+             (struct sockaddr *)g_test_relay_peers[i].addr, g_test_relay_peers[i].len);
+    }
+  }
 }
 
 void Udp_TestRelayClose(int s) { if (s != INVALID_SOCKET) CLOSESOCK(s); }
+
+// Test-only: sabotage this transport's punched DIRECT send path by pointing
+// direct_addr at a dead port — its direct sends silently vanish, so the PEER
+// stops seeing direct traffic and must fall back to the relay. (Receiving on
+// this side is unaffected.)
+void Udp_TestBreakDirectPath(UdpTransport *ut) {
+  struct sockaddr_in *da = (struct sockaddr_in *)ut->direct_addr;
+  da->sin_port = htons(1);
+}
 #endif
 
 #endif  // ZELDA3_MULTIPLAYER

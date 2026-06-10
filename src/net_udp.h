@@ -36,6 +36,24 @@
 #define NETPKT_BYE      4  // [4]                              clean disconnect
 #define NETPKT_SRAM_REQ 5  // [5]  client asks the host for its save data (SRAM)
 #define NETPKT_SRAM     6  // [6][chunk_idx][total_chunks][512-byte chunk]
+#define NETPKT_PEERINFO 7  // [7][ip:4][port:2 BE] — sent BY THE RELAY to each peer:
+                           // the OTHER peer's public endpoint (NAT hole-punch
+                           // rendezvous). Never sent peer-to-peer; only honored
+                           // when it arrives from the relay's address.
+
+// NAT hole-punch state (relay mode only). On PEERINFO both peers start firing
+// their normal packets directly at each other's public endpoint IN ADDITION to
+// the relay path; the simultaneous outbound traffic opens both NATs' mappings
+// (classic UDP hole-punch). Once direct traffic is observed the session
+// switches to the direct path (lower latency, relay idle); if the direct path
+// goes quiet it falls back to the relay automatically. The protocol is
+// connectionless and idempotent (acked input, idempotent HELLO/SYNC), so the
+// path can flip mid-session without any game-visible effect.
+#define UDP_PUNCH_NONE    0   // no peer endpoint known yet (or not relay mode)
+#define UDP_PUNCH_TRYING  1   // punching: send via relay AND direct
+#define UDP_PUNCH_DIRECT  2   // direct path confirmed: send direct (relay kept warm)
+#define UDP_PUNCH_DIRECT_IDLE 180   // ticks of direct silence -> fall back to relay
+#define UDP_RELAY_KEEPWARM    120   // in DIRECT, ping the relay every N sends
 
 // Save-data sync: both peers' sims must load saves from IDENTICAL SRAM, but
 // each machine boots with its own saves/sram.dat. At connect the host streams
@@ -60,6 +78,15 @@ typedef struct UdpTransport {
   int relay;                             // route via a relay (both peers send OUTBOUND
                                          // to it; it forwards by room — NAT-friendly)
   uint32 relay_room;                     // room id the relay pairs the two peers by
+
+  // --- NAT hole-punch (relay mode; see UDP_PUNCH_*) ---
+  int punch_state;                       // NONE / TRYING / DIRECT
+  unsigned char direct_addr[28];         // the peer's public endpoint (from PEERINFO)
+  int direct_addr_len;
+  int direct_idle;                       // DIRECT: ticks since direct traffic
+  int relay_keepwarm;                    // DIRECT: counts sends for the relay ping
+  int punch_try_polls;                   // TRYING: give-up timer (symmetric NAT)
+  int punch_try_printed;                 // announce the first punch attempt once
 
   // --- connection status (read by the frontend for on-screen UX) ---
   int announced_delay;                   // our input_delay, sent in HELLO
@@ -137,6 +164,8 @@ int Udp_TestRawSendLocal(unsigned short port, const uint8 *buf, int len);
 int  Udp_TestRelayOpen(unsigned short port);
 void Udp_TestRelayPump(int sock);
 void Udp_TestRelayClose(int sock);
+// Test-only: black-hole this transport's punched direct send path (fallback test).
+void Udp_TestBreakDirectPath(UdpTransport *ut);
 #endif
 
 #endif  // ZELDA3_MULTIPLAYER
