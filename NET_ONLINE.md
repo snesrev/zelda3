@@ -162,11 +162,35 @@ with no desync.
    checklist, and exactly what to capture if a desync fires.
 2. **Recovery polish:** the desync flag currently warns; auto-resync (state
    transfer) and a graceful "pause + reconnect" on timeout are future niceties.
-3. **WAN convenience, further:** NAT hole-punching (direct P2P, lower latency
-   than relay) and a hosted default relay / lobby "browse games" layer would
-   remove the one remaining manual step (someone running `tools/relay.py`).
+3. **WAN convenience, further:** a hosted default relay / lobby "browse games"
+   layer would remove the one remaining manual step (someone running
+   `tools/relay.py`). (NAT hole-punching is DONE — see below.)
 
 None of these touch the simulation — they only feed it inputs.
+
+## NAT hole-punching (implemented — automatic direct P2P over the relay)
+
+Once both peers are in a relay room, the relay sends each one the OTHER's
+public endpoint as it sees it (`NETPKT_PEERINFO`, relay→peer only, honored only
+from the relay's address). Both peers then fire their normal packets directly
+at that endpoint IN ADDITION to the relay path — the simultaneous outbound
+traffic opens both NATs' mappings (classic UDP hole-punch). The first packet
+that arrives straight from the peer flips the session to **direct P2P**: sends
+go peer-to-peer (true RTT, relay out of the data path) with a periodic framed
+ping keeping the relay's room warm. If the direct path goes quiet (~3s) the
+session falls back to the relay automatically and keeps re-punching; if a NAT
+can't be punched at all (symmetric NATs randomize ports), punching gives up
+quietly and the session simply stays relayed. Path flips are invisible to the
+game: the protocol is connectionless and idempotent (acked input, idempotent
+HELLO/SYNC), so no packet ordering or state depends on which path delivered it.
+The window title shows `direct P2P` vs `via relay`.
+
+Verified headlessly (`ZELDA3_TEST_PUNCH=1 ./zelda3_harness`): rendezvous →
+both peers reach DIRECT; input flows both ways with the relay **completely
+stopped**; black-holing one direct path falls back and delivery continues once
+the relay resumes — all PASS. Verified live: `relay.py` + two real
+`--host`/`--join` processes print "direct P2P established - bypassing the
+relay" on both sides and establish lockstep.
 
 ## WAN relay + join codes (implemented)
 

@@ -55,6 +55,8 @@ def main():
 
     # room id -> { addr: last_seen_monotonic } (keeps the 2 most-recent addrs)
     rooms = {}
+    # room id -> last time PEERINFO was sent (NAT hole-punch rendezvous)
+    last_info = {}
     last_sweep = time.monotonic()
 
     while True:
@@ -80,6 +82,21 @@ def main():
                         sock.sendto(payload, other)
                     except OSError:
                         pass
+            # NAT hole-punch rendezvous: once both peers are present, tell each
+            # the OTHER's public endpoint (NETPKT_PEERINFO = type 7:
+            # [7][ip:4][port:2 BE]). The game then fires its packets directly at
+            # that endpoint too; if the punch lands, the session upgrades to
+            # direct P2P and only pings this relay to keep the room warm.
+            if len(peers) == 2 and now - last_info.get(room, 0.0) > 2.0:
+                last_info[room] = now
+                plist = list(peers)
+                for me, other in ((plist[0], plist[1]), (plist[1], plist[0])):
+                    info = (bytes([7]) + socket.inet_aton(other[0]) +
+                            struct.pack(">H", other[1]))
+                    try:
+                        sock.sendto(info, me)
+                    except OSError:
+                        pass
 
         # Periodically drop idle rooms so memory stays bounded.
         if now - last_sweep > 30.0:
@@ -90,6 +107,7 @@ def main():
                     del peers[a]
                 if not peers:
                     del rooms[room]
+                    last_info.pop(room, None)
 
 
 if __name__ == "__main__":

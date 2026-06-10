@@ -92,6 +92,8 @@ static uint32 g_player_gamepad_modifiers[2];
 static uint16 g_player_gamepad_last_cmd[2][kGamepadBtn_Count];
 static UdpTransport *g_online_udp = NULL;   // set when online co-op is active
 static int g_online_stall_frames = 0;       // consecutive frames the sim didn't advance
+static char g_online_join_code[26];         // hosting via relay: shown in the window
+                                            // title until the friend joins
 
 // Map a joystick instance ID to a player index (0 or 1)
 static int GetPlayerForController(SDL_JoystickID joy_id) {
@@ -620,6 +622,96 @@ static int RunHeadlessTest(void) {
     return all ? 0 : 1;
   }
 
+  // NAT hole-punch self-test (ZELDA3_TEST_PUNCH): two relay-mode peers must
+  // (1) upgrade to DIRECT via the relay's PEERINFO rendezvous, (2) carry the
+  // session over the punched path with the relay completely stopped, and
+  // (3) fall back to the relay when the direct path goes dark.
+  if (getenv("ZELDA3_TEST_PUNCH")) {
+    const unsigned short RPORT = 38899;
+    int relay = Udp_TestRelayOpen(RPORT);
+    int punched = 0, direct_io = 0, fellback = 0;
+    if (relay >= 0) {
+      UdpTransport host, client;
+      if (Udp_InitRelay(&host, "127.0.0.1", RPORT, 0xABCD0123u, 1, 2) &&
+          Udp_InitRelay(&client, "127.0.0.1", RPORT, 0xABCD0123u, 0, 2)) {
+        static uint8 fake_sram[UDP_SRAM_SIZE];
+        for (int i = 0; i < UDP_SRAM_SIZE; i++) fake_sram[i] = (uint8)(i * 13 + 5);
+        host.sram_src = fake_sram;
+        InputFrame rf;
+        uint32 h_exp = 0, c_exp = 0;     // next remote frame each side expects
+        int gh = 0, gc = 0;              // frames delivered (host<-client, client<-host)
+        // Phase 1: pump the relay until PEERINFO lands and both punch DIRECT.
+        for (int t = 0; t < 3000 && !(host.punch_state == UDP_PUNCH_DIRECT &&
+                                      client.punch_state == UDP_PUNCH_DIRECT); t++) {
+          host.iface.poll(&host.iface, h_exp);
+          client.iface.poll(&client.iface, c_exp);
+          Udp_TestRelayPump(relay);
+          while (host.iface.recv(&host.iface, &rf)) {}
+          while (client.iface.recv(&client.iface, &rf)) {}
+          SDL_Delay(1);
+        }
+        punched = (host.punch_state == UDP_PUNCH_DIRECT &&
+                   client.punch_state == UDP_PUNCH_DIRECT &&
+                   host.handshaked && client.handshaked && client.sram_ok);
+        // Phase 2: relay STOPS (no more pumping) — input must flow both ways
+        // over the punched direct path alone.
+        for (uint32 f = 0; f < 5; f++) {
+          InputFrame hf = { f, (uint16)(0x80 + f), 0, 0 }; host.iface.send(&host.iface, &hf);
+          InputFrame cf = { f, (uint16)(0x40 + f), 1, 0 }; client.iface.send(&client.iface, &cf);
+        }
+        for (int t = 0; t < 1500 && !(gh == 5 && gc == 5); t++) {
+          host.iface.poll(&host.iface, h_exp);
+          client.iface.poll(&client.iface, c_exp);
+          while (host.iface.recv(&host.iface, &rf))
+            if (rf.player_index == 1 && rf.frame_number == h_exp) { gh++; h_exp++; }
+          while (client.iface.recv(&client.iface, &rf))
+            if (rf.player_index == 0 && rf.frame_number == c_exp) { gc++; c_exp++; }
+          SDL_Delay(1);
+        }
+        direct_io = (gh == 5 && gc == 5);
+        // Phase 3a: black-hole the HOST's direct sends with the relay still
+        // stopped — the CLIENT must detect the direct silence and drop off
+        // DIRECT (no rendezvous repair is available while the relay is down).
+        Udp_TestBreakDirectPath(&host);
+        for (int t = 0; t < UDP_PUNCH_DIRECT_IDLE + 60 &&
+                        client.punch_state == UDP_PUNCH_DIRECT; t++) {
+          host.iface.poll(&host.iface, h_exp);
+          client.iface.poll(&client.iface, c_exp);
+          while (host.iface.recv(&host.iface, &rf)) {}
+          while (client.iface.recv(&client.iface, &rf)) {}
+          SDL_Delay(1);
+        }
+        int fell = (client.punch_state != UDP_PUNCH_DIRECT);
+        // Phase 3b: relay resumes — the session must keep flowing (the relay's
+        // rendezvous may legitimately re-punch a fresh direct path; what
+        // matters is that delivery never breaks).
+        for (uint32 f = 5; f < 10; f++) {
+          InputFrame hf = { f, (uint16)(0x80 + f), 0, 0 }; host.iface.send(&host.iface, &hf);
+          InputFrame cf = { f, (uint16)(0x40 + f), 1, 0 }; client.iface.send(&client.iface, &cf);
+        }
+        int gh2 = 0, gc2 = 0;
+        for (int t = 0; t < 3000 && !(gh2 == 5 && gc2 == 5); t++) {
+          host.iface.poll(&host.iface, h_exp);
+          client.iface.poll(&client.iface, c_exp);
+          Udp_TestRelayPump(relay);
+          while (host.iface.recv(&host.iface, &rf))
+            if (rf.player_index == 1 && rf.frame_number == h_exp) { gh2++; h_exp++; }
+          while (client.iface.recv(&client.iface, &rf))
+            if (rf.player_index == 0 && rf.frame_number == c_exp) { gc2++; c_exp++; }
+          SDL_Delay(1);
+        }
+        fellback = (fell && gh2 == 5 && gc2 == 5);
+        host.iface.close(&host.iface);
+        client.iface.close(&client.iface);
+      }
+      Udp_TestRelayClose(relay);
+    }
+    int all = punched && direct_io && fellback;
+    printf("[harness] PUNCH TEST: punched=%d  direct-only-io=%d  relay-fallback=%d -> %s\n",
+           punched, direct_io, fellback, all ? "PASS" : "FAIL");
+    return all ? 0 : 1;
+  }
+
   // Self-test the P2 keyboard mapping (this can't be exercised any other way
   // headless — the harness injects inputs directly, bypassing SDL handlers).
   // Expected bits are the input layout: B=0x01,Y=0x02,Sel=0x04,St=0x08,
@@ -865,6 +957,15 @@ static bool ArgIsNumber(const char *s) {
     if (*s < '0' || *s > '9') return false;
   return true;
 }
+
+// Read one line from stdin for the --online menu (newline stripped). NULL on EOF.
+static char *PromptLine(const char *msg, char *buf, size_t n) {
+  printf("%s", msg);
+  fflush(stdout);
+  if (!fgets(buf, (int)n, stdin)) return NULL;
+  buf[strcspn(buf, "\r\n")] = 0;
+  return buf;
+}
 #endif
 
 #undef main
@@ -1031,8 +1132,8 @@ int main(int argc, char** argv) {
   // runs "--join <code>" — the code bakes in the relay endpoint + room.
   {
     static UdpTransport s_udp;
-    const char *connect_ip = NULL, *relay_host = NULL, *join_code = NULL;
-    int want_host = 0, port = 0, relay_port = 7777, delay = 2;
+    const char *connect_ip = NULL, *relay_arg = NULL, *join_code = NULL;
+    int want_host = 0, want_menu = 0, port = 0, relay_port = 7777, delay = 2;
     for (int i = 0; i < argc; i++) {
       if (strcmp(argv[i], "--host") == 0) {
         want_host = 1;
@@ -1046,25 +1147,63 @@ int main(int argc, char** argv) {
         if (i + 1 < argc && ArgIsNumber(argv[i + 1])) port = atoi(argv[++i]);
       } else if (strcmp(argv[i], "--relay") == 0) {
         if (i + 1 >= argc) Die("--relay requires a relay host (e.g. --relay myrelay.net:7777)");
-        const char *t = argv[++i];
-        static char rh[256];
-        const char *colon = strrchr(t, ':');
-        if (colon) {
-          size_t n = (size_t)(colon - t);
-          if (n >= sizeof rh) n = sizeof rh - 1;
-          memcpy(rh, t, n); rh[n] = 0; relay_host = rh;
-          int rp = atoi(colon + 1);
-          relay_port = (rp > 0 && rp <= 65535) ? rp : 7777;
-        } else {
-          relay_host = t;
-        }
+        relay_arg = argv[++i];
       } else if (strcmp(argv[i], "--join") == 0) {
         if (i + 1 >= argc) Die("--join requires a code (e.g. --join 3F8K-2P9Q-XM4T-1ABC)");
         join_code = argv[++i];
+      } else if (strcmp(argv[i], "--online") == 0) {
+        want_menu = 1;
       } else if (strcmp(argv[i], "--net-delay") == 0) {
         if (i + 1 >= argc || !ArgIsNumber(argv[i + 1]))
           Die("--net-delay requires a number of frames (0-10)");
         delay = atoi(argv[++i]);
+      }
+    }
+
+    // "--online": a no-flags-to-remember interactive setup. (There's no in-game
+    // start-screen menu — typing a 16-char join code with a D-pad would be
+    // miserable — so the terminal prompt is the launcher.)
+    if (want_menu && !want_host && !connect_ip && !join_code && !relay_arg) {
+      static char b_relay[256], b_code[64], b_ip[64];
+      char b_choice[16];
+      printf("\n=== ONLINE CO-OP ===\n"
+             "  1) Host on this network (LAN)\n"
+             "  2) Host over the internet (via a relay; prints a join code)\n"
+             "  3) Join with a code\n"
+             "  4) Connect to a LAN host by IP\n");
+      if (!PromptLine("choice [1-4]: ", b_choice, sizeof b_choice))
+        Die("--online: no input");
+      switch (b_choice[0]) {
+        case '1': want_host = 1; break;
+        case '2':
+          if (!PromptLine("relay address (host[:port]): ", b_relay, sizeof b_relay) || !b_relay[0])
+            Die("--online: hosting over the internet needs a relay address (see tools/relay.py)");
+          want_host = 1; relay_arg = b_relay; break;
+        case '3':
+          if (!PromptLine("join code: ", b_code, sizeof b_code) || !b_code[0])
+            Die("--online: a join code is required");
+          join_code = b_code; break;
+        case '4':
+          if (!PromptLine("host IP: ", b_ip, sizeof b_ip) || !b_ip[0])
+            Die("--online: a host IP is required");
+          connect_ip = b_ip; break;
+        default: Die("--online: invalid choice (expected 1-4)");
+      }
+    }
+
+    // Split "host[:port]" for the relay (shared by the --relay flag and the menu).
+    const char *relay_host = NULL;
+    if (relay_arg) {
+      static char rh[256];
+      const char *colon = strrchr(relay_arg, ':');
+      if (colon) {
+        size_t n = (size_t)(colon - relay_arg);
+        if (n >= sizeof rh) n = sizeof rh - 1;
+        memcpy(rh, relay_arg, n); rh[n] = 0; relay_host = rh;
+        int rp = atoi(colon + 1);
+        relay_port = (rp > 0 && rp <= 65535) ? rp : 7777;
+      } else {
+        relay_host = relay_arg;
       }
     }
     if (port <= 0 || port > 65535) port = 7777;
@@ -1091,10 +1230,12 @@ int main(int argc, char** argv) {
         uint8 ipb[4]; Udp_GetPeerIPv4(&s_udp, ipb);
         char code[24];
         Net_MakeJoinCode(ipb, (uint16)relay_port, room, code);
+        snprintf(g_online_join_code, sizeof g_online_join_code, "%s", code);
         printf("\n========================================================\n");
         printf("  ONLINE (relay) — share this JOIN CODE with Player 2:\n");
         printf("      %s\n", code);
         printf("  They run:  zelda3_coop --join %s\n", code);
+        printf("  (the code is also shown in the window title)\n");
         printf("========================================================\n\n");
       }
     } else if (want_host) {                            // LAN/port-forward host
@@ -1116,7 +1257,7 @@ int main(int argc, char** argv) {
       printf("[net] ONLINE co-op: %s, you are Player %d, input_delay=%d frames%s\n",
              as_host ? "HOST" : "CLIENT", g_mp_config.local_player_index + 1,
              g_mp_config.input_delay_frames, s_udp.relay ? " (via relay)" : "");
-    } else if (want_host || connect_ip || join_code || relay_host) {
+    } else if (want_host || connect_ip || join_code || relay_arg) {
       printf("[net] online init FAILED — staying in local co-op\n");
     }
   }
@@ -1319,14 +1460,33 @@ int main(int argc, char** argv) {
       if (g_online_udp->version_mismatch) st = "online: INCOMPATIBLE VERSION - cannot play";
       else if (g_online_udp->desynced)    st = "online: DESYNC DETECTED (states diverged)";
       else if (g_online_udp->peer_lost)   st = "online: player disconnected";
-      else if (!g_online_udp->handshaked) st = "online: connecting to peer...";
+      else if (!g_online_udp->handshaked) {
+        if (g_online_join_code[0]) {
+          // Hosting via relay: put the join code where the player can read it
+          // without a console.
+          static char codebuf[64];
+          snprintf(codebuf, sizeof codebuf, "JOIN CODE: %s  -  waiting for Player 2",
+                   g_online_join_code);
+          st = codebuf;
+        } else {
+          st = "online: connecting to peer...";
+        }
+      }
       else if (g_mp_config.mode == MP_MODE_CLIENT && !g_online_udp->sram_applied)
         st = "online: receiving save data...";
       else if (g_online_stall_frames > 30) st = "online: waiting for player...";
-      char t[96];
-      if (st) snprintf(t, sizeof(t), "%s - %s", kWindowTitle, st);
-      else    snprintf(t, sizeof(t), "%s - online co-op (you are Player %d)",
-                       kWindowTitle, g_mp_config.local_player_index + 1);
+      char t[128];
+      if (st)
+        snprintf(t, sizeof(t), "%s - %s", kWindowTitle, st);
+      else if (g_online_udp->relay)
+        // Show which path the session is on: punched-through direct P2P
+        // (lowest latency) or forwarded via the relay.
+        snprintf(t, sizeof(t), "%s - online co-op (Player %d, %s)",
+                 kWindowTitle, g_mp_config.local_player_index + 1,
+                 g_online_udp->punch_state == UDP_PUNCH_DIRECT ? "direct P2P" : "via relay");
+      else
+        snprintf(t, sizeof(t), "%s - online co-op (you are Player %d)",
+                 kWindowTitle, g_mp_config.local_player_index + 1);
       SDL_SetWindowTitle(g_window, t);
     }
 #endif

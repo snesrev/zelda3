@@ -18,7 +18,13 @@ problem found is reportable and fixable.
 - **Windows note:** the TCC build needs `-lws2_32` appended to the build
   command to link Winsock (POSIX/macOS need nothing extra).
 
-## 1. Connect — pick one of three paths
+## 1. Connect — pick a path
+
+**No flags to remember:** `zelda3_coop --online` opens an interactive setup
+(Host on LAN / Host via relay / Join with a code / Connect to an IP) and asks
+only for what's needed. The flag forms below do the same things directly.
+(There's deliberately no in-game start-screen menu — typing a 16-character
+join code with a D-pad would be miserable; the prompt is the launcher.)
 
 ### a) Same LAN (easiest, no setup)
 ```
@@ -29,10 +35,9 @@ Find the host's LAN IP with `ipconfig` (Windows) / `ip addr` (Linux) /
 `ifconfig` (macOS).
 
 ### b) Internet via relay + JOIN CODE (recommended for WAN — no router config)
-A small relay forwards between the two players, so **neither** needs a
-port-forward or VPN (both just send outbound, which NAT allows). Someone runs
-the bundled relay on any host both players can reach — a $5 VPS, a
-port-forwarded PC, a friend's box:
+A small relay pairs the two players, so **neither** needs a port-forward or VPN
+(both just send outbound, which NAT allows). Someone runs the bundled relay on
+any host both players can reach — a $5 VPS, a port-forwarded PC, a friend's box:
 ```
 relay box:  python3 tools/relay.py 7777      # leave it running; no deps
 ```
@@ -41,11 +46,20 @@ player needs only the code:
 ```
 host:    zelda3_coop --host --relay <relay-host>:7777
          ->  prints:  share this JOIN CODE with Player 2:  FW00-00CR-B023-YGPE
+         (the code is also shown in the WINDOW TITLE until the friend joins)
 client:  zelda3_coop --join FW00-00CR-B023-YGPE
 ```
 The code bakes in the relay's IP + port + a random room, so no other arguments
 are needed on the joining side. (The relay only passes opaque input/control
 bytes — no game state — and forgets idle rooms.)
+
+**Automatic NAT hole-punching:** after connecting, the relay tells each player
+the other's public endpoint and both punch; if it lands (most home NATs), the
+session silently upgrades to **direct P2P** — the relay drops out of the data
+path and your latency is the true peer-to-peer RTT. The window title shows
+`direct P2P` vs `via relay`; if the direct path ever goes quiet, it falls back
+to the relay automatically (and re-punches). Symmetric NATs that can't be
+punched simply stay on the relay — everything still works.
 
 ### c) Internet via VPN overlay (no relay host needed)
 Install **Tailscale / ZeroTier / WireGuard / Hamachi** on both PCs, then connect
