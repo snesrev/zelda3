@@ -1125,7 +1125,7 @@ int main(int argc, char** argv) {
 
   // Online co-op (optional): "--host [port]" or "--connect <ip> [port]", plus
   // "--net-delay N" (input-delay frames; default 2). Without these flags the
-  // game stays in local co-op. Both peers run the identical deterministic sim;
+  // game stays in local co-op. "--solo" disables Player 2 entirely. Both peers run the identical deterministic sim;
   // only 8-byte InputFrames are exchanged (see NET_ONLINE.md).
   // WAN relay (optional): "--relay <host[:port]>" with "--host" routes through
   // a public relay (no port-forward needed) and prints a JOIN CODE; the friend
@@ -1133,9 +1133,11 @@ int main(int argc, char** argv) {
   {
     static UdpTransport s_udp;
     const char *connect_ip = NULL, *relay_arg = NULL, *join_code = NULL;
-    int want_host = 0, want_menu = 0, port = 0, relay_port = 7777, delay = 2;
+    int want_host = 0, want_menu = 0, want_solo = 0, port = 0, relay_port = 7777, delay = 2;
     for (int i = 0; i < argc; i++) {
-      if (strcmp(argv[i], "--host") == 0) {
+      if (strcmp(argv[i], "--solo") == 0) {
+        want_solo = 1;
+      } else if (strcmp(argv[i], "--host") == 0) {
         want_host = 1;
         if (i + 1 < argc && ArgIsNumber(argv[i + 1])) port = atoi(argv[++i]);
       } else if (strcmp(argv[i], "--connect") == 0) {
@@ -1158,6 +1160,17 @@ int main(int argc, char** argv) {
           Die("--net-delay requires a number of frames (0-10)");
         delay = atoi(argv[++i]);
       }
+    }
+
+    // "--solo": classic single-player in the co-op binary (no red Link).
+    // Same switch the headless harness uses for single-player isolation, so
+    // the disabled path is exercised by the determinism tests. Checked before
+    // any network init so a conflicting combo never opens a socket.
+    if (want_solo) {
+      if (want_host || connect_ip || join_code || relay_arg || want_menu)
+        Die("--solo can't be combined with online co-op flags");
+      g_mp_p2_enabled = false;
+      printf("[mp] SOLO: Player 2 disabled (run without --solo for co-op)\n");
     }
 
     // "--online": a no-flags-to-remember interactive setup. (There's no in-game
