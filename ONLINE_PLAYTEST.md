@@ -20,7 +20,7 @@ problem found is reportable and fixable.
 
 ## 1. Connect — pick one of three paths
 
-### a) Same LAN (easiest)
+### a) Same LAN (easiest, no setup)
 ```
 host:    zelda3_coop --host 7777
 client:  zelda3_coop --connect <host's LAN IP> 7777
@@ -28,19 +28,39 @@ client:  zelda3_coop --connect <host's LAN IP> 7777
 Find the host's LAN IP with `ipconfig` (Windows) / `ip addr` (Linux) /
 `ifconfig` (macOS).
 
-### b) Internet via VPN overlay (recommended for WAN)
+### b) Internet via relay + JOIN CODE (recommended for WAN — no router config)
+A small relay forwards between the two players, so **neither** needs a
+port-forward or VPN (both just send outbound, which NAT allows). Someone runs
+the bundled relay on any host both players can reach — a $5 VPS, a
+port-forwarded PC, a friend's box:
+```
+relay box:  python3 tools/relay.py 7777      # leave it running; no deps
+```
+Then the host points at that relay and gets a **join code** to share; the other
+player needs only the code:
+```
+host:    zelda3_coop --host --relay <relay-host>:7777
+         ->  prints:  share this JOIN CODE with Player 2:  FW00-00CR-B023-YGPE
+client:  zelda3_coop --join FW00-00CR-B023-YGPE
+```
+The code bakes in the relay's IP + port + a random room, so no other arguments
+are needed on the joining side. (The relay only passes opaque input/control
+bytes — no game state — and forgets idle rooms.)
+
+### c) Internet via VPN overlay (no relay host needed)
 Install **Tailscale / ZeroTier / WireGuard / Hamachi** on both PCs, then connect
 exactly like LAN using the host's VPN address:
 ```
 client:  zelda3_coop --connect <host's VPN IP> 7777
 ```
-No router configuration needed; this is the least-hassle internet path.
 
-### c) Internet via port-forward
+### d) Internet via port-forward (direct, lowest latency)
 On the **host's** router, forward **UDP 7777** to the host PC's LAN IP. Client
 connects to the host's **public** IP. Only the host needs the forward; the
-client just needs outbound UDP. (No NAT hole-punching / relay / join-code
-matchmaking exists yet — that's documented future work.)
+client just needs outbound UDP.
+
+> NAT hole-punching / a hosted default relay / lobby matchmaking are still
+> future niceties; (b) covers WAN today with one self-run relay.
 
 ## 2. Latency buffer (`--net-delay`)
 

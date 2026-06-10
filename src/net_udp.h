@@ -57,6 +57,9 @@ typedef struct UdpTransport {
   int peer_known;                        // host learns client addr from its HELLO
   unsigned char peer_addr[28];           // sockaddr_storage-sized blob (opaque here)
   int peer_addr_len;
+  int relay;                             // route via a relay (both peers send OUTBOUND
+                                         // to it; it forwards by room — NAT-friendly)
+  uint32 relay_room;                     // room id the relay pairs the two peers by
 
   // --- connection status (read by the frontend for on-screen UX) ---
   int announced_delay;                   // our input_delay, sent in HELLO
@@ -105,9 +108,35 @@ bool Udp_InitClient(UdpTransport *ut, const char *host_ip, unsigned short port, 
 // Send a clean-disconnect notice to the peer (call on quit).
 void Udp_SendBye(UdpTransport *ut);
 
+// Copy the resolved peer/relay IPv4 (network-order bytes) into out[4]. Lets the
+// frontend build a join code without including socket headers.
+void Udp_GetPeerIPv4(const UdpTransport *ut, uint8 *out);
+
+// Relay (WAN) mode: instead of one peer binding a port and the other dialing
+// it (which needs a port-forward/VPN through NAT), BOTH peers send OUTBOUND to
+// a small public relay that pairs them by `room` and forwards datagrams between
+// them — no router config on either side. `is_host` still selects the P1 /
+// SRAM-server role. The relay is transparent to the lockstep/handshake/SRAM
+// protocol (it only strips a 4-byte room prefix and forwards the inner
+// payload). `relay_host` may be a dotted IPv4 or a hostname (DNS-resolved).
+bool Udp_InitRelay(UdpTransport *ut, const char *relay_host, unsigned short relay_port,
+                   uint32 room, int is_host, int input_delay);
+
+// Join code: a single shareable string encoding the relay endpoint (IPv4 +
+// port) and room, so Player 2 needs only the code to connect (no separate
+// --relay). 16 Crockford-base32 chars shown grouped 4-4-4-4 with dashes;
+// parsing ignores case, dashes and spaces. out_code needs >= 24 bytes.
+void Net_MakeJoinCode(const uint8 ip[4], uint16 port, uint32 room, char *out_code);
+bool Net_ParseJoinCode(const char *code, uint8 *ip_out, uint16 *port_out, uint32 *room_out);
+
 #ifdef ZELDA3_HEADLESS_TEST
 // Test-only: send a raw datagram to 127.0.0.1:port from a throwaway socket.
 int Udp_TestRawSendLocal(unsigned short port, const uint8 *buf, int len);
+// Test-only in-process relay (mirrors tools/relay.py): open a loopback relay
+// socket, pump (forward) pending datagrams between the two paired peers, close.
+int  Udp_TestRelayOpen(unsigned short port);
+void Udp_TestRelayPump(int sock);
+void Udp_TestRelayClose(int sock);
 #endif
 
 #endif  // ZELDA3_MULTIPLAYER

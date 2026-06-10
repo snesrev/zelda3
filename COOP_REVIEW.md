@@ -605,3 +605,25 @@ small, additive):
 All verified: full harness battery PASS (UDP now 12 asserts incl.
 waitalone/badver; SAVESTATE incl. savecrc), determinism byte-identical +
 lockstep-neutral (CRC 0f79cbba), vanilla untouched.
+
+## WAN relay + join codes (feature)
+
+Internet play with no port-forward or VPN: both peers send OUTBOUND to a small
+relay that pairs them by room and forwards. Purely a transport-addressing layer
+— the relay is transparent (strips a 4-byte room prefix, forwards the payload),
+so the handshake/lockstep/SRAM/desync code is unchanged and the SIMULATION is
+untouched (determinism CRC still 0f79cbba).
+
+- `tools/relay.py` — dependency-free reference UDP relay (multi-room, idles
+  rooms out; no game state touches it).
+- `Udp_InitRelay` (no bind; peer_addr = relay) + room-prefix framing in
+  `Udp_RawSendTo`; `Net_MakeJoinCode`/`Net_ParseJoinCode` (Crockford base32 of
+  relay IPv4 + port + room); frontend `--relay <host:port>` (host prints a join
+  code) and `--join <code>`. Malformed `--relay`/`--join`/`--net-delay` Die
+  loudly; the ROM-arg skip handles the new flags.
+- Verified: `ZELDA3_TEST_RELAY` (join-code round-trip incl. case/dash tolerance
+  + malformed-reject; full session — handshake + input both ways + 8KB SRAM
+  sync — through an in-process relay forwarder) PASS; **and live**: `relay.py`
+  + two real `--host`/`--join` localhost processes reach "session established"
+  with the host's save transferred. Builds clean (-Werror); prior battery still
+  PASS.
