@@ -156,7 +156,10 @@ with no desync.
 ## What remains (real-machine validation + polish)
 
 1. **Two-real-machine playtest** over LAN/WAN (the sandbox is single-machine,
-   so only localhost is exercisable here).
+   so only localhost is exercisable here). **See `ONLINE_PLAYTEST.md`** for the
+   step-by-step session guide: connection paths (LAN / VPN / port-forward),
+   `--net-delay` tuning, status-indicator meanings, a test checklist, and
+   exactly what to capture if a desync fires.
 2. **NAT/WAN convenience:** port-forward today; a relay/hole-punch or a "code"
    matchmaking layer would make WAN connect-by-default.
 3. **Recovery polish:** the desync flag currently warns; auto-resync (state
