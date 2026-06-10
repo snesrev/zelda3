@@ -22,13 +22,10 @@
 // that doesn't come from it (Udp_AddrMatches). (Full anti-spoofing of a forged
 // source addr needs crypto and is out of scope; this stops everything short
 // of that.)
-#include "net_udp.h"
-
+// System/socket headers must come BEFORE any game header: types.h defines a
+// function-like DWORD(x) macro that mangles `typedef DWORD (*...)` lines in
+// TCC's winnt.h (pulled in by winsock2.h). main.c follows the same order.
 #ifdef ZELDA3_MULTIPLAYER
-#include <string.h>
-#include <stdio.h>
-#include <ctype.h>
-
 #if defined(_WIN32)
   #include <winsock2.h>
   #include <ws2tcpip.h>
@@ -47,6 +44,14 @@
   #define CLOSESOCK close
   #define INVALID_SOCKET (-1)
 #endif
+#endif
+
+#include "net_udp.h"
+
+#ifdef ZELDA3_MULTIPLAYER
+#include <string.h>
+#include <stdio.h>
+#include <ctype.h>
 
 #include "player_state.h"   // INPUT_RING_SIZE (tx-history sufficiency check)
 
