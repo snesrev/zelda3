@@ -520,9 +520,45 @@ static int RunHeadlessTest(void) {
         c4.iface.close(&c4.iface);
       }
     }
-    int all = (got == 5 && g2 == 5 && hs && desync_ok && bye_ok && hard_ok && ring_ok && late_ok && lock_ok && sram_ok2);
-    printf("[harness] UDP TEST: input %d/5,%d/5  handshake=%d  desync_detect=%d  disconnect=%d  hardening=%d  ringcap=%d  latejoin=%d  hellolock=%d  sramsync=%d -> %s\n",
-           got, g2, hs, desync_ok, bye_ok, hard_ok, ring_ok, late_ok, lock_ok, sram_ok2, all ? "PASS" : "FAIL");
+    // 8) Waiting is NOT a disconnect: a lone host polling past the liveness
+    //    timeout must not trip peer_lost (it used to show "player disconnected"
+    //    after ~10s of waiting for the first join) — while a HANDSHAKED session
+    //    that goes silent must still time out.
+    int wait_ok = 0;
+    {
+      UdpTransport h5;
+      if (Udp_InitHost(&h5, 38895, 2)) {
+        for (int t = 0; t < UDP_TIMEOUT_POLLS + 100; t++) h5.iface.poll(&h5.iface, 0);
+        int lone_ok = !h5.peer_lost && !h5.handshaked;
+        h5.iface.close(&h5.iface);
+        // `host` is handshaked (sub-test 1); silence it past the timeout.
+        host.peer_lost = 0; host.idle_polls = 0;
+        for (int t = 0; t < UDP_TIMEOUT_POLLS + 100; t++) host.iface.poll(&host.iface, 0);
+        wait_ok = lone_ok && host.peer_lost;
+      }
+    }
+    // 9) A wrong-version HELLO must be SURFACED (version_mismatch) without
+    //    binding the peer slot — and a later correct HELLO must bind AND clear
+    //    the flag (stray noise can't wedge the status).
+    int badver_ok = 0;
+    {
+      UdpTransport h6;
+      if (Udp_InitHost(&h6, 38896, 2)) {
+        uint8 bv[4] = { NETPKT_HELLO, NET_PROTO_VERSION + 1, 2, 0 };
+        Udp_TestRawSendLocal(38896, bv, sizeof(bv));
+        InputFrame rf6;
+        for (int t = 0; t < 100 && !h6.version_mismatch; t++) { while (h6.iface.recv(&h6.iface, &rf6)) {} SDL_Delay(1); }
+        int flagged = h6.version_mismatch && !h6.peer_known;
+        uint8 gv[4] = { NETPKT_HELLO, NET_PROTO_VERSION, 2, 0 };
+        Udp_TestRawSendLocal(38896, gv, sizeof(gv));
+        for (int t = 0; t < 100 && !h6.peer_known; t++) { while (h6.iface.recv(&h6.iface, &rf6)) {} SDL_Delay(1); }
+        badver_ok = flagged && h6.peer_known && !h6.version_mismatch;
+        h6.iface.close(&h6.iface);
+      }
+    }
+    int all = (got == 5 && g2 == 5 && hs && desync_ok && bye_ok && hard_ok && ring_ok && late_ok && lock_ok && sram_ok2 && wait_ok && badver_ok);
+    printf("[harness] UDP TEST: input %d/5,%d/5  handshake=%d  desync_detect=%d  disconnect=%d  hardening=%d  ringcap=%d  latejoin=%d  hellolock=%d  sramsync=%d  waitalone=%d  badver=%d -> %s\n",
+           got, g2, hs, desync_ok, bye_ok, hard_ok, ring_ok, late_ok, lock_ok, sram_ok2, wait_ok, badver_ok, all ? "PASS" : "FAIL");
     return all ? 0 : 1;
   }
 
@@ -657,7 +693,12 @@ static int RunHeadlessTest(void) {
     // load is silently undone.
     for (int fr = 0; fr < 30; fr++) ZeldaRunFrame(0x20, 0);   // P1 walks down (open ground here)
     uint16 y_at_save = g_players[0].y_coord;
+    // Saving must be checksum-pure: online, the desync detector CRCs all of
+    // g_ram, and a save that left scratch writes behind (hdma copy, MSU bytes)
+    // would permanently trip a false DESYNC on the peer's next exchange.
+    uint32 crc_before_save = Multiplayer_ComputeChecksum().checksum;
     SaveLoadSlot(kSaveLoad_Save, 9);
+    int save_pure = (Multiplayer_ComputeChecksum().checksum == crc_before_save);
     for (int fr = 0; fr < 60; fr++) ZeldaRunFrame(0x20, 0);   // keep walking
     uint16 y_after = g_players[0].y_coord;
     SaveLoadSlot(kSaveLoad_Load, 9);
@@ -666,9 +707,9 @@ static int RunHeadlessTest(void) {
     int moved = (int)y_after - (int)y_at_save;                // walking down: y increases
     int err = (int)y_loaded - (int)y_at_save;
     if (err < 0) err = -err;
-    int pass = (moved > 20) && (err <= 2) && g_players[1].is_active;
-    printf("[harness] SAVESTATE TEST: y@save=%u y@+60walk=%u y@load=%u (drift=%d, walked=%d) P2act=%d -> %s\n",
-           y_at_save, y_after, y_loaded, err, moved, g_players[1].is_active,
+    int pass = (moved > 20) && (err <= 2) && g_players[1].is_active && save_pure;
+    printf("[harness] SAVESTATE TEST: y@save=%u y@+60walk=%u y@load=%u (drift=%d, walked=%d) P2act=%d savecrc=%d -> %s\n",
+           y_at_save, y_after, y_loaded, err, moved, g_players[1].is_active, save_pure,
            pass ? "PASS" : "FAIL");
     remove("saves/save9.sav");
     return pass ? 0 : 1;
@@ -754,6 +795,19 @@ static int RunHeadlessTest(void) {
   return 0;
 }
 #endif  // ZELDA3_HEADLESS_TEST
+
+#ifdef ZELDA3_MULTIPLAYER
+// A CLI token is consumed as an OPTIONAL numeric value (port / frames) only if
+// it is all digits — "zelda3_coop --connect 1.2.3.4 rom.sfc" must not eat the
+// ROM path as a port (atoi("rom.sfc")==0 silently became the default port and
+// the ROM argument vanished).
+static bool ArgIsNumber(const char *s) {
+  if (!s || !s[0]) return false;
+  for (; *s; s++)
+    if (*s < '0' || *s > '9') return false;
+  return true;
+}
+#endif
 
 #undef main
 int main(int argc, char** argv) {
@@ -870,10 +924,10 @@ int main(int argc, char** argv) {
     const char *rom_arg = NULL;
     for (int i = 0; i < argc; i++) {
       if (strcmp(argv[i], "--host") == 0) {
-        if (i + 1 < argc && argv[i + 1][0] != '-') i++;          // optional port
+        if (i + 1 < argc && ArgIsNumber(argv[i + 1])) i++;       // optional port
       } else if (strcmp(argv[i], "--connect") == 0) {
         if (i + 1 < argc) i++;                                   // ip
-        if (i + 1 < argc && argv[i + 1][0] != '-') i++;          // optional port
+        if (i + 1 < argc && ArgIsNumber(argv[i + 1])) i++;       // optional port
       } else if (strcmp(argv[i], "--net-delay") == 0) {
         if (i + 1 < argc) i++;                                   // frames
       } else if (argv[i][0] != '-') {
@@ -919,11 +973,17 @@ int main(int argc, char** argv) {
     for (int i = 0; i < argc; i++) {
       if (strcmp(argv[i], "--host") == 0) {
         want_host = 1;
-        if (i + 1 < argc && argv[i + 1][0] != '-') port = atoi(argv[++i]);
-      } else if (strcmp(argv[i], "--connect") == 0 && i + 1 < argc) {
+        if (i + 1 < argc && ArgIsNumber(argv[i + 1])) port = atoi(argv[++i]);
+      } else if (strcmp(argv[i], "--connect") == 0) {
+        // A missing value used to be silently ignored — the game then launched
+        // LOCAL co-op and the player sat "connecting" to nothing. Fail loudly.
+        if (i + 1 >= argc)
+          Die("--connect requires a host ip (e.g. --connect 192.168.1.10 7777)");
         connect_ip = argv[++i];
-        if (i + 1 < argc && argv[i + 1][0] != '-') port = atoi(argv[++i]);
-      } else if (strcmp(argv[i], "--net-delay") == 0 && i + 1 < argc) {
+        if (i + 1 < argc && ArgIsNumber(argv[i + 1])) port = atoi(argv[++i]);
+      } else if (strcmp(argv[i], "--net-delay") == 0) {
+        if (i + 1 >= argc || !ArgIsNumber(argv[i + 1]))
+          Die("--net-delay requires a number of frames (0-10)");
         delay = atoi(argv[++i]);
       }
     }
@@ -1037,6 +1097,13 @@ int main(int argc, char** argv) {
     }
 
     if (g_paused) {
+#ifdef ZELDA3_MULTIPLAYER
+      // Keep the online transport alive while paused (acks/retransmits/
+      // keepalives, and drain inbound traffic): the peer then correctly shows
+      // "waiting for player..." instead of falsely tripping the ~10s
+      // "player disconnected" timeout. No capture, no sim advance.
+      Multiplayer_NetIdle();
+#endif
       SDL_Delay(16);
       continue;
     }
@@ -1172,7 +1239,13 @@ int main(int argc, char** argv) {
       }
     }
   }
-  if (g_config.autosave)
+  // No quit-autosave while online: a savestate captures the SESSION's state —
+  // on the client that embeds the HOST's save data (SRAM), and a later offline
+  // launch auto-loading it could end up overwriting the client's OWN saves
+  // with the host's progression. (The matching autosave-LOAD at startup is
+  // already skipped online; manual state saves online remain allowed and are
+  // documented as containing the host's save data.)
+  if (g_config.autosave && !mp_online)
     HandleCommand(kKeys_Save + 0, true);
 
 #ifdef ZELDA3_MULTIPLAYER

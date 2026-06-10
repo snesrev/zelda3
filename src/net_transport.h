@@ -83,4 +83,11 @@ void Multiplayer_LockstepInit(NetTransport *t, int local_player_index, int input
 // stalled waiting on the remote peer).
 int Multiplayer_LockstepTick(uint16 local_joypad);
 
+// Transport upkeep WITHOUT input capture or sim advance, for display ticks
+// where the frontend skips the lockstep entirely (the pause screen): keeps
+// acks/retransmission/keepalives and the liveness timeout flowing, so a
+// machine paused for >10s reads as "waiting for player" on its peer instead
+// of falsely tripping "player disconnected". Safe any time; no-op offline.
+void Multiplayer_NetIdle(void);
+
 #endif  // ZELDA3_MULTIPLAYER

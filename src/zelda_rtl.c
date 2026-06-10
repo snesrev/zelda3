@@ -833,11 +833,31 @@ static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
 }
 
 static void SaveSnesState(SaveLoadFunc *func, void *ctx) {
+#ifdef ZELDA3_MULTIPLAYER
+  // Saving must be READ-ONLY with respect to the checksummed sim state. The
+  // scratch writes below (the hdma-table copy and the MSU volume/resume bytes)
+  // land in g_ram, which the online desync checksum covers in full — so the
+  // first savestate one peer made would otherwise permanently trip a false
+  // "DESYNC DETECTED" on the next checksum exchange (the other peer never
+  // performs these writes; msu_volume even flips 0->255 on the first save).
+  // Snapshot the three scratch regions and restore them after serialization:
+  // the saved file keeps the values, live RAM is left exactly as it was.
+  // ([0x1DB60, 0x1DBA0) bounds the MSU resume blob; 0x654 is msu_volume.)
+  uint8 mp_save_hdma[224 * 2], mp_save_msu[0x40], mp_save_vol;
+  memcpy(mp_save_hdma, g_zenv.ram + 0x1b00, sizeof(mp_save_hdma));
+  memcpy(mp_save_msu, g_zenv.ram + 0x1DB60, sizeof(mp_save_msu));
+  mp_save_vol = g_zenv.ram[0x654];
+#endif
   memcpy(g_zenv.ram + 0x1b00, g_zenv.ram + 0x1DBA0, 224 * 2); // hdma table was moved
   ZeldaApuLock();
   ZeldaSaveMusicStateToRam_Locked();
   InternalSaveLoad(func, ctx);
   ZeldaApuUnlock();
+#ifdef ZELDA3_MULTIPLAYER
+  memcpy(g_zenv.ram + 0x1b00, mp_save_hdma, sizeof(mp_save_hdma));
+  memcpy(g_zenv.ram + 0x1DB60, mp_save_msu, sizeof(mp_save_msu));
+  g_zenv.ram[0x654] = mp_save_vol;
+#endif
 }
 
 typedef struct StateRecorder {
@@ -1224,6 +1244,36 @@ static uint32 g_net_send_frame;    // frame number to tag the next local input w
 static uint32 g_net_remote_next;   // next remote frame# expected (de-dups UDP resends)
 static uint32 g_net_last_sync_frame; // last frame we sent a SYNC checksum for
 
+// Drain the transport into the remote player's input ring, strictly in order,
+// de-duping the redundant copies a UDP transport resends for loss tolerance:
+// accept a frame only when it's exactly the next one expected (older =
+// duplicate, newer = a gap a later resend will fill). Stops if the ring fills;
+// the dropped frame's resend is re-accepted next tick once it drains.
+static void Multiplayer_IngestRemote(void) {
+  int remote = g_net_local_player ^ 1;
+  InputFrame rf;
+  while (g_net_transport->recv(g_net_transport, &rf)) {
+    if ((int)rf.player_index == remote && rf.frame_number == g_net_remote_next) {
+      if (!InputRing_Push(remote, &rf))
+        break;
+      g_net_remote_next++;
+    }
+  }
+}
+
+// Transport upkeep without capture or sim advance — called by the frontend on
+// display ticks that skip the lockstep entirely (the pause screen). Keeps our
+// acks/retransmission/keepalives flowing so the peer reads a pause as
+// "waiting for player", not a ~10s "player disconnected"; and keeps draining
+// inbound traffic so our own liveness only counts real silence.
+void Multiplayer_NetIdle(void) {
+  if (!g_net_transport)
+    return;
+  if (g_net_transport->poll)
+    g_net_transport->poll(g_net_transport, g_net_remote_next);
+  Multiplayer_IngestRemote();
+}
+
 void Multiplayer_LockstepInit(NetTransport *t, int local_player_index, int input_delay) {
   g_net_transport = t;
   g_net_local_player = (local_player_index != 0);
@@ -1266,20 +1316,8 @@ int Multiplayer_LockstepTick(uint16 local_joypad) {
     }
   }
 
-  // 2. Ingest remote input into the remote player's ring, in order, de-duping
-  //    the redundant copies a UDP transport resends for loss tolerance: accept a
-  //    frame only when it's exactly the next one expected (older = duplicate,
-  //    newer = a gap that a later resend will fill). Stop if the ring fills; the
-  //    dropped frame's redundant resend is re-accepted next tick once it drains.
-  int remote = g_net_local_player ^ 1;
-  InputFrame rf;
-  while (g_net_transport->recv(g_net_transport, &rf)) {
-    if ((int)rf.player_index == remote && rf.frame_number == g_net_remote_next) {
-      if (!InputRing_Push(remote, &rf))
-        break;
-      g_net_remote_next++;
-    }
-  }
+  // 2. Ingest remote input into the remote player's ring.
+  Multiplayer_IngestRemote();
 
   // 3. Advance the sim for every frame whose inputs (both players) are present,
   //    keeping it input_delay frames behind capture so the remote frame has time

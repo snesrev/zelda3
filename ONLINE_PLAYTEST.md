@@ -117,6 +117,11 @@ work) — restart both sides to continue playing.
 - No mid-session reconnect; a drop means relaunch both.
 - Desyncs warn (with frame number) but don't auto-resync.
 - Savestate-load / replay / reset / cheat hotkeys are intentionally ignored
-  while online (each would desync); saving a state still works.
+  while online (each would desync); saving a state still works and is
+  checksum-pure (it cannot trip a false desync).
+- A state saved DURING an online session captures the session — on the client
+  that includes the host's save data. The quit-time autosave is skipped while
+  online for exactly that reason (so a later offline launch can't accidentally
+  carry the host's progression into your own saves).
 - No wire encryption/authentication — play with people you know, don't
   leave the port exposed long-term.

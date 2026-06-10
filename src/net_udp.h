@@ -19,8 +19,9 @@
 
 // Sender-side input history. Bound: local capture stalls once the local input
 // ring (256) is full, and the peer can run at most its own ring (256) plus the
-// input delay (<=10) further, so unacked frames never exceed ~512-and-change…
-// actually never exceed 511 (see Udp_RecordFrame); 512 slots is exactly enough.
+// input delay (<=10) further, so unacked frames never exceed the two rings
+// combined (Udp_Send records each captured frame); 512 slots is exactly enough.
+// (A compile-time check in net_udp.c enforces HISTORY >= 2 * INPUT_RING_SIZE.)
 #define UDP_TX_HISTORY       512
 #define UDP_MAX_BURST        32          // max InputFrames per INPUT packet
 #define UDP_RECV_QUEUE       256         // decomposed inbound InputFrame FIFO
