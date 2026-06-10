@@ -8,6 +8,24 @@ Two Links share one screen: green **Player 1**, red **Player 2**.
 
 ---
 
+## 0. Easiest path: prebuilt Windows download (no compiler)
+
+Every master build publishes ready-made exes to the repo's **Releases** page
+(release "**Windows build (latest)**" → `zelda3-coop-windows-x64.zip`, built by
+`.github/workflows/windows.yaml`). The zip contains `zelda3_coop.exe`,
+`zelda3.exe`, `SDL2.dll`, `zelda3.ini`, and a `README_FIRST.txt`.
+
+You still need `zelda3_assets.dat` (extracted once from your own ROM — see the
+table below), copied next to the exe. Then:
+
+- **Co-op** (default): double-click `zelda3_coop.exe`
+- **Solo**: `zelda3_coop.exe --solo` — disables Player 2 (true single-player)
+- **Online**: `zelda3_coop.exe --online`
+
+Only build from source if you want to modify the game.
+
+---
+
 ## 1. What you need
 
 The repository contains **source only**. To build and run you must also provide,
@@ -34,7 +52,7 @@ python assets\restool.py -r zelda3.sfc --extract-from-rom
 **Co-op build:**
 
 ```
-third_party\tcc\tcc.exe -ozelda3_coop.exe -DCOMPILER_TCC=1 -DSTBI_NO_SIMD=1 -DHAVE_STDINT_H=1 -D_HAVE_STDINT_H=1 -DSYSTEM_VOLUME_MIXER_AVAILABLE=0 -DZELDA3_MULTIPLAYER=1 -Ithird_party\SDL2-2.26.3/include -Lthird_party\SDL2-2.26.3/lib/x64 -lSDL2 -I. src/*.c snes/*.c third_party/gl_core/gl_core_3_1.c third_party/opus-1.3.1-stripped/opus_decoder_amalgam.c
+third_party\tcc\tcc.exe -ozelda3_coop.exe -DCOMPILER_TCC=1 -DSTBI_NO_SIMD=1 -DHAVE_STDINT_H=1 -D_HAVE_STDINT_H=1 -DSYSTEM_VOLUME_MIXER_AVAILABLE=0 -DZELDA3_MULTIPLAYER=1 -Ithird_party\SDL2-2.26.3/include -Lthird_party\SDL2-2.26.3/lib/x64 -lSDL2 -lws2_32 -I. src/*.c snes/*.c third_party/gl_core/gl_core_3_1.c third_party/opus-1.3.1-stripped/opus_decoder_amalgam.c
 ```
 
 **Vanilla build** (same, minus `-DZELDA3_MULTIPLAYER=1`, output `zelda3.exe`):
@@ -57,6 +75,9 @@ There's nothing to toggle. **Load a save or start a new game**, and as soon as
 Player 1 is in normal gameplay (the overworld or a dungeon), **Player 2 spawns
 right next to Player 1** (red tunic) and is fully controllable. Both players'
 hearts show in the HUD — P1's row on top, P2's row directly below.
+
+To play **alone** with the co-op exe, launch with `--solo` — Player 2 never
+spawns and the game behaves like classic single-player.
 
 ---
 
