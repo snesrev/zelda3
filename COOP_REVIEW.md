@@ -559,3 +559,49 @@ swimming stroke scratch sharing (deterministic, cosmetic; `swimcoll_*` is
 also touched from dungeon.c, so a blind per-player split risks breaking
 swimming for everyone); HUD heart-row overlap past 10 hearts (cosmetic);
 sprite-based liftables P1-only; P2 item selection follows P1 (by design).
+
+## Review round 9 — adversarial review OF round 8's new code
+
+Round 8's ~670 new lines (protocol v2, SRAM streaming, frontend gating) got
+their own adversarial pass. The core state machines check out — ack-window
+math (incl. wrap/clamp/monotonic-ack guards), SRAM chunk validation (bounds,
+total, full-length, role, post-completion immunity), ready() gating (no
+deadlocks; loopback NULLs handled), HELLO v2 loss-healing, savestate/reset
+re-seed coverage, and every prior hardening retained. Found and fixed (all
+small, additive):
+
+- **HIGH — saving a state online tripped a permanent false "DESYNC DETECTED".**
+  `SaveSnesState` wrote scratch into g_ram (the hdma-table copy, MSU
+  volume/resume bytes — msu_volume even flips 0->255 on the first save), and
+  the desync checksum covers all of g_ram; the non-saving peer never performs
+  those writes. Saving now snapshots and restores the three scratch regions —
+  the saved file keeps the values, live RAM is untouched. New harness assert:
+  `savecrc=1` (checksum identical across a save).
+- **HIGH — waiting for a peer false-flagged "player disconnected".** The v2
+  liveness counter ran from launch, so a host idling >10s before the client
+  joined showed disconnected (regression vs v1, where it couldn't fire
+  pre-connect). Timeout now counts only once handshaked; real post-handshake
+  silence still trips it. New assert: `waitalone=1`.
+- **MED — the host never surfaced a protocol-version mismatch** (the pre-lock
+  filter silently dropped wrong-version HELLOs -> eternal "connecting...").
+  Now flagged, and self-healing: a later version-matching HELLO clears it.
+  New assert: `badver=1`.
+- **MED — pausing skipped transport upkeep entirely**, so >10s of pause made
+  the peer flag a disconnect. New `Multiplayer_NetIdle()` (poll + ingest, no
+  capture/sim) runs from the pause loop.
+- **MED — the client could persist the host's SRAM to disk** via the
+  quit-time autosave (a savestate embeds the session's SRAM; a later offline
+  launch auto-loading it would carry the host's progression into the client's
+  own saves). Quit-autosave is now skipped online, matching the startup
+  autosave-load gate; manual online saves are documented as containing the
+  host's save data.
+- **LOW — CLI misparses:** `--connect`/`--net-delay` missing or non-numeric
+  values now fail loudly (Die) instead of silently launching local co-op, and
+  optional ports are consumed only if all-digits ("--connect <ip> rom.sfc" no
+  longer eats the ROM path as port 0). Plus hygiene: a compile-time check that
+  the tx history covers both input rings, a defensive SRAM index re-check, and
+  a stale comment fix.
+
+All verified: full harness battery PASS (UDP now 12 asserts incl.
+waitalone/badver; SAVESTATE incl. savecrc), determinism byte-identical +
+lockstep-neutral (CRC 0f79cbba), vanilla untouched.

@@ -46,6 +46,16 @@
   #define INVALID_SOCKET (-1)
 #endif
 
+#include "player_state.h"   // INPUT_RING_SIZE (tx-history sufficiency check)
+
+// Udp_Send records every captured frame into the tx history; the sufficiency
+// argument (see net_udp.h) needs history >= both peers' input rings combined.
+// Enforce it so a future ring resize can't silently enable resend-window
+// overwrite (wrong frames retransmitted -> guaranteed desync).
+#if UDP_TX_HISTORY < 2 * INPUT_RING_SIZE
+#error UDP_TX_HISTORY must be at least 2 * INPUT_RING_SIZE
+#endif
+
 // INPUT packet: [type][count][ack:4 LE][count * frame]
 #define UDP_INPUT_HDR    6
 #define UDP_INPUT_MAX    (UDP_INPUT_HDR + UDP_MAX_BURST * INPUT_FRAME_WIRE_SIZE)
@@ -152,7 +162,11 @@ static void Udp_Poll(NetTransport *t, uint32 ack_frame) {
     }
   }
   // Liveness: one tick with no peer traffic; recv() resets this on arrival.
-  if (++ut->idle_polls > UDP_TIMEOUT_POLLS) ut->peer_lost = 1;
+  // Counted only once a session exists — a host (or early-started client)
+  // still waiting for its peer to appear is "connecting", not "disconnected"
+  // (an ungated count used to flag peer_lost after ~10s of sitting on the
+  // title screen waiting for the first join).
+  if (ut->handshaked && ++ut->idle_polls > UDP_TIMEOUT_POLLS) ut->peer_lost = 1;
 }
 
 // Session readiness for the lockstep driver: input capture starts only when
@@ -265,9 +279,12 @@ static void Udp_HandlePacket(UdpTransport *ut, const uint8 *pkt, int n) {
       }
       break;
     case NETPKT_SRAM:
-      // Client only (already length/index-validated by Udp_PacketWellFormed).
+      // Client only (length/index already validated by Udp_PacketWellFormed;
+      // re-checked here so this handler stays memory-safe even if it ever
+      // gains another caller or the gate changes).
       if (!ut->is_host && !ut->sram_ok) {
         int idx = pkt[1];
+        if (idx >= UDP_SRAM_CHUNKS) break;
         memcpy(&ut->sram_buf[idx * UDP_SRAM_CHUNK], &pkt[UDP_SRAM_HDR], UDP_SRAM_CHUNK);
         ut->sram_have_mask |= 1u << idx;
         if (ut->sram_have_mask == (1u << UDP_SRAM_CHUNKS) - 1)
@@ -299,11 +316,20 @@ static bool Udp_Recv(NetTransport *t, InputFrame *out) {
       // client HELLOs until handshaked, so this is the natural first contact).
       // A stray INPUT/SYNC/BYE — port scans, a stale earlier session — can't
       // hijack the slot or make the session look dead before it starts.
-      if (pkt[0] != NETPKT_HELLO || pkt[1] != NET_PROTO_VERSION) continue;
+      if (pkt[0] != NETPKT_HELLO || pkt[1] != NET_PROTO_VERSION) {
+        // A HELLO with the wrong version is surfaced, not silently dropped —
+        // otherwise two mismatched builds both sit on "connecting..." forever
+        // with no hint why. Self-healing: a later version-matching HELLO (the
+        // real client) clears the flag below, so stray noise can't wedge it.
+        if (pkt[0] == NETPKT_HELLO)
+          ut->version_mismatch = 1;
+        continue;
+      }
       if (srclen > (socklen_t)sizeof(ut->peer_addr)) srclen = sizeof(ut->peer_addr);
       memcpy(ut->peer_addr, src, srclen);
       ut->peer_addr_len = (int)srclen;
       ut->peer_known = 1;
+      ut->version_mismatch = 0;   // a valid peer bound; clear any stray-noise flag
     } else if (!Udp_AddrMatches(ut, src, srclen)) {
       continue;                                 // not from our peer — ignore (anti-spoof)
     }
