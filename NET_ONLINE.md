@@ -157,15 +157,42 @@ with no desync.
 
 1. **Two-real-machine playtest** over LAN/WAN (the sandbox is single-machine,
    so only localhost is exercisable here). **See `ONLINE_PLAYTEST.md`** for the
-   step-by-step session guide: connection paths (LAN / VPN / port-forward),
-   `--net-delay` tuning, status-indicator meanings, a test checklist, and
-   exactly what to capture if a desync fires.
-2. **NAT/WAN convenience:** port-forward today; a relay/hole-punch or a "code"
-   matchmaking layer would make WAN connect-by-default.
-3. **Recovery polish:** the desync flag currently warns; auto-resync (state
+   step-by-step session guide: connection paths (LAN / relay+join-code / VPN /
+   port-forward), `--net-delay` tuning, status-indicator meanings, a test
+   checklist, and exactly what to capture if a desync fires.
+2. **Recovery polish:** the desync flag currently warns; auto-resync (state
    transfer) and a graceful "pause + reconnect" on timeout are future niceties.
+3. **WAN convenience, further:** NAT hole-punching (direct P2P, lower latency
+   than relay) and a hosted default relay / lobby "browse games" layer would
+   remove the one remaining manual step (someone running `tools/relay.py`).
 
 None of these touch the simulation — they only feed it inputs.
+
+## WAN relay + join codes (implemented)
+
+For internet play without a port-forward or VPN, both peers send OUTBOUND to a
+small relay (NAT-friendly) that pairs them by a room id and forwards their
+datagrams. The relay is **transparent** to everything above — it only strips a
+4-byte room prefix and forwards the inner payload, so the handshake, lockstep,
+SRAM sync and desync detection all run end-to-end unchanged.
+
+- **Reference relay:** `tools/relay.py` — a dependency-free UDP forwarder
+  (`python3 tools/relay.py [port]`) you run on any reachable host. It keeps the
+  two most-recent addresses per room and idles rooms out; no game state ever
+  touches it.
+- **Join code:** the host (`--host --relay <host:port>`) prints a 16-char
+  Crockford-base32 code (shown `XXXX-XXXX-XXXX-XXXX`) encoding the relay's IPv4
+  + port + a random room; the friend runs `--join <code>` and needs nothing
+  else. Parsing ignores case, dashes and spaces.
+- **Game side:** `Udp_InitRelay()` (no bind; peer_addr = the relay) and the
+  room-prefix framing in `Udp_RawSendTo`; `Net_MakeJoinCode`/`Net_ParseJoinCode`
+  for the code. All in `src/net_udp.c`.
+- **Verified headlessly** (`ZELDA3_TEST_RELAY=1 ./zelda3_harness`): join-code
+  encode/decode round-trip (+ case/dash tolerance, rejects malformed), and a
+  full session — handshake, input both ways, and 8KB SRAM sync — through an
+  in-process relay forwarder (the same algorithm as `relay.py`). Also exercised
+  live: `relay.py` + two real `--host`/`--join` processes reach
+  "session established" with the save transferred.
 
 ## Why lockstep (not rollback)
 

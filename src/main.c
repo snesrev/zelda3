@@ -562,6 +562,64 @@ static int RunHeadlessTest(void) {
     return all ? 0 : 1;
   }
 
+  // WAN relay self-test (ZELDA3_TEST_RELAY): the join-code codec round-trips,
+  // and two relay-mode transports complete a full session (handshake + input
+  // both ways + SRAM sync) through an in-process relay forwarder — proving the
+  // room-prefix framing and relay-address routing work end to end.
+  if (getenv("ZELDA3_TEST_RELAY")) {
+    // (a) Join-code codec: encode -> decode round-trip, plus case/dash tolerance.
+    uint8 ip[4] = { 203, 0, 113, 7 }, dip[4]; uint16 dport; uint32 droom;
+    char code[24];
+    Net_MakeJoinCode(ip, 7777, 0xDEADBEEFu, code);
+    int codec_ok = Net_ParseJoinCode(code, dip, &dport, &droom) &&
+                   dip[0] == 203 && dip[1] == 0 && dip[2] == 113 && dip[3] == 7 &&
+                   dport == 7777 && droom == 0xDEADBEEFu;
+    char lc[24]; int o = 0;                      // lowercased + dashes stripped
+    for (const char *s = code; *s; s++) if (*s != '-') lc[o++] = (char)tolower((unsigned char)*s);
+    lc[o] = 0;
+    codec_ok = codec_ok && Net_ParseJoinCode(lc, dip, &dport, &droom) &&
+               dport == 7777 && droom == 0xDEADBEEFu;
+    codec_ok = codec_ok && !Net_ParseJoinCode("too-short", dip, &dport, &droom);
+
+    // (b) Two relay-mode peers through an in-process relay forwarder.
+    const unsigned short RPORT = 38897; const uint32 ROOM = 0x12345678u;
+    int relay = Udp_TestRelayOpen(RPORT);
+    int sess_ok = 0, sram_ok3 = 0;
+    if (relay >= 0) {
+      UdpTransport host, client;
+      if (Udp_InitRelay(&host, "127.0.0.1", RPORT, ROOM, 1, 2) &&
+          Udp_InitRelay(&client, "127.0.0.1", RPORT, ROOM, 0, 2)) {
+        static uint8 fake_sram[UDP_SRAM_SIZE];
+        for (int i = 0; i < UDP_SRAM_SIZE; i++) fake_sram[i] = (uint8)(i * 7 + (i >> 5));
+        host.sram_src = fake_sram;
+        for (uint32 f = 0; f < 5; f++) {
+          InputFrame hf = { f, (uint16)(0x80 + f), 0, 0 }; host.iface.send(&host.iface, &hf);
+          InputFrame cf = { f, (uint16)(0x40 + f), 1, 0 }; client.iface.send(&client.iface, &cf);
+        }
+        int gh = 0, gc = 0; uint32 eh = 0, ec = 0; InputFrame rf;
+        for (int t = 0; t < 3000 && !(gh == 5 && gc == 5 && client.sram_ok); t++) {
+          Udp_TestRelayPump(relay);
+          host.iface.poll(&host.iface, eh);
+          client.iface.poll(&client.iface, ec);
+          Udp_TestRelayPump(relay);
+          while (host.iface.recv(&host.iface, &rf))   if (rf.player_index == 1 && rf.frame_number == ec) { gc++; ec++; }
+          while (client.iface.recv(&client.iface, &rf)) if (rf.player_index == 0 && rf.frame_number == eh) { gh++; eh++; }
+          SDL_Delay(1);
+        }
+        sess_ok = (gh == 5 && gc == 5 && host.handshaked && client.handshaked &&
+                   !host.version_mismatch && !client.version_mismatch);
+        sram_ok3 = client.sram_ok && memcmp(client.sram_buf, fake_sram, UDP_SRAM_SIZE) == 0;
+        host.iface.close(&host.iface);
+        client.iface.close(&client.iface);
+      }
+      Udp_TestRelayClose(relay);
+    }
+    int all = codec_ok && sess_ok && sram_ok3;
+    printf("[harness] RELAY TEST: joincode=%d  session(5/5 both ways + handshake)=%d  sramsync=%d -> %s\n",
+           codec_ok, sess_ok, sram_ok3, all ? "PASS" : "FAIL");
+    return all ? 0 : 1;
+  }
+
   // Self-test the P2 keyboard mapping (this can't be exercised any other way
   // headless — the harness injects inputs directly, bypassing SDL handlers).
   // Expected bits are the input layout: B=0x01,Y=0x02,Sel=0x04,St=0x08,
@@ -928,8 +986,10 @@ int main(int argc, char** argv) {
       } else if (strcmp(argv[i], "--connect") == 0) {
         if (i + 1 < argc) i++;                                   // ip
         if (i + 1 < argc && ArgIsNumber(argv[i + 1])) i++;       // optional port
-      } else if (strcmp(argv[i], "--net-delay") == 0) {
-        if (i + 1 < argc) i++;                                   // frames
+      } else if (strcmp(argv[i], "--net-delay") == 0 ||
+                 strcmp(argv[i], "--relay") == 0 ||
+                 strcmp(argv[i], "--join") == 0) {
+        if (i + 1 < argc) i++;                                   // its value
       } else if (argv[i][0] != '-') {
         rom_arg = argv[i];
         break;
@@ -966,10 +1026,13 @@ int main(int argc, char** argv) {
   // "--net-delay N" (input-delay frames; default 2). Without these flags the
   // game stays in local co-op. Both peers run the identical deterministic sim;
   // only 8-byte InputFrames are exchanged (see NET_ONLINE.md).
+  // WAN relay (optional): "--relay <host[:port]>" with "--host" routes through
+  // a public relay (no port-forward needed) and prints a JOIN CODE; the friend
+  // runs "--join <code>" — the code bakes in the relay endpoint + room.
   {
     static UdpTransport s_udp;
-    const char *connect_ip = NULL;
-    int want_host = 0, port = 0, delay = 2;
+    const char *connect_ip = NULL, *relay_host = NULL, *join_code = NULL;
+    int want_host = 0, port = 0, relay_port = 7777, delay = 2;
     for (int i = 0; i < argc; i++) {
       if (strcmp(argv[i], "--host") == 0) {
         want_host = 1;
@@ -981,6 +1044,23 @@ int main(int argc, char** argv) {
           Die("--connect requires a host ip (e.g. --connect 192.168.1.10 7777)");
         connect_ip = argv[++i];
         if (i + 1 < argc && ArgIsNumber(argv[i + 1])) port = atoi(argv[++i]);
+      } else if (strcmp(argv[i], "--relay") == 0) {
+        if (i + 1 >= argc) Die("--relay requires a relay host (e.g. --relay myrelay.net:7777)");
+        const char *t = argv[++i];
+        static char rh[256];
+        const char *colon = strrchr(t, ':');
+        if (colon) {
+          size_t n = (size_t)(colon - t);
+          if (n >= sizeof rh) n = sizeof rh - 1;
+          memcpy(rh, t, n); rh[n] = 0; relay_host = rh;
+          int rp = atoi(colon + 1);
+          relay_port = (rp > 0 && rp <= 65535) ? rp : 7777;
+        } else {
+          relay_host = t;
+        }
+      } else if (strcmp(argv[i], "--join") == 0) {
+        if (i + 1 >= argc) Die("--join requires a code (e.g. --join 3F8K-2P9Q-XM4T-1ABC)");
+        join_code = argv[++i];
       } else if (strcmp(argv[i], "--net-delay") == 0) {
         if (i + 1 >= argc || !ArgIsNumber(argv[i + 1]))
           Die("--net-delay requires a number of frames (0-10)");
@@ -990,21 +1070,53 @@ int main(int argc, char** argv) {
     if (port <= 0 || port > 65535) port = 7777;
     int d = (delay < 0) ? 0 : (delay > 10 ? 10 : delay);
     bool online_ok = false;
-    if (want_host)          online_ok = Udp_InitHost(&s_udp, (unsigned short)port, d);
-    else if (connect_ip)    online_ok = Udp_InitClient(&s_udp, connect_ip, (unsigned short)port, d);
+    int as_host = 0;
+    if (join_code) {                                   // WAN: join via relay code
+      uint8 rip[4]; uint16 rp; uint32 room;
+      if (!Net_ParseJoinCode(join_code, rip, &rp, &room))
+        Die("--join: invalid code (expected 16 base32 chars, e.g. 3F8K-2P9Q-XM4T-1ABC)");
+      char ipstr[16];
+      snprintf(ipstr, sizeof ipstr, "%u.%u.%u.%u", rip[0], rip[1], rip[2], rip[3]);
+      online_ok = Udp_InitRelay(&s_udp, ipstr, rp, room, /*is_host=*/0, d);
+      as_host = 0;
+    } else if (want_host && relay_host) {              // WAN: host via relay
+      // Room id is a rendezvous tag only (never enters the sim), so non-
+      // deterministic seeding here is fine and cannot affect lockstep.
+      uint32 room = (uint32)SDL_GetPerformanceCounter();
+      room = room * 2654435761u + 0x9E3779B9u;
+      if (room == 0) room = 1;
+      online_ok = Udp_InitRelay(&s_udp, relay_host, (unsigned short)relay_port, room, /*is_host=*/1, d);
+      as_host = 1;
+      if (online_ok) {
+        uint8 ipb[4]; Udp_GetPeerIPv4(&s_udp, ipb);
+        char code[24];
+        Net_MakeJoinCode(ipb, (uint16)relay_port, room, code);
+        printf("\n========================================================\n");
+        printf("  ONLINE (relay) — share this JOIN CODE with Player 2:\n");
+        printf("      %s\n", code);
+        printf("  They run:  zelda3_coop --join %s\n", code);
+        printf("========================================================\n\n");
+      }
+    } else if (want_host) {                            // LAN/port-forward host
+      online_ok = Udp_InitHost(&s_udp, (unsigned short)port, d);
+      as_host = 1;
+    } else if (connect_ip) {                           // LAN/port-forward client
+      online_ok = Udp_InitClient(&s_udp, connect_ip, (unsigned short)port, d);
+      as_host = 0;
+    }
     if (online_ok) {
-      g_mp_config.mode = want_host ? MP_MODE_HOST : MP_MODE_CLIENT;
-      g_mp_config.local_player_index = want_host ? 0 : 1;  // host drives P1, client P2
+      g_mp_config.mode = as_host ? MP_MODE_HOST : MP_MODE_CLIENT;
+      g_mp_config.local_player_index = as_host ? 0 : 1;  // host drives P1, client P2
       g_mp_config.num_players = 2;
       g_mp_config.input_delay_frames = (uint8)d;
       s_udp.sram_src = g_zenv.sram;  // host serves its save data to the client
       g_online_udp = &s_udp;
       Multiplayer_LockstepInit(&s_udp.iface, g_mp_config.local_player_index,
                                g_mp_config.input_delay_frames);
-      printf("[net] ONLINE co-op: %s, you are Player %d, input_delay=%d frames\n",
-             want_host ? "HOST" : "CLIENT", g_mp_config.local_player_index + 1,
-             g_mp_config.input_delay_frames);
-    } else if (want_host || connect_ip) {
+      printf("[net] ONLINE co-op: %s, you are Player %d, input_delay=%d frames%s\n",
+             as_host ? "HOST" : "CLIENT", g_mp_config.local_player_index + 1,
+             g_mp_config.input_delay_frames, s_udp.relay ? " (via relay)" : "");
+    } else if (want_host || connect_ip || join_code || relay_host) {
       printf("[net] online init FAILED — staying in local co-op\n");
     }
   }

@@ -27,6 +27,7 @@
 #ifdef ZELDA3_MULTIPLAYER
 #include <string.h>
 #include <stdio.h>
+#include <ctype.h>
 
 #if defined(_WIN32)
   #include <winsock2.h>
@@ -39,6 +40,7 @@
   #include <sys/socket.h>
   #include <netinet/in.h>
   #include <arpa/inet.h>
+  #include <netdb.h>
   #include <unistd.h>
   #include <fcntl.h>
   #include <errno.h>
@@ -81,10 +83,26 @@ static bool Udp_PlatformInit(void) {
 }
 
 // Raw send to the peer (no-op for a host that hasn't learned the client yet).
+// In relay mode peer_addr is the RELAY's address and every datagram is prefixed
+// with the 4-byte room id; the relay strips it and forwards the inner payload to
+// the other peer in the room (so the receiver still sees a clean NETPKT_*).
 static void Udp_RawSendTo(UdpTransport *ut, const uint8 *buf, int len) {
-  if (ut->is_host && !ut->peer_known) return;
-  sendto(ut->sock, (const char *)buf, len, 0,
-         (struct sockaddr *)ut->peer_addr, ut->peer_addr_len);
+  if (ut->is_host && !ut->peer_known) return;   // direct mode: no client addr yet
+  if (len < 0) return;
+  if (ut->relay) {
+    uint8 framed[4 + UDP_MAX_PACKET];
+    if (len > (int)sizeof(framed) - 4) return;
+    framed[0] = (uint8)ut->relay_room;
+    framed[1] = (uint8)(ut->relay_room >> 8);
+    framed[2] = (uint8)(ut->relay_room >> 16);
+    framed[3] = (uint8)(ut->relay_room >> 24);
+    memcpy(framed + 4, buf, (size_t)len);
+    sendto(ut->sock, (const char *)framed, len + 4, 0,
+           (struct sockaddr *)ut->peer_addr, ut->peer_addr_len);
+  } else {
+    sendto(ut->sock, (const char *)buf, len, 0,
+           (struct sockaddr *)ut->peer_addr, ut->peer_addr_len);
+  }
 }
 
 static void Udp_SendHello(UdpTransport *ut) {
@@ -364,6 +382,11 @@ void Udp_SendBye(UdpTransport *ut) {
   Udp_RawSendTo(ut, p, 1);
 }
 
+void Udp_GetPeerIPv4(const UdpTransport *ut, uint8 *out) {
+  const struct sockaddr_in *pa = (const struct sockaddr_in *)ut->peer_addr;
+  memcpy(out, &pa->sin_addr, 4);
+}
+
 static void Udp_Close(NetTransport *t) {
   UdpTransport *ut = (UdpTransport *)t->impl;
   if (ut->sock != INVALID_SOCKET) { CLOSESOCK(ut->sock); ut->sock = INVALID_SOCKET; }
@@ -423,6 +446,91 @@ bool Udp_InitClient(UdpTransport *ut, const char *host_ip, unsigned short port, 
   return true;
 }
 
+// Resolve a dotted-quad or hostname to an IPv4 address (numeric fast-path, then
+// DNS). Returns true on success.
+static bool Udp_ResolveIPv4(const char *host, struct in_addr *out) {
+  if (inet_pton(AF_INET, host, out) == 1) return true;
+  struct addrinfo hints, *res = NULL;
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = AF_INET;
+  hints.ai_socktype = SOCK_DGRAM;
+  if (getaddrinfo(host, NULL, &hints, &res) != 0 || !res) return false;
+  *out = ((struct sockaddr_in *)res->ai_addr)->sin_addr;
+  freeaddrinfo(res);
+  return true;
+}
+
+bool Udp_InitRelay(UdpTransport *ut, const char *relay_host, unsigned short relay_port,
+                   uint32 room, int is_host, int input_delay) {
+  if (!Udp_Common(ut, input_delay)) return false;
+  // No bind: both peers are OUTBOUND sockets to the relay (that's what makes it
+  // NAT-friendly). peer_addr holds the RELAY's address; all sends are framed
+  // with the room id (see Udp_RawSendTo) and the relay forwards between peers.
+  struct sockaddr_in *pa = (struct sockaddr_in *)ut->peer_addr;
+  memset(pa, 0, sizeof(*pa));
+  pa->sin_family = AF_INET;
+  pa->sin_port = htons(relay_port);
+  if (!Udp_ResolveIPv4(relay_host, &pa->sin_addr)) { Udp_Close(&ut->iface); return false; }
+  ut->peer_addr_len = sizeof(struct sockaddr_in);
+  ut->peer_known = 1;          // we always talk to the relay; nothing to "learn"
+  ut->is_host = is_host ? 1 : 0;
+  ut->relay = 1;
+  ut->relay_room = room;
+  ut->sram_ok = is_host ? 1 : 0;   // host's own SRAM is authoritative
+  ut->valid = 1;
+  printf("[net] relay %s:%u room %08X — you are %s\n", relay_host, relay_port, room,
+         is_host ? "the HOST (Player 1)" : "joining (Player 2)");
+  return true;
+}
+
+// ---- join code (Crockford base32 of [ip:4][port:2 BE][room:4 LE]) ----------
+static const char kJoinB32[] = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";  // no I L O U
+
+void Net_MakeJoinCode(const uint8 ip[4], uint16 port, uint32 room, char *out_code) {
+  uint8 b[10];
+  b[0] = ip[0]; b[1] = ip[1]; b[2] = ip[2]; b[3] = ip[3];
+  b[4] = (uint8)(port >> 8); b[5] = (uint8)port;
+  b[6] = (uint8)room; b[7] = (uint8)(room >> 8);
+  b[8] = (uint8)(room >> 16); b[9] = (uint8)(room >> 24);
+  int o = 0;
+  for (int i = 0; i < 16; i++) {            // 80 bits -> 16 groups of 5, MSB-first
+    if (i && (i % 4) == 0) out_code[o++] = '-';
+    int bit = i * 5, byteidx = bit >> 3, off = bit & 7;
+    int v = (b[byteidx] << 8) | (byteidx + 1 < 10 ? b[byteidx + 1] : 0);
+    out_code[o++] = kJoinB32[(v >> (11 - off)) & 0x1F];
+  }
+  out_code[o] = 0;
+}
+
+static int JoinB32Val(char c) {
+  if (c >= '0' && c <= '9') return c - '0';
+  c = (char)toupper((unsigned char)c);
+  if (c == 'I' || c == 'L') return 1;       // forgiving: look-alikes
+  if (c == 'O') return 0;
+  for (int i = 10; i < 32; i++) if (kJoinB32[i] == c) return i;
+  return -1;
+}
+
+bool Net_ParseJoinCode(const char *code, uint8 *ip_out, uint16 *port_out, uint32 *room_out) {
+  uint8 b[10] = {0};
+  int nbits = 0;
+  for (const char *s = code; *s; s++) {
+    if (*s == '-' || *s == ' ') continue;
+    int v = JoinB32Val(*s);
+    if (v < 0 || nbits + 5 > 80) return false;
+    for (int k = 4; k >= 0; k--) {
+      int pos = nbits + (4 - k);
+      if ((v >> k) & 1) b[pos >> 3] |= (uint8)(0x80 >> (pos & 7));
+    }
+    nbits += 5;
+  }
+  if (nbits != 80) return false;
+  ip_out[0] = b[0]; ip_out[1] = b[1]; ip_out[2] = b[2]; ip_out[3] = b[3];
+  *port_out = (uint16)(((uint16)b[4] << 8) | b[5]);
+  *room_out = (uint32)b[6] | ((uint32)b[7] << 8) | ((uint32)b[8] << 16) | ((uint32)b[9] << 24);
+  return true;
+}
+
 #ifdef ZELDA3_HEADLESS_TEST
 // Test-only: fire a raw datagram at 127.0.0.1:port from a throwaway socket (so it
 // arrives from an ephemeral source port that differs from any established peer).
@@ -441,6 +549,53 @@ int Udp_TestRawSendLocal(unsigned short port, const uint8 *buf, int len) {
   CLOSESOCK(s);
   return r;
 }
+
+// Test-only in-process relay: the exact forwarder tools/relay.py implements.
+// Opens a loopback UDP socket, pairs the first two source addresses that send
+// for the room, and forwards each datagram's inner payload (after the 4-byte
+// room prefix) to the OTHER paired peer. Single room (enough for the harness).
+static struct { unsigned char addr[28]; int len; } g_test_relay_peers[2];
+static int g_test_relay_npeers;
+
+int Udp_TestRelayOpen(unsigned short port) {
+  if (!Udp_PlatformInit()) return -1;
+  int s = (int)socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+  if (s == INVALID_SOCKET) return -1;
+  Udp_SetNonBlocking(s);
+  struct sockaddr_in a;
+  memset(&a, 0, sizeof(a));
+  a.sin_family = AF_INET;
+  a.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+  a.sin_port = htons(port);
+  if (bind(s, (struct sockaddr *)&a, sizeof(a)) != 0) { CLOSESOCK(s); return -1; }
+  g_test_relay_npeers = 0;
+  return s;
+}
+
+void Udp_TestRelayPump(int s) {
+  uint8 pkt[4 + UDP_MAX_PACKET];
+  for (;;) {
+    unsigned char src[28];
+    socklen_t sl = sizeof(src);
+    int n = recvfrom(s, (char *)pkt, sizeof(pkt), 0, (struct sockaddr *)src, &sl);
+    if (n <= 0) break;
+    if (n < 4) continue;                         // need at least the room prefix
+    int idx = -1;
+    for (int i = 0; i < g_test_relay_npeers; i++)
+      if (g_test_relay_peers[i].len == (int)sl && memcmp(g_test_relay_peers[i].addr, src, sl) == 0) { idx = i; break; }
+    if (idx < 0 && g_test_relay_npeers < 2) {
+      idx = g_test_relay_npeers++;
+      memcpy(g_test_relay_peers[idx].addr, src, sl);
+      g_test_relay_peers[idx].len = (int)sl;
+    }
+    for (int i = 0; i < g_test_relay_npeers; i++)   // forward inner payload to the other peer
+      if (i != idx)
+        sendto(s, (const char *)(pkt + 4), n - 4, 0,
+               (struct sockaddr *)g_test_relay_peers[i].addr, g_test_relay_peers[i].len);
+  }
+}
+
+void Udp_TestRelayClose(int s) { if (s != INVALID_SOCKET) CLOSESOCK(s); }
 #endif
 
 #endif  // ZELDA3_MULTIPLAYER
