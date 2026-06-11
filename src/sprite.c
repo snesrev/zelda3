@@ -4043,7 +4043,7 @@ void SpritePrep_LoadProperties(int k) {  // 8db818
   SpritePrep_ResetProperties(k);
   int j = sprite_type[k];
   sprite_flags2[k] = kSpriteInit_Flags2[j];
-  sprite_health[k] = kSpriteInit_Health[j];
+  sprite_health[k] = Multiplayer_ScaleEnemyHealth(kSpriteInit_Health[j]);
   sprite_flags4[k] = kSpriteInit_Flags4[j];
   sprite_flags5[k] = kSpriteInit_Flags5[j];
   sprite_defl_bits[k] = kSpriteInit_DeflBits[j];

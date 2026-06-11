@@ -12,6 +12,11 @@ PlayerState g_players[MAX_PLAYERS];
 // Active player pointer — all link_ macros resolve through this
 PlayerState *cur_player = &g_players[0];
 
+// P2 sprite graphics state (see player_state.h). Defined unconditionally so
+// both builds link; only the co-op build references them.
+uint16 g_p2_dma_addrs[10];
+bool g_p2_draw_active;
+
 void PlayerState_SetCurrent(int player_index) {
   assert(player_index >= 0 && player_index < MAX_PLAYERS);
   cur_player = &g_players[player_index];

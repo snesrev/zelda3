@@ -325,8 +325,7 @@ void Module_MainRouting() {  // 8080b5
   kMainRouting[main_module_index]();
 }
 
-void NMI_PrepareSprites() {  // 8085fc
-  static const uint16 kLinkDmaSources1[303] = {
+static const uint16 kLinkDmaSources1[303] = {
     0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x8040, 0x8040, 0x8040, 0x8040, 0x8040, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000,
     0x9440, 0x8080, 0x8080, 0x8080, 0x9400, 0x8040, 0x80c0, 0x80c0, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000, 0x8000,
     0x8080, 0x8080, 0x8080, 0x8080, 0x8080, 0x8040, 0x8040, 0x8040, 0x8040, 0x8040, 0x8000, 0xa8c0, 0xa900, 0x8000, 0xa8c0, 0xa900,
@@ -372,8 +371,34 @@ void NMI_PrepareSprites() {  // 8085fc
     0x9a40, 0x9e00, 0x9d20, 0x9f20, 0x9b20, 0xbc20, 0xbc20, 0xbe20, 0xbe20, 0xbe00, 0xbe00, 0xbe00, 0xbe00, 0xa540, 0xa540, 0xa540,
     0xa540, 0xbc00, 0xbc00, 0xbc00, 0xbc00, 0xa740, 0xa740, 0xa740, 0xa740, 0xe780, 0xe780,
   };
-  static const uint16 kLinkDmaSources4[8] = { 0x9000, 0x9020, 0x9060, 0x91e0, 0x90a0, 0x90c0, 0x9100, 0x9140 };
-  static const uint16 kLinkDmaSources5[3] = { 0x9300, 0x9340, 0x9380 };
+static const uint16 kLinkDmaSources4[8] = { 0x9000, 0x9020, 0x9060, 0x91e0, 0x90a0, 0x90c0, 0x9100, 0x9140 };
+static const uint16 kLinkDmaSources5[3] = { 0x9300, 0x9340, 0x9380 };
+
+#ifdef ZELDA3_MULTIPLAYER
+// Fill g_p2_dma_addrs from cur_player's dma variables, mirroring the address
+// computation NMI_PrepareSprites does for P1. Must run with cur_player == P2,
+// right after P2's LinkOam_Main (which sets the per-player dma vars and the
+// global dma_var6/dma_var7 weapon offsets). The NMI uploads these into P2's
+// spare char region (see NMI_DoUpdates), so P2's sprite animates from P2's
+// own pose instead of showing P1's streamed tiles.
+void Multiplayer_ComputeP2DmaAddrs(void) {
+  g_p2_dma_addrs[0] = kLinkDmaSources1[link_dma_graphics_index >> 1];      // body row 1 lo -> chars 0x26-0x27
+  g_p2_dma_addrs[1] = kLinkDmaSources2[link_dma_graphics_index >> 1];      // body row 1 hi -> chars 0x29-0x2a
+  g_p2_dma_addrs[2] = kLinkDmaSources3[link_dma_var1 >> 1];                // head 8x8      -> char  0x2b
+  g_p2_dma_addrs[3] = g_p2_dma_addrs[0] + 0x200;                           // body row 2 lo -> chars 0x36-0x37
+  g_p2_dma_addrs[4] = g_p2_dma_addrs[1] + 0x200;                           // body row 2 hi -> chars 0x39-0x3a
+  g_p2_dma_addrs[5] = kLinkDmaSources3[link_dma_var2 >> 1];                // head 8x8 row 2 -> char 0x3b
+  // Sword rows (g_ram offsets, like dma_source_addr_6/11)
+  g_p2_dma_addrs[6] = kLinkDmaSources4[link_dma_var3 >> 1];                // chars 0x2c-0x2d
+  g_p2_dma_addrs[7] = g_p2_dma_addrs[6] + 0x180;                           // chars 0x3c-0x3d
+  // Shield rows (g_ram offsets, like dma_source_addr_7/12)
+  g_p2_dma_addrs[8] = (link_dma_var4 == 0x8b) ? 0xe099
+                                              : kLinkDmaSources5[link_dma_var4 >> 1];  // chars 0x2e-0x2f
+  g_p2_dma_addrs[9] = g_p2_dma_addrs[8] + 0xc0;                            // chars 0x3e-0x3f
+}
+#endif
+
+void NMI_PrepareSprites() {  // 8085fc
   static const uint16 kLinkDmaSources6[128] = {
     0x9480, 0x94c0, 0x94e0, 0x95c0, 0x9500, 0x9520, 0x9540, 0x9480, 0x9640, 0x9680, 0x96a0, 0x9780, 0x96c0, 0x96e0, 0x9700, 0x9480,
     0x9800, 0x9840, 0x98a0, 0x9480, 0x9480, 0x9480, 0x9480, 0x9480, 0x9ac0, 0x9b00, 0x9480, 0x9480, 0x9480, 0x9480, 0x9480, 0x9480,
