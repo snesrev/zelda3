@@ -7381,7 +7381,7 @@ void SpritePrep_Rat(int k) {  // 868878
   static const uint8 kSpriteRat_Health[2] = {2, 8};
   int j = is_in_dark_world;
   sprite_bump_damage[k] = kSpriteRat_BumpDamage[j];
-  sprite_health[k] = kSpriteRat_Health[j];
+  sprite_health[k] = Multiplayer_ScaleEnemyHealth(kSpriteRat_Health[j]);
 }
 
 void SpritePrep_Keese(int k) {  // 86888e
@@ -7390,7 +7390,7 @@ void SpritePrep_Keese(int k) {  // 86888e
   static const uint8 kSpriteKeese_Flags5[2] = {0, 7};
   int j = is_in_dark_world;
   sprite_bump_damage[k] = kSpriteKeese_BumpDamage[j];
-  sprite_health[k] = kSpriteKeese_Health[j];
+  sprite_health[k] = Multiplayer_ScaleEnemyHealth(kSpriteKeese_Health[j]);
   sprite_flags5[k] = kSpriteKeese_Flags5[j];
 }
 
@@ -7400,7 +7400,7 @@ void SpritePrep_Rope(int k) {  // 8688aa
   static const uint8 kSpriteRope_Flags5[2] = {1, 7};
   int j = is_in_dark_world;
   sprite_bump_damage[k] = kSpriteRope_BumpDamage[j];
-  sprite_health[k] = kSpriteRope_Health[j];
+  sprite_health[k] = Multiplayer_ScaleEnemyHealth(kSpriteRope_Health[j]);
   sprite_flags5[k] = kSpriteRope_Flags5[j];
 }
 
@@ -7486,7 +7486,7 @@ void SpritePrep_Raven(int k) {  // 868969
   static const uint8 kSpriteRaven_Flags5[2] = {6, 2};
   int j = is_in_dark_world;
   sprite_bump_damage[k] = kSpriteRaven_BumpDamage[j];
-  sprite_health[k] = kSpriteRaven_Health[j];
+  sprite_health[k] = Multiplayer_ScaleEnemyHealth(kSpriteRaven_Health[j]);
   sprite_flags5[k] = kSpriteRaven_Flags5[j];
   sprite_z[k] = 0;
   sprite_A[k] = (sprite_x_lo[k] & 16) >> 4;
@@ -7884,7 +7884,7 @@ void SpritePrep_Tektite(int k) {  // 868d94
   int j;
   sprite_A[k] = j = sprite_x_lo[k] >> 4 & 1;
   sprite_oam_flags[k] = kGanonHelpers_OamFlags[j];
-  sprite_health[k] = kGanonHelpers_Health[j];
+  sprite_health[k] = Multiplayer_ScaleEnemyHealth(kGanonHelpers_Health[j]);
   sprite_bump_damage[k] = kGanonHelpers_BumpDamage[j];
   Sprite_ApplySpeedTowardsLink(k, 16);
   sprite_z_vel[k] = 32;
@@ -8052,7 +8052,7 @@ void SpritePrep_Octorok(int k) {  // 868f71
   static const uint8 kOctorock_BumpDamage[2] = {3, 5};
   static const uint8 kOctorock_Health[2] = {2, 4};
   int j = is_in_dark_world;
-  sprite_health[k] = kOctorock_Health[j];
+  sprite_health[k] = Multiplayer_ScaleEnemyHealth(kOctorock_Health[j]);
   sprite_bump_damage[k] = kOctorock_BumpDamage[j];
   sprite_delay_main[k] = GetRandomNumber() & 127;
 }
@@ -8221,7 +8221,7 @@ void SpritePrep_HardhatBeetle(int k) {  // 869122
   static const uint8 kHardHatBeetle_BumpDamage[2] = {5, 3};
   int j = (sprite_x_lo[k] & 0x10) != 0;
   sprite_oam_flags[k] = kHardHatBeetle_OamFlags[j];
-  sprite_health[k] = kHardHatBeetle_Health[j];
+  sprite_health[k] = Multiplayer_ScaleEnemyHealth(kHardHatBeetle_Health[j]);
   sprite_A[k] = kHardHatBeetle_A[j];
   sprite_ai_state[k] = kHardHatBeetle_State[j];
   sprite_flags5[k] = kHardHatBeetle_Flags5[j];

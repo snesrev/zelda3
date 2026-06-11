@@ -33,6 +33,9 @@ void NORETURN Die(const char *error) {
 void ZeldaApuLock(void) {}
 void ZeldaApuUnlock(void) {}
 
+// From sprite.c — used for the enemy HP scaling unit checks.
+void SpritePrep_LoadProperties(int k);
+
 const uint8 *g_asset_ptrs[kNumberOfAssets];
 uint32 g_asset_sizes[kNumberOfAssets];
 
@@ -263,6 +266,33 @@ int main(int argc, char **argv) {
   Check(P1X() != p1x0, "exp4: P1 moves outside");
   Check(P2X() != p2x0, "exp4: P2 moves outside");
   Check(g_p2_draw_active, "exp4: P2 still drawn outside");
+
+  // ---- Experiment 5: co-op enemy HP scaling at spawn. ----
+  // Run the real spawn-prep for a few species with co-op off vs on and
+  // compare. Done after the gameplay experiments since it scribbles over
+  // sprite slot 0. (3/2 must match MP_ENEMY_HEALTH_NUM/DEN.)
+  {
+    uint8 *sprite_type0 = g_ram + 0xE20, *sprite_health0 = g_ram + 0xE50;
+    uint8 solo, coop;
+
+    *sprite_type0 = 0x41;  // soldier (regular enemy)
+    g_mp_p2_enabled = false; SpritePrep_LoadProperties(0); solo = *sprite_health0;
+    g_mp_p2_enabled = true;  SpritePrep_LoadProperties(0); coop = *sprite_health0;
+    Check(solo > 0 && coop == solo * 3 / 2 && coop > solo,
+          "exp5: regular enemy HP scaled 1.5x in co-op");
+
+    *sprite_type0 = 0x02;  // health 255: unkillable sentinel tier
+    g_mp_p2_enabled = false; SpritePrep_LoadProperties(0); solo = *sprite_health0;
+    g_mp_p2_enabled = true;  SpritePrep_LoadProperties(0); coop = *sprite_health0;
+    Check(solo == 255 && coop == 255, "exp5: 255-HP sentinel untouched");
+
+    *sprite_type0 = 0x0C;  // health 0: one-hit by design
+    g_mp_p2_enabled = false; SpritePrep_LoadProperties(0); solo = *sprite_health0;
+    g_mp_p2_enabled = true;  SpritePrep_LoadProperties(0); coop = *sprite_health0;
+    Check(solo == 0 && coop == 0, "exp5: zero-HP one-hit enemy untouched");
+
+    g_mp_p2_enabled = true;
+  }
 
   printf("char conflicts in P2 region from other systems: %u\n", g_char_conflicts);
   for (int c = 0; c < 0x40; c++)

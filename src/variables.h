@@ -1527,4 +1527,27 @@ extern const int8 kGetBestActionToPerformOnTile_x[];
 extern const int8 kGetBestActionToPerformOnTile_y[];
 
 #include "player_state_macros.h"
+
+// Co-op balance: two players roughly double the team's damage output, so
+// regular enemies spawn with more HP (x NUM/DEN). Applied wherever spawn
+// code assigns an enemy's initial health. Rules: health 0 stays 0 (one-hit
+// critters by design), health >= 128 is untouched (the scripted/boss-phase
+// tier; HP is one byte and 255 is a de-facto "unkillable" sentinel), and
+// results cap at 127. Mid-fight boss PHASE health assignments are left raw
+// on purpose so phase thresholds keep their tuned pacing.
+// Identity in vanilla builds (and in co-op builds running --solo).
+#ifdef ZELDA3_MULTIPLAYER
+#define MP_ENEMY_HEALTH_NUM 3
+#define MP_ENEMY_HEALTH_DEN 2
+static inline uint8 Multiplayer_ScaleEnemyHealth(uint8 h) {
+  if (g_mp_p2_enabled && h != 0 && h < 128) {
+    int scaled = h * MP_ENEMY_HEALTH_NUM / MP_ENEMY_HEALTH_DEN;
+    return scaled > 127 ? 127 : (uint8)scaled;
+  }
+  return h;
+}
+#else
+static inline uint8 Multiplayer_ScaleEnemyHealth(uint8 h) { return h; }
+#endif
+
 #endif  // ZELDA3_VARIABLES_H_
