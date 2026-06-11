@@ -935,9 +935,13 @@ continue_after_set:
 
   link_palette_bits_of_oam = palette_swap_flag ? 0 : 0xe00;
 #ifdef ZELDA3_MULTIPLAYER
-  // P2 uses a different palette (palette 5 = purple/red tunic)
+  // P2's body uses OBJ palette 3, which the co-op loop keeps loaded with a
+  // real Link armor palette (blue mail when P1 is green, etc.). Palette 5
+  // (the old choice) holds the area's NPC colors + the sword/shield colors,
+  // which made P2 render as a white/garbled ghost. Sword and shield pieces
+  // keep their own palette-5 equipment colors for both players.
   if (cur_player->player_index == 1 && !palette_swap_flag)
-    link_palette_bits_of_oam = 0xa00;
+    link_palette_bits_of_oam = 0x600;
 #endif
   link_dma_var1 = link_dma_var2 = 0;
 

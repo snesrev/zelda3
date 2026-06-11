@@ -1446,6 +1446,21 @@ int main(int argc, char** argv) {
 
     frameCtr++;
 
+#ifdef ZELDA3_MULTIPLAYER
+    // Debug aid (ZELDA3_DEBUG_RATE=1): print the simulation rate once per
+    // second, for verifying turbo / frame pacing headlessly.
+    if (getenv("ZELDA3_DEBUG_RATE")) {
+      static uint32 rate_last_ms, rate_last_fc;
+      uint32 rate_now = SDL_GetTicks();
+      if (rate_now - rate_last_ms >= 1000) {
+        printf("[rate] sim %u f/s (total %u)\n", (uint32)(frameCtr - rate_last_fc), frameCtr);
+        fflush(stdout);
+        rate_last_ms = rate_now;
+        rate_last_fc = frameCtr;
+      }
+    }
+#endif
+
     bool turbo_allowed = true;
 #ifdef ZELDA3_MULTIPLAYER
     // Turbo online would just spin this loop at maximum speed: the sim can't

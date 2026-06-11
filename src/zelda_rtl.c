@@ -14,6 +14,7 @@
 #ifdef ZELDA3_MULTIPLAYER
 #include "player.h"
 #include "player_oam.h"
+#include "load_gfx.h"
 #include "sprite.h"
 #include "net_transport.h"
 #endif
@@ -373,6 +374,31 @@ static void Multiplayer_RefillP2(void) {
   }
 }
 
+// Keep OBJ palette row 3 (CGRAM words 0xB0-0xBF) loaded with a recolored
+// Link armor palette for P2's body: blue mail while P1 wears green, red
+// while P1 wears blue, green while P1 wears red — so the two Links are
+// always distinguishable using the game's own armor palettes. Row 3 is not
+// referenced by any sprite during normal play (measured: house, overworld,
+// rain, combat all use rows 0-2 and 4-6 only); the engine only touches it
+// in the rare palette_swap translucency mode. Area palette loads can stomp
+// the row, so this re-asserts it whenever the row differs from what we want
+// (self-heals after loads without fighting fades every frame).
+static void Multiplayer_EnforceP2Palette(void) {
+  if (!g_mp_p2_enabled || !g_mp_initialized || !g_players[1].is_active)
+    return;
+  uint8 armor = g_players[0].armor;  // shared progression: P1's tier
+  uint8 tint = (armor == 0) ? 1 : (armor == 1) ? 2 : 0;
+  uint16 row[15];
+  memcpy(row, kPalette_ArmorAndGloves + tint * 15, sizeof(row));
+  if (g_players[0].item_gloves)
+    row[12] = kGlovesColor[g_players[0].item_gloves - 1];  // same slot as P1's 0xfd
+  if (memcmp(&main_palette_buffer[0xB1], row, sizeof(row)) != 0) {
+    memcpy(&main_palette_buffer[0xB1], row, sizeof(row));
+    memcpy(&aux_palette_buffer[0xB1], row, sizeof(row));
+    flag_update_cgram_in_nmi++;
+  }
+}
+
 // Remap P2's OAM char numbers into the spare VRAM char region that the NMI
 // fills with P2's own pose graphics (see NMI_DoUpdates in nmi.c and
 // Multiplayer_ComputeP2DmaAddrs in misc.c). Chars not in this table (shadow
@@ -557,6 +583,8 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     // === Shared camera: center between both players ===
     Multiplayer_UpdateCamera();
   }
+
+  Multiplayer_EnforceP2Palette();
 
   // Per-frame co-op bookkeeping (runs even during transitions / when a player is
   // downed): tick respawn timers + revive, and warp P2 to P1 after a transition.

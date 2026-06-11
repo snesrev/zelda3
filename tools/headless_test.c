@@ -17,6 +17,7 @@
 
 #include "../src/types.h"
 #include "../src/zelda_rtl.h"
+#include "../snes/ppu.h"
 #include "../src/assets.h"
 #include "../src/util.h"
 #ifdef ZELDA3_MULTIPLAYER
@@ -82,6 +83,12 @@ static int g_failures;
 static uint32 g_char_conflicts;
 static uint32 g_conflict_by_char[0x40];
 static uint32 g_p2_pose_differs_frames;
+// Frames where P2's body piece (char 0x26) was visible but its packed
+// 2-bit OAM extension (size/x-high) was NOT the 16x16 value (2). The PPU
+// reads only the packed table, so a wrong value renders P2 as 8x8 garbage.
+static uint32 g_p2_extbits_bad_frames;
+// Histogram of OBJ palettes used by visible non-player OAM entries.
+static uint32 g_palette_usage[8];
 
 static bool InP2OamBlock(int i) {
   // P2 renders into the OAM band opposite P1's: entries 56-67 or 100-111.
@@ -102,6 +109,7 @@ static void ScanOam(void) {
       g_char_conflicts++;
       g_conflict_by_char[c]++;
     }
+    g_palette_usage[(oam[i].flags >> 1) & 7]++;
   }
   // Compare P1's body row 1 tiles (chars 0x00-0x01, vram word 0x4000) with
   // P2's (chars 0x26-0x27, vram word 0x4260): when the poses differ, the
@@ -109,6 +117,22 @@ static void ScanOam(void) {
   if (g_p2_draw_active &&
       memcmp(&g_zenv.vram[0x4000], &g_zenv.vram[0x4260], 0x40) != 0)
     g_p2_pose_differs_frames++;
+  // Verify the PACKED extension bits the PPU actually uses: every visible
+  // P2 body-main piece (remapped char 0x26) must carry ext value 2 (16x16).
+  if (g_p2_draw_active) {
+    bool bad = false;
+    for (int e = 0; e < 128; e++) {
+      if (oam[e].y == 0xf0 || oam[e].charnum != 0x26 || (oam[e].flags & 1))
+        continue;
+      if (!InP2OamBlock(e))
+        continue;
+      uint8 packed = g_ram[0xA00 + (e >> 2)];
+      if (((packed >> ((e & 3) * 2)) & 3) != 2)
+        bad = true;
+    }
+    if (bad)
+      g_p2_extbits_bad_frames++;
+  }
 }
 #endif
 
@@ -141,6 +165,16 @@ static void Report(const char *tag) {
          *(uint16 *)(g_ram + 0x22), *(uint16 *)(g_ram + 0x20));
 }
 #endif
+
+// Render the current frame through the real PPU and write a raw RGBA dump.
+static void DumpPpuFrame(const char *path) {
+  static uint8 pixels[256 * 4 * 240];
+  memset(pixels, 0, sizeof(pixels));
+  ZeldaDrawPpuFrame(pixels, 256 * 4, 0);
+  FILE *f = fopen(path, "wb");
+  if (f) { fwrite(pixels, 1, 256 * 4 * 224, f); fclose(f); }
+  printf("ppu frame dumped to %s\n", path);
+}
 
 static void Check(bool cond, const char *what) {
   printf("  %-52s %s\n", what, cond ? "PASS" : "FAIL");
@@ -200,7 +234,57 @@ int main(int argc, char **argv) {
   Report("settled");
 
 #ifdef ZELDA3_MULTIPLAYER
+  DumpPpuFrame("/tmp/frame_settled.rgba");
+  // Palette experiment: force P2's OAM pieces to Link's palette (7). If P2
+  // then renders pixel-identical to P1, the tiles are perfect and palette 5
+  // is the only problem.
+  {
+    OamEnt *oam = (OamEnt *)(g_ram + 0x800);
+    for (int e = 0; e < 128; e++) {
+      if (oam[e].y == 0xf0 || !InP2OamBlock(e)) continue;
+      oam[e].flags = (oam[e].flags & ~0x0e) | 0x0e;  // palette bits 1-3 -> 7
+    }
+    memcpy(g_zenv.ppu->oam, &g_ram[0x800], 0x220);
+    DumpPpuFrame("/tmp/frame_pal7.rgba");
+  }
   Check(g_players[1].is_active, "setup: P2 spawned");
+
+  // ---- Experiment 0: P2 tile CORRECTNESS (not just difference). ----
+  // Both players are idle facing down right now (P2 spawned in P1's pose,
+  // neither has moved). Same pose => P2's uploaded chars must be IDENTICAL
+  // to P1's streamed chars. A wrong DMA source produces garbage that would
+  // still pass a mere "tiles differ" check.
+  {
+    printf("p2 dma addrs:");
+    for (int i = 0; i < 10; i++) printf(" %04x", g_p2_dma_addrs[i]);
+    printf("\n");
+    printf("p1 dma addrs (g_ram): a0=%04x a1=%04x a2=%04x a3=%04x a4=%04x a5=%04x a6=%04x a7=%04x a11=%04x a12=%04x\n",
+           *(uint16*)(g_ram+0xACE), *(uint16*)(g_ram+0xAD2), *(uint16*)(g_ram+0xAD6),
+           *(uint16*)(g_ram+0xACC), *(uint16*)(g_ram+0xAD0), *(uint16*)(g_ram+0xAD4),
+           *(uint16*)(g_ram+0xAC0), *(uint16*)(g_ram+0xAC4),
+           *(uint16*)(g_ram+0xAC2), *(uint16*)(g_ram+0xAC6));
+    Check(memcmp(&g_zenv.vram[0x4000], &g_zenv.vram[0x4260], 0x40) == 0,
+          "exp0: body row1 lo identical (same pose)");
+    Check(memcmp(&g_zenv.vram[0x4020], &g_zenv.vram[0x4290], 0x40) == 0,
+          "exp0: body row1 hi identical (same pose)");
+    Check(memcmp(&g_zenv.vram[0x4040], &g_zenv.vram[0x42b0], 0x20) == 0,
+          "exp0: head 8x8 identical (same pose)");
+    Check(memcmp(&g_zenv.vram[0x4100], &g_zenv.vram[0x4360], 0x40) == 0,
+          "exp0: body row2 lo identical (same pose)");
+    Check(memcmp(&g_zenv.vram[0x4120], &g_zenv.vram[0x4390], 0x40) == 0,
+          "exp0: body row2 hi identical (same pose)");
+    Check(memcmp(&g_zenv.vram[0x4140], &g_zenv.vram[0x43b0], 0x20) == 0,
+          "exp0: head row2 8x8 identical (same pose)");
+    // Dump the OBJ char region + P2's OAM band for offline tile inspection.
+    FILE *f = fopen("/tmp/vram_dump.bin", "wb");
+    if (f) { fwrite(g_zenv.vram, 2, 0x8000, f); fclose(f); }
+    OamEnt *oam = (OamEnt *)(g_ram + 0x800);
+    for (int i = 0; i < 128; i++) {
+      if (oam[i].y == 0xf0) continue;
+      printf("  oam[%3d] x=%3d y=%3d char=%02x flags=%02x\n",
+             i, oam[i].x, oam[i].y, oam[i].charnum, oam[i].flags);
+    }
+  }
 
   // ---- Experiment 1: only P1 walks (short, inside any leash radius).
   // P2 must not move at all. ----
@@ -259,10 +343,12 @@ int main(int argc, char **argv) {
   Check(MMI == 9, "exp4: world reached overworld");
   Check(abs((int)P2X() - (int)P1X()) <= 160 &&
         abs((int)P2Y() - (int)P1Y()) <= 160, "exp4: P2 came along");
+  DumpPpuFrame("/tmp/frame_exit.rgba");
   // Both walk around outside.
   p1x0 = P1X(); p2x0 = P2X();
   RunFrames(40, B_LEFT, B_RIGHT);
   Report("exp4 both walked outside");
+  DumpPpuFrame("/tmp/frame_outside.rgba");
   Check(P1X() != p1x0, "exp4: P1 moves outside");
   Check(P2X() != p2x0, "exp4: P2 moves outside");
   Check(g_p2_draw_active, "exp4: P2 still drawn outside");
@@ -299,6 +385,11 @@ int main(int argc, char **argv) {
     if (g_conflict_by_char[c])
       printf("  conflict char %02x: %u times\n", c, g_conflict_by_char[c]);
   printf("frames where P2 pose tiles differed from P1's: %u\n", g_p2_pose_differs_frames);
+  printf("frames where P2 packed ext bits were WRONG: %u\n", g_p2_extbits_bad_frames);
+  printf("OBJ palette usage by non-player sprites:");
+  for (int p = 0; p < 8; p++) printf(" p%d=%u", p, g_palette_usage[p]);
+  printf("\n");
+  Check(g_p2_extbits_bad_frames == 0, "P2 packed OAM ext bits always correct");
   printf("%s after %d frames total\n", g_failures ? "FAILURES" : "ALL PASS", frame);
   return g_failures != 0;
 #else
