@@ -275,6 +275,7 @@ static uint16 g_p2_input_this_frame;
 // the game runs as ordinary single-player through the same loop. Default on.
 bool g_mp_p2_enabled = true;
 static void Multiplayer_UpdateCamera(void);
+static void Multiplayer_RemapP2OamChars(uint16 oam_byte_offset);
 static void Multiplayer_WarpP2OnTransition(void);
 static void Multiplayer_PlaceP2Beside(PlayerState *p1, PlayerState *p2);
 static void Multiplayer_SeparatePlayers(void);
@@ -372,10 +373,37 @@ static void Multiplayer_RefillP2(void) {
   }
 }
 
+// Remap P2's OAM char numbers into the spare VRAM char region that the NMI
+// fills with P2's own pose graphics (see NMI_DoUpdates in nmi.c and
+// Multiplayer_ComputeP2DmaAddrs in misc.c). Chars not in this table (shadow
+// 0x6c and its 0x28/0x38 variants, sword sparkles 0x24/0x25, dust, splashes)
+// are pose-independent and shared with P1. oam_byte_offset is the byte offset
+// of P2's 12-entry Link block in the OAM buffer.
+static void Multiplayer_RemapP2OamChars(uint16 oam_byte_offset) {
+  static const uint8 kCharMap[][2] = {
+    {0x00, 0x26}, {0x02, 0x29}, {0x04, 0x2b}, {0x14, 0x3b},  // body + head
+    {0x05, 0x2c}, {0x06, 0x2d}, {0x15, 0x3c}, {0x16, 0x3d},  // sword
+    {0x07, 0x2e}, {0x08, 0x2f}, {0x17, 0x3e}, {0x18, 0x3f},  // shield
+  };
+  OamEnt *oam = &oam_buf[oam_byte_offset >> 2];
+  for (int i = 0; i < 12; i++) {
+    if (oam[i].flags & 1)  // char index bit 8 set: not in the dynamic region
+      continue;
+    uint8 c = oam[i].charnum;
+    for (size_t j = 0; j < countof(kCharMap); j++) {
+      if (kCharMap[j][0] == c) {
+        oam[i].charnum = kCharMap[j][1];
+        break;
+      }
+    }
+  }
+}
+
 // Run the multiplayer game loop: P1 full update, then P2 Link_Main only
 static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
   frame_counter++;
   ClearOamBuffer();
+  g_p2_draw_active = false;
 
   // Ensure P2 is initialized when gameplay starts
   Multiplayer_InitIfNeeded();
@@ -473,6 +501,15 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     uint8 p1_oam_setting = (uint8)sort_sprites_setting;
     sort_sprites_setting = p1_oam_setting ? 0 : 1;
     LinkOam_Main();
+    // P2's OAM entries reference the fixed Link chars that the NMI fills with
+    // P1's pose each frame — that made P2's sprite mirror P1's animation
+    // ("walks in place"). Capture P2's own pose DMA sources and remap its OAM
+    // chars into the spare region the NMI uploads them to (see nmi.c).
+    // sort_sprites_offset_into_oam_buffer still holds P2's block offset here
+    // (LinkOam_Main just set it).
+    Multiplayer_ComputeP2DmaAddrs();
+    Multiplayer_RemapP2OamChars(sort_sprites_offset_into_oam_buffer);
+    g_p2_draw_active = true;
     sort_sprites_setting = p1_oam_setting;
 
     // Real two-way combat for P2. Sprites already ran their AI against P1 during

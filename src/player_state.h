@@ -293,6 +293,30 @@ extern MultiplayerConfig g_mp_config;
 // spawned/updated and the game behaves as ordinary single-player.
 extern bool g_mp_p2_enabled;
 
+// ============================================================================
+// P2 sprite graphics. The NMI streams P1's current pose graphics into the
+// fixed sprite chars Link's OAM entries reference (body 0x00-0x04/0x10-0x14,
+// sword 0x05-0x06/0x15-0x16, shield 0x07-0x08/0x17-0x18), so a second Link
+// drawn with those chars would mirror P1's animation ("walks in place").
+// P2 therefore gets its own char region — the otherwise unused chars
+// 0x26-0x2f/0x36-0x3f, skipping 0x28/0x38 which the alternate Link shadow
+// uses: the NMI uploads P2's own pose graphics there (see NMI_DoUpdates) and
+// P2's OAM char numbers are remapped into the region after its LinkOam_Main.
+// ============================================================================
+
+// P2's DMA source addresses, captured after P2's LinkOam_Main each frame:
+// [0..5] body/head rows (kLinkGraphics offsets), [6..9] sword/shield rows
+// (g_ram offsets). Filled by Multiplayer_ComputeP2DmaAddrs (misc.c).
+extern uint16 g_p2_dma_addrs[10];
+
+// True when P2 was drawn this frame and the NMI should upload its graphics.
+extern bool g_p2_draw_active;
+
+// Fills g_p2_dma_addrs from cur_player's dma variables. Must be called with
+// cur_player == P2, right after P2's LinkOam_Main. Defined in misc.c next to
+// the DMA source tables.
+void Multiplayer_ComputeP2DmaAddrs(void);
+
 // Co-op death/respawn.
 // Multiplayer_PreventGameOver() is called at the engine's game-over points (when
 // a player reaches 0 health). If co-op is active and the OTHER player is still
