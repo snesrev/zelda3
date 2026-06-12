@@ -152,7 +152,11 @@ static int HandleP2KeyInput(int keyCode, bool pressed) {
 #endif // ZELDA3_MULTIPLAYER
 
 void NORETURN Die(const char *error) {
-#if defined(NDEBUG) && defined(_WIN32)
+#if defined(_WIN32)
+  // Always show a dialog on Windows (not just NDEBUG builds): the prebuilt
+  // exe is double-clicked with no console, so without this a fatal startup
+  // error (most commonly a missing zelda3_assets.dat) just closes the window
+  // instantly with no clue why.
   SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, kWindowTitle, error, NULL);
 #endif
   fprintf(stderr, "Error: %s\n", error);
@@ -2024,7 +2028,11 @@ static void LoadAssets() {
     uint8 *bps, *bps_src;
     bps = ReadWholeFile("zelda3_assets.bps", &bps_length);
     if (!bps)
-      Die("Failed to read zelda3_assets.dat. Please see the README for information about how you get this file.");
+      Die("zelda3_assets.dat was not found.\n\n"
+          "This game data is made from your own ROM and is NOT included in the\n"
+          "download. Put zelda3_assets.dat in the SAME folder as this .exe\n"
+          "(next to SDL2.dll). See README_FIRST.txt in the zip for the one-time\n"
+          "extraction steps.");
     bps_src = ReadWholeFile("zelda3.sfc", &bps_src_length);
     if (!bps_src)
       Die("Missing file: zelda3.sfc");
