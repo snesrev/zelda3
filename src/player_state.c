@@ -49,6 +49,76 @@ void PlayerState_SetCurrent(int player_index) {
     } \
   } while(0)
 
+// The save-file inventory block (g_ram 0xF340..0xF38B). Split out so item
+// receipts can absorb raw g_ram grants back into the struct (see below).
+static void PlayerState_SyncInventory(bool to_ram) {
+  SYNC_U8 (item_bow,                     0xF340);
+  SYNC_U8 (item_boomerang,               0xF341);
+  SYNC_U8 (item_hookshot,                0xF342);
+  SYNC_U8 (item_bombs,                   0xF343);
+  SYNC_U8 (item_mushroom,                0xF344);
+  SYNC_U8 (item_fire_rod,                0xF345);
+  SYNC_U8 (item_ice_rod,                 0xF346);
+  SYNC_U8 (item_bombos_medallion,        0xF347);
+  SYNC_U8 (item_ether_medallion,         0xF348);
+  SYNC_U8 (item_quake_medallion,         0xF349);
+  SYNC_U8 (item_torch,                   0xF34A);
+  SYNC_U8 (item_hammer,                  0xF34B);
+  SYNC_U8 (item_flute,                   0xF34C);
+  SYNC_U8 (item_bug_net,                 0xF34D);
+  SYNC_U8 (item_book_of_mudora,          0xF34E);
+  SYNC_U8 (item_bottle_index,            0xF34F);
+  SYNC_U8 (item_cane_somaria,            0xF350);
+  SYNC_U8 (item_cane_byrna,              0xF351);
+  SYNC_U8 (item_cape,                    0xF352);
+  SYNC_U8 (item_mirror,                  0xF353);
+  SYNC_U8 (item_gloves,                  0xF354);
+  SYNC_U8 (item_boots,                   0xF355);
+  SYNC_U8 (item_flippers,                0xF356);
+  SYNC_U8 (item_moon_pearl,              0xF357);
+  SYNC_U8 (sword_type,                   0xF359);
+  SYNC_U8 (shield_type,                  0xF35A);
+  SYNC_U8 (armor,                        0xF35B);
+  // bottle_info array
+  if (to_ram) {
+    for (int i = 0; i < NUM_BOTTLES; i++)
+      g_ram[0xF35C + i] = cur_player->bottle_info[i];
+  } else {
+    for (int i = 0; i < NUM_BOTTLES; i++)
+      cur_player->bottle_info[i] = g_ram[0xF35C + i];
+  }
+  SYNC_U16(rupees_goal,                  0xF360);
+  SYNC_U16(rupees_actual,                0xF362);
+  SYNC_U16(compass,                      0xF364);
+  SYNC_U16(bigkey,                       0xF366);
+  SYNC_U16(dungeon_map,                  0xF368);
+  SYNC_U8 (rupees_in_pond,               0xF36A);
+  SYNC_U8 (heart_pieces,                 0xF36B);
+  SYNC_U8 (health_capacity,              0xF36C);
+  SYNC_U8 (health_current,               0xF36D);
+  SYNC_U8 (magic_power,                  0xF36E);
+  SYNC_U8 (num_keys,                     0xF36F);
+  SYNC_U8 (bomb_upgrades,                0xF370);
+  SYNC_U8 (arrow_upgrades,               0xF371);
+  SYNC_U8 (hearts_filler,                0xF372);
+  SYNC_U8 (magic_filler,                 0xF373);
+  SYNC_U8 (which_pendants,               0xF374);
+  SYNC_U8 (bomb_filler,                  0xF375);
+  SYNC_U8 (arrow_filler,                 0xF376);
+  SYNC_U8 (num_arrows,                   0xF377);
+  SYNC_U8 (ability_flags,                0xF379);
+  SYNC_U8 (has_crystals,                 0xF37A);
+  SYNC_U8 (magic_consumption,            0xF37B);
+  // keys_earned_per_dungeon array
+  if (to_ram) {
+    for (int i = 0; i < NUM_DUNGEON_KEY_SLOTS; i++)
+      g_ram[0xF37C + i] = cur_player->keys_earned_per_dungeon[i];
+  } else {
+    for (int i = 0; i < NUM_DUNGEON_KEY_SLOTS; i++)
+      cur_player->keys_earned_per_dungeon[i] = g_ram[0xF37C + i];
+  }
+}
+
 static void PlayerState_Sync(bool to_ram) {
   // Movement & Position
   SYNC_U16(y_coord,                    0x20);
@@ -221,72 +291,7 @@ static void PlayerState_Sync(bool to_ram) {
   SYNC_U8 (primary_water_grass_timer,    0x356);
   SYNC_U8 (secondary_water_grass_timer,  0x355);
 
-  // Inventory
-  SYNC_U8 (item_bow,                     0xF340);
-  SYNC_U8 (item_boomerang,               0xF341);
-  SYNC_U8 (item_hookshot,                0xF342);
-  SYNC_U8 (item_bombs,                   0xF343);
-  SYNC_U8 (item_mushroom,                0xF344);
-  SYNC_U8 (item_fire_rod,                0xF345);
-  SYNC_U8 (item_ice_rod,                 0xF346);
-  SYNC_U8 (item_bombos_medallion,        0xF347);
-  SYNC_U8 (item_ether_medallion,         0xF348);
-  SYNC_U8 (item_quake_medallion,         0xF349);
-  SYNC_U8 (item_torch,                   0xF34A);
-  SYNC_U8 (item_hammer,                  0xF34B);
-  SYNC_U8 (item_flute,                   0xF34C);
-  SYNC_U8 (item_bug_net,                 0xF34D);
-  SYNC_U8 (item_book_of_mudora,          0xF34E);
-  SYNC_U8 (item_bottle_index,            0xF34F);
-  SYNC_U8 (item_cane_somaria,            0xF350);
-  SYNC_U8 (item_cane_byrna,              0xF351);
-  SYNC_U8 (item_cape,                    0xF352);
-  SYNC_U8 (item_mirror,                  0xF353);
-  SYNC_U8 (item_gloves,                  0xF354);
-  SYNC_U8 (item_boots,                   0xF355);
-  SYNC_U8 (item_flippers,                0xF356);
-  SYNC_U8 (item_moon_pearl,              0xF357);
-  SYNC_U8 (sword_type,                   0xF359);
-  SYNC_U8 (shield_type,                  0xF35A);
-  SYNC_U8 (armor,                        0xF35B);
-  // bottle_info array
-  if (to_ram) {
-    for (int i = 0; i < NUM_BOTTLES; i++)
-      g_ram[0xF35C + i] = cur_player->bottle_info[i];
-  } else {
-    for (int i = 0; i < NUM_BOTTLES; i++)
-      cur_player->bottle_info[i] = g_ram[0xF35C + i];
-  }
-  SYNC_U16(rupees_goal,                  0xF360);
-  SYNC_U16(rupees_actual,                0xF362);
-  SYNC_U16(compass,                      0xF364);
-  SYNC_U16(bigkey,                       0xF366);
-  SYNC_U16(dungeon_map,                  0xF368);
-  SYNC_U8 (rupees_in_pond,               0xF36A);
-  SYNC_U8 (heart_pieces,                 0xF36B);
-  SYNC_U8 (health_capacity,              0xF36C);
-  SYNC_U8 (health_current,               0xF36D);
-  SYNC_U8 (magic_power,                  0xF36E);
-  SYNC_U8 (num_keys,                     0xF36F);
-  SYNC_U8 (bomb_upgrades,                0xF370);
-  SYNC_U8 (arrow_upgrades,               0xF371);
-  SYNC_U8 (hearts_filler,                0xF372);
-  SYNC_U8 (magic_filler,                 0xF373);
-  SYNC_U8 (which_pendants,               0xF374);
-  SYNC_U8 (bomb_filler,                  0xF375);
-  SYNC_U8 (arrow_filler,                 0xF376);
-  SYNC_U8 (num_arrows,                   0xF377);
-  SYNC_U8 (ability_flags,                0xF379);
-  SYNC_U8 (has_crystals,                 0xF37A);
-  SYNC_U8 (magic_consumption,            0xF37B);
-  // keys_earned_per_dungeon array
-  if (to_ram) {
-    for (int i = 0; i < NUM_DUNGEON_KEY_SLOTS; i++)
-      g_ram[0xF37C + i] = cur_player->keys_earned_per_dungeon[i];
-  } else {
-    for (int i = 0; i < NUM_DUNGEON_KEY_SLOTS; i++)
-      cur_player->keys_earned_per_dungeon[i] = g_ram[0xF37C + i];
-  }
+  PlayerState_SyncInventory(to_ram);
 
   // Per-player non-link_ globals
   SYNC_U8 (button_mask_b_y,              0x3A);
@@ -315,6 +320,16 @@ void PlayerState_SyncToRam(void) {
 
 void PlayerState_SyncFromRam(void) {
   PlayerState_Sync(false);
+}
+
+// Items granted through the engine's give-item table (the uncle's sword and
+// shield, chests, dungeon items) are written as RAW g_ram bytes into the save
+// block (AncillaAdd_ItemReceipt in misc.c) — but the PlayerState struct is
+// authoritative over that block, so the per-frame SyncToRam would erase the
+// grant a frame later. Called right after such a raw write to absorb the
+// block back into the receiving player's struct (cur_player).
+void Multiplayer_AbsorbInventoryFromRam(void) {
+  PlayerState_SyncInventory(false);
 }
 
 void PlayerState_Init(int player_index) {

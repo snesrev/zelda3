@@ -866,6 +866,14 @@ void AncillaAdd_ItemReceipt(uint8 ain, uint8 yin, int chest_pos) {  // 8985e8
     y += link_y_coord + ((method == 2) ? -8 : 0);
   }
   Ancilla_SetXY(ancilla, x, y);
+
+#ifdef ZELDA3_MULTIPLAYER
+  // The give-item table above wrote the grant into raw g_ram save-block
+  // bytes; absorb them into the authoritative player struct so the per-frame
+  // SyncToRam doesn't erase the item we just received (the uncle's sword and
+  // shield were vanishing this way).
+  Multiplayer_AbsorbInventoryFromRam();
+#endif
 }
 
 void ItemReceipt_GiveBottledItem(uint8 item) {  // 89893e

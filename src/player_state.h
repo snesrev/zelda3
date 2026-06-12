@@ -312,6 +312,11 @@ extern uint16 g_p2_dma_addrs[10];
 // True when P2 was drawn this frame and the NMI should upload its graphics.
 extern bool g_p2_draw_active;
 
+// Absorb the save-block inventory (g_ram 0xF340..0xF38B) back into
+// cur_player's struct. Call after engine code grants items via raw g_ram
+// writes (AncillaAdd_ItemReceipt), or the authoritative struct erases them.
+void Multiplayer_AbsorbInventoryFromRam(void);
+
 // Mutual leash: blocks cur_player at the shared-screen boundary around the
 // other player. Called at the end of Link_Main for each player; defined in
 // zelda_rtl.c next to the other co-op frame logic.

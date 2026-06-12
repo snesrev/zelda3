@@ -36,6 +36,8 @@ void ZeldaApuUnlock(void) {}
 
 // From sprite.c — used for the enemy HP scaling unit checks.
 void SpritePrep_LoadProperties(int k);
+// From player.c — used for the item-receipt persistence check.
+void Link_ReceiveItem(uint8 item, int chest_position);
 
 const uint8 *g_asset_ptrs[kNumberOfAssets];
 uint32 g_asset_sizes[kNumberOfAssets];
@@ -428,6 +430,22 @@ int main(int argc, char **argv) {
         clean = false;
     }
     Check(clean, "exp7: no P2 magic bar tiles in the HUD gap");
+  }
+
+  // ---- Experiment 8: item receipts persist (the uncle's-sword bug). ----
+  // The give-item table writes raw g_ram save-block bytes; without the
+  // absorb-back, the authoritative player struct erased the grant a frame
+  // later (sword+shield vanished after the uncle's gift).
+  {
+    PlayerState_SetCurrent(0);
+    Check(g_players[0].sword_type == 0, "exp8: starts with no sword");
+    g_ram[0x2E9] = 0;             // item_receipt_method = standing gift
+    Link_ReceiveItem(0x00, -1);   // item 0: fighter sword & shield
+    RunFrames(240, 0, 0);         // let the hold-up cutscene play out
+    Check(g_players[0].sword_type == 1, "exp8: sword persisted for P1");
+    Check(g_players[0].shield_type == 1, "exp8: shield persisted for P1");
+    Check(g_players[1].sword_type == 1, "exp8: sword shared to P2");
+    Check(g_ram[0xf359] == 1, "exp8: g_ram mirror agrees");
   }
 
   // ---- Experiment 5: co-op enemy HP scaling at spawn. ----
