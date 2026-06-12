@@ -17,6 +17,8 @@
 /saves/sram.dat
 /saves/sram.bak
 /zelda3
+/zelda3_coop
+/zelda3_harness
 __pycache__
 /src/*.o
 /*.exe
@@ -31,3 +33,5 @@ __pycache__
 /sprites-gfx
 /glsl-shaders
 /token.txt
+/headless_coop
+/headless_vanilla

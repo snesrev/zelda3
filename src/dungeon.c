@@ -4971,7 +4971,31 @@ void RoomTag_OperateWaterFlooring() {  // 81cc95
   }
 }
 
+static bool RoomTag_MaybeCheckShutters_cur(uint8 *attr_out);
+static bool RoomTag_CheckForPressedSwitch_cur(uint8 *y_out);
+
+// Co-op: a shutter / pressure-plate / star-tile switch under EITHER player
+// triggers it. Dungeon room-tag handlers run only in P1's module pass (P2 runs
+// Link_Main only), so without this only P1's body operates these switches. P1
+// is checked first (its result is never overridden -> can't break P1's puzzles);
+// only if P1 isn't on a switch do we re-run the identical check as P2. This lets
+// P2 hold pressure plates and press shutter/star switches in co-op.
 bool RoomTag_MaybeCheckShutters(uint8 *attr_out) {  // 81cd39
+  if (RoomTag_MaybeCheckShutters_cur(attr_out))
+    return true;
+#ifdef ZELDA3_MULTIPLAYER
+  if (g_mp_p2_enabled && g_players[1].is_active && !g_players[1].is_dead) {
+    PlayerState *mp_s = cur_player;
+    PlayerState_SetCurrent(1);
+    bool r = RoomTag_MaybeCheckShutters_cur(attr_out);
+    cur_player = mp_s;
+    return r;
+  }
+#endif
+  return false;
+}
+
+static bool RoomTag_MaybeCheckShutters_cur(uint8 *attr_out) {  // 81cd39
   int p, t;
   word_7E04B6 = 0;
   if (flag_is_link_immobilized || link_auxiliary_state)
@@ -5004,6 +5028,21 @@ int RoomTag_GetTilemapCoords() {  // 81cda5
 }
 
 bool RoomTag_CheckForPressedSwitch(uint8 *y_out) {  // 81cdcc
+  if (RoomTag_CheckForPressedSwitch_cur(y_out))
+    return true;
+#ifdef ZELDA3_MULTIPLAYER
+  if (g_mp_p2_enabled && g_players[1].is_active && !g_players[1].is_dead) {
+    PlayerState *mp_s = cur_player;
+    PlayerState_SetCurrent(1);
+    bool r = RoomTag_CheckForPressedSwitch_cur(y_out);
+    cur_player = mp_s;
+    return r;
+  }
+#endif
+  return false;
+}
+
+static bool RoomTag_CheckForPressedSwitch_cur(uint8 *y_out) {  // 81cdcc
   int p, t;
   word_7E04B6 = 0;
   if (flag_is_link_immobilized || link_auxiliary_state)

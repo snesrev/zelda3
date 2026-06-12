@@ -11,6 +11,13 @@
 #include "util.h"
 #include "audio.h"
 #include "assets.h"
+#ifdef ZELDA3_MULTIPLAYER
+#include "player.h"
+#include "player_oam.h"
+#include "load_gfx.h"
+#include "sprite.h"
+#include "net_transport.h"
+#endif
 ZeldaEnv g_zenv;
 uint8 g_ram[131072];
 
@@ -262,9 +269,488 @@ static void ZeldaRunGameLoop() {
   nmi_boolean = 0;
 }
 
+#ifdef ZELDA3_MULTIPLAYER
+static bool g_mp_initialized = false;
+static uint16 g_p2_input_this_frame;
+// Master co-op toggle: when false, the second player is never spawned/updated and
+// the game runs as ordinary single-player through the same loop. Default on.
+bool g_mp_p2_enabled = true;
+static void Multiplayer_RemapP2OamChars(uint16 oam_byte_offset);
+static void Multiplayer_WarpP2OnTransition(void);
+static void Multiplayer_PlaceP2Beside(PlayerState *p1, PlayerState *p2);
+static void Multiplayer_SeparatePlayers(void);
+
+// Process P2's NMI input (writes to per-player joypad globals via cur_player macros)
+static void Multiplayer_ProcessP2Input(uint16 joypad_input) {
+  uint16 both = joypad_input;
+  uint16 reversed = 0;
+  for (int i = 0; i < 16; i++, both >>= 1)
+    reversed = reversed * 2 + (both & 1);
+  uint8 r0 = reversed;
+  uint8 r1 = reversed >> 8;
+
+  joypad1L_last = r0;
+  filtered_joypad_L = (r0 ^ joypad1L_last2) & r0;
+  joypad1L_last2 = r0;
+
+  joypad1H_last = r1;
+  filtered_joypad_H = (r1 ^ joypad1H_last2) & r1;
+  joypad1H_last2 = r1;
+}
+
+// Initialize P2 when first entering gameplay (module 7 = dungeon, 9 = overworld)
+static bool g_p1_seeded = false;
+static void Multiplayer_InitIfNeeded(void) {
+  // Seed P1 across the whole load + gameplay span (5=LoadFile, 6=PreDungeon,
+  // 7=Dungeon, 8/10=OverworldLoad, 9/11=Overworld), NOT just gameplay (7/9).
+  // CopySaveToWRAM memcpys the SRAM save (inventory at 0xF340+) straight into
+  // g_ram and sets main_module_index=5, so by module 5 the loaded inventory is
+  // already present. Seeding here captures it BEFORE the spawn-position setup in
+  // modules 6/8 (which writes Link's x/y through the macros into the now-seeded,
+  // authoritative struct). Seeding only at 7/9 was too late: the per-frame
+  // SyncToRam (gated below) would otherwise have wiped the inventory first.
+  if (main_module_index < 5 || main_module_index > 11) return;
+
+  // One-time: seed P1's PlayerState struct from the live g_ram (which holds the
+  // loaded save / boot state). After this the struct is authoritative for P1's
+  // link state and is shadowed back into g_ram via SyncToRam each frame. This
+  // must happen whether or not co-op is enabled, otherwise the empty struct
+  // would be synced over g_ram and wipe the game state.
+  if (!g_p1_seeded) {
+    PlayerState_SetCurrent(0);
+    PlayerState_SyncFromRam();
+    // Clear any co-op downed state carried in the struct. is_dead/is_ghost/etc.
+    // are co-op-only fields (NOT g_ram-backed), so SyncFromRam won't reset them;
+    // without this, re-seeding after a game-over+Continue would leave P1 a frozen
+    // 0-HP ghost. (P2 is re-cloned fresh by PlayerState_Init below.)
+    g_players[0].is_dead = 0;
+    g_players[0].is_ghost = 0;
+    g_players[0].respawn_timer = 0;
+    g_players[0].disable_sprite_damage = 0;
+    flag_is_link_immobilized = 0;   // macro -> cur_player (P1) here; field name collides
+    g_p1_seeded = true;
+  }
+
+  // Spawn P2 from P1's state once, only when co-op is enabled.
+  if (g_mp_p2_enabled && !g_mp_initialized) {
+    PlayerState_Init(1);
+    g_mp_initialized = true;
+    printf("Multiplayer: P2 initialized at (%d, %d)\n",
+           g_players[1].x_coord, g_players[1].y_coord);
+  }
+}
+
+// Called when a save is (re)loaded into WRAM (file-select load, or the post-death
+// Continue path) — both route through CopySaveToWRAM. Force a re-seed of P1 from
+// the freshly loaded g_ram and a re-spawn of P2, so the loaded save's inventory/
+// position isn't overwritten by stale struct state and P2 matches the loaded
+// file. The re-seed also clears leftover co-op downed state, which fixes the
+// game-over -> Continue soft-lock (both players stuck as frozen 0-HP ghosts).
+void Multiplayer_OnSaveLoaded(void) {
+  g_p1_seeded = false;
+  g_mp_initialized = false;
+}
+
+// Per-player health/magic refill for P2. The engine's Hud_RefillLogic only runs
+// for P1 (and also redraws the HUD), so we replicate just the per-player part
+// here — converting P2's just-collected hearts/magic fillers into P2's actual
+// health/magic. cur_player must be P2.
+static void Multiplayer_RefillP2(void) {
+  if (link_magic_filler) {
+    if (link_magic_power >= 128) { link_magic_power = 128; link_magic_filler = 0; }
+    else { link_magic_filler--; link_magic_power++; }
+  }
+  if (link_hearts_filler) {
+    if (link_health_current < link_health_capacity) {
+      link_health_current += 8;
+      if (link_health_current >= link_health_capacity)
+        link_health_current = link_health_capacity;
+      link_hearts_filler -= 8;
+    } else {
+      link_health_current = link_health_capacity;
+      link_hearts_filler = 0;
+    }
+  }
+}
+
+// Keep OBJ palette row 3 (CGRAM words 0xB0-0xBF) loaded with a recolored
+// Link armor palette for P2's body: blue mail while P1 wears green, red
+// while P1 wears blue, green while P1 wears red — so the two Links are
+// always distinguishable using the game's own armor palettes. Row 3 is not
+// referenced by any sprite during normal play (measured: house, overworld,
+// rain, combat all use rows 0-2 and 4-6 only); the engine only touches it
+// in the rare palette_swap translucency mode. Area palette loads can stomp
+// the row, so this re-asserts it whenever the row differs from what we want
+// (self-heals after loads without fighting fades every frame).
+static void Multiplayer_EnforceP2Palette(void) {
+  if (!g_mp_p2_enabled || !g_mp_initialized || !g_players[1].is_active)
+    return;
+  uint8 armor = g_players[0].armor;  // shared progression: P1's tier
+  uint8 tint = (armor == 0) ? 1 : (armor == 1) ? 2 : 0;
+  uint16 row[15];
+  memcpy(row, kPalette_ArmorAndGloves + tint * 15, sizeof(row));
+  if (g_players[0].item_gloves)
+    row[12] = kGlovesColor[g_players[0].item_gloves - 1];  // same slot as P1's 0xfd
+  if (memcmp(&main_palette_buffer[0xB1], row, sizeof(row)) != 0) {
+    memcpy(&main_palette_buffer[0xB1], row, sizeof(row));
+    memcpy(&aux_palette_buffer[0xB1], row, sizeof(row));
+    flag_update_cgram_in_nmi++;
+  }
+}
+
+// Remap P2's OAM char numbers into the spare VRAM char region that the NMI
+// fills with P2's own pose graphics (see NMI_DoUpdates in nmi.c and
+// Multiplayer_ComputeP2DmaAddrs in misc.c). Chars not in this table (shadow
+// 0x6c and its 0x28/0x38 variants, sword sparkles 0x24/0x25, dust, splashes)
+// are pose-independent and shared with P1. oam_byte_offset is the byte offset
+// of P2's 12-entry Link block in the OAM buffer.
+static void Multiplayer_RemapP2OamChars(uint16 oam_byte_offset) {
+  static const uint8 kCharMap[][2] = {
+    {0x00, 0x26}, {0x02, 0x29}, {0x04, 0x2b}, {0x14, 0x3b},  // body + head
+    {0x05, 0x2c}, {0x06, 0x2d}, {0x15, 0x3c}, {0x16, 0x3d},  // sword
+    {0x07, 0x2e}, {0x08, 0x2f}, {0x17, 0x3e}, {0x18, 0x3f},  // shield
+  };
+  OamEnt *oam = &oam_buf[oam_byte_offset >> 2];
+  for (int i = 0; i < 12; i++) {
+    if (oam[i].flags & 1)  // char index bit 8 set: not in the dynamic region
+      continue;
+    uint8 c = oam[i].charnum;
+    for (size_t j = 0; j < countof(kCharMap); j++) {
+      if (kCharMap[j][0] == c) {
+        oam[i].charnum = kCharMap[j][1];
+        break;
+      }
+    }
+  }
+}
+
+// Run the multiplayer game loop: P1 full update, then P2 Link_Main only
+static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
+  frame_counter++;
+  ClearOamBuffer();
+  g_p2_draw_active = false;
+
+  // Ensure P2 is initialized when gameplay starts
+  Multiplayer_InitIfNeeded();
+
+  // === P1 update (full game loop) ===
+  PlayerState_SetCurrent(0);
+  // Only shadow the struct into g_ram once P1 has been seeded from the loaded
+  // save. Before seeding, the engine is the sole owner of g_ram (the SRAM->WRAM
+  // inventory load, Link_Initialize, Dungeon_LoadEntrance); writing the still
+  // empty P1 struct back over it would wipe the just-loaded inventory.
+  if (g_p1_seeded)
+    PlayerState_SyncToRam();
+
+  Module_MainRouting();
+  NMI_PrepareSprites();
+
+  // NOTE: do NOT SyncFromRam here. In the multiplayer build the link_ macros
+  // resolve to cur_player->field (the PlayerState struct), so Module_MainRouting
+  // already wrote P1's new position/state into g_players[0]. Copying g_ram back
+  // over the struct would clobber that movement with the stale pre-frame link
+  // bytes (this is what froze both players). The struct is authoritative for
+  // link state; the SyncToRam above only shadows it into g_ram for the few
+  // subsystems that still read raw g_ram at link offsets.
+
+  // === P2 update (Link_Main only — world state already updated) ===
+  // Only update P2 during NORMAL free movement: gameplay module (7=dungeon,
+  // 9=overworld) AND submodule_index == 0. When submodule_index != 0 a screen
+  // transition / special state is in progress: P1's Module_MainRouting drives
+  // the scroll and moves Link itself, so P2 must NOT move independently (it
+  // would wander out of the transitioning screen and desync the scroll). P2 is
+  // frozen during the transition and snapped back to P1 when it completes (see
+  // Multiplayer_WarpP2OnTransition below).
+  // Capture P1's scripted-control-lock flag while cur_player is still P1 (the
+  // link_ macros resolve to P1 here; we can't read it once we switch to P2,
+  // and the field name collides with the macro so g_players[0].<field> won't
+  // compile). Used below to freeze P2 during P1-driven cutscenes.
+  // A dead/ghost P1 sets its own immobilize flag (to stay frozen), but that must
+  // NOT freeze P2 — P2 needs to move to revive P1. Only mirror P1's lock to P2
+  // for real cutscenes (P1 alive and immobilized).
+  uint8 p1_immobilized = flag_is_link_immobilized && !g_players[0].is_dead;
+
+  bool p2_normal_play = (main_module_index == 7 || main_module_index == 9) &&
+                        submodule_index == 0;
+  if (g_mp_p2_enabled && g_mp_initialized && g_players[1].is_active && p2_normal_play) {
+    PlayerState_SetCurrent(1);
+    // Give P2 the current shared inventory before it acts (so it can use the
+    // team's items and its pickups add to the team total).
+    Multiplayer_ShareInventory(&g_players[0], &g_players[1]);
+    PlayerState_SyncToRam();
+
+    // Co-op cutscene / scripted control lock. flag_is_link_immobilized is the
+    // engine's authoritative "Link can't move this frame" gate (player.c:
+    // Link_Main skips Link_ControlHandler when it's set) and is now per-player.
+    // P1's scripted sequences that stay in normal gameplay (item-get overhead
+    // pose, Ether/Bombos/Quake spell animations, tree pull, scripted dungeon
+    // events) set only P1's copy, so without this P2 would keep walking/acting
+    // through the cutscene. Module-level cutscenes, the menu/map and text boxes
+    // are module 14 (or submodule != 0) and already freeze P2 via the gate
+    // above; this covers the in-module case by feeding P2 no input while P1 is
+    // locked, so both players are held together.
+    uint16 p2_eff_input = p1_immobilized ? 0 : p2_input;
+
+    // Process P2 input into the per-player joypad globals
+    Multiplayer_ProcessP2Input(p2_eff_input);
+
+    // P2's Link_Main can hit a hazard (drowning / pit damage / pit fall) whose
+    // handler sets the SHARED main_module_index/submodule_index to a recovery or
+    // transition state. That state machine then runs in P1's module pass against
+    // P1 — yanking P1 to its safe-return spot and stranding P2. Co-op: a P2
+    // hazard must affect only P2. Snapshot the shared transition state; if P2
+    // changed it, revert it and resolve the hazard locally for P2 below.
+    uint8 mp_hazard_module = main_module_index;
+    uint8 mp_hazard_submodule = submodule_index;
+
+    Link_Main();
+
+    if (main_module_index != mp_hazard_module || submodule_index != mp_hazard_submodule) {
+      main_module_index = mp_hazard_module;
+      submodule_index = mp_hazard_submodule;
+      if (link_health_current == 0) {
+        // Hazard damage was lethal to P2 -> drop P2 into the ghost/respawn state
+        // (cur_player == P2 here). On a true double-KO let game-over run.
+        if (!Multiplayer_PreventGameOver()) { main_module_index = 18; submodule_index = 0; }
+      } else {
+        // P2 survived -> pull it back beside P1 (out of the water/pit) and clear
+        // any half-started fall/swim handler state.
+        Multiplayer_PlaceP2Beside(&g_players[0], &g_players[1]);
+      }
+    }
+
+    // Render P2's sprite. Use the OAM band OPPOSITE P1's so the two Links never
+    // share slots (the player offset table is {0x190, 0xe0}; LinkOam_Main selects
+    // it from sort_sprites_setting). LinkOam_Main also sets player_oam_y_offset,
+    // which Sprite_CheckDamageFromLink relies on below, so it must run first.
+    uint8 p1_oam_setting = (uint8)sort_sprites_setting;
+    sort_sprites_setting = p1_oam_setting ? 0 : 1;
+    LinkOam_Main();
+    // P2's OAM entries reference the fixed Link chars that the NMI fills with
+    // P1's pose each frame — that made P2's sprite mirror P1's animation
+    // ("walks in place"). Capture P2's own pose DMA sources and remap its OAM
+    // chars into the spare region the NMI uploads them to (see nmi.c).
+    // sort_sprites_offset_into_oam_buffer still holds P2's block offset here
+    // (LinkOam_Main just set it).
+    Multiplayer_ComputeP2DmaAddrs();
+    Multiplayer_RemapP2OamChars(sort_sprites_offset_into_oam_buffer);
+    // NMI_PrepareSprites packed the 2-bit OAM extension table (sprite size /
+    // x-high bits) BEFORE this P2 draw pass ran, so P2's freshly written
+    // bits would reach the PPU a frame late — and when the band P2 uses
+    // switches (sort_sprites_setting changes between areas), the first frame
+    // shows the previous occupant's bits. Re-pack the three packed bytes
+    // covering P2's 12-entry block from the bytewise array LinkOam_Main just
+    // wrote (both band offsets are 16-byte aligned, so it is exactly three).
+    {
+      int first = (sort_sprites_offset_into_oam_buffer >> 2) >> 2;
+      for (int i = first; i < first + 3; i++) {
+        extended_oam[i] = bytewise_extended_oam[4 * i + 3] << 6 |
+                          bytewise_extended_oam[4 * i + 2] << 4 |
+                          bytewise_extended_oam[4 * i + 1] << 2 |
+                          bytewise_extended_oam[4 * i + 0];
+      }
+    }
+    g_p2_draw_active = true;
+    sort_sprites_setting = p1_oam_setting;
+
+    // Real two-way combat for P2. Sprites already ran their AI against P1 during
+    // Module_MainRouting; re-run the engine's actual hitbox checks with
+    // cur_player == P2 so enemies can damage P2 (full recoil / shield / sfx) and
+    // P2's sword and items can damage enemies. No friendly fire: players never
+    // appear in the sprite arrays, so neither player's weapons can hit the other.
+    for (int k = 0; k < 16; k++) {
+      if (sprite_state[k] == 9) {
+        // Wallmaster (0x90) grabs Link and warps them to the dungeon entrance,
+        // but its carry/warp runs during P1's pass against P1's state. If it
+        // latched onto P2 here, it would teleport the WRONG player (P1) and kick
+        // off a global room reload from inside this P2 update -> desync. Keep the
+        // wallmaster P1-only by skipping its grab check for P2 (it still grabs P1
+        // via its own AI). P2's weapons can still hit it (CheckDamageFromLink).
+        if (sprite_type[k] != 0x90)
+          Sprite_CheckDamageToLink(k);
+        Sprite_CheckDamageFromLink(k);
+        // Let P2 collect drops too (prize sprites are types 0xD8..0xE6). With
+        // cur_player == P2 this routes hearts/magic into P2's own pools (so P2
+        // heals/refills) and shared items into P2's inventory copy. The sprite
+        // is despawned on collect, so P1's pass next frame won't double-collect.
+        if (sprite_type[k] >= 0xd8 && sprite_type[k] <= 0xe6)
+          Sprite_CheckAbsorptionByPlayer(k);
+      }
+    }
+
+    // Turn P2's just-collected hearts/magic into actual health/magic (P1's
+    // Hud_RefillLogic doesn't run for P2).
+    Multiplayer_RefillP2();
+
+    // Push any shared-inventory changes P2 just made (pickups/item use) back to
+    // the canonical pool so P1 sees them next frame.
+    Multiplayer_ShareInventory(&g_players[1], &g_players[0]);
+
+    // Do NOT SyncFromRam: Link_Main wrote P2's new state into g_players[1] via
+    // the cur_player macros, so the struct is already current. Pulling g_ram
+    // back would clobber P2's movement (same bug as P1 above).
+
+    // Restore P1 as current so g_ram + cur_player reflect P1 for the subsequent
+    // Interrupt_NMI (joypad read) and ZeldaDrawPpuFrame.
+    PlayerState_SetCurrent(0);
+    PlayerState_SyncToRam();
+
+  }
+
+  Multiplayer_EnforceP2Palette();
+
+  // Per-frame co-op bookkeeping (runs even during transitions / when a player is
+  // downed): tick respawn timers + revive, and warp P2 to P1 after a transition.
+  if (g_mp_initialized) {
+    // After a real double-KO + Continue (or bottle-fairy revival), the engine
+    // returns to gameplay but those paths bypass CopySaveToWRAM (hence
+    // Multiplayer_OnSaveLoaded), so BOTH players are still flagged is_dead here.
+    // UpdateDeathRespawn's "both down -> stay down" rule would then keep them
+    // frozen 0-HP ghosts forever. Detect that (both dead, but back in a normal
+    // gameplay module rather than the game-over module) and re-seed: next frame
+    // InitIfNeeded clears P1's downed state and re-clones P2, so both come back.
+    // (Both-dead can't legitimately persist in module 7/9 — a fatal double-KO
+    // switches to the game-over module the same frame.)
+    if (g_players[0].is_dead && g_players[1].is_dead &&
+        (main_module_index == 7 || main_module_index == 9)) {
+      Multiplayer_OnSaveLoaded();
+    } else {
+      Multiplayer_UpdateDeathRespawn();
+      Multiplayer_WarpP2OnTransition();
+      Multiplayer_SeparatePlayers();
+    }
+  }
+
+  nmi_boolean = 0;
+}
+
+// (P2 HUD intentionally deferred for this slice: the previous heart-OAM draw
+// used guessed tile/palette numbers. P2 health is tracked per-player and will
+// get a proper HUD in a later pass.)
+
+// (Death/respawn is handled symmetrically for both players by
+// Multiplayer_PreventGameOver + Multiplayer_UpdateDeathRespawn in player_state.c.)
+
+// Snap P2 to P1 when a screen transition COMPLETES (or the module changes), so
+// P2 ends up beside P1 in the new room/area. Warping on completion (rather than
+// at the start) is what lets P2 follow P1 through doors, screen-edge scrolls and
+// dungeon entrances: during the transition P2 is frozen (see the p2_normal_play
+// gate above), and the engine has just moved P1 to the destination, so copying
+// P1's fresh position + room/level state to P2 places it correctly.
+// Place P2 right beside P1 and clear ALL transient per-frame state, so P2
+// resumes cleanly at P1's location. Used by the transition warp and to recover
+// P2 from a hazard. Resetting the handler/aux/z/deep-water/incap state matters
+// when P2 was mid-action (swimming, recoiling, falling) at the instant it's
+// relocated; otherwise it would resume that action on incompatible terrain.
+static void Multiplayer_PlaceP2Beside(PlayerState *p1, PlayerState *p2) {
+  p2->x_coord = p1->x_coord + 16;
+  p2->y_coord = p1->y_coord;
+  p2->is_on_lower_level = p1->is_on_lower_level;
+  p2->is_on_lower_level_mirror = p1->is_on_lower_level_mirror;  // keep OAM floor priority correct
+  p2->quadrant_x = p1->quadrant_x;
+  p2->quadrant_y = p1->quadrant_y;
+  p2->x_vel = p2->y_vel = 0;
+  p2->flag_moving = 0;
+  p2->player_handler_state = 0;
+  p2->auxiliary_state = 0;
+  p2->z_coord = 0;
+  p2->is_in_deep_water = 0;
+  p2->incapacitated_timer = 0;
+  p2->visibility_status = 0;
+}
+
+static uint8 g_last_module_index = 0;
+static uint8 g_last_submodule_index = 0;
+static void Multiplayer_WarpP2OnTransition(void) {
+  uint8 cur_module = main_module_index;
+  uint8 cur_submodule = submodule_index;
+
+  bool warp = false;
+  // Module changed (e.g. overworld<->dungeon entrance/exit): always re-place P2.
+  if (cur_module != g_last_module_index)
+    warp = true;
+  // Same-module transition just finished: submodule returned to 0 (normal play)
+  // from a nonzero transition state, in dungeon or overworld.
+  if ((cur_module == 7 || cur_module == 9) &&
+      cur_submodule == 0 && g_last_submodule_index != 0)
+    warp = true;
+
+  if (warp && g_mp_p2_enabled && g_players[1].is_active) {
+    PlayerState *p1 = &g_players[0];
+    PlayerState *p2 = &g_players[1];
+    Multiplayer_PlaceP2Beside(p1, p2);
+    // FUTURE: Multiplayer_HandleIndependentTransition() — load a second room
+    // for split-screen instead of warping P2 to P1.
+  }
+
+  g_last_module_index = cur_module;
+  g_last_submodule_index = cur_submodule;
+}
+
+// Shared-screen camera. The engine's camera/scroll already follows P1 (it reads
+// link_x/y_coord, which resolve to g_players[0] during P1's Module_MainRouting).
+// Rather than fight that by writing the BG scroll registers afterwards (the old
+// version accumulated shifts into BG1/BG2 H/V OFS every frame, which both
+// corrupted the display AND broke P1's own movement, since the engine couples
+// Link's walking to the camera-scroll boundary), we simply keep P2 leashed
+// inside P1's viewport so both Links stay on screen.
+// FUTURE: a true shared-midpoint camera (would require hooking the scroll
+// computation itself in overworld.c / dungeon.c rather than post-processing it).
+#define MP_LEASH_X 112   // ~half of the 256px screen width
+#define MP_LEASH_Y 96    // ~half of the 224px screen height
+// Mutual leash, called at the end of each player's own Link_Main: the player
+// that just MOVED is blocked at the shared-screen boundary around the OTHER
+// player. Because it only ever retraces the mover's own movement from this
+// frame (a few pixels along their walking path), nobody is teleported through
+// geometry — unlike the old clamp, which dragged P2 along whenever P1 walked
+// away and pulled it through walls into buildings. The camera follows P1, so
+// blocking P1 here also stops the camera until P2 catches up. Velocity into
+// the boundary is zeroed to avoid jitter while pushing against it.
+void Multiplayer_LeashConstrainCurrentPlayer(void) {
+  if (!g_mp_p2_enabled || !g_mp_initialized) return;
+  if (!g_players[0].is_active || !g_players[1].is_active) return;
+  if (g_players[0].is_dead || g_players[1].is_dead) return;  // don't leash to a ghost
+  if (!((main_module_index == 7 || main_module_index == 9) && submodule_index == 0)) return;
+  PlayerState *me = cur_player;
+  PlayerState *other = (me == &g_players[0]) ? &g_players[1] : &g_players[0];
+  int dx = (int)me->x_coord - (int)other->x_coord;
+  int dy = (int)me->y_coord - (int)other->y_coord;
+  // Signed intermediates on the low side: coords are uint16 and the anchor can
+  // be within a leash of the map origin (0), where coord - MP_LEASH underflows.
+  if (dx >  MP_LEASH_X) { me->x_coord = other->x_coord + MP_LEASH_X; me->x_vel = 0; }
+  if (dx < -MP_LEASH_X) { int v = (int)other->x_coord - MP_LEASH_X; me->x_coord = v < 0 ? 0 : (uint16)v; me->x_vel = 0; }
+  if (dy >  MP_LEASH_Y) { me->y_coord = other->y_coord + MP_LEASH_Y; me->y_vel = 0; }
+  if (dy < -MP_LEASH_Y) { int v = (int)other->y_coord - MP_LEASH_Y; me->y_coord = v < 0 ? 0 : (uint16)v; me->y_vel = 0; }
+}
+
+// Soft co-op body collision (Phase 3): keep the two Links from fully stacking.
+// Only P2 is nudged (P1 stays put as the camera/scroll anchor), 1px/frame along
+// the shortest escape axis — gentle enough that P2's normal tile collision next
+// frame keeps it out of walls, and "soft" enough that a player can still shove
+// the other around. Integer-only (deterministic). Skipped for ghosts, different
+// floors, and non-normal-play states (menus/transitions freeze P2 anyway).
+#define MP_BODY_HALF 12   // soft half-extent; the Link sprite is ~16px wide
+static void Multiplayer_SeparatePlayers(void) {
+  PlayerState *p1 = &g_players[0], *p2 = &g_players[1];
+  if (!g_mp_p2_enabled || !p1->is_active || !p2->is_active) return;
+  if (p1->is_dead || p2->is_dead) return;                    // ghosts are intangible
+  if (!((main_module_index == 7 || main_module_index == 9) && submodule_index == 0)) return;
+  if (p1->is_on_lower_level != p2->is_on_lower_level) return; // different floors don't collide
+  int dx = (int)p2->x_coord - (int)p1->x_coord;
+  int dy = (int)p2->y_coord - (int)p1->y_coord;
+  int adx = dx < 0 ? -dx : dx, ady = dy < 0 ? -dy : dy;
+  if (adx >= MP_BODY_HALF || ady >= MP_BODY_HALF) return;     // not overlapping
+  // Push P2 out 1px along the axis of least penetration (shortest way out).
+  if ((MP_BODY_HALF - adx) <= (MP_BODY_HALF - ady))
+    p2->x_coord += (dx >= 0) ? 1 : -1;
+  else
+    p2->y_coord += (dy >= 0) ? 1 : -1;
+}
+#endif // ZELDA3_MULTIPLAYER
+
 void ZeldaInitialize() {
   g_zenv.dma = dma_init(NULL);
-  g_zenv.ppu = ppu_init(NULL);
+  g_zenv.ppu = ppu_init();
   g_zenv.ram = g_ram;
   g_zenv.sram = (uint8*)calloc(8192, 1);
   g_zenv.vram = g_zenv.ppu->vram;
@@ -272,6 +758,11 @@ void ZeldaInitialize() {
   SpcPlayer_Initialize(g_zenv.player);
   dma_reset(g_zenv.dma);
   ppu_reset(g_zenv.ppu);
+#ifdef ZELDA3_MULTIPLAYER
+  // Initialize P1 player state
+  PlayerState_Init(0);
+  g_mp_initialized = false;
+#endif
 }
 
 static void ZeldaRunPolyLoop() {
@@ -288,8 +779,19 @@ void ZeldaRunFrameInternal(uint16 input, int run_what) {
 
   if (run_what & 2)
     ZeldaRunPolyLoop();
-  if (run_what & 1)
+  if (run_what & 1) {
+#ifdef ZELDA3_MULTIPLAYER
+    // Run the dual-player loop for every co-op mode (local OR online host/client).
+    // Online lockstep feeds the remote player's input in through the same
+    // g_p2_input_this_frame path, so the loop is identical to local co-op.
+    if (g_mp_config.mode == MP_MODE_LOCAL ||
+        g_mp_config.mode == MP_MODE_HOST ||
+        g_mp_config.mode == MP_MODE_CLIENT)
+      ZeldaRunGameLoop_Multiplayer(g_p2_input_this_frame);
+    else
+#endif
     ZeldaRunGameLoop();
+  }
   Interrupt_NMI(input);
 }
 
@@ -387,7 +889,13 @@ void ZeldaReset(bool preserve_sram) {
   ZeldaRestoreMusicAfterLoad_Locked(true);
   ZeldaApuUnlock();
   EmuSynchronizeWholeState();
-
+#ifdef ZELDA3_MULTIPLAYER
+  // g_ram was just wiped for a fresh boot, so the player structs must stop
+  // being authoritative until the game re-seeds them (otherwise the stale
+  // "seeded" P1 struct would shadow pre-reset state into the intro/file-select
+  // RAM every frame, and P2 would survive the reset).
+  Multiplayer_OnSaveLoaded();
+#endif
 }
 
 static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
@@ -399,14 +907,43 @@ static void LoadSnesState(SaveLoadFunc *func, void *ctx) {
   ZeldaRestoreMusicAfterLoad_Locked(false);
   ZeldaApuUnlock();
   EmuSynchronizeWholeState();
+#ifdef ZELDA3_MULTIPLAYER
+  // A savestate restores g_ram wholesale, but the PlayerState structs are the
+  // authoritative link state in the co-op build. Without a re-seed, the stale
+  // still-"seeded" P1 struct would be SyncToRam'd right back over the freshly
+  // restored g_ram next frame (undoing the load), and P2 would keep pre-load
+  // state. Re-seed P1 from the restored g_ram and re-spawn P2 (same path as a
+  // file-select load — savestates predate co-op, so they carry no P2 state).
+  Multiplayer_OnSaveLoaded();
+#endif
 }
 
 static void SaveSnesState(SaveLoadFunc *func, void *ctx) {
+#ifdef ZELDA3_MULTIPLAYER
+  // Saving must be READ-ONLY with respect to the checksummed sim state. The
+  // scratch writes below (the hdma-table copy and the MSU volume/resume bytes)
+  // land in g_ram, which the online desync checksum covers in full — so the
+  // first savestate one peer made would otherwise permanently trip a false
+  // "DESYNC DETECTED" on the next checksum exchange (the other peer never
+  // performs these writes; msu_volume even flips 0->255 on the first save).
+  // Snapshot the three scratch regions and restore them after serialization:
+  // the saved file keeps the values, live RAM is left exactly as it was.
+  // ([0x1DB60, 0x1DBA0) bounds the MSU resume blob; 0x654 is msu_volume.)
+  uint8 mp_save_hdma[224 * 2], mp_save_msu[0x40], mp_save_vol;
+  memcpy(mp_save_hdma, g_zenv.ram + 0x1b00, sizeof(mp_save_hdma));
+  memcpy(mp_save_msu, g_zenv.ram + 0x1DB60, sizeof(mp_save_msu));
+  mp_save_vol = g_zenv.ram[0x654];
+#endif
   memcpy(g_zenv.ram + 0x1b00, g_zenv.ram + 0x1DBA0, 224 * 2); // hdma table was moved
   ZeldaApuLock();
   ZeldaSaveMusicStateToRam_Locked();
   InternalSaveLoad(func, ctx);
   ZeldaApuUnlock();
+#ifdef ZELDA3_MULTIPLAYER
+  memcpy(g_zenv.ram + 0x1b00, mp_save_hdma, sizeof(mp_save_hdma));
+  memcpy(g_zenv.ram + 0x1DB60, mp_save_msu, sizeof(mp_save_msu));
+  g_zenv.ram[0x654] = mp_save_vol;
+#endif
 }
 
 typedef struct StateRecorder {
@@ -684,11 +1221,24 @@ int InputStateReadFromFile() {
 }
 #endif
 
+#ifdef ZELDA3_MULTIPLAYER
+bool ZeldaRunFrame(int inputs, int inputs_p2) {
+#else
 bool ZeldaRunFrame(int inputs) {
+#endif
 
   // Avoid up/down and left/right from being pressed at the same time
   if ((inputs & 0x30) == 0x30) inputs ^= 0x30;
   if ((inputs & 0xc0) == 0xc0) inputs ^= 0xc0;
+
+#ifdef ZELDA3_MULTIPLAYER
+  // Same opposing-direction filter P1 gets above (the SNES pad can't report
+  // up+down / left+right at once); keep P2 symmetric and deterministic.
+  if ((inputs_p2 & 0x30) == 0x30) inputs_p2 ^= 0x30;
+  if ((inputs_p2 & 0xc0) == 0xc0) inputs_p2 ^= 0xc0;
+  // Store P2 input for use in the multiplayer game loop
+  g_p2_input_this_frame = (uint16)inputs_p2;
+#endif
 
   frame_ctr_dbg++;
 
@@ -699,6 +1249,11 @@ bool ZeldaRunFrame(int inputs) {
     inputs = StateRecorder_ReadNextReplayState(&state_recorder);
   } else {
     //    input_state = InputStateReadFromFile();
+    // Co-op caveat: the StateRecorder captures only P1's joypad, so the built-in
+    // rewind/replay is P1-only — a recorded co-op session would desync P2 on
+    // playback (P2 input isn't in the stream). This matches the design that P2
+    // state is ephemeral/not saved; co-op just doesn't support rewind. A future
+    // fix would record g_p2_input_this_frame alongside P1's.
     StateRecorder_Record(&state_recorder, inputs);
 
     // This is whether APUI00 is true or false, this is used by the ancilla code.
@@ -739,7 +1294,17 @@ bool ZeldaRunFrame(int inputs) {
     EmuSyncMemoryRegion(&g_ram[kRam_CrystalRotateCounter], 1);
   }
 
-  if (g_emu_runframe == NULL || enhanced_features0 != 0 || g_zenv.dialogue_flags) {
+  if (g_emu_runframe == NULL || enhanced_features0 != 0 || g_zenv.dialogue_flags
+#ifdef ZELDA3_MULTIPLAYER
+      // Co-op intentionally diverges from a vanilla single-player SNES (a second
+      // Link, shared camera, etc.), so the reference-emulator memory compare is
+      // meaningless here. Always run the C implementation directly in co-op —
+      // local OR online (host/client).
+      || g_mp_config.mode == MP_MODE_LOCAL
+      || g_mp_config.mode == MP_MODE_HOST
+      || g_mp_config.mode == MP_MODE_CLIENT
+#endif
+      ) {
     // can't compare against real impl when running with extra features.
     ZeldaRunFrameInternal(inputs, run_what);
   } else {
@@ -750,6 +1315,125 @@ bool ZeldaRunFrame(int inputs) {
 
   return is_replay;
 }
+
+#ifdef ZELDA3_MULTIPLAYER
+// ============================================================================
+// Online input-lockstep driver (transport-agnostic; see net_transport.h).
+// The deterministic sim is the same on both peers, so only InputFrames cross
+// the wire. This is the verified foundation; a real UDP transport plugs into
+// the NetTransport passed to Multiplayer_LockstepInit with no changes here.
+// ============================================================================
+static NetTransport *g_net_transport;
+static int g_net_local_player;     // which player's input is captured locally (0/1)
+static int g_net_input_delay;      // sim trails input capture by this many frames
+static uint32 g_net_send_frame;    // frame number to tag the next local input with
+static uint32 g_net_remote_next;   // next remote frame# expected (de-dups UDP resends)
+static uint32 g_net_last_sync_frame; // last frame we sent a SYNC checksum for
+
+// Drain the transport into the remote player's input ring, strictly in order,
+// de-duping the redundant copies a UDP transport resends for loss tolerance:
+// accept a frame only when it's exactly the next one expected (older =
+// duplicate, newer = a gap a later resend will fill). Stops if the ring fills;
+// the dropped frame's resend is re-accepted next tick once it drains.
+static void Multiplayer_IngestRemote(void) {
+  int remote = g_net_local_player ^ 1;
+  InputFrame rf;
+  while (g_net_transport->recv(g_net_transport, &rf)) {
+    if ((int)rf.player_index == remote && rf.frame_number == g_net_remote_next) {
+      if (!InputRing_Push(remote, &rf))
+        break;
+      g_net_remote_next++;
+    }
+  }
+}
+
+// Transport upkeep without capture or sim advance — called by the frontend on
+// display ticks that skip the lockstep entirely (the pause screen). Keeps our
+// acks/retransmission/keepalives flowing so the peer reads a pause as
+// "waiting for player", not a ~10s "player disconnected"; and keeps draining
+// inbound traffic so our own liveness only counts real silence.
+void Multiplayer_NetIdle(void) {
+  if (!g_net_transport)
+    return;
+  if (g_net_transport->poll)
+    g_net_transport->poll(g_net_transport, g_net_remote_next);
+  Multiplayer_IngestRemote();
+}
+
+void Multiplayer_LockstepInit(NetTransport *t, int local_player_index, int input_delay) {
+  g_net_transport = t;
+  g_net_local_player = (local_player_index != 0);
+  g_net_input_delay = input_delay < 0 ? 0 : input_delay;
+  g_net_send_frame = 0;
+  g_net_remote_next = 0;
+  g_net_last_sync_frame = 0xFFFFFFFF;
+  Multiplayer_ResetLockstep();   // clears the input rings + g_sim_frame
+}
+
+int Multiplayer_LockstepTick(uint16 local_joypad) {
+  if (!g_net_transport)
+    return 0;
+
+  // 0. Transport upkeep, decoupled from input capture: hand it the next remote
+  //    frame we still need (its ack to advertise) and let it retransmit
+  //    un-acked local input / keep the handshake + liveness ticking. Capture
+  //    (step 1) stops when the local ring is full — exactly the stalled state
+  //    where retransmission must continue or the session would hang forever.
+  if (g_net_transport->poll)
+    g_net_transport->poll(g_net_transport, g_net_remote_next);
+
+  // 1. Tag this tick's local input, queue it locally, and transmit it — but only
+  //    while the transport says the session is established (handshake + initial
+  //    save-data sync done; both peers then start capturing from frame 0
+  //    together) AND the local ring has room. A stalled peer (paused, or one-way
+  //    packet loss) freezes the sim so the ring never drains; without this gate
+  //    the ring would wrap at INPUT_RING_SIZE and overwrite unconsumed input,
+  //    desyncing on resume. When blocked we hold local capture (standard
+  //    lockstep wait-for-peer).
+  if (g_net_transport->ready == NULL || g_net_transport->ready(g_net_transport)) {
+    InputFrame lf;
+    lf.frame_number = g_net_send_frame;
+    lf.joypad = local_joypad;
+    lf.player_index = (uint8)g_net_local_player;
+    lf.flags = INPUT_FLAG_NONE;
+    if (InputRing_Push(g_net_local_player, &lf)) {
+      g_net_transport->send(g_net_transport, &lf);
+      g_net_send_frame++;
+    }
+  }
+
+  // 2. Ingest remote input into the remote player's ring.
+  Multiplayer_IngestRemote();
+
+  // 3. Advance the sim for every frame whose inputs (both players) are present,
+  //    keeping it input_delay frames behind capture so the remote frame has time
+  //    to arrive. Both peers run the identical pair -> they stay in lockstep.
+  //    Catch-up after a stall (peer paused / connection blip) is capped per
+  //    tick: the backlog can be up to a full ring (256 frames ≈ 4s of sim),
+  //    and bursting it in one tick would freeze the UI and garble audio.
+  //    8/tick still clears a worst-case backlog in under a second of fast-
+  //    forward. (Scheduling only — the simulated input pairs are identical on
+  //    both peers regardless of how ticks slice them, so lockstep is unaffected.)
+  int advanced = 0;
+  while (advanced < 8 &&
+         (int)(g_net_send_frame - g_sim_frame) > g_net_input_delay &&
+         Multiplayer_InputsReady()) {
+    FrameInputPair pair = Multiplayer_ConsumeInputs();
+    ZeldaRunFrame(pair.joypad[0], pair.joypad[1]);
+    advanced++;
+  }
+
+  // Periodically hand the transport our state checksum for this frame; it
+  // exchanges them with the peer and flags a desync if they ever disagree.
+  if (g_net_transport->send_sync && g_sim_frame != g_net_last_sync_frame &&
+      (g_sim_frame % SYNC_CHECKSUM_INTERVAL) == 0) {
+    g_net_last_sync_frame = g_sim_frame;
+    g_net_transport->send_sync(g_net_transport, g_sim_frame,
+                               Multiplayer_ComputeChecksum().checksum);
+  }
+  return advanced;
+}
+#endif  // ZELDA3_MULTIPLAYER
 
 void ZeldaSetLanguage(const char *language) {
   static const uint8 kDefaultConf[3] = { 0, 0, 0 };
@@ -879,6 +1563,14 @@ void ZeldaReadSram() {
 }
 
 void ZeldaWriteSram() {
+#ifdef ZELDA3_MULTIPLAYER
+  // Online guest: the in-memory SRAM is the HOST's save data (synced over the
+  // wire at connect). Persisting it would overwrite this machine's own local
+  // save files with the host's progression. Guests don't persist; the host's
+  // copy of the (identical, deterministic) session saves normally on its side.
+  if (g_mp_config.mode == MP_MODE_CLIENT)
+    return;
+#endif
   rename("saves/sram.dat", "saves/sram.bak");
   FILE *f = fopen("saves/sram.dat", "wb");
   if (f) {

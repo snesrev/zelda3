@@ -48,7 +48,11 @@ void ZeldaInitialize();
 void ZeldaReset(bool preserve_sram);
 void ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags);
 void ZeldaRunFrameInternal(uint16 input, int run_what);
+#ifdef ZELDA3_MULTIPLAYER
+bool ZeldaRunFrame(int input_state, int input_state_p2);
+#else
 bool ZeldaRunFrame(int input_state);
+#endif
 void LoadSongBank(const uint8 *p);
 void ZeldaApuLock();
 void ZeldaApuUnlock();

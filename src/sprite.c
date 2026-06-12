@@ -13,6 +13,20 @@
 #include "tile_detect.h"
 #include "sprite_main.h"
 #include "assets.h"
+
+#ifdef ZELDA3_MULTIPLAYER
+// Which player is carrying each sprite slot (0 = P1, 1 = P2). Set when a sprite
+// enters the carried state (10); used to run the carried-sprite handler as its
+// carrier so a P2-lifted object follows P2's hands and is thrown in P2's facing
+// direction (the carried handler reads link_ via cur_player). Mirrors the
+// g_ancilla_owner pattern in ancilla.c.
+static uint8 g_sprite_carry_owner[16];
+const uint8 *Sprite_GetCarryOwnerTable(int *len) {
+  if (len) *len = (int)sizeof(g_sprite_carry_owner);
+  return g_sprite_carry_owner;
+}
+#endif
+
 static const uint16 kOamGetBufferPos_Tab0[6] = {0x171, 0x201, 0x31, 0xc1, 0x141, 0x1d1};
 static const uint16 kOamGetBufferPos_Tab1[48] = {
    0x30,  0x50,  0x80,  0xb0,  0xe0, 0x110, 0x140, 0x170, 0x1d0, 0x1d4, 0x1dc, 0x1e0, 0x1e4, 0x1ec, 0x1f0, 0x1f8,
@@ -1029,6 +1043,9 @@ int Sprite_SpawnThrowableTerrain_silently(uint8 what, uint16 x, uint16 y) {  // 
   if (k < 0)
     return k;
   sprite_state[k] = 10;
+#ifdef ZELDA3_MULTIPLAYER
+  g_sprite_carry_owner[k] = (cur_player == &g_players[1]) ? 1 : 0;  // tile-lift carrier
+#endif
   sprite_type[k] = 0xEC;
   Sprite_SetX(k, x);
   Sprite_SetY(k, y);
@@ -1213,6 +1230,18 @@ void Sprite_ExecuteSingle(int k) {  // 8684e2
   uint8 st = sprite_state[k];
   if (st != 0)
     Sprite_TimersAndOam(k);
+#ifdef ZELDA3_MULTIPLAYER
+  // Run a carried sprite (state 10) as the player who lifted it, so it tracks
+  // that player's hands/facing and is thrown by their input. The sprite loop
+  // runs in P1's pass, so without this a P2-lifted object snaps to P1.
+  if (st == 10 && g_mp_p2_enabled) {
+    PlayerState *mp_saved = cur_player;
+    PlayerState_SetCurrent(g_sprite_carry_owner[k] & 1);
+    kSprite_ExecuteSingle[st](k);
+    cur_player = mp_saved;
+    return;
+  }
+#endif
   kSprite_ExecuteSingle[st](k);
 }
 
@@ -2167,17 +2196,54 @@ uint8 Sprite_DirectionToFaceLink(int k, PointU8 *coords_out) {  // 86eaa4
   return (xm >= ym) ? right.a : below.a + 2;
 }
 
+#ifdef ZELDA3_MULTIPLAYER
+// Co-op aggro target. Enemies/bosses path and aim via Sprite_IsRightOfLink /
+// Sprite_IsBelowLink and everything built on them (Sprite_ProjectSpeedTowardsLink,
+// Sprite_ApplySpeedTowardsLink, Sprite_DirectionToFaceLink). By default those
+// read link_x/y = P1 (cur_player during sprite AI), so every enemy chases P1.
+// Here we point them at whichever player is closer to the sprite, so a boss or
+// enemy goes for the nearer target. This is pathing/facing ONLY: damage is
+// hit-tested per player separately (the P2 loop in zelda_rtl.c re-runs
+// Sprite_CheckDamageTo/FromLink), and the damage path uses Link_SetupHitBox +
+// CheckIfHitBoxesOverlap rather than these helpers, so retargeting can never
+// mis-apply damage. Falls back to P1 when P2 is inactive or downed, so single-P1
+// play is unchanged (and the non-MP build below is byte-for-byte the original).
+static int Sprite_AggroIAbs(int v) { return v < 0 ? -v : v; }
+static bool Sprite_NearestIsP2(int k) {
+  if (!g_mp_p2_enabled || !g_players[1].is_active || g_players[1].is_dead)
+    return false;
+  int sx = Sprite_GetX(k), sy = Sprite_GetY(k);
+  int d1 = Sprite_AggroIAbs((int)g_players[0].x_coord - sx) +
+           Sprite_AggroIAbs((int)g_players[0].y_coord - sy);
+  int d2 = Sprite_AggroIAbs((int)g_players[1].x_coord - sx) +
+           Sprite_AggroIAbs((int)g_players[1].y_coord - sy);
+  return d2 < d1;
+}
+static uint16 Sprite_AggroTargetX(int k) {
+  return Sprite_NearestIsP2(k) ? g_players[1].x_coord : (uint16)link_x_coord;
+}
+static uint16 Sprite_AggroTargetY(int k) {
+  return Sprite_NearestIsP2(k) ? g_players[1].y_coord : (uint16)link_y_coord;
+}
+#define MP_AGGRO_X(k) Sprite_AggroTargetX(k)
+#define MP_AGGRO_Y(k) Sprite_AggroTargetY(k)
+#else
+#define MP_AGGRO_X(k) ((uint16)link_x_coord)
+#define MP_AGGRO_Y(k) ((uint16)link_y_coord)
+#endif
+
 PairU8 Sprite_IsRightOfLink(int k) {  // 86ead1
-  uint16 x = link_x_coord - Sprite_GetX(k);
+  uint16 x = MP_AGGRO_X(k) - Sprite_GetX(k);
   PairU8 rv = { (uint8)(sign16(x) ? 1 : 0), (uint8)x };
   return rv;
 }
 
 PairU8 Sprite_IsBelowLink(int k) {  // 86eae8
-  int t = BYTE(link_y_coord) + 8;
+  uint16 ly = MP_AGGRO_Y(k);
+  int t = BYTE(ly) + 8;
   int u = (t & 0xff) + sprite_z[k];
   int v = (u & 0xff) - sprite_y_lo[k];
-  int w = HIBYTE(link_y_coord) - sprite_y_hi[k] - (v < 0);
+  int w = HIBYTE(ly) - sprite_y_hi[k] - (v < 0);
   uint8 y = (w & 0xff) + (t >> 8) + (u >> 8);
   PairU8 rv = { (uint8)(sign8(y) ? 1 : 0), (uint8)v };
   return rv;
@@ -2523,6 +2589,12 @@ void Sprite_Func3(int k) {  // 86efda
 bool Sprite_CheckDamageToLink(int k) {  // 86f145
   if (link_disable_sprite_damage)
     return false;
+#ifdef ZELDA3_MULTIPLAYER
+  // A downed co-op player is a ghost: invulnerable regardless of how the
+  // per-frame disable_sprite_damage flag happens to be set mid-frame.
+  if (cur_player->is_dead)
+    return false;
+#endif
   return Sprite_CheckDamageToPlayer_1(k);
 }
 
@@ -2628,6 +2700,9 @@ bool Sprite_ReturnIfLiftedPermissive(int k) {  // 86f257
     SpriteSfx_QueueSfx2WithPan(k, 0x1d);
     sprite_unk4[k] = sprite_state[k];
     sprite_state[k] = 10;
+#ifdef ZELDA3_MULTIPLAYER
+    g_sprite_carry_owner[k] = (cur_player == &g_players[1]) ? 1 : 0;  // sprite-lift carrier
+#endif
     sprite_delay_main[k] = 16;
     sprite_unk3[k] = 0;
     sprite_I[k] = 0;
@@ -3968,7 +4043,7 @@ void SpritePrep_LoadProperties(int k) {  // 8db818
   SpritePrep_ResetProperties(k);
   int j = sprite_type[k];
   sprite_flags2[k] = kSpriteInit_Flags2[j];
-  sprite_health[k] = kSpriteInit_Health[j];
+  sprite_health[k] = Multiplayer_ScaleEnemyHealth(kSpriteInit_Health[j]);
   sprite_flags4[k] = kSpriteInit_Flags4[j];
   sprite_flags5[k] = kSpriteInit_Flags5[j];
   sprite_defl_bits[k] = kSpriteInit_DeflBits[j];

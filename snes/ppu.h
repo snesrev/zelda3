@@ -127,7 +127,7 @@ struct Ppu {
   uint16_t vram[0x8000];
 };
 
-Ppu* ppu_init();
+Ppu* ppu_init(void);
 void ppu_free(Ppu* ppu);
 void ppu_reset(Ppu* ppu);
 void ppu_handleVblank(Ppu* ppu);

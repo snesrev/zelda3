@@ -760,6 +760,13 @@ void CalculateSwordHitBox() {  // 879e63
 }
 
 void LinkOam_Main() {  // 8da18e
+#ifdef ZELDA3_MULTIPLAYER
+  // A downed co-op player renders as a flashing "ghost": skip drawing on
+  // alternate frame windows so it blinks. The OAM buffer is cleared at the start
+  // of each frame, so an early return simply leaves this player undrawn now.
+  if (cur_player->is_dead && (frame_counter & 4))
+    return;
+#endif
   uint16 y_coord_backup = link_y_coord;
 
   if (submodule_index == 18 || submodule_index == 19) {
@@ -927,6 +934,15 @@ continue_after_set:
   int r4loc = kPlayerOamSpriteLocs[r2];
 
   link_palette_bits_of_oam = palette_swap_flag ? 0 : 0xe00;
+#ifdef ZELDA3_MULTIPLAYER
+  // P2's body uses OBJ palette 3, which the co-op loop keeps loaded with a
+  // real Link armor palette (blue mail when P1 is green, etc.). Palette 5
+  // (the old choice) holds the area's NPC colors + the sword/shield colors,
+  // which made P2 render as a white/garbled ghost. Sword and shield pieces
+  // keep their own palette-5 equipment colors for both players.
+  if (cur_player->player_index == 1 && !palette_swap_flag)
+    link_palette_bits_of_oam = 0x600;
+#endif
   link_dma_var1 = link_dma_var2 = 0;
 
   int xt = FindInByteArray(kPlayerOam_Tab5, yt, 7);

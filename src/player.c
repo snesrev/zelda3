@@ -97,6 +97,13 @@ void Dungeon_HandleLayerChange() {  // 81ff05
 }
 
 void CacheCameraProperties() {  // 81ff28
+#ifdef ZELDA3_MULTIPLAYER
+  // Only P1 maintains the outdoor scroll-back cache. P2 is warped to P1 on
+  // transitions so it never needs its own, and some cache fields (e.g.
+  // is_standing_in_doorway_cahed) are shared storage P2 must not overwrite.
+  if (cur_player == &g_players[1])
+    return;
+#endif
   BG2HOFS_copy2_cached = BG2HOFS_copy2;
   BG2VOFS_copy2_cached = BG2VOFS_copy2;
   link_y_coord_cached = link_y_coord;
@@ -143,6 +150,11 @@ void Link_Main() {  // 878000
   if (!flag_is_link_immobilized)
     Link_ControlHandler();
   HandleSomariaAndGraves();
+#ifdef ZELDA3_MULTIPLAYER
+  // Block this player at the shared-screen boundary around the other player
+  // (before the camera code reads the new position, so the camera stops too).
+  Multiplayer_LeashConstrainCurrentPlayer();
+#endif
 }
 
 void Link_ControlHandler() {  // 87807f
@@ -165,14 +177,23 @@ void Link_ControlHandler() {  // 87807f
         number_of_times_hurt_by_sprites++;
         uint8 new_dmg = link_health_current - dmg;
         if (new_dmg == 0 || new_dmg >= 0xa8) {
-          mapbak_TM = TM_copy;
-          mapbak_TS = TS_copy;
-          saved_module_for_menu = main_module_index;
-          main_module_index = 18;
-          submodule_index = 1;
-          countdown_for_blink = 0;
-          link_hearts_filler = 0;
-          new_dmg = 0;
+#ifdef ZELDA3_MULTIPLAYER
+          // Co-op: if the other player is still up, this player goes down
+          // (ghost) instead of ending the game. Only a double-KO is game over.
+          if (Multiplayer_PreventGameOver()) {
+            new_dmg = 0;
+          } else
+#endif
+          {
+            mapbak_TM = TM_copy;
+            mapbak_TS = TS_copy;
+            saved_module_for_menu = main_module_index;
+            main_module_index = 18;
+            submodule_index = 1;
+            countdown_for_blink = 0;
+            link_hearts_filler = 0;
+            new_dmg = 0;
+          }
         }
         link_health_current = new_dmg;
       }
@@ -1524,6 +1545,16 @@ endif_1:
   if (x == 6) {
     Link_CancelDash();
     submodule_index = 7;
+#ifdef ZELDA3_MULTIPLAYER
+    // Co-op: P2 reaching a fall's room-change must NOT write shared room state
+    // (dungeon_room_index / overworld pit transition) — the post-Link_Main
+    // hazard-revert can only undo main_module_index/submodule_index, not those.
+    // submodule_index=7 just above already trips that guard (it snaps P2 back
+    // beside P1), so bail here before any shared write. Only P1 leads a
+    // room-changing fall; P2 falls in and reappears next to P1.
+    if (cur_player == &g_players[1])
+      return;
+#endif
     link_this_controls_sprite_oam = 6;
     player_near_pit_state = 3;
     link_visibility_status = 12;
@@ -2461,31 +2492,56 @@ fail:
       goto fail;
     link_bottle_info[btidx] = 2;
     link_item_in_hand = 0;
-    submodule_index = 4;
-    saved_module_for_menu = main_module_index;
-    main_module_index = 14;
-    animate_heart_refill_countdown = 7;
-    Hud_Rebuild();
+#ifdef ZELDA3_MULTIPLAYER
+    if (cur_player == &g_players[1]) {
+      // P2 can't drive the P1 menu-refill module (that refills P1 and freezes
+      // the game). Fill P2's own per-player filler; Multiplayer_RefillP2 drains
+      // it into P2's health each frame.
+      link_hearts_filler = link_health_capacity;
+    } else
+#endif
+    {
+      submodule_index = 4;
+      saved_module_for_menu = main_module_index;
+      main_module_index = 14;
+      animate_heart_refill_countdown = 7;
+      Hud_Rebuild();
+    }
   } else if (b == 4) { // green potion
     if (link_magic_power == 128)
       goto fail;
     link_bottle_info[btidx] = 2;
     link_item_in_hand = 0;
-    submodule_index = 8;
-    saved_module_for_menu = main_module_index;
-    main_module_index = 14;
-    animate_heart_refill_countdown = 7;
-    Hud_Rebuild();
+#ifdef ZELDA3_MULTIPLAYER
+    if (cur_player == &g_players[1]) {
+      link_magic_filler = 128;   // P2's magic refilled inline (see red potion)
+    } else
+#endif
+    {
+      submodule_index = 8;
+      saved_module_for_menu = main_module_index;
+      main_module_index = 14;
+      animate_heart_refill_countdown = 7;
+      Hud_Rebuild();
+    }
   } else if (b == 5) { // blue potion
     if (link_health_capacity == link_health_current && link_magic_power == 128)
       goto fail;
     link_bottle_info[btidx] = 2;
     link_item_in_hand = 0;
-    submodule_index = 9;
-    saved_module_for_menu = main_module_index;
-    main_module_index = 14;
-    animate_heart_refill_countdown = 7;
-    Hud_Rebuild();
+#ifdef ZELDA3_MULTIPLAYER
+    if (cur_player == &g_players[1]) {
+      link_hearts_filler = link_health_capacity;   // P2 health + magic refilled inline
+      link_magic_filler = 128;
+    } else
+#endif
+    {
+      submodule_index = 9;
+      saved_module_for_menu = main_module_index;
+      main_module_index = 14;
+      animate_heart_refill_countdown = 7;
+      Hud_Rebuild();
+    }
   } else if (b == 6) { // fairy
     link_item_in_hand = 0;
     if (ReleaseFairy() < 0)
@@ -2908,6 +2964,15 @@ void LinkState_SpinAttack() {  // 87a804
 }
 
 void LinkItem_Mirror() {  // 87a91a
+#ifdef ZELDA3_MULTIPLAYER
+  // Mirror warps are P1-led (Phase 5.5: "if P1 uses the mirror, P2 teleports
+  // with them"). If P2 cast it, P2's pass would write shared world-warp state
+  // (last_light_vs_dark_world / bird_travel / Mirror_SaveRoomData) the
+  // hazard-revert can't undo, and drive a partial warp from P2's position. P2
+  // follows P1's mirror warp via Multiplayer_WarpP2OnTransition.
+  if (cur_player == &g_players[1])
+    return;
+#endif
   if (!(button_mask_b_y & 0x40)) {
     if (!CheckYButtonPress())
       return;
@@ -6101,6 +6166,15 @@ void HandleDoorTransitions() {  // 87e901
   link_x_page_movement_delta = 0;
   link_y_page_movement_delta = 0;
 
+#ifdef ZELDA3_MULTIPLAYER
+  // Only P1 may start a dungeon room/door transition. If P2 ran this, P2 walking
+  // into a doorway would drive the shared inter-room transition from P2's
+  // position — dragging the whole party to a different room or out to the
+  // overworld. P2 follows via Multiplayer_WarpP2OnTransition after P1 transitions.
+  if (cur_player == &g_players[1])
+    return;
+#endif
+
   // Using a potion might have changed us into a different module, and the routines
   // below just increment the submodule value, causing all kinds of havoc.
   // There's an added return to catch the same behavior a bit up, but this one catches more cases,
@@ -6151,6 +6225,18 @@ void HandleDoorTransitions() {  // 87e901
 }
 
 void ApplyLinksMovementToCamera() {  // 87e9d3
+#ifdef ZELDA3_MULTIPLAYER
+  // Only P1 drives the shared dungeon camera / scroll / quadrant and the saved
+  // quadrant-visit flags. If P2 ran this, P2 crossing an intra-room quadrant
+  // boundary would shove P1's camera, rewrite the shared room bounds, and
+  // pollute the room's save flags from P2's position. P2 stays on screen via the
+  // leash (Multiplayer_UpdateCamera) and is re-placed beside P1 on transitions,
+  // and its collision uses P1's (correct, since they're leashed) shared quadrant
+  // context — so it never needs to drive the camera. Mirrors the
+  // HandleDoorTransitions P2 guard (the sibling branch of HandleIndoorCameraAndDoors).
+  if (cur_player == &g_players[1])
+    return;
+#endif
   // Sometimes, when using spin attack, this routine will end up getting
   // called twice in the same frame, which messes up things.
   g_ApplyLinksMovementToCamera_called = true;

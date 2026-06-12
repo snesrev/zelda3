@@ -201,6 +201,26 @@ void NMI_DoUpdates() {  // 8089e0
       memcpy(&g_zenv.vram[0x41e0], &g_ram[dma_source_addr_21], 0x40);
     }
 
+#ifdef ZELDA3_MULTIPLAYER
+    // Upload P2's pose graphics into the otherwise unused sprite chars
+    // 0x26-0x2f / 0x36-0x3f (0x28/0x38 skipped: alternate shadow uses them).
+    // P2's OAM chars are remapped to this region after its LinkOam_Main, so
+    // P2's sprite animates from its own state instead of mirroring P1's
+    // streamed tiles ("second Link walks in place" bug).
+    if (g_p2_draw_active) {
+      memcpy(&g_zenv.vram[0x4260], &kLinkGraphics[g_p2_dma_addrs[0] - 0x8000], 0x40);  // chars 26-27
+      memcpy(&g_zenv.vram[0x4290], &kLinkGraphics[g_p2_dma_addrs[1] - 0x8000], 0x40);  // chars 29-2a
+      memcpy(&g_zenv.vram[0x42b0], &kLinkGraphics[g_p2_dma_addrs[2] - 0x8000], 0x20);  // char  2b
+      memcpy(&g_zenv.vram[0x4360], &kLinkGraphics[g_p2_dma_addrs[3] - 0x8000], 0x40);  // chars 36-37
+      memcpy(&g_zenv.vram[0x4390], &kLinkGraphics[g_p2_dma_addrs[4] - 0x8000], 0x40);  // chars 39-3a
+      memcpy(&g_zenv.vram[0x43b0], &kLinkGraphics[g_p2_dma_addrs[5] - 0x8000], 0x20);  // char  3b
+      memcpy(&g_zenv.vram[0x42c0], &g_ram[g_p2_dma_addrs[6]], 0x40);                   // chars 2c-2d (sword)
+      memcpy(&g_zenv.vram[0x43c0], &g_ram[g_p2_dma_addrs[7]], 0x40);                   // chars 3c-3d
+      memcpy(&g_zenv.vram[0x42e0], &g_ram[g_p2_dma_addrs[8]], 0x40);                   // chars 2e-2f (shield)
+      memcpy(&g_zenv.vram[0x43e0], &g_ram[g_p2_dma_addrs[9]], 0x40);                   // chars 3e-3f
+    }
+#endif
+
     memcpy(&g_zenv.vram[animated_tile_vram_addr], &g_ram[animated_tile_data_src], 0x400);
   }
 

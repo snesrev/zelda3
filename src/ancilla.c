@@ -658,6 +658,19 @@ void Bomb_CheckSpriteDamage(int k) {  // 888287
   }
 }
 
+#ifdef ZELDA3_MULTIPLAYER
+// Which player fired each ancilla slot (0 = P1, 1 = P2). Tagged at allocation in
+// Ancilla_AllocInit; used below to run link-relative ancillae as their owner.
+static uint8 g_ancilla_owner[16];
+
+// Expose the owner table to the desync checksum (it's per-frame simulation state
+// that lives outside g_ram, so it must be folded into Multiplayer_ComputeChecksum).
+const uint8 *Ancilla_GetOwnerTable(int *len) {
+  if (len) *len = (int)sizeof(g_ancilla_owner);
+  return g_ancilla_owner;
+}
+#endif
+
 void Ancilla_ExecuteAll() {  // 88832b
   for (int i = 9; i >= 0; i--) {
     cur_object_index = i;
@@ -674,7 +687,35 @@ void Ancilla_ExecuteOne(uint8 type, int k) {  // 88833c
   if (submodule_index == 0 && ancilla_timer[k] != 0)
     ancilla_timer[k]--;
 
+#ifdef ZELDA3_MULTIPLAYER
+  // Boomerang (0x05), hookshot (0x1F), Cane-of-Somaria block (0x2C) and Cane of
+  // Byrna sparks (0x30/0x31) re-read Link's position every frame (carry/return/
+  // orbit), so run them as the player who created them rather than always P1.
+  //
+  // Item-receipt (0x22) too: it resets the RECEIVING player's hold-up pose +
+  // disable_sprite_damage and applies the heal. The hold-up handler is empty and
+  // is ONLY ended by this ancilla, so if a P2 pickup's receipt ran as P1 it would
+  // reset P1 and leave P2 frozen in the hold-up pose forever (and the ghost
+  // revive can't fire because disable_sprite_damage stays set). Run it as the
+  // owner so the correct player is unstuck and healed.
+  PlayerState *mp_saved = cur_player;
+  bool mp_receipt = (type == 0x22);
+  if (type == 0x05 || type == 0x1f || type == 0x2c || type == 0x30 || type == 0x31 || mp_receipt)
+    PlayerState_SetCurrent(g_ancilla_owner[k] & 1);
+  uint8 mp_cap_before = g_players[1].health_capacity;
   kAncilla_Funcs[type - 1](k);
+  // A heart-container receipt run as P2 bumps the SHARED max-health capacity on
+  // P2's struct; mirror that delta onto P1 so the per-frame P1->P2 inventory sync
+  // doesn't wipe it (heart containers must raise BOTH players' max HP).
+  if (mp_receipt && cur_player == &g_players[1]) {
+    uint8 d = (uint8)(g_players[1].health_capacity - mp_cap_before);
+    if (d)
+      g_players[0].health_capacity = (uint8)(g_players[0].health_capacity + d);
+  }
+  cur_player = mp_saved;
+#else
+  kAncilla_Funcs[type - 1](k);
+#endif
 }
 
 void Ancilla13_IceRodSparkle(int k) {  // 888435
@@ -1588,15 +1629,15 @@ void Ancilla_ApplyConveyor(int k) {  // 8897be
   Ancilla_MoveX(k);
 }
 
-void Bomb_CheckSpriteAndPlayerDamage(int k) {  // 889815
+// The player-damage half of a bomb explosion (recoil + damage against the
+// CURRENT player's hitbox). Split out so co-op can run it for both players
+// without re-running the sprite damage.
+static void Bomb_CheckPlayerDamage(int k) {
   static const uint8 kBomb_Dmg_Speed[16] = {32, 32, 32, 32, 32, 32, 28, 28, 28, 28, 28, 28, 24, 24, 24, 24};
   static const uint8 kBomb_Dmg_Zvel[16] = {16, 16, 16, 16, 16, 16, 12, 12, 12, 12, 8, 8, 8, 8, 8, 8};
   static const uint8 kBomb_Dmg_Delay[16] = {32, 32, 32, 32, 32, 32, 24, 24, 24, 24, 24, 24, 16, 16, 16, 16};
   static const uint8 kBomb_Dmg_ToLink[3] = {8, 4, 2};
 
-  if (ancilla_item_to_link[k] == 0 || ancilla_item_to_link[k] >= 9)
-    return;
-  Bomb_CheckSpriteDamage(k);
   if (link_disable_sprite_damage) {
     if (k + 1 == flag_is_ancilla_to_pick_up && link_state_bits & 0x80) {
       link_state_bits &= ~0x80;
@@ -1643,6 +1684,26 @@ void Bomb_CheckSpriteAndPlayerDamage(int k) {  // 889815
   if (!(dung_savegame_state_bits & 0x8000))
     link_give_damage = kBomb_Dmg_ToLink[link_armor];
 
+}
+
+void Bomb_CheckSpriteAndPlayerDamage(int k) {  // 889815
+  if (ancilla_item_to_link[k] == 0 || ancilla_item_to_link[k] >= 9)
+    return;
+  Bomb_CheckSpriteDamage(k);
+  Bomb_CheckPlayerDamage(k);   // current player (P1 during ancilla execution)
+#ifdef ZELDA3_MULTIPLAYER
+  // Co-op: a bomb blast is position-based, so it must also be able to hit the
+  // OTHER player (previously only P1 could be hit, and P2 was bomb-immune).
+  // Sprite damage already ran once above; run only the player-damage check as
+  // P2, then restore. Bombs hurt whoever is in range regardless of who placed
+  // them (co-op convention: no owner immunity, but also no extra cross-damage).
+  if (g_mp_p2_enabled && g_players[1].is_active && !g_players[1].is_dead) {
+    PlayerState *saved = cur_player;
+    PlayerState_SetCurrent(1);
+    Bomb_CheckPlayerDamage(k);
+    cur_player = saved;
+  }
+#endif
 }
 
 void Ancilla_HandleLiftLogic(int k) {  // 889976
@@ -6988,8 +7049,12 @@ int Ancilla_AllocInit(uint8 type, uint8 limit) {  // 8ff577
 
   // Try to reuse an empty ancilla slot
   for (int j = (type == 7 || type == 8) ? limit : 4; j >= 0; j--) {
-    if (ancilla_type[j] == 0)
+    if (ancilla_type[j] == 0) {
+#ifdef ZELDA3_MULTIPLAYER
+      g_ancilla_owner[j] = (cur_player == &g_players[1]) ? 1 : 0;  // tag firer
+#endif
       return j;
+    }
   }
   int k = ancilla_alloc_rotate;
   do {
@@ -6999,6 +7064,9 @@ int Ancilla_AllocInit(uint8 type, uint8 limit) {  // 8ff577
     // reuse slots for sparkles or arrows in wall
     if (old_type == 0x3c || old_type == 0x13 || old_type == 0xa) {
       ancilla_alloc_rotate = k;
+#ifdef ZELDA3_MULTIPLAYER
+      g_ancilla_owner[k] = (cur_player == &g_players[1]) ? 1 : 0;  // tag firer
+#endif
       return k;
     }
   } while (k != 0);

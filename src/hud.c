@@ -22,6 +22,9 @@ static void Hud_ReorderItem(int direction);
 static void Hud_Update_Magic();
 static void Hud_Update_Inventory();
 static void Hud_Update_Hearts();
+#ifdef ZELDA3_MULTIPLAYER
+static void Hud_Update_Hearts_P2();
+#endif
 
 const uint8 kMaxBombsForLevel[] = { 10, 15, 20, 25, 30, 35, 40, 50 };
 const uint8 kMaxArrowsForLevel[] = { 30, 35, 40, 45, 50, 55, 60, 70 };
@@ -457,6 +460,9 @@ doing_animation:
     link_hearts_filler = 0;
   }
   Hud_Update_Hearts();
+#ifdef ZELDA3_MULTIPLAYER
+  Hud_Update_Hearts_P2();
+#endif
   Hud_Update_Magic();
   Hud_Update_Inventory();
   flag_update_hud_in_nmi++;
@@ -1388,6 +1394,25 @@ static void Hud_Update_Hearts() {  // 8dfb94
   Hud_UpdateHearts_Inner(&hud_tile_indices_buffer[HUDXY(20, 1)], kHudItemBoxTab2, (link_health_current + 3) & ~3);
 }
 
+#ifdef ZELDA3_MULTIPLAYER
+// Co-op: draw player 2's life meter one HUD row below player 1's. Same heart
+// tiles; P2 is identified by the second row (and the red on-screen Link).
+static void Hud_Update_Hearts_P2(void) {
+  if (!g_mp_p2_enabled || !g_players[1].is_active)
+    return;
+  static const uint16 kEmpty[] = { 0x24A2, 0x24A2, 0x24A2 };
+  static const uint16 kFill[]  = { 0x24A2, 0x24A1, 0x24A0 };
+  uint16 *dst = &hud_tile_indices_buffer[HUDXY(20, 2)];
+  Hud_UpdateHearts_Inner(dst, kEmpty, g_players[1].health_capacity);
+  Hud_UpdateHearts_Inner(dst, kFill, (g_players[1].health_current + 3) & ~3);
+}
+
+// (P2's magic meter was drawn here as a bare liquid-tile column left of the
+// hearts, but without the gauge frame it read as a black bar floating over
+// the playfield — removed by request. P2 magic is still tracked per-player;
+// a framed gauge can come back in a future HUD pass.)
+#endif
+
 static void Hud_Update_Magic() {  // 8dfc09
   uint16 *dst = &hud_tile_indices_buffer[HUDXY(2, 0)];
   if (link_magic_consumption >= 1) {
@@ -1492,6 +1517,9 @@ void Hud_Rebuild() {  // 8dfa70
 
 
   Hud_Update_Hearts();
+#ifdef ZELDA3_MULTIPLAYER
+  Hud_Update_Hearts_P2();
+#endif
   Hud_Update_Magic();
   Hud_Update_Inventory();
   Hud_UpdateItemBox();
