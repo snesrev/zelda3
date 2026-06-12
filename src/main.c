@@ -61,7 +61,14 @@ enum {
   kDefaultSamples = 2048,
 };
 
-static const char kWindowTitle[] = "The Legend of Zelda: A Link to the Past";
+// Build identifier: CI passes -DZELDA3_BUILD_ID=\"<short-sha>\" so a running
+// exe can always be matched to the exact commit it was built from (the
+// window title shows it, and it's printed at startup). Local builds say
+// "dev".
+#ifndef ZELDA3_BUILD_ID
+#define ZELDA3_BUILD_ID "dev"
+#endif
+static const char kWindowTitle[] = "The Legend of Zelda: A Link to the Past [build " ZELDA3_BUILD_ID "]";
 static uint32 g_win_flags = SDL_WINDOW_RESIZABLE;
 static SDL_Window *g_window;
 
@@ -970,6 +977,7 @@ static char *PromptLine(const char *msg, char *buf, size_t n) {
 
 #undef main
 int main(int argc, char** argv) {
+  printf("zelda3 build %s\n", ZELDA3_BUILD_ID);
   argc--, argv++;
   const char *config_file = NULL;
   if (argc >= 2 && strcmp(argv[0], "--config") == 0) {
