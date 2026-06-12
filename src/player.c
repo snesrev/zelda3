@@ -150,6 +150,11 @@ void Link_Main() {  // 878000
   if (!flag_is_link_immobilized)
     Link_ControlHandler();
   HandleSomariaAndGraves();
+#ifdef ZELDA3_MULTIPLAYER
+  // Block this player at the shared-screen boundary around the other player
+  // (before the camera code reads the new position, so the camera stops too).
+  Multiplayer_LeashConstrainCurrentPlayer();
+#endif
 }
 
 void Link_ControlHandler() {  // 87807f

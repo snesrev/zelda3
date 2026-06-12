@@ -275,7 +275,6 @@ static uint16 g_p2_input_this_frame;
 // Master co-op toggle: when false, the second player is never spawned/updated and
 // the game runs as ordinary single-player through the same loop. Default on.
 bool g_mp_p2_enabled = true;
-static void Multiplayer_UpdateCamera(void);
 static void Multiplayer_RemapP2OamChars(uint16 oam_byte_offset);
 static void Multiplayer_WarpP2OnTransition(void);
 static void Multiplayer_PlaceP2Beside(PlayerState *p1, PlayerState *p2);
@@ -535,6 +534,22 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     // (LinkOam_Main just set it).
     Multiplayer_ComputeP2DmaAddrs();
     Multiplayer_RemapP2OamChars(sort_sprites_offset_into_oam_buffer);
+    // NMI_PrepareSprites packed the 2-bit OAM extension table (sprite size /
+    // x-high bits) BEFORE this P2 draw pass ran, so P2's freshly written
+    // bits would reach the PPU a frame late — and when the band P2 uses
+    // switches (sort_sprites_setting changes between areas), the first frame
+    // shows the previous occupant's bits. Re-pack the three packed bytes
+    // covering P2's 12-entry block from the bytewise array LinkOam_Main just
+    // wrote (both band offsets are 16-byte aligned, so it is exactly three).
+    {
+      int first = (sort_sprites_offset_into_oam_buffer >> 2) >> 2;
+      for (int i = first; i < first + 3; i++) {
+        extended_oam[i] = bytewise_extended_oam[4 * i + 3] << 6 |
+                          bytewise_extended_oam[4 * i + 2] << 4 |
+                          bytewise_extended_oam[4 * i + 1] << 2 |
+                          bytewise_extended_oam[4 * i + 0];
+      }
+    }
     g_p2_draw_active = true;
     sort_sprites_setting = p1_oam_setting;
 
@@ -580,8 +595,6 @@ static void ZeldaRunGameLoop_Multiplayer(uint16 p2_input) {
     PlayerState_SetCurrent(0);
     PlayerState_SyncToRam();
 
-    // === Shared camera: center between both players ===
-    Multiplayer_UpdateCamera();
   }
 
   Multiplayer_EnforceP2Palette();
@@ -685,21 +698,29 @@ static void Multiplayer_WarpP2OnTransition(void) {
 // computation itself in overworld.c / dungeon.c rather than post-processing it).
 #define MP_LEASH_X 112   // ~half of the 256px screen width
 #define MP_LEASH_Y 96    // ~half of the 224px screen height
-static void Multiplayer_UpdateCamera(void) {
-  PlayerState *p1 = &g_players[0];
-  PlayerState *p2 = &g_players[1];
-  if (p2->is_dead)
-    return;   // don't shove a frozen ghost around against the leash
-  int dx = (int)p2->x_coord - (int)p1->x_coord;
-  int dy = (int)p2->y_coord - (int)p1->y_coord;
-  // Clamp P2 into P1's viewport, and kill P2's velocity into the boundary so it
-  // doesn't jitter/stutter while pushing against the leash at a screen edge.
-  // Signed intermediates on the low side: coords are uint16 and P1 can be within
-  // a leash of the map origin (0), where p1->coord - MP_LEASH would underflow.
-  if (dx >  MP_LEASH_X) { p2->x_coord = p1->x_coord + MP_LEASH_X; p2->x_vel = 0; }
-  if (dx < -MP_LEASH_X) { int v = (int)p1->x_coord - MP_LEASH_X; p2->x_coord = v < 0 ? 0 : (uint16)v; p2->x_vel = 0; }
-  if (dy >  MP_LEASH_Y) { p2->y_coord = p1->y_coord + MP_LEASH_Y; p2->y_vel = 0; }
-  if (dy < -MP_LEASH_Y) { int v = (int)p1->y_coord - MP_LEASH_Y; p2->y_coord = v < 0 ? 0 : (uint16)v; p2->y_vel = 0; }
+// Mutual leash, called at the end of each player's own Link_Main: the player
+// that just MOVED is blocked at the shared-screen boundary around the OTHER
+// player. Because it only ever retraces the mover's own movement from this
+// frame (a few pixels along their walking path), nobody is teleported through
+// geometry — unlike the old clamp, which dragged P2 along whenever P1 walked
+// away and pulled it through walls into buildings. The camera follows P1, so
+// blocking P1 here also stops the camera until P2 catches up. Velocity into
+// the boundary is zeroed to avoid jitter while pushing against it.
+void Multiplayer_LeashConstrainCurrentPlayer(void) {
+  if (!g_mp_p2_enabled || !g_mp_initialized) return;
+  if (!g_players[0].is_active || !g_players[1].is_active) return;
+  if (g_players[0].is_dead || g_players[1].is_dead) return;  // don't leash to a ghost
+  if (!((main_module_index == 7 || main_module_index == 9) && submodule_index == 0)) return;
+  PlayerState *me = cur_player;
+  PlayerState *other = (me == &g_players[0]) ? &g_players[1] : &g_players[0];
+  int dx = (int)me->x_coord - (int)other->x_coord;
+  int dy = (int)me->y_coord - (int)other->y_coord;
+  // Signed intermediates on the low side: coords are uint16 and the anchor can
+  // be within a leash of the map origin (0), where coord - MP_LEASH underflows.
+  if (dx >  MP_LEASH_X) { me->x_coord = other->x_coord + MP_LEASH_X; me->x_vel = 0; }
+  if (dx < -MP_LEASH_X) { int v = (int)other->x_coord - MP_LEASH_X; me->x_coord = v < 0 ? 0 : (uint16)v; me->x_vel = 0; }
+  if (dy >  MP_LEASH_Y) { me->y_coord = other->y_coord + MP_LEASH_Y; me->y_vel = 0; }
+  if (dy < -MP_LEASH_Y) { int v = (int)other->y_coord - MP_LEASH_Y; me->y_coord = v < 0 ? 0 : (uint16)v; me->y_vel = 0; }
 }
 
 // Soft co-op body collision (Phase 3): keep the two Links from fully stacking.

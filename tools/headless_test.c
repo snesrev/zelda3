@@ -117,8 +117,13 @@ static void ScanOam(void) {
   if (g_p2_draw_active &&
       memcmp(&g_zenv.vram[0x4000], &g_zenv.vram[0x4260], 0x40) != 0)
     g_p2_pose_differs_frames++;
-  // Verify the PACKED extension bits the PPU actually uses: every visible
-  // P2 body-main piece (remapped char 0x26) must carry ext value 2 (16x16).
+  // Verify the PACKED extension bits the PPU actually uses for P2's
+  // body-main piece (remapped char 0x26). Legitimate pair values:
+  //   2 = 16x16 on-screen, 3 = 16x16 riding the right screen edge (x-high),
+  //   1 = the engine's hide-Link trick (small + x-high parks it off-screen,
+  //       used for doorway crossings and damage blinking).
+  // Only 0 — a small sprite drawn ON screen — would be the old garbled-P2
+  // rendering bug.
   if (g_p2_draw_active) {
     bool bad = false;
     for (int e = 0; e < 128; e++) {
@@ -127,7 +132,7 @@ static void ScanOam(void) {
       if (!InP2OamBlock(e))
         continue;
       uint8 packed = g_ram[0xA00 + (e >> 2)];
-      if (((packed >> ((e & 3) * 2)) & 3) != 2)
+      if (((packed >> ((e & 3) * 2)) & 3) == 0)
         bad = true;
     }
     if (bad)
@@ -314,18 +319,21 @@ int main(int argc, char **argv) {
   Check((int16)(P2X() - p2x0) > 0, "exp3: P2 went right");
   Check(g_p2_draw_active, "exp3: P2 draw pass active");
 
-  // ---- Experiment 4: P1 leaves the house; world transitions; P2 warps. ----
+  // ---- Experiment 4: both players leave the house; world transitions. ----
+  // With the mutual leash, an idle P2 pins P1 to the shared screen, so both
+  // players walk out together (P2 gets the same inputs P1 does — like two
+  // people playing side by side).
   RunFrames(30, 0, B_UP);  // move P2 clear of the bottom wall
   // Find the exit: walk down, and when blocked by the wall, sweep sideways
   // along it until the door lets P1 through.
   int walked = 0, stuck = 0, dir_right = 1;
   uint16 last_y = P1Y();
   while (MMI == 7 && walked < 4000) {
-    RunFrames(1, B_DOWN, 0);
+    RunFrames(1, B_DOWN, B_DOWN);
     walked++;
     if (P1Y() == last_y) {
       if (++stuck > 20) {
-        RunFrames(16, dir_right ? B_RIGHT : B_LEFT, 0);
+        RunFrames(16, dir_right ? B_RIGHT : B_LEFT, dir_right ? B_RIGHT : B_LEFT);
         walked += 16;
         stuck = 0;
         if (P1X() > 2520) dir_right = 0;
@@ -344,14 +352,83 @@ int main(int argc, char **argv) {
   Check(abs((int)P2X() - (int)P1X()) <= 160 &&
         abs((int)P2Y() - (int)P1Y()) <= 160, "exp4: P2 came along");
   DumpPpuFrame("/tmp/frame_exit.rgba");
-  // Both walk around outside.
+  // Both walk west across the open yard.
   p1x0 = P1X(); p2x0 = P2X();
-  RunFrames(40, B_LEFT, B_RIGHT);
+  RunFrames(40, B_LEFT, B_LEFT);
   Report("exp4 both walked outside");
   DumpPpuFrame("/tmp/frame_outside.rgba");
   Check(P1X() != p1x0, "exp4: P1 moves outside");
   Check(P2X() != p2x0, "exp4: P2 moves outside");
   Check(g_p2_draw_active, "exp4: P2 still drawn outside");
+
+  // ---- Experiment 6: mutual leash — the MOVER is blocked, the other
+  // player is NEVER dragged (the old clamp teleported P2 along with P1,
+  // pulling it through walls into buildings). Run on the Y axis: the field
+  // south of Link's house is open ground. ----
+  RunFrames(30, 0, 0);
+  {
+    // P1 runs south alone: P1 must stop at the boundary; P2 must not move.
+    uint16 p2x_pin = P2X(), p2y_pin = P2Y();
+    RunFrames(420, B_DOWN, 0);
+    int d_after = (int)P1Y() - (int)P2Y();
+    Check(d_after <= 96, "exp6: P1 blocked at the leash boundary");
+    Check(d_after >= 80, "exp6: P1 actually reached the boundary");
+    Check(P2X() == p2x_pin && P2Y() == p2y_pin,
+          "exp6: P2 never dragged while P1 runs away");
+    // P2 runs south alone past P1: P2 blocked, P1 not dragged.
+    RunFrames(30, 0, 0);
+    uint16 p1x_pin = P1X(), p1y_pin = P1Y();
+    RunFrames(420, 0, B_DOWN);
+    int d2 = (int)P2Y() - (int)P1Y();
+    Check(d2 <= 96, "exp6: P2 blocked at the leash boundary");
+    Check(P1X() == p1x_pin && P1Y() == p1y_pin,
+          "exp6: P1 never dragged while P2 runs away");
+  }
+
+  // ---- Experiment 6b: leash clamp unit checks (terrain-independent). ----
+  // Drive the exported clamp directly with synthetic positions: the mover is
+  // clamped to the boundary, the anchor never moves, and a boundary that the
+  // anchor has advanced no longer clamps (release). Restores positions after.
+  {
+    uint16 sx1 = P1X(), sy1 = P1Y(), sx2 = P2X(), sy2 = P2Y();
+    // P1 moved beyond the boundary -> clamped back to anchor + 112.
+    g_players[0].x_coord = 1130; g_players[0].y_coord = 1000;
+    g_players[1].x_coord = 1000; g_players[1].y_coord = 1000;
+    PlayerState_SetCurrent(0);
+    Multiplayer_LeashConstrainCurrentPlayer();
+    Check(g_players[0].x_coord == 1112, "exp6b: mover clamped to boundary");
+    Check(g_players[1].x_coord == 1000, "exp6b: anchor untouched by clamp");
+    // Anchor advanced -> the same mover position is inside the box (release).
+    g_players[0].x_coord = 1130;
+    g_players[1].x_coord = 1050;
+    Multiplayer_LeashConstrainCurrentPlayer();
+    Check(g_players[0].x_coord == 1130, "exp6b: leash releases as anchor advances");
+    // P2 as mover, symmetric.
+    g_players[1].y_coord = 1100; g_players[1].x_coord = 1050;
+    g_players[0].y_coord = 1000; g_players[0].x_coord = 1050;
+    g_players[1].y_coord = 1100;
+    PlayerState_SetCurrent(1);
+    Multiplayer_LeashConstrainCurrentPlayer();
+    Check(g_players[1].y_coord == 1096, "exp6b: P2 mover clamped symmetrically");
+    PlayerState_SetCurrent(0);
+    g_players[0].x_coord = sx1; g_players[0].y_coord = sy1;
+    g_players[1].x_coord = sx2; g_players[1].y_coord = sy2;
+  }
+
+  // ---- Experiment 7: the P2 magic-gauge black bar is gone. ----
+  // The bare liquid column was drawn into HUD cells at column 18, rows 1-4.
+  // With it removed, none of those cells may hold magic-liquid tiles.
+  {
+    uint16 *hud = (uint16 *)(g_ram + 0xC700);  // hud_tile_indices_buffer
+    bool clean = true;
+    for (int row = 1; row <= 4; row++) {
+      uint16 v = hud[18 + row * 32];
+      if (v == 0x3cf5 || v == 0x3c5e || v == 0x3c5f ||
+          v == 0x3c4c || v == 0x3c4d || v == 0x3c4e)
+        clean = false;
+    }
+    Check(clean, "exp7: no P2 magic bar tiles in the HUD gap");
+  }
 
   // ---- Experiment 5: co-op enemy HP scaling at spawn. ----
   // Run the real spawn-prep for a few species with co-op off vs on and

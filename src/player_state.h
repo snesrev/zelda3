@@ -312,6 +312,11 @@ extern uint16 g_p2_dma_addrs[10];
 // True when P2 was drawn this frame and the NMI should upload its graphics.
 extern bool g_p2_draw_active;
 
+// Mutual leash: blocks cur_player at the shared-screen boundary around the
+// other player. Called at the end of Link_Main for each player; defined in
+// zelda_rtl.c next to the other co-op frame logic.
+void Multiplayer_LeashConstrainCurrentPlayer(void);
+
 // Fills g_p2_dma_addrs from cur_player's dma variables. Must be called with
 // cur_player == P2, right after P2's LinkOam_Main. Defined in misc.c next to
 // the DMA source tables.
