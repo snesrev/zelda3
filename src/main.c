@@ -1484,7 +1484,7 @@ int main(int argc, char** argv) {
     DrawPpuFrameWithPerf();
 
     if (g_config.display_perf_title) {
-      char title[60];
+      char title[96];
       snprintf(title, sizeof(title), "%s | FPS: %d", kWindowTitle, g_curr_fps);
       SDL_SetWindowTitle(g_window, title);
     }
