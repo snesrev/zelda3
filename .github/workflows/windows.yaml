@@ -55,14 +55,19 @@ jobs:
       shell: pwsh
       run: |
         New-Item -ItemType Directory dist | Out-Null
-        Copy-Item zelda3_coop.exe, zelda3.exe, zelda3.ini, third_party/SDL2-2.26.3/lib/x64/SDL2.dll dist/
+        Copy-Item zelda3_coop.exe, zelda3.ini, third_party/SDL2-2.26.3/lib/x64/SDL2.dll dist/
+        # Ship the vanilla exe under an unambiguous name: people habitually
+        # double-click "zelda3.exe" and then wonder where Player 2 went.
+        Copy-Item zelda3.exe dist/zelda3_singleplayer.exe
         @'
         ZELDA 3 CO-OP - Windows x64
         ===========================
 
         FILES
-          zelda3_coop.exe   The game: single-player AND two-player co-op. Use this one.
-          zelda3.exe        The untouched original port (no co-op), as a backup.
+          zelda3_coop.exe          The game: two-player co-op. USE THIS ONE.
+                                   (Its window title says "CO-OP".)
+          zelda3_singleplayer.exe  The untouched original port (NO co-op),
+                                   only as a backup.
           SDL2.dll          Required. Keep it next to the exe.
           zelda3.ini        Settings (controls, window size, audio).
 

@@ -68,7 +68,14 @@ enum {
 #ifndef ZELDA3_BUILD_ID
 #define ZELDA3_BUILD_ID "dev"
 #endif
+// The co-op build says so in the title: the release zip ships BOTH exes with
+// the same build stamp, and a vanilla window is otherwise indistinguishable
+// from a co-op window until Player 2 fails to appear.
+#ifdef ZELDA3_MULTIPLAYER
+static const char kWindowTitle[] = "Zelda 3 CO-OP: A Link to the Past [build " ZELDA3_BUILD_ID "]";
+#else
 static const char kWindowTitle[] = "The Legend of Zelda: A Link to the Past [build " ZELDA3_BUILD_ID "]";
+#endif
 static uint32 g_win_flags = SDL_WINDOW_RESIZABLE;
 static SDL_Window *g_window;
 
@@ -977,7 +984,11 @@ static char *PromptLine(const char *msg, char *buf, size_t n) {
 
 #undef main
 int main(int argc, char** argv) {
+#ifdef ZELDA3_MULTIPLAYER
+  printf("zelda3 CO-OP build %s\n", ZELDA3_BUILD_ID);
+#else
   printf("zelda3 build %s\n", ZELDA3_BUILD_ID);
+#endif
   argc--, argv++;
   const char *config_file = NULL;
   if (argc >= 2 && strcmp(argv[0], "--config") == 0) {
