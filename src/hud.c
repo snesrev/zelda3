@@ -24,7 +24,6 @@ static void Hud_Update_Inventory();
 static void Hud_Update_Hearts();
 #ifdef ZELDA3_MULTIPLAYER
 static void Hud_Update_Hearts_P2();
-static void Hud_Update_Magic_P2(void);
 #endif
 
 const uint8 kMaxBombsForLevel[] = { 10, 15, 20, 25, 30, 35, 40, 50 };
@@ -463,7 +462,6 @@ doing_animation:
   Hud_Update_Hearts();
 #ifdef ZELDA3_MULTIPLAYER
   Hud_Update_Hearts_P2();
-  Hud_Update_Magic_P2();
 #endif
   Hud_Update_Magic();
   Hud_Update_Inventory();
@@ -1409,19 +1407,10 @@ static void Hud_Update_Hearts_P2(void) {
   Hud_UpdateHearts_Inner(dst, kFill, (g_players[1].health_current + 3) & ~3);
 }
 
-// Co-op: P2's magic meter — a compact vertical gauge using the same liquid-level
-// tiles as P1's meter (the empty segments are the glass tile, so the column is
-// self-contained), drawn in the free gap just left of the heart rows.
-static void Hud_Update_Magic_P2(void) {
-  if (!g_mp_p2_enabled || !g_players[1].is_active)
-    return;
-  const uint16 *src = kUpdateMagicPowerTilemap[(g_players[1].magic_power + 7) >> 3];
-  uint16 *dst = &hud_tile_indices_buffer[HUDXY(18, 1)];
-  dst[HUDXY(0, 0)] = src[0];
-  dst[HUDXY(0, 1)] = src[1];
-  dst[HUDXY(0, 2)] = src[2];
-  dst[HUDXY(0, 3)] = src[3];
-}
+// (P2's magic meter was drawn here as a bare liquid-tile column left of the
+// hearts, but without the gauge frame it read as a black bar floating over
+// the playfield — removed by request. P2 magic is still tracked per-player;
+// a framed gauge can come back in a future HUD pass.)
 #endif
 
 static void Hud_Update_Magic() {  // 8dfc09
@@ -1530,7 +1519,6 @@ void Hud_Rebuild() {  // 8dfa70
   Hud_Update_Hearts();
 #ifdef ZELDA3_MULTIPLAYER
   Hud_Update_Hearts_P2();
-  Hud_Update_Magic_P2();
 #endif
   Hud_Update_Magic();
   Hud_Update_Inventory();
