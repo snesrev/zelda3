@@ -3,22 +3,28 @@
 This target builds the game as a native tvOS app using SDL2's UIKit and
 GameController backends. The ROM is never committed to this repository.
 
-1. Put an authorized US ROM at `platform/tvos/Resources/zelda3.sfc`.
-2. Create the Python environment used by the asset extractor:
+1. Initialize the SDL2 submodule:
+
+   ```sh
+   git submodule update --init --recursive
+   ```
+
+2. Put an authorized US ROM at `platform/tvos/Resources/zelda3.sfc`.
+3. Create the Python environment used by the asset extractor:
 
    ```sh
    python3 -m venv .venv
    .venv/bin/python -m pip install -r requirements.txt
    ```
 
-3. Extract the runtime assets from that ROM from the repository root:
+4. Extract the runtime assets from that ROM from the repository root:
 
    ```sh
    .venv/bin/python assets/restool.py --rom platform/tvos/Resources/zelda3.sfc --extract-from-rom
    cp zelda3_assets.dat platform/tvos/Resources/
    ```
 
-4. Generate the Xcode project:
+5. Generate the Xcode project:
 
    ```sh
    cmake -S . -B build/tvos -G Xcode \
@@ -26,7 +32,7 @@ GameController backends. The ROM is never committed to this repository.
    open build/tvos/Zelda3.xcodeproj
    ```
 
-5. Select the `Zelda3` scheme, choose your Apple TV, set your Apple Developer
+6. Select the `Zelda3` scheme, choose your Apple TV, set your Apple Developer
    team/signing identity in Xcode, and Run. The app stages the bundled ROM,
    assets, and config into its writable Application Support directory; save
    states and SRAM are stored there as well.

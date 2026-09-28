@@ -19,6 +19,35 @@ set(SDL_AUDIO ON CACHE BOOL "" FORCE)
 set(SDL_JOYSTICK ON CACHE BOOL "" FORCE)
 set(SDL_HAPTIC OFF CACHE BOOL "" FORCE)
 set(SDL_SENSOR OFF CACHE BOOL "" FORCE)
+
+set(SDL2_SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/SDL2")
+set(SDL2_TVOS_PATCH "${CMAKE_CURRENT_SOURCE_DIR}/platform/tvos/SDL2-tvos-scene.patch")
+if(NOT EXISTS "${SDL2_SOURCE_DIR}/CMakeLists.txt")
+  message(FATAL_ERROR "SDL2 submodule is missing. Run: git submodule update --init --recursive")
+endif()
+find_program(GIT_EXECUTABLE git REQUIRED)
+execute_process(
+  COMMAND "${GIT_EXECUTABLE}" -C "${SDL2_SOURCE_DIR}" apply --check --whitespace=nowarn "${SDL2_TVOS_PATCH}"
+  RESULT_VARIABLE SDL2_PATCH_CHECK
+  OUTPUT_QUIET
+  ERROR_QUIET)
+if(SDL2_PATCH_CHECK EQUAL 0)
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" -C "${SDL2_SOURCE_DIR}" apply --whitespace=nowarn "${SDL2_TVOS_PATCH}"
+    RESULT_VARIABLE SDL2_PATCH_APPLY)
+  if(NOT SDL2_PATCH_APPLY EQUAL 0)
+    message(FATAL_ERROR "Failed to apply the tvOS SDL2 scene-lifecycle patch")
+  endif()
+else()
+  execute_process(
+    COMMAND "${GIT_EXECUTABLE}" -C "${SDL2_SOURCE_DIR}" apply --reverse --check --whitespace=nowarn "${SDL2_TVOS_PATCH}"
+    RESULT_VARIABLE SDL2_PATCH_REVERSE_CHECK
+    OUTPUT_QUIET
+    ERROR_QUIET)
+  if(NOT SDL2_PATCH_REVERSE_CHECK EQUAL 0)
+    message(FATAL_ERROR "SDL2 is neither pristine nor patched. Restore the submodule before configuring.")
+  endif()
+endif()
 add_subdirectory(third_party/SDL2 EXCLUDE_FROM_ALL)
 
 file(GLOB ZELDA3_SOURCES CONFIGURE_DEPENDS
