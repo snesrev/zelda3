@@ -15,6 +15,15 @@ ZeldaEnv g_zenv;
 uint8 g_ram[131072];
 
 uint32 g_wanted_zelda_features;
+static bool g_single_menu_button;
+
+void ZeldaSetSingleMenuButton(bool enabled) {
+  g_single_menu_button = enabled;
+}
+
+bool ZeldaHasSingleMenuButton(void) {
+  return g_single_menu_button;
+}
 
 static void Startup_InitializeMemory();
 

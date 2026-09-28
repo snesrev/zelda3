@@ -40,5 +40,9 @@ GameController backends. The ROM is never committed to this repository.
 The tvOS bundle includes a layered app icon under `platform/tvos/Assets.xcassets`;
 CMake adds it to the generated Xcode target automatically.
 
+On an MFi controller with only one Menu button, press Menu during play to open
+the inventory, then press Menu again to open Save/Continue. Choose Continue to
+resume or Save and Quit to write the game save.
+
 For a command-line device build, set `CODE_SIGNING_ALLOWED=NO` only for a
 compile check. A real Apple TV install requires a development signing team.

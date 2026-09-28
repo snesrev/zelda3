@@ -580,6 +580,13 @@ bool EmuInitialize(uint8 *data, size_t size) {
   g_snes = snes_init(g_emulated_ram);
   g_cpu = g_snes->cpu;
 
+  // tvOS can adapt controller input (for example, a single MFi Menu button
+  // can open the save menu), so its C implementation is not instruction-for-
+  // instruction equivalent to the desktop reference path.
+#if defined(__TVOS__)
+  ZeldaSetupEmuCallbacks(g_emulated_ram, NULL, NULL);
+#else
   ZeldaSetupEmuCallbacks(g_emulated_ram, &EmuRunFrameWithCompare, &EmuSynchronizeWholeState);
+#endif
   return snes_loadRom(g_snes, data, (int)size);
 }

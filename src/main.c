@@ -676,8 +676,14 @@ static void HandleInput(int keyCode, int keyMod, bool pressed) {
 static void OpenOneGamepad(int i) {
   if (SDL_IsGameController(i)) {
     SDL_GameController *controller = SDL_GameControllerOpen(i);
-    if (!controller)
+    if (!controller) {
       fprintf(stderr, "Could not open gamepad %d: %s\n", i, SDL_GetError());
+    } else if (!SDL_GameControllerHasButton(controller, SDL_CONTROLLER_BUTTON_BACK)) {
+      // Some MFi controllers only expose a primary Menu button. Let the game
+      // use it as Select while the inventory is open so Save/Continue remains
+      // reachable without a second menu button.
+      ZeldaSetSingleMenuButton(true);
+    }
   }
 }
 
