@@ -37,5 +37,8 @@ GameController backends. The ROM is never committed to this repository.
    assets, and config into its writable Application Support directory; save
    states and SRAM are stored there as well.
 
+The tvOS bundle includes a layered app icon under `platform/tvos/Assets.xcassets`;
+CMake adds it to the generated Xcode target automatically.
+
 For a command-line device build, set `CODE_SIGNING_ALLOWED=NO` only for a
 compile check. A real Apple TV install requires a development signing team.

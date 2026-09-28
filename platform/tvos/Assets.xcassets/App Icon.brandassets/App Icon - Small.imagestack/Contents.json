@@ -1,0 +1,23 @@
+{
+  "info" : {
+    "author" : "com.snesrev.zelda3",
+    "version" : 1
+  },
+  "layers" : [
+    {
+      "filename" : "Foreground.imagestacklayer"
+    },
+    {
+      "filename" : "Icon.imagestacklayer"
+    },
+    {
+      "filename" : "Background.imagestacklayer"
+    }
+  ],
+  "properties" : {
+    "canvasSize" : {
+      "height" : 240,
+      "width" : 400
+    }
+  }
+}

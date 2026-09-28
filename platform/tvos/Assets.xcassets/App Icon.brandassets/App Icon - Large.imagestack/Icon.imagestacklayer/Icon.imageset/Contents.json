@@ -1,0 +1,13 @@
+{
+  "images" : [
+    {
+      "filename" : "Icon.png",
+      "idiom" : "tv",
+      "scale" : "1x"
+    }
+  ],
+  "info" : {
+    "author" : "com.snesrev.zelda3",
+    "version" : 1
+  }
+}

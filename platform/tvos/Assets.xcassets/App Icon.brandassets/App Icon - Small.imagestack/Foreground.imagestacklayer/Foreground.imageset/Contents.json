@@ -1,0 +1,13 @@
+{
+  "images" : [
+    {
+      "filename" : "Foreground.png",
+      "idiom" : "tv",
+      "scale" : "1x"
+    }
+  ],
+  "info" : {
+    "author" : "com.snesrev.zelda3",
+    "version" : 1
+  }
+}
