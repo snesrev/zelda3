@@ -1,0 +1,55 @@
+/*
+  Copyright (C) 1997-2025 Sam Lantinga <slouken@libsdl.org>
+
+  This software is provided 'as-is', without any express or implied
+  warranty.  In no event will the authors be held liable for any damages
+  arising from the use of this software.
+
+  Permission is granted to anyone to use this software for any purpose,
+  including commercial applications, and to alter it and redistribute it
+  freely.
+*/
+
+#include "SDL.h"
+#include "SDL_test.h"
+
+int main(int argc, char **argv)
+{
+    int total, i;
+    SDLTest_CommonState *state;
+
+    state = SDLTest_CommonCreateState(argv, SDL_INIT_VIDEO);
+    if (!state) {
+        SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "SDLTest_CommonCreateState failed: %s\n", SDL_GetError());
+        return 1;
+    }
+
+    /* Enable standard application logging */
+    SDL_LogSetPriority(SDL_LOG_CATEGORY_APPLICATION, SDL_LOG_PRIORITY_INFO);
+
+    if (!SDLTest_CommonDefaultArgs(state, argc, argv)) {
+        return 1;
+    }
+
+    if (!SDLTest_CommonInit(state)) {
+        SDL_Log("SDL_Init(SDL_INIT_VIDEO) failed: %s", SDL_GetError());
+        return 1;
+    }
+
+    total = SDL_GetNumVideoDisplays();
+    for (i = 0; i < total; i++) {
+        SDL_Rect bounds = { -1, -1, -1, -1 }, usable = { -1, -1, -1, -1 };
+        SDL_GetDisplayBounds(i, &bounds);
+        SDL_GetDisplayUsableBounds(i, &usable);
+        SDL_Log("Display #%d ('%s'): bounds={(%d,%d),%dx%d}, usable={(%d,%d),%dx%d}",
+                i, SDL_GetDisplayName(i),
+                bounds.x, bounds.y, bounds.w, bounds.h,
+                usable.x, usable.y, usable.w, usable.h);
+    }
+
+    SDLTest_CommonQuit(state);
+    return 0;
+}
+
+/* vi: set ts=4 sw=4 expandtab: */
+
