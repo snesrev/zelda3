@@ -620,6 +620,7 @@ void Hud_NormalMenu() {  // 8ddf15
     if (joypad1H_last & kJoypadH_Start)
       return;
     single_menu_save_pending = false;
+    Hud_UpdateEquippedItem();
     BG3VOFS_copy2 = -8;
     Hud_CloseMenu();
     DisplaySelectMenu();
@@ -638,6 +639,7 @@ void Hud_NormalMenu() {  // 8ddf15
 
   // Allow select to open the save/exit thing
   if (joypad1H_last & kJoypadH_Select && sram_progress_indicator) {
+    Hud_UpdateEquippedItem();
     BG3VOFS_copy2 = -8;
     Hud_CloseMenu();
     DisplaySelectMenu();
