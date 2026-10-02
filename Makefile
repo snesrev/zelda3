@@ -1,5 +1,4 @@
 TARGET_EXEC:=zelda3
-ROM:=tables/zelda3.sfc
 SRCS:=$(wildcard src/*.c snes/*.c) third_party/gl_core/gl_core_3_1.c third_party/opus-1.3.1-stripped/opus_decoder_amalgam.c
 OBJS:=$(SRCS:%.c=%.o)
 PYTHON:=/usr/bin/env python3
@@ -11,7 +10,7 @@ ifeq (${OS},Windows_NT)
     RES:=zelda3.res
     SDLFLAGS:=-Wl,-Bstatic $(shell sdl2-config --static-libs)
 else
-    SDLFLAGS:=$(shell sdl2-config --libs) -lm
+    SDLFLAGS:=-lSDL2 -lm
 endif
 
 .PHONY: all clean clean_obj clean_gen
@@ -34,5 +33,5 @@ clean: clean_obj clean_gen
 clean_obj:
 	@$(RM) $(OBJS) $(TARGET_EXEC)
 clean_gen:
-	@$(RM) $(RES) zelda3_assets.dat tables/zelda3_assets.dat tables/*.txt tables/*.png tables/sprites/*.png tables/*.yaml
-	@rm -rf tables/__pycache__ tables/dungeon tables/img tables/overworld tables/sound
+	@$(RM) $(RES) zelda3_assets.dat assets/zelda3_assets.dat assets/*.txt tables/*.png assets/sprites/*.png assets/*.yaml
+	@rm -rf assets/__pycache__ assets/dungeon assets/img assets/overworld assets/sound
