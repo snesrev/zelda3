@@ -34,6 +34,7 @@ enum {
   kKeys_ToggleRenderer,
   kKeys_VolumeUp,
   kKeys_VolumeDown,
+  kKeys_Quit,
   kKeys_Total,
 };
 
