@@ -1,0 +1,134 @@
+diff --git a/src/video/uikit/SDL_uikitappdelegate.h b/src/video/uikit/SDL_uikitappdelegate.h
+index df3ff0f..6434971 100644
+--- a/src/video/uikit/SDL_uikitappdelegate.h
++++ b/src/video/uikit/SDL_uikitappdelegate.h
+@@ -29,6 +29,18 @@
+ 
+ @end
+ 
++/* tvOS requires apps built with current SDKs to adopt the scene lifecycle. */
++#if TARGET_OS_TV
++API_AVAILABLE(tvos(13.0))
++@interface SDLUIKitSceneDelegate : NSObject <UIApplicationDelegate, UIWindowSceneDelegate>
++
+++ (NSString *)getSceneDelegateClassName;
++
++- (void)hideLaunchScreen;
++
++@end
++#endif
++
+ @interface SDLUIKitDelegate : NSObject<UIApplicationDelegate>
+ 
+ + (id)sharedAppDelegate;
+diff --git a/src/video/uikit/SDL_uikitappdelegate.m b/src/video/uikit/SDL_uikitappdelegate.m
+index 31b114a..69a7b5c 100644
+--- a/src/video/uikit/SDL_uikitappdelegate.m
++++ b/src/video/uikit/SDL_uikitappdelegate.m
+@@ -64,9 +64,15 @@ int SDL_UIKitRunApp(int argc, char *argv[], SDL_main_func mainFunction)
+     }
+     forward_argv[i] = NULL;
+ 
+-    /* Give over control to run loop, SDLUIKitDelegate will handle most things from here */
++    /* Give over control to the UIKit scene lifecycle on tvOS. */
+     @autoreleasepool {
+-        UIApplicationMain(argc, argv, nil, [SDLUIKitDelegate getAppDelegateClassName]);
++        NSString *delegateClassName = [SDLUIKitDelegate getAppDelegateClassName];
++#if TARGET_OS_TV
++        if (@available(tvOS 13.0, *)) {
++            delegateClassName = [SDLUIKitSceneDelegate getSceneDelegateClassName];
++        }
++#endif
++        UIApplicationMain(argc, argv, nil, delegateClassName);
+     }
+ 
+     /* free the memory we used to hold copies of argc and argv */
+@@ -349,6 +355,59 @@ static UIImage *SDL_LoadLaunchImageNamed(NSString *name, int screenh)
+ 
+ @end
+ 
++#if TARGET_OS_TV
++
++API_AVAILABLE(tvos(13.0))
++@implementation SDLUIKitSceneDelegate {
++    UIWindow *launchWindow;
++}
++
+++ (NSString *)getSceneDelegateClassName
++{
++    return @"SDLUIKitSceneDelegate";
++}
++
++- (void)scene:(UIScene *)scene willConnectToSession:(UISceneSession *)session options:(UISceneConnectionOptions *)connectionOptions
++{
++    if (![scene isKindOfClass:[UIWindowScene class]]) {
++        return;
++    }
++
++    UIWindowScene *windowScene = (UIWindowScene *)scene;
++    windowScene.delegate = self;
++
++    /* Keep SDL's existing resource-path behavior. The game switches to its
++     * writable tvOS data directory before it opens its assets. */
++    [[NSFileManager defaultManager] changeCurrentDirectoryPath:[[NSBundle mainBundle] resourcePath]];
++
++    SDL_SetMainReady();
++    [self performSelector:@selector(postFinishLaunch) withObject:nil afterDelay:0.0];
++}
++
++- (void)postFinishLaunch
++{
++    SDL_iPhoneSetEventPump(SDL_TRUE);
++    exit_status = forward_main(forward_argc, forward_argv);
++    SDL_iPhoneSetEventPump(SDL_FALSE);
++
++    if (launchWindow) {
++        launchWindow.hidden = YES;
++        launchWindow = nil;
++    }
++}
++
++- (UISceneConfiguration *)application:(UIApplication *)application configurationForConnectingSceneSession:(UISceneSession *)connectingSceneSession options:(UISceneConnectionOptions *)options API_AVAILABLE(tvos(13.0))
++{
++    /* This method signals to UIKit that the application adopts scenes. */
++    UISceneConfiguration *config = [[UISceneConfiguration alloc] initWithName:@"SDLSceneConfiguration" sessionRole:connectingSceneSession.role];
++    config.delegateClass = [SDLUIKitSceneDelegate class];
++    return config;
++}
++
++@end
++
++#endif /* TARGET_OS_TV */
++
+ @implementation SDLUIKitDelegate {
+     UIWindow *launchWindow;
+ }
+diff --git a/src/video/uikit/SDL_uikitwindow.m b/src/video/uikit/SDL_uikitwindow.m
+index 0e0ea05..56f90c6 100644
+--- a/src/video/uikit/SDL_uikitwindow.m
++++ b/src/video/uikit/SDL_uikitwindow.m
+@@ -207,7 +207,24 @@ int UIKit_CreateWindow(_THIS, SDL_Window *window)
+ 
+         /* ignore the size user requested, and make a fullscreen window */
+         /* !!! FIXME: can we have a smaller view? */
++#if TARGET_OS_TV
++        /* Windows must belong to the scene created by UIKit. */
++        UIWindowScene *windowScene = nil;
++        for (UIScene *scene in [UIApplication sharedApplication].connectedScenes) {
++            if ([scene isKindOfClass:[UIWindowScene class]] && scene.activationState != UISceneActivationStateUnattached) {
++                windowScene = (UIWindowScene *)scene;
++                break;
++            }
++        }
++        if (windowScene) {
++            uiwindow = [[SDL_uikitwindow alloc] initWithWindowScene:windowScene];
++            uiwindow.frame = data.uiscreen.bounds;
++        } else {
++            uiwindow = [[SDL_uikitwindow alloc] initWithFrame:data.uiscreen.bounds];
++        }
++#else
+         uiwindow = [[SDL_uikitwindow alloc] initWithFrame:data.uiscreen.bounds];
++#endif
+ 
+         /* put the window on an external display if appropriate. */
+         if (data.uiscreen != [UIScreen mainScreen]) {

@@ -610,11 +610,28 @@ uint8 *GetCurrentItemButtonPtr(int i) {
 }
 
 void Hud_NormalMenu() {  // 8ddf15
+  static bool single_menu_save_pending;
+
   timer_for_flashing_circle++;
   if (!BYTE(joypad1H_last))
     BYTE(hud_tmp1) = 0;
 
+  if (single_menu_save_pending) {
+    if (joypad1H_last & kJoypadH_Start)
+      return;
+    single_menu_save_pending = false;
+    Hud_UpdateEquippedItem();
+    BG3VOFS_copy2 = -8;
+    Hud_CloseMenu();
+    DisplaySelectMenu();
+    return;
+  }
+
   if (filtered_joypad_H & kJoypadH_Start) {
+    if (ZeldaHasSingleMenuButton() && sram_progress_indicator) {
+      single_menu_save_pending = true;
+      return;
+    }
     overworld_map_state = 5;
     sound_effect_2 = 18;
     return;
@@ -622,6 +639,7 @@ void Hud_NormalMenu() {  // 8ddf15
 
   // Allow select to open the save/exit thing
   if (joypad1H_last & kJoypadH_Select && sram_progress_indicator) {
+    Hud_UpdateEquippedItem();
     BG3VOFS_copy2 = -8;
     Hud_CloseMenu();
     DisplaySelectMenu();

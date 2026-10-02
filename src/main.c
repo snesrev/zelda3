@@ -42,6 +42,9 @@ static void OpenOneGamepad(int i);
 static void HandleVolumeAdjustment(int volume_adjustment);
 static void LoadAssets();
 static void SwitchDirectory();
+#if defined(__TVOS__)
+static void PrepareTvOSFilesystem();
+#endif
 
 enum {
   kDefaultFullscreen = 0,
@@ -52,7 +55,11 @@ enum {
 };
 
 static const char kWindowTitle[] = "The Legend of Zelda: A Link to the Past";
+#if defined(__TVOS__)
+static uint32 g_win_flags = SDL_WINDOW_FULLSCREEN_DESKTOP | SDL_WINDOW_ALLOW_HIGHDPI;
+#else
 static uint32 g_win_flags = SDL_WINDOW_RESIZABLE;
+#endif
 static SDL_Window *g_window;
 
 static uint8 g_paused, g_turbo, g_replay_turbo = true, g_cursor = true;
@@ -276,10 +283,15 @@ static const struct RendererFuncs kSdlRendererFuncs  = {
 
 void OpenGLRenderer_Create(struct RendererFuncs *funcs, bool use_opengl_es);
 
+#if !defined(__TVOS__)
 #undef main
+#endif
 int main(int argc, char** argv) {
   argc--, argv++;
   const char *config_file = NULL;
+#if defined(__TVOS__)
+  PrepareTvOSFilesystem();
+#endif
   if (argc >= 2 && strcmp(argv[0], "--config") == 0) {
     config_file = argv[1];
     argc -= 2, argv += 2;
@@ -376,8 +388,14 @@ int main(int argc, char** argv) {
     g_audiobuffer = malloc(g_frames_per_block * have.channels * sizeof(int16));
   }
 
-  if (argc >= 1 && !g_run_without_emu)
-    LoadRom(argv[0]);
+  if (!g_run_without_emu) {
+#if defined(__TVOS__)
+    LoadRom("zelda3.sfc");
+#else
+    if (argc >= 1)
+      LoadRom(argv[0]);
+#endif
+  }
 
 #if defined(_WIN32)
   _mkdir("saves");
@@ -658,8 +676,14 @@ static void HandleInput(int keyCode, int keyMod, bool pressed) {
 static void OpenOneGamepad(int i) {
   if (SDL_IsGameController(i)) {
     SDL_GameController *controller = SDL_GameControllerOpen(i);
-    if (!controller)
+    if (!controller) {
       fprintf(stderr, "Could not open gamepad %d: %s\n", i, SDL_GetError());
+    } else if (!SDL_GameControllerHasButton(controller, SDL_CONTROLLER_BUTTON_BACK)) {
+      // Some MFi controllers only expose a primary Menu button. Let the game
+      // use it as Select while the inventory is open so Save/Continue remains
+      // reachable without a second menu button.
+      ZeldaSetSingleMenuButton(true);
+    }
   }
 }
 
@@ -771,6 +795,67 @@ static bool LoadRom(const char *filename) {
   free(file);
   return result;
 }
+
+#if defined(__TVOS__)
+static bool CopyBundledFile(const char *base_path, const char *pref_path, const char *name) {
+  char source[4096], destination[4096];
+  snprintf(source, sizeof(source), "%s%s", base_path, name);
+  snprintf(destination, sizeof(destination), "%s%s", pref_path, name);
+
+  FILE *dst = fopen(destination, "rb");
+  if (dst) {
+    fclose(dst);
+    return true;
+  }
+
+  FILE *src = fopen(source, "rb");
+  if (!src)
+    return false;
+  dst = fopen(destination, "wb");
+  if (!dst) {
+    fclose(src);
+    return false;
+  }
+
+  uint8 buffer[64 * 1024];
+  size_t n;
+  bool ok = true;
+  while ((n = fread(buffer, 1, sizeof(buffer), src)) != 0) {
+    if (fwrite(buffer, 1, n, dst) != n) {
+      ok = false;
+      break;
+    }
+  }
+  if (ferror(src))
+    ok = false;
+  fclose(dst);
+  fclose(src);
+  if (!ok)
+    remove(destination);
+  return ok;
+}
+
+static void PrepareTvOSFilesystem(void) {
+  char *base_path = SDL_GetBasePath();
+  char *pref_path = SDL_GetPrefPath("snesrev", "zelda3");
+  if (!base_path || !pref_path)
+    Die("Unable to locate the tvOS application directories");
+
+  // tvOS bundles are read-only. Stage user data and bundled game files in the
+  // writable Application Support directory before the existing file-oriented
+  // game code starts.
+  static const char *const files[] = {
+    "zelda3.ini", "zelda3_assets.dat", "zelda3.sfc", "zelda3.smc",
+  };
+  for (size_t i = 0; i < sizeof(files) / sizeof(files[0]); i++)
+    CopyBundledFile(base_path, pref_path, files[i]);
+
+  if (chdir(pref_path) != 0)
+    Die("Unable to enter the tvOS Application Support directory");
+  SDL_free(base_path);
+  SDL_free(pref_path);
+}
+#endif
 
 static bool ParseLinkGraphics(uint8 *file, size_t length) {
   if (length < 27 || memcmp(file, "ZSPR", 4) != 0)

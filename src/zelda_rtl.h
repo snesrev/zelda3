@@ -73,6 +73,8 @@ typedef void ZeldaRunFrameFunc(uint16 input, int run_what);
 typedef void ZeldaSyncAllFunc();
 
 void ZeldaSetupEmuCallbacks(uint8 *emu_ram, ZeldaRunFrameFunc *func, ZeldaSyncAllFunc *sync_all);
+void ZeldaSetSingleMenuButton(bool enabled);
+bool ZeldaHasSingleMenuButton(void);
 
 // Button definitions, zelda splits them in separate 8-bit high/low
 enum {
