@@ -10,7 +10,7 @@ ifeq (${OS},Windows_NT)
     RES:=zelda3.res
     SDLFLAGS:=-Wl,-Bstatic $(shell sdl2-config --static-libs)
 else
-    SDLFLAGS:=-lSDL2 -lm
+    SDLFLAGS:=$(shell sdl2-config --libs) -lm
 endif
 
 .PHONY: all clean clean_obj clean_gen
