@@ -12,6 +12,8 @@
 static SDL_Window *g_window;
 static uint8 *g_screen_buffer;
 static size_t g_screen_buffer_size;
+static uint8 *g_upload_buffer;
+static size_t g_upload_buffer_size;
 static int g_draw_width, g_draw_height;
 static unsigned int g_program, g_VAO;
 static GlTextureWithSize g_texture;
@@ -130,7 +132,8 @@ static bool OpenGLRenderer_Init(SDL_Window *window) {
   // texture samplers
   uniform sampler2D texture1;
   void main() {
-    FragColor = texture(texture1, TexCoord);
+    vec4 color = texture(texture1, TexCoord);
+    FragColor = vec4(color.rgb, 1.0);
   }
 );
 
@@ -141,7 +144,8 @@ static bool OpenGLRenderer_Init(SDL_Window *window) {
   // texture samplers
   uniform sampler2D texture1;
   void main() {
-    FragColor = texture(texture1, TexCoord);
+    vec4 color = texture(texture1, TexCoord);
+    FragColor = vec4(color.rgb, 1.0);
   }
 );
 
@@ -176,6 +180,8 @@ static bool OpenGLRenderer_Init(SDL_Window *window) {
 }
 
 static void OpenGLRenderer_Destroy() {
+  free(g_screen_buffer);
+  free(g_upload_buffer);
 }
 
 static void OpenGLRenderer_BeginDraw(int width, int height, uint8 **pixels, int *pitch) {
@@ -195,6 +201,9 @@ static void OpenGLRenderer_BeginDraw(int width, int height, uint8 **pixels, int 
 
 static void OpenGLRenderer_EndDraw() {
   int drawable_width, drawable_height;
+  const uint8 *upload_buffer = g_screen_buffer;
+  uint upload_format = GL_BGRA;
+  uint upload_type = GL_UNSIGNED_INT_8_8_8_8_REV;
 
   SDL_GL_GetDrawableSize(g_window, &drawable_width, &drawable_height);
   
@@ -208,21 +217,33 @@ static void OpenGLRenderer_EndDraw() {
   }
 
   int viewport_x = (drawable_width - viewport_width) >> 1;
-  int viewport_y = (viewport_height - viewport_height) >> 1;
+  int viewport_y = (drawable_height - viewport_height) >> 1;
+
+  if (g_opengl_es) {
+    size_t upload_buffer_size = (size_t)g_draw_width * g_draw_height * 4;
+    if (upload_buffer_size > g_upload_buffer_size) {
+      g_upload_buffer_size = upload_buffer_size;
+      free(g_upload_buffer);
+      g_upload_buffer = malloc(upload_buffer_size);
+    }
+    const uint32 *src = (const uint32 *)g_screen_buffer;
+    uint32 *dst = (uint32 *)g_upload_buffer;
+    for (size_t i = 0, n = (size_t)g_draw_width * g_draw_height; i != n; i++) {
+      uint32 c = src[i];
+      dst[i] = 0xff000000 | ((c & 0x000000ff) << 16) | (c & 0x0000ff00) | ((c & 0x00ff0000) >> 16);
+    }
+    upload_buffer = g_upload_buffer;
+    upload_format = GL_RGBA;
+    upload_type = GL_UNSIGNED_BYTE;
+  }
 
   glBindTexture(GL_TEXTURE_2D, g_texture.gl_texture);
   if (g_draw_width == g_texture.width && g_draw_height == g_texture.height) {
-    if (!g_opengl_es)
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, g_draw_width, g_draw_height, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, g_screen_buffer);
-    else
-      glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, g_draw_width, g_draw_height, GL_BGRA, GL_UNSIGNED_BYTE, g_screen_buffer);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, g_draw_width, g_draw_height, upload_format, upload_type, upload_buffer);
   } else {
     g_texture.width = g_draw_width;
     g_texture.height = g_draw_height;
-    if (!g_opengl_es)
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, g_draw_width, g_draw_height, 0, GL_BGRA, GL_UNSIGNED_INT_8_8_8_8_REV, g_screen_buffer);
-    else
-      glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, g_draw_width, g_draw_height, 0, GL_BGRA, GL_UNSIGNED_BYTE, g_screen_buffer);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, g_draw_width, g_draw_height, 0, upload_format, upload_type, upload_buffer);
   }
 
   glClearColor(0.0f, 0.0f, 0.0f, 1.0f);

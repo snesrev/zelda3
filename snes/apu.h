@@ -53,7 +53,7 @@ typedef struct Apu2 {
   uint8_t cpuCyclesLeft;
 } Apu2;
 
-Apu* apu_init();
+Apu* apu_init(void);
 void apu_free(Apu* apu);
 void apu_reset(Apu* apu);
 void apu_cycle(Apu* apu);
