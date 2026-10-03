@@ -115,6 +115,7 @@ uint16 *BuildFullStripeDuringTransition_South(uint16 *dst);
 uint16 *BuildFullStripeDuringTransition_West(uint16 *dst);
 uint16 *BuildFullStripeDuringTransition_East(uint16 *dst);
 void OverworldHandleMapScroll();
+void Overworld_FillExtTilemap(struct Ppu *ppu);
 uint16 *CheckForNewlyLoadedMapAreas_North(uint16 *dst);
 uint16 *CheckForNewlyLoadedMapAreas_South(uint16 *dst);
 uint16 *CheckForNewlyLoadedMapAreas_West(uint16 *dst);

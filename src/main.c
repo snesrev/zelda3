@@ -296,6 +296,8 @@ int main(int argc, char** argv) {
   g_snes_height = (g_config.extend_y ? 240 : 224);
 
 
+
+
   // Delay actually setting those features in ram until any snapshots finish playing.
   g_wanted_zelda_features = g_config.features0;
 

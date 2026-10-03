@@ -288,10 +288,19 @@ static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, PpuZb
   int sc_offs = bglayer->tilemapAdr + (((y >> 3) & 0x1f) << 5);
   if ((y & 0x100) && bglayer->tilemapHigher)
     sc_offs += bglayer->tilemapWider ? 0x800 : 0x400;
-  const uint16 *tps[2] = {
-    &ppu->vram[sc_offs & 0x7fff],
-    &ppu->vram[sc_offs + (bglayer->tilemapWider ? 0x400 : 0) & 0x7fff]
-  };
+  const uint16 *tps[4];
+  tps[0] = &ppu->vram[sc_offs & 0x7fff];
+  tps[1] = &ppu->vram[(sc_offs + (bglayer->tilemapWider ? 0x400 : 0)) & 0x7fff];
+  if (ppu->extTilemapEnabled && bglayer->tilemapWider) {
+    int ext_offs = ((y >> 3) & 0x1f) << 5;
+    if ((y & 0x100) && bglayer->tilemapHigher)
+      ext_offs += 0x800;
+    tps[2] = &ppu->extTilemap[ext_offs];
+    tps[3] = &ppu->extTilemap[ext_offs + 0x400];
+  } else {
+    tps[2] = tps[0];
+    tps[3] = tps[1];
+  }
   int tileadr = ppu->bgLayer[layer].tileAdr, pixel;
   int tileadr1 = tileadr + 7 - (y & 0x7), tileadr0 = tileadr + (y & 0x7);
   const uint16 *addr;
@@ -301,10 +310,10 @@ static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, PpuZb
     uint x = win.edges[windex] + bglayer->hScroll;
     uint w = win.edges[windex + 1] - win.edges[windex];
     PpuZbufType *dstz = ppu->bgBuffers[sub].data + win.edges[windex] + kPpuExtraLeftRight;
-    const uint16 *tp = tps[x >> 8 & 1] + ((x >> 3) & 0x1f);
-    const uint16 *tp_last = tps[x >> 8 & 1] + 31;
-    const uint16 *tp_next = tps[(x >> 8 & 1) ^ 1];
-#define NEXT_TP() if (tp != tp_last) tp += 1; else tp = tp_next, tp_next = tp_last - 31, tp_last = tp + 31;
+    int tp_idx = (x >> 8) & 1;  // Always start in VRAM (pages 0-1); ext pages reached by cycling
+    const uint16 *tp = tps[tp_idx] + ((x >> 3) & 0x1f);
+    const uint16 *tp_last = tps[tp_idx] + 31;
+#define NEXT_TP() if (tp != tp_last) tp += 1; else { tp_idx = (tp_idx + 1) & 3; tp = tps[tp_idx]; tp_last = tp + 31; }
     // Handle clipped pixels on left side
     if (x & 7) {
       int curw = IntMin(8 - (x & 7), w);
@@ -362,6 +371,7 @@ static void PpuDrawBackground_4bpp(Ppu *ppu, uint y, bool sub, uint layer, PpuZb
       }
     }
   }
+#undef NEXT_TP
 #undef READ_BITS
 #undef DO_PIXEL
 #undef DO_PIXEL_HFLIP
@@ -693,8 +703,28 @@ void PpuSetMode7PerspectiveCorrection(Ppu *ppu, int low, int high) {
 }
 
 void PpuSetExtraSideSpace(Ppu *ppu, int left, int right, int bottom) {
-  ppu->extraLeftCur = UintMin(left, ppu->extraLeftRight);
-  ppu->extraRightCur = UintMin(right, ppu->extraLeftRight);
+  left = UintMin(left, ppu->extraLeftRight);
+  right = UintMin(right, ppu->extraLeftRight);
+  // When extTilemapEnabled, the game fills both VRAM and extTilemap each frame
+  // with correct tile data, so the viewport can safely exceed the 512px tilemap.
+  // Without extTilemap, clamp to what the tilemap ring buffer can support.
+  if (!ppu->extTilemapEnabled) {
+    int tilemap_extra = 0;
+    for (int i = 0; i < 2; i++)
+      if (ppu->bgLayer[i].tilemapWider)
+        tilemap_extra = IntMax(tilemap_extra, 128);
+    if (left + right > tilemap_extra) {
+      if (tilemap_extra <= 0) {
+        left = right = 0;
+      } else {
+        int total = left + right;
+        left = left * tilemap_extra / total;
+        right = tilemap_extra - left;
+      }
+    }
+  }
+  ppu->extraLeftCur = left;
+  ppu->extraRightCur = right;
   ppu->extraBottomCur = UintMin(bottom, 16);
 }
 
@@ -1124,10 +1154,28 @@ static int ppu_getPixelForBgLayer(Ppu *ppu, int x, int y, int layer, bool priori
   int tileHighBitX = wideTiles ? 0x200 : 0x100;
   int tileBitsY = 3;
   int tileHighBitY = 0x100;
-  uint16_t tilemapAdr = layerp->tilemapAdr + (((y >> tileBitsY) & 0x1f) << 5 | ((x >> tileBitsX) & 0x1f));
-  if ((x & tileHighBitX) && layerp->tilemapWider) tilemapAdr += 0x400;
-  if ((y & tileHighBitY) && layerp->tilemapHigher) tilemapAdr += layerp->tilemapWider ? 0x800 : 0x400;
-  uint16_t tile = ppu->vram[tilemapAdr & 0x7fff];
+  // Check if this pixel is in the extended tilemap range (>512px from viewport start).
+  // The normal tilemap is 64 tile columns (512px) and wraps. The extended tilemap
+  // provides additional columns for viewports wider than 512px.
+  uint16_t tile;
+  bool use_ext = false;
+  if (ppu->extTilemapEnabled && layerp->tilemapWider) {
+    int vp_left = layerp->hScroll - (layer != 2 ? ppu->extraLeftCur : 0);
+    int dist = (x - vp_left) & 0x3ff;  // distance from viewport left, mod 1024
+    use_ext = (dist >= 512);
+  }
+  if (use_ext) {
+    // Extended tilemap: map x into the ext pages (0x000 and 0x400)
+    int ext_offs = (((y >> tileBitsY) & 0x1f) << 5) | ((x >> tileBitsX) & 0x1f);
+    if ((x >> tileBitsX) & 0x20) ext_offs += 0x400;
+    if ((y & tileHighBitY) && layerp->tilemapHigher) ext_offs += 0x800;
+    tile = ppu->extTilemap[ext_offs & 0xfff];
+  } else {
+    uint16_t tilemapAdr = layerp->tilemapAdr + (((y >> tileBitsY) & 0x1f) << 5 | ((x >> tileBitsX) & 0x1f));
+    if ((x & tileHighBitX) && layerp->tilemapWider) tilemapAdr += 0x400;
+    if ((y & tileHighBitY) && layerp->tilemapHigher) tilemapAdr += layerp->tilemapWider ? 0x800 : 0x400;
+    tile = ppu->vram[tilemapAdr & 0x7fff];
+  }
   // check priority, get palette
   if (((bool)(tile & 0x2000)) != priority) return 0; // wrong priority
   int paletteNum = (tile & 0x1c00) >> 10;

@@ -358,7 +358,7 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
       return true;
     } else if (StringEqualsNoCase(key, "OutputMethod")) {
       g_config.output_method = StringEqualsNoCase(value, "SDL-Software") ? kOutputMethod_SDLSoftware :
-                               StringEqualsNoCase(value, "OpenGL") ? kOutputMethod_OpenGL : 
+                               StringEqualsNoCase(value, "OpenGL") ? kOutputMethod_OpenGL :
                                StringEqualsNoCase(value, "OpenGL ES") ? kOutputMethod_OpenGL_ES :
                                                                         kOutputMethod_SDL;
       return true;
@@ -394,7 +394,7 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
         g_config.enable_msu = kMsuEnabled_MsuDeluxe;
       else if (StringEqualsNoCase(value, "deluxe-opuz"))
         g_config.enable_msu = kMsuEnabled_MsuDeluxe | kMsuEnabled_Opuz;
-      else 
+      else
         return ParseBool(value, (bool*)&g_config.enable_msu);
       return true;
     } else if (StringEqualsNoCase(key, "MSUPath")) {
@@ -424,6 +424,8 @@ static bool HandleIniConfig(int section, const char *key, char *value) {
           g_config.extended_aspect_ratio = (h * 16 / 10 - 256) / 2;
         else if (strcmp(s, "18:9") == 0)
           g_config.extended_aspect_ratio = (h * 18 / 9 - 256) / 2;
+        else if (strcmp(s, "32:9") == 0)
+          g_config.extended_aspect_ratio = (h * 32 / 9 - 256) / 2;
         else if (strcmp(s, "4:3") == 0)
           g_config.extended_aspect_ratio = 0;
         else if (strcmp(s, "unchanged_sprites") == 0)
@@ -484,7 +486,7 @@ static bool ParseOneConfigFile(const char *filename, int depth) {
   char *filedata = (char*)ReadWholeFile(filename, NULL), *p;
   if (!filedata)
     return false;
-  
+
   int section = -2;
   g_config.memory_buffer = filedata;
 

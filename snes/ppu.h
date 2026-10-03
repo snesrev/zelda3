@@ -52,7 +52,8 @@ struct Ppu {
   uint8_t renderFlags;
   uint32_t renderPitch;
   uint8_t *renderBuffer;
-  uint8_t extraLeftCur, extraRightCur, extraLeftRight, extraBottomCur;
+  uint16_t extraLeftCur, extraRightCur, extraLeftRight;
+  uint8_t extraBottomCur;
   float mode7PerspectiveLow, mode7PerspectiveHigh;
 
   // TMW / TSW etc
@@ -125,6 +126,12 @@ struct Ppu {
   PpuPixelPrioBufs bgBuffers[2];
   PpuPixelPrioBufs objBuffer;
   uint16_t vram[0x8000];
+  // Extended tilemap for widescreen viewports > 512px.
+  // Holds 4 pages (0x400 words each) for tile columns 64-127.
+  // Filled by the game each frame; the PPU renderer reads from here
+  // when the viewport wraps past the normal 64-column tilemap.
+  uint16_t extTilemap[0x1000];
+  bool extTilemapEnabled;
 };
 
 Ppu* ppu_init();

@@ -1,4 +1,5 @@
 #include "overworld.h"
+#include "snes/ppu.h"
 #include "hud.h"
 #include "load_gfx.h"
 #include "dungeon.h"
@@ -2407,6 +2408,130 @@ uint16 *BufferAndBuildMap16Stripes_X(uint16 *dst) {  // 82f3b9
     dst += 33;
   }
   return dst;
+}
+
+// Fill VRAM and extended tilemap with correct tile data for the widescreen
+// viewport. Writes to ALL visible tile columns:
+//   - VRAM pages 0-1: overwrites stale ring buffer data
+//   - ExtTilemap pages 2-3: fills overflow beyond 512px
+//
+// Two coordinate systems are used:
+//   - PPU register scroll (10-bit wrapped): for VRAM/ext addresses and page walk
+//     (must match renderer exactly)
+//   - Full game scroll (BG1/2HOFS_copy2): for map data lookup in dung_bg1/bg2
+//
+// The old renderer cycles 4 pages: start -> +1 -> +2 -> +3 (mod 4).
+// Pages 0-1 are VRAM, pages 2-3 are extTilemap.
+void Overworld_FillExtTilemap(struct Ppu *ppu) {
+  int extra_left = ppu->extraLeftCur;
+  int extra_right = ppu->extraRightCur;
+
+  if (extra_left == 0 && extra_right == 0)
+    return;
+
+  int total_vp = 256 + extra_left + extra_right;
+
+  bool is_big = !kOverworldMapIsSmall[BYTE(overworld_screen_index) & 0x3f];
+  int map_cols = is_big ? 64 : 32;
+  int map_rows = is_big ? 64 : 32;
+
+  const uint16 *map8 = GetMap16toMap8Table();
+
+  // Full game-level scroll positions (not 10-bit wrapped)
+  int game_hscroll[2] = { (int)BG1HOFS_copy2, (int)BG2HOFS_copy2 };
+  int game_vscroll[2] = { (int)BG1VOFS_copy2, (int)BG2VOFS_copy2 };
+  int area_x = ow_scroll_vars0.xstart;
+  int area_y = ow_scroll_vars0.ystart;
+
+  const uint16 *bg_sources[2] = { dung_bg1, dung_bg2 };
+
+  static int dbg_counter = 0;
+  bool dbg = ((dbg_counter++ % 60) == 0);
+  if (dbg) {
+    FILE *f = fopen("debug.log", "a");
+    if (f) {
+      fprintf(f, "[ExtTilemap] frame=%d extraL=%d extraR=%d vp=%dpx area=%d%s origin=(%d,%d)\n",
+              dbg_counter / 60, extra_left, extra_right, total_vp,
+              (int)BYTE(overworld_screen_index),
+              is_big ? " (big)" : " (small)", area_x, area_y);
+      fclose(f);
+    }
+  }
+
+  for (int layer = 0; layer < 2; layer++) {
+    BgLayer *bglayer = &ppu->bgLayer[layer];
+    if (!bglayer->tilemapWider)
+      continue;
+    const uint16 *bg_src = bg_sources[layer];
+    uint16 tilemap_base = bglayer->tilemapAdr;
+
+    // PPU register scroll (unsigned, 10-bit) — for renderer page walk and tilemap addressing
+    uint32_t ppu_hscroll = bglayer->hScroll;
+    uint32_t ppu_vscroll = bglayer->vScroll;
+
+    // Renderer starting position (must match renderer's uint arithmetic)
+    uint32_t rx_start = (uint32_t)(ppu_hscroll - extra_left);
+    int start_page = (rx_start >> 8) & 1;
+    int start_pos = (rx_start >> 3) & 0x1f;
+
+    // Full game scroll for map data lookup
+    int gx_start = game_hscroll[layer] - extra_left;
+    int gy_top = game_vscroll[layer];
+
+    int num_tc = (total_vp + 7) / 8 + 1;
+    int tr_count = (223 + ppu->extraBottomCur) / 8 + 2;
+
+    int cur_page = start_page;
+    int pos_in_page = start_pos;
+
+    for (int col_idx = 0; col_idx < num_tc; col_idx++) {
+      // Map data: use full game coordinates
+      int game_x = gx_start + col_idx * 8;
+      int local_x = game_x - area_x;
+      int map_col = local_x >> 4;
+      int sub_x = (local_x >> 3) & 1;
+
+      for (int row_idx = 0; row_idx < tr_count; row_idx++) {
+        // Map data lookup: full game coordinates
+        int game_y = gy_top + row_idx * 8;
+        int local_y = game_y - area_y;
+        int map_row = local_y >> 4;
+        int sub_y = (local_y >> 3) & 1;
+
+        uint16 map16_val = 0;
+        if (map_col >= 0 && map_col < map_cols && map_row >= 0 && map_row < map_rows)
+          map16_val = bg_src[map_row * 64 + map_col];
+
+        uint16 tile_entry = map8[map16_val * 4 + sub_y * 2 + sub_x];
+
+        // Tilemap address: use PPU register scroll (must match renderer)
+        uint32_t renderer_y = ppu_vscroll + row_idx * 8;
+        int tr = renderer_y >> 3;
+        int y_page = (((tr >> 5) & 1) && bglayer->tilemapHigher) ? 0x800 : 0;
+        int row_in_page = (tr & 0x1f) * 32;
+
+        if (cur_page < 2) {
+          // VRAM page 0 or 1
+          int x_page = (cur_page == 1) ? 0x400 : 0;
+          int vram_addr = tilemap_base + y_page + x_page + row_in_page + pos_in_page;
+          ppu->vram[vram_addr & 0x7fff] = tile_entry;
+        } else {
+          // ExtTilemap page 2 or 3
+          int x_page = (cur_page == 3) ? 0x400 : 0;
+          int ext_addr = y_page + x_page + row_in_page + pos_in_page;
+          ppu->extTilemap[ext_addr & 0xfff] = tile_entry;
+        }
+      }
+
+      pos_in_page++;
+      if (pos_in_page >= 32) {
+        pos_in_page = 0;
+        cur_page = (cur_page + 1) & 3;
+      }
+    }
+  }
+
+  ppu->extTilemapEnabled = (total_vp > 512);
 }
 
 uint16 *BufferAndBuildMap16Stripes_Y(uint16 *dst) {  // 82f482

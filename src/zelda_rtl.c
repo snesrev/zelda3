@@ -10,6 +10,7 @@
 #include "spc_player.h"
 #include "util.h"
 #include "audio.h"
+#include "overworld.h"
 #include "assets.h"
 ZeldaEnv g_zenv;
 uint8 g_ram[131072];
@@ -194,8 +195,28 @@ void ZeldaDrawPpuFrame(uint8 *pixel_buffer, size_t pitch, uint32 render_flags) {
       PpuSetMode7PerspectiveCorrection(g_zenv.ppu, 0, 0);
   }
 
+  // Enable extended tilemap before the clamp check so PpuSetExtraSideSpace
+  // bypasses the tilemap_extra cap when we're on the overworld.
+  // Allow during: module 9 submodule 0 (player control), or module 14 with
+  // saved module 9 (dialog/sign overlay — overworld data still valid).
+  // Block during: overworld transitions (mod 9, submodule != 0) where map
+  // data and scroll values are in flux.
+  {
+    int mod = main_module_index;
+    bool is_ow_stable;
+    if (mod == 14)
+      is_ow_stable = (saved_module_for_menu == 9);
+    else
+      is_ow_stable = (mod == 9 && submodule_index == 0);
+    g_zenv.ppu->extTilemapEnabled = (is_ow_stable && g_zenv.ppu->extraLeftRight != 0);
+  }
+
   if (g_zenv.ppu->extraLeftRight != 0 || render_flags & kPpuRenderFlags_Height240)
     ConfigurePpuSideSpace();
+
+  // Fill extended tilemap with correct tile data for widescreen overflow
+  if (g_zenv.ppu->extTilemapEnabled)
+    Overworld_FillExtTilemap(g_zenv.ppu);
 
   int height = render_flags & kPpuRenderFlags_Height240 ? 240 : 224;
 
