@@ -16,7 +16,7 @@ jobs:
       matrix:
         include:
         - name: Linux
-          os: ubuntu-latest
+          os: ubuntu-20.04
         - name: Mac
           os: macos-latest
     steps:
@@ -35,3 +35,15 @@ jobs:
         brew install sdl2 coreutils
     - name: Build
       run: make -j$(nproc) zelda3
+
+    - name: Package AppImage
+      if: ${{ matrix.name == 'Linux' }}
+      run: |
+        platform/appimage/appimage.sh
+
+    - name: Upload AppImage
+      if: ${{ matrix.name == 'Linux' }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: Zelda3
+        path: uploads/
