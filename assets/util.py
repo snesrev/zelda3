@@ -26,6 +26,7 @@ ZELDA3_SHA1 = {
   '9325C22EB0A2A1F0017157C8B620BC3A605CEDE1' : ('redux', 'English Redux - https://www.romhacking.net/hacks/2594/'),
   'FA8ADFDBA2697C9A54D583A1284A22AC764C7637' : ('nl', 'Dutch - https://www.romhacking.net/translations/1124/'),
   '43CD3438469B2C3FE879EA2F410B3EF3CB3F1CA4' : ('sv', 'Swedish - https://www.romhacking.net/translations/982/'),
+  'AB839464566B2FADB8C5748C4DF49B71BEF065F4' : ('it', 'Italian - https://www.romhacking.net/translations/7163/'),
 }
 
 def load_rom(filename, support_multilanguage = False):
