@@ -2295,9 +2295,10 @@ void LinkItem_Rod() {  // 879eef
     return;
   player_handler_timer++;
 
-  link_delay_timer_spin_attack = kRodAnimDelays[player_handler_timer];
-  if (player_handler_timer != 3)
+  if (player_handler_timer != 3) {
+    link_delay_timer_spin_attack = kRodAnimDelays[player_handler_timer];
     return;
+  }
   link_debug_value_2 = 0;
   link_speed_setting = 0;
   player_handler_timer = 0;
@@ -2328,7 +2329,8 @@ void LinkItem_Hammer() {  // 879f7b
     return;
   player_handler_timer++;
 
-  link_delay_timer_spin_attack = kHammerAnimDelays[player_handler_timer];
+  if (player_handler_timer != 3)
+    link_delay_timer_spin_attack = kHammerAnimDelays[player_handler_timer];
   if (player_handler_timer == 1) {
     TileDetect_MainHandler(3);
     Ancilla_AddHitStars(22, 0);
@@ -2363,9 +2365,10 @@ void LinkItem_Bow() {  // 87a006
     return;
   player_handler_timer++;
 
-  link_delay_timer_spin_attack = kBowDelays[player_handler_timer];
-  if (player_handler_timer != 3)
+  if (player_handler_timer != 3) {
+    link_delay_timer_spin_attack = kBowDelays[player_handler_timer];
     return;
+  }
 
   int obj = AncillaAdd_Arrow(9, link_direction_facing, 2, link_x_coord, link_y_coord);
   if (obj >= 0) {
@@ -3348,9 +3351,10 @@ void LinkItem_CaneOfSomaria() {  // 87aec0
     return;
   player_handler_timer++;
 
-  link_delay_timer_spin_attack = kRodAnimDelays[player_handler_timer];
-  if (player_handler_timer != 3)
+  if (player_handler_timer != 3) {
+    link_delay_timer_spin_attack = kRodAnimDelays[player_handler_timer];
     return;
+  }
   link_speed_setting = 0;
   player_handler_timer = 0;
   link_delay_timer_spin_attack = 0;
