@@ -737,6 +737,8 @@ static void HandleGamepadAxisInput(int gamepad_id, int axis, int value) {
       last_gamepad_id = gamepad_id;
       last_x = last_y = 0;
     }
+    if (value < -20000) value = -20000;
+    if (value > 20000) value = 20000;
     *(axis == SDL_CONTROLLER_AXIS_LEFTX ? &last_x : &last_y) = value;
     int buttons = 0;
     if (last_x * last_x + last_y * last_y >= 10000 * 10000) {
